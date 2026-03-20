@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<!-- Required meta tags -->
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Bootstrap core CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+	<!-- Font Awesome icons -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+	<!-- Academicons for Google Scholar -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons/css/academicons.min.css">
+	<!-- Google Fonts: Inter and Roboto -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+	
+	<!-- Custom styles -->
+	<link rel="stylesheet" href="css/styles.css">
+	
+	<link rel="icon" type="image/png" href="files/Nailong.png">
+	<title>Andrew Alangcao</title>
+</head>
+
+<body>
+	<!-- Scroll Progress Bar -->
+	<div class="scroll-progress" id="scrollProgress"></div>
+
+	<!-- Navigation -->
+	<nav class="navbar navbar-expand-md navbar-dark fixed-top" id="Home">
+	    <div class="container">
+			<a class="navbar-brand" href="#Home">Andrew Alangcao</a>
+
+			<div class="collapse navbar-collapse" id="navbarToggle">
+				<ul class="navbar-nav ml-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="#Home">Home</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#Projects">Projects</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#Leadership">Leadership</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="#Honors">Honors</a>
+					</li>
+				</ul>
+			</div>
+	    </div>
+	</nav>
+
+	<!-- Hero Section -->
+	<section class="hero-section">
+		<div class="container" style="padding-top: 20px; font-size: 17px">
+			<div class="row">
+				<div class="col-md-3" style="padding-right: 40px">
+					<br>
+					<img class="img-responsive img-rounded" src="files/profile.jpg" alt="Photo" style="max-width: 100%; border:1px solid black"><br>
+				</div>
+				<div class="col-md-9">
+					<h1 class="profile-name">Andrew Alangcao</h1>
+					<p class="profile-bio">
+						I am a student and aspiring researcher focused on computation, cognition, and artificial intelligence. 
+					</p>
+					<p class="profile-bio">
+						My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development.
+					</p>
+					<p class="profile-bio">
+						I also love flowers, playing badminton, and visiting museums.
+					</p>
+					<div class="link-group" style="margin-top: 20px;">
+						<a href="https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" target="_blank">
+							<i class="fas fa-file-alt"></i> Resume
+						</a>
+						<a href="https://github.com/andrewhmir" target="_blank">
+							<i class="fab fa-github"></i> GitHub
+						</a>
+						<a href="https://www.linkedin.com/in/andrew-alangcao/" target="_blank">
+							<i class="fab fa-linkedin"></i> LinkedIn
+						</a>
+						<a href="#" onclick="copyToClipboard('andrew.alangcao@gmail.com', this); return false;" aria-label="Copy email address to clipboard">
+							<i class="fas fa-envelope"></i> andrew.alangcao@gmail.com
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- News Section -->
+	<section class="section" id="News">
+		<div class="container">
+			<h3 class="section-title">News</h3>
+			<div class="news-container">
+				<div class="news-item">
+					<span class="news-date">3/10/2026</span>
+					<span class="news-text">Speaker – First Eduspec Panel – San Beda Alabang, Muntinlupa City</span>
+				</div>
+				<div class="news-item">
+					<span class="news-date">3/8/2026</span>
+					<span class="news-text">Finalist – Developer Camp Manila – Astbury, Makati City</span>
+				</div>
+				<div class="news-item">
+					<span class="news-date">2/7/2026</span>
+					<span class="news-text"> Champion – 11th Philippine Robothon – University of San Agustin, Iloilo City</span>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Projects Section -->
+	<section class="section" id="Projects">
+		<div class="container">
+			<h3 class="section-title">Selected Projects</h3>
+			<p style="color: var(--text-secondary); margin-bottom: 2rem; font-style: italic;">(* indicates equal contribution)</p>
+
+			<!-- Project 1 -->
+			<div class="project-card fade-in" data-project="project1">
+				<video class="project-video" playsinline autoplay loop preload muted>
+					<source src="files/Palad_Preview.mp4" type="video/mp4">
+				</video>
+				<div class="project-content">
+					<h4 class="project-title">Project PALAD</h4>
+					<p class="project-authors"><strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra</p>
+					<span class="project-venue">August 2025 - Current</span>
+					<div class="link-group">
+						<button class="btn-popup" onclick="openPopup('project1', 'overview')">
+							<i class="fas fa-eye"></i> Overview
+						</button>
+						<button class="btn-popup" onclick="openPopup('project1', 'team')">
+							<i class="fas fa-users"></i> Team
+						</button>
+						<!--
+						<a href="https://yourproject1.github.io/" target="_blank">
+							<i class="fas fa-external-link-alt"></i> Repository
+						</a> -->
+						<a href="https://www.youtube.com/watch?v=vY84w2aF754" target="_blank">
+							<i class="fas fa-play"></i> Video
+						</a>
+						<!--
+						<a href="https://arxiv.org/abs/your-paper-id" target="_blank">
+							<i class="fas fa-file-alt"></i> Paper
+						</a> -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 1 Overview Popup -->
+			<div class="popup-overlay" id="project1-overview-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project1-overview-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Project PALAD - Overview</h3>
+						<p class="project-subtitle">August 2025 - Current</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/Palad_Overview.jpg" alt="Project Image" style="max-width: 100%; height: auto;">
+						</div>
+						<p>Project PALAD is a contactless biometric point-of-sale terminal that enables cardless digital payments using a user’s palm. It combines palm-print and palm-vein recognition through RGB and near-infrared imaging with an on-device deep learning model running on a Raspberry Pi 5 for fast, privacy-preserving authentication. Designed for retail, transit, and rural banking in the Philippines, the system processes transactions in about 3 seconds while supporting high-throughput, secure payment verification.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 1 Team Popup -->
+			<div class="popup-overlay" id="project1-team-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project1-team-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Project PALAD - Team</h3>
+						<p class="project-subtitle">August 2025 - Current</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/Palad_Team.jpg" alt="Team Photo" style="max-width: 100%; height: auto;">
+						</div>
+						<p>The team at the Muntinlupa Robotics Competition 2025 in Colegio de Muntinlupa.</p>
+						<p>From left to right: Sir Samar (Coach), Ben Singanon, Irah Casil, Dane Justiniano, and Andrew Alangcao</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 2 -->
+			<div class="project-card fade-in" style="animation-delay: 0.1s;" data-project="project2">
+				<video class="project-video" playsinline autoplay loop preload muted>
+					<source src="files/BiyaHey!.mp4" type="video/mp4">
+				</video>
+				<div class="project-content">
+					<h4 class="project-title">BiyaHey!</h4>
+					<p class="project-authors"><strong>Andrew Alangcao*</strong>, Alain, Kisen, JJ, Derk, Matthew, Hans, Darryl</p>
+					<span class="project-venue">March 2026 - Current</span>
+					<div class="link-group">
+						<button class="btn-popup" onclick="openPopup('project2', 'overview')">
+							<i class="fas fa-eye"></i> Overview
+						</button>
+						<button class="btn-popup" onclick="openPopup('project2', 'team')">
+							<i class="fas fa-users"></i> Team
+						</button>
+						<!-- <a href="https://yourproject2.github.io/" target="_blank">
+							<i class="fas fa-external-link-alt"></i> Project
+						</a> 
+						<a href="https://yourproject2.github.io/video" target="_blank">
+							<i class="fas fa-play"></i> Video
+						</a>
+						<a href="https://arxiv.org/abs/your-paper-id" target="_blank">
+							<i class="fas fa-file-alt"></i> Paper
+						</a> -->
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 2 Overview Popup -->
+			<div class="popup-overlay" id="project2-overview-popup">
+				<div class="popup-content">	
+					<button class="popup-close" onclick="closePopup('project2-overview-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>BiyaHey! - Overview</h3>
+						<p class="project-subtitle">March 2026 - Current</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/Nailong.png" alt="Project Image" style="max-width: 100%; height: auto;">
+						</div>
+						<p> BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila’s complex public transportation networks. Users enter a starting point and destination, allowing the platform to aggregate real routes shared by commuters with current existing datasets and summarizes them through an AI engine into clear, step by step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 2 Team Popup -->
+			<div class="popup-overlay" id="project2-team-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project2-team-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>BiyaHey! - Team</h3>
+						<p class="project-subtitle">March 2026 - Current</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/BiyaHey_Team.jpg" alt="Team Photo" style="max-width: 100%; height: auto;">
+						</div>
+						<p>The Team at Developer Camp Manila in Astbury, Makati.</p>
+						<p>From left to right: Andrew, Alain, Kisen, JJ, Derk, Matthew, Hans, Darryl. <p>
+						</div>
+				</div>
+			</div>
+
+			<!-- Project 3 -->
+			<div class="project-card fade-in" style="animation-delay: 0.2s;" data-project="project3">
+				<video class="project-video" playsinline autoplay loop preload muted>
+					<source src="files/PlaceHolder.png" type="video/mp4">
+				</video>
+				<div class="project-content">
+					<h4 class="project-title">Inventi RAG Chatbot</h4>
+					<p class="project-authors"><strong>Andrew Alangcao*</strong>, James Balolong*, and Romeo Esguerra</p>
+					<span class="project-venue">August 2025 - September 2025</span>
+					<div class="link-group">
+						<button class="btn-popup" onclick="openPopup('project3', 'overview')">
+							<i class="fas fa-eye"></i> Overview
+						</button>
+						<button class="btn-popup" onclick="openPopup('project3', 'team')">
+							<i class="fas fa-users"></i> Team
+						</button>
+						<a href="https://github.com/Jamsekun/Inventi_Asia_Hackathon/tree/develop" target="_blank">
+							<i class="fas fa-external-link-alt"></i> Repository
+						</a>
+						<!-- <a href="https://yourproject3.github.io/video" target="_blank">
+							<i class="fas fa-play"></i> Video
+						</a>
+						<a href="https://arxiv.org/abs/your-paper-id" target="_blank">
+							<i class="fas fa-file-alt"></i> Paper -->
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 3 Overview Popup -->
+			<div class="popup-overlay" id="project3-overview-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project3-overview-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Inventi RAG Chatbot - Overview</h3>
+						<p class="project-subtitle">August 2025 - September 2025</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/PlaceHolder.png" alt="Project Image" style="max-width: 100%; height: auto;">
+						</div>
+						<p>Inventi RAG Chatbot is an AI-powered assistant designed for residents of the Inventi condominium, providing fast and accurate answers to tenant inquiries. Using a Retrieval-Augmented Generation (RAG) system, the chatbot retrieves relevant information from condominium documents—such as building policies, amenities guidelines, maintenance procedures, and announcements—to deliver reliable, context-based responses. This enables tenants to quickly access important information without needing to contact administration directly, improving communication and overall resident experience.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 3 Team Popup -->
+			<div class="popup-overlay" id="project3-team-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project3-team-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Inventi RAG Chatbot - Team</h3>
+						<p class="project-subtitle">August 2025 - September 2025</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/InventiRAG_Team.jpg" alt="Team Photo" style="max-width: 100%; height: auto;">
+						</div>
+						<p>The team in a Google Meeting brainstorming for the Inventi Hackathon.</p>
+						<p>From left to right: Sir James Balolong, Romeo Esguerra, and Andrew Alangcao.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 4 -->
+			<div class="project-card fade-in" style="animation-delay: 0.3s;" data-project="project4">
+				<video class="project-video" playsinline autoplay loop preload muted>
+					<source src="files/CENTHRO_Preview.mp4" type="video/mp4">
+				</video>
+				<div class="project-content">
+					<h4 class="project-title">C.E.N.T.H.R.O.</h4>
+					<p class="project-authors"><strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya</p>
+					<span class="project-venue">October 2024 - May 2025</span>
+					<div class="link-group">
+						<button class="btn-popup" onclick="openPopup('project4', 'overview')">
+							<i class="fas fa-eye"></i> Overview
+						</button>
+						<button class="btn-popup" onclick="openPopup('project4', 'team')">
+							<i class="fas fa-users"></i> Team
+						</button>
+						<!--
+						<a href="https://yourproject4.github.io/" target="_blank">
+							<i class="fas fa-external-link-alt"></i> Repository 
+						</a> -->
+						<a href="https://www.youtube.com/watch?v=jknjW6C9JpY" target="_blank">
+							<i class="fas fa-play"></i> Video
+						</a>
+						<!--
+						<a href="https://arxiv.org/abs/your-paper-id" target="_blank">
+							<i class="fas fa-file-alt"></i> Paper
+						-->
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 4 Overview Popup -->
+			<div class="popup-overlay" id="project4-overview-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project4-overview-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>C.E.N.T.H.R.O. - Overview</h3>
+						<p class="project-subtitle">October 2024 - May 2025</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/CENTHRO_Overview.jpg" alt="Project Image" style="max-width: 100%; height: auto;">
+						</div>
+						<p>CENTHRO is a biometric-based centralized information system designed to improve data accessibility and operational efficiency in Metro Manila’s public transportation and healthcare sectors. Using a NodeMCU, fingerprint authentication, and a cloud-based database, the system enables cashless train fare transactions while allowing hospitals to instantly retrieve patient medical records during emergencies. By integrating transit and medical data into a single platform with a user-friendly web interface, CENTHRO reduces processing time, minimizes human error, and improves service delivery for commuters, healthcare providers, and institutions.</p>					
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 4 Team Popup -->
+			<div class="popup-overlay" id="project4-team-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project4-team-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>C.E.N.T.H.R.O. - Team</h3>
+						<p class="project-subtitle">October 2024 - May 2025</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/CENTHRO_Team.jpg" alt="Team Photo" style="max-width: 100%; height: auto;">
+						</div>
+						<p>The team at the 4th DLSU-D Research Conference. </p>
+						<p>From left to right: Ms.Guinto (Coach), Audrey Tigson, Elisha Cacnio, Andrew Alangcao, Romeo Esguerra.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 5 -->
+			<div class="project-card fade-in" style="animation-delay: 0.4s;" data-project="project5">
+				<video class="project-video" playsinline autoplay loop preload muted>
+					<source src="files/FocusBuddy_Preview.mp4" type="video/mp4">
+				</video>
+				<div class="project-content">
+					<h4 class="project-title">Focus Buddy</h4>
+					<p class="project-authors"><strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera</p>
+					<span class="project-venue">December 2023 - February 2024</span>
+					<div class="link-group">
+						<button class="btn-popup" onclick="openPopup('project5', 'overview')">
+							<i class="fas fa-eye"></i> Overview
+						</button>
+						<button class="btn-popup" onclick="openPopup('project5', 'team')">
+							<i class="fas fa-users"></i> Team
+						</button>
+						<!--
+						<a href="https://yourproject5.github.io/" target="_blank">
+							<i class="fas fa-external-link-alt"></i> Repository
+						</a> -->
+						<a href="https://www.youtube.com/watch?v=SedhOQ-z65Y&t" target="_blank">
+							<i class="fas fa-play"></i> Video
+						</a>
+						<a href="https://youtu.be/2ulcDQ-Hoko?t=44" target="_blank">
+							<i class="fas fa-play"></i> GMA News Feature
+						</a>
+						<!--
+						<a href="https://arxiv.org/abs/your-paper-id" target="_blank">
+							<i class="fas fa-file-alt"></i> Paper
+						</a> -->
+					</div>
+				</div>
+			</div>
+			<!-- Project 5 Overview Popup -->
+			<div class="popup-overlay" id="project5-overview-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project5-overview-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Focus Buddy - Overview</h3>
+						<p class="project-subtitle">December 2023 - February 2024</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/FocusBuddy_Overview.jpg" alt="Project Image" style="max-width: 100%; height: auto;">
+						</div>
+						<p>Focus Buddy is an assistive robotic system built using LEGO EV3, an Arduino Uno, and an LCD display to support students with ADHD in maintaining focus and completing tasks through structured routines and interactive feedback. The robot moves around the workspace, provides verbal reminders to stay on task, and displays visual progress indicators and motivational messages on the LCD, combining movement, audio prompts, and positive reinforcement to encourage sustained attention, organization, and productive study habits in educational settings.</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Project 5 Team Popup -->
+			<div class="popup-overlay" id="project5-team-popup">
+				<div class="popup-content">
+					<button class="popup-close" onclick="closePopup('project5-team-popup')">
+						<i class="fas fa-times"></i>
+					</button>
+					<div class="popup-header">
+						<h3>Focus Buddy - Team</h3>
+						<p class="project-subtitle">December 2023 - February 2024</p>
+					</div>
+					<div class="popup-text">
+						<div class="popup-image-placeholder">
+							<img src="files/FocusBuddy_Team.jpg" alt="Team Photo" style="max-width: 100%; height: auto;">
+						</div>
+						<p>The team at the 9th Philippine Robothon in St. Paul College Pasig</p>
+						<p>From left to right: Pio Almera, Andrew Alangcao, Miguel Jambalos, Elisha Cacnio, and Audrey Tigson.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Leadership Section -->
+	<section class="section" id="Leadership">
+		<div class="container">
+			<h3 class="section-title">Leadership Experience</h3>
+			<div class="leadership-container">
+				<div class="leadership-item">
+					<span class="leadership-description">AGHAM Research Club – Founder</span>
+					<span class="leadership-year">2025 - Current</span>
+				</div>
+				<div class="leadership-item">
+					<span class="leadership-description">High School Student Council – STEM-Engineer Level Representative</span>
+					<span class="leadership-year">2023 - 2025</span>
+				</div>
+				<div class="leadership-item">
+					<span class="leadership-description">Media and Coverages Committee – Head</span>
+					<span class="leadership-year">2023 - 2025</span>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Honors Section -->
+	<section class="section" id="Honors">
+		<div class="container">
+			<h3 class="section-title">Selected Honors</h3>
+			<div class="honors-container">
+				<div class="honor-item">
+					<span class="honor-description">Developer Camp Manila - Finalist</span>
+					<span class="honor-year">2026</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">11th Philippine Robothon – Innovative Open Category, Overall Champion</span>
+					<span class="honor-year">2026</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">2025 Muntinlupa Robotics Fair – Champion</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">2025 International Robothon – Innovative Open Category, 1st Runner Up</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">5th DLSU-D Research Conference – Best Paper Presentation</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">21st National Youth Congress – Delegate</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">10th Philippine Robothon – Innovative Open Category, Overall Champion</span>
+					<span class="honor-year">2025</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">2024 International Robothon – Innovative Open Category, Champion</span>
+					<span class="honor-year">2024</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">20th National Youth Congress – Delegate</span>
+					<span class="honor-year">2023</span>
+				</div>
+				<div class="honor-item">
+					<span class="honor-description">9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award</span>
+					<span class="honor-year">2023</span>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer>
+		<div class="container">
+			<p>&copy; <span id="currentYear"></span> Andrew Alangcao. All rights reserved.</p>
+		</div>
+	</footer>
+
+	<!-- Back to Top Button -->
+	<button class="btn-scroll-top" id="scrollTopBtn" aria-label="Scroll to top">
+		<img src="files/Nailong.png" alt="Nailong" style="width: 24px; height: 24px;">
+	</button>
+
+	<!-- JavaScript -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+	<script src="js/main.js"></script>
+	<script src="js/scroll.js"></script>
+</body>
+
+</html>
