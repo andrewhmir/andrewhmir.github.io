@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize accessibility features
     initAccessibility();
+    
+    // Initialize mobile detection for project cards
+    initMobileProjectCards();
 });
 
 // Update footer year
@@ -193,6 +196,33 @@ function initAccessibility() {
     if (firstSection) {
         firstSection.id = 'main-content';
     }
+}
+
+// Mobile detection for project cards - ensures vertical stacking on mobile
+function initMobileProjectCards() {
+    const projectCards = document.querySelectorAll('.project-card');
+    
+    function updateMobileClass() {
+        const isMobile = window.innerWidth <= 600;
+        
+        projectCards.forEach(card => {
+            if (isMobile) {
+                card.classList.add('mobile');
+            } else {
+                card.classList.remove('mobile');
+            }
+        });
+    }
+    
+    // Initial check
+    updateMobileClass();
+    
+    // Update on resize with debounce
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateMobileClass, 100);
+    });
 }
 
 // Utility function for smooth scrolling (for external use)

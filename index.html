@@ -20,6 +20,27 @@
 	<!-- Custom styles -->
 	<link rel="stylesheet" href="css/styles.css">
 	
+	<!-- Inline mobile fix - guaranteed to work -->
+	<style>
+		/* Force mobile layout on all devices - inline override */
+		@media (max-width: 992px) {
+			.project-card {
+				flex-direction: column !important;
+				padding: 15px !important;
+				gap: 15px !important;
+			}
+			.project-video {
+				width: 100% !important;
+				height: auto !important;
+				max-height: 200px !important;
+				flex-shrink: 1 !important;
+			}
+			.project-content {
+				width: 100% !important;
+			}
+		}
+	</style>
+	
 	<link rel="icon" type="image/png" href="files/Nailong.png">
 	<title>Andrew Alangcao</title>
 </head>
@@ -32,6 +53,10 @@
 	<nav class="navbar navbar-expand-md navbar-dark fixed-top" id="Home">
 	    <div class="container">
 			<a class="navbar-brand" href="#Home">Andrew Alangcao</a>
+			
+			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
 
 			<div class="collapse navbar-collapse" id="navbarToggle">
 				<ul class="navbar-nav ml-auto">
