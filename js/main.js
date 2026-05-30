@@ -1,458 +1,436 @@
-// Modern Portfolio JavaScript - Enhanced Functionality
+/* ==========================================================================
+   Portfolio Engine — Renders all content from data.js · Handles all UX
+   No Bootstrap · No jQuery · Vanilla JS
+   ========================================================================== */
 
-// DOM Elements
-const scrollProgress = document.getElementById('scrollProgress');
-const scrollTopBtn = document.getElementById('scrollTopBtn');
-const navbar = document.querySelector('.navbar');
-const navLinks = document.querySelectorAll('.nav-link');
-const currentYearElement = document.getElementById('currentYear');
+(function () {
+  'use strict';
 
-// Initialize application
-document.addEventListener('DOMContentLoaded', function() {
-    // Set current year in footer
-    updateFooterYear();
-    
-    // Initialize scroll progress
-    initScrollProgress();
-    
-    // Initialize scroll top button
-    initScrollTopButton();
-    
-    // Initialize navigation
-    initNavigation();
-    
-    // Initialize animations
-    initAnimations();
-    
-    // Initialize smooth scrolling
-    initSmoothScrolling();
-    
-    // Initialize accessibility features
-    initAccessibility();
-    
-    // Initialize mobile detection for project cards
-    initMobileProjectCards();
-});
+  /* ── DOM References ─────────────────────────────────────────────── */
+  const $progress   = document.getElementById('scrollProgress');
+  const $scrollTop  = document.getElementById('scrollTopBtn');
+  const $navHeader  = document.getElementById('navHeader');
+  const $navToggle  = document.getElementById('navToggle');
+  const $navMenu    = document.getElementById('navMenu');
+  const $navList    = document.getElementById('navList');
+  const $heroBio    = document.getElementById('heroBio');
+  const $heroLinks  = document.getElementById('heroLinks');
+  const $newsTimeline = document.getElementById('newsTimeline');
+  const $projectList  = document.getElementById('projectList');
+  const $leadershipList = document.getElementById('leadershipList');
+  const $honorsList     = document.getElementById('honorsList');
+  const $modalOverlay   = document.getElementById('modalOverlay');
+  const $modalClose     = document.getElementById('modalClose');
+  const $modalHeader    = document.getElementById('modalHeader');
+  const $modalImage     = document.getElementById('modalImage');
+  const $modalBody      = document.getElementById('modalBody');
+  const $footerYear     = document.getElementById('currentYear');
 
-// Update footer year
-function updateFooterYear() {
-    if (currentYearElement) {
-        currentYearElement.textContent = new Date().getFullYear();
+  /* ── Guard ──────────────────────────────────────────────────────── */
+  if (typeof PORTFOLIO === 'undefined') {
+    console.warn('PORTFOLIO data not loaded. Make sure js/data.js is included.');
+    return;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     RENDER
+     ════════════════════════════════════════════════════════════════════ */
+
+  /* ── Navigation ──────────────────────────────────────────────── */
+  function renderNav() {
+    if (!$navList) return;
+    $navList.innerHTML = PORTFOLIO.nav.map(item =>
+      `<li><a href="#${item.id}" data-nav="${item.id}">${item.label}</a></li>`
+    ).join('');
+  }
+
+  /* ── Hero ──────────────────────────────────────────────────── */
+  function renderHero() {
+    if ($heroBio) {
+      $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
     }
-}
-
-// Scroll progress functionality
-function initScrollProgress() {
-    if (!scrollProgress) return;
-    
-    window.addEventListener('scroll', () => {
-        const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-        scrollProgress.style.width = `${scrolled}%`;
-    });
-}
-
-// Scroll top button functionality
-function initScrollTopButton() {
-    if (!scrollTopBtn) return;
-    
-    // Show/hide button based on scroll position
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) {
-            scrollTopBtn.classList.add('visible');
-        } else {
-            scrollTopBtn.classList.remove('visible');
+    if ($heroLinks) {
+      $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
+        if (item.copy) {
+          return `<button class="pill" onclick="copyToClipboard('${item.copy}', this)" aria-label="Copy email">
+            <i class="${item.icon}"></i> ${item.label}
+          </button>`;
         }
-    });
-    
-    // Scroll to top functionality
-    scrollTopBtn.addEventListener('click', () => {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
-}
-
-// Enhanced navigation with scroll spy
-function initNavigation() {
-    // Add active class to navigation based on scroll position
-    window.addEventListener('scroll', () => {
-        const sections = document.querySelectorAll('section[id]');
-        const scrollPosition = window.scrollY + 100; // Offset for navbar height
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            const sectionId = section.getAttribute('id');
-            
-            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-                // Remove active class from all links
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === `#${sectionId}`) {
-                        link.classList.add('active');
-                    }
-                });
-            }
-        });
-    });
-    
-    // Smooth scrolling for navigation links
-    navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            const targetId = link.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
-            
-            if (targetSection) {
-                const offsetTop = targetSection.offsetTop - 80; // Account for navbar height
-                
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-}
-
-// Animation on scroll
-function initAnimations() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-    
-    // Observe all fade-in elements
-    document.querySelectorAll('.fade-in, .project-card').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
-}
-
-// Enhanced smooth scrolling
-function initSmoothScrolling() {
-    // Smooth scrolling for all anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            
-            const href = this.getAttribute('href');
-            if (href === '#') return;
-            
-            const target = document.querySelector(href);
-            if (target) {
-                const offsetTop = target.offsetTop - 80; // Account for navbar height
-                
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
-            }
-        });
-    });
-}
-
-// Accessibility enhancements
-function initAccessibility() {
-    // Keyboard navigation for scroll top button
-    if (scrollTopBtn) {
-        scrollTopBtn.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                scrollTopBtn.click();
-            }
-        });
+        return `<a class="pill" href="${item.url}" target="_blank" rel="noopener">
+          <i class="${item.icon}"></i> ${item.label}
+        </a>`;
+      }).join('');
     }
-    
-    // Skip link for screen readers
-    const skipLink = document.createElement('a');
-    skipLink.href = '#main-content';
-    skipLink.textContent = 'Skip to main content';
-    skipLink.className = 'sr-only sr-only-focusable';
-    skipLink.style.position = 'absolute';
-    skipLink.style.left = '-9999px';
-    skipLink.style.top = 'auto';
-    skipLink.style.width = '1px';
-    skipLink.style.height = '1px';
-    skipLink.style.overflow = 'hidden';
-    skipLink.style.zIndex = '9999';
-    
-    document.body.insertBefore(skipLink, document.body.firstChild);
-    
-    // Add main content id to first section
-    const firstSection = document.querySelector('section');
-    if (firstSection) {
-        firstSection.id = 'main-content';
-    }
-}
+  }
 
-// Mobile detection for project cards - ensures vertical stacking on mobile
-function initMobileProjectCards() {
-    const projectCards = document.querySelectorAll('.project-card');
-    
-    function updateMobileClass() {
-        const isMobile = window.innerWidth <= 600;
-        
-        projectCards.forEach(card => {
-            if (isMobile) {
-                card.classList.add('mobile');
-            } else {
-                card.classList.remove('mobile');
-            }
-        });
-    }
-    
-    // Initial check
-    updateMobileClass();
-    
-    // Update on resize with debounce
-    let resizeTimeout;
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(updateMobileClass, 100);
-    });
-}
+  /* ── News Timeline ──────────────────────────────────────────── */
+  function renderNews() {
+    if (!$newsTimeline) return;
+    $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) =>
+      `<div class="timeline-item reveal" style="transition-delay: ${i * 60}ms">
+        <span class="timeline-date">${item.date}</span>
+        <p class="timeline-text">${item.text}</p>
+      </div>`
+    ).join('');
+  }
 
-// Utility function for smooth scrolling (for external use)
-function smoothScrollTo(target, offset = 80) {
-    const element = typeof target === 'string' ? document.querySelector(target) : target;
-    if (element) {
-        const offsetTop = element.offsetTop - offset;
-        window.scrollTo({
-            top: offsetTop,
-            behavior: 'smooth'
-        });
-    }
-}
+  /* ── Projects ──────────────────────────────────────────────── */
+  function renderProjects() {
+    if (!$projectList) return;
+    $projectList.innerHTML = PORTFOLIO.projects.map((p, i) => {
+      const isImg = isImage(p.video);
+      const links = [
+        { label: 'Overview', icon: 'fas fa-eye', action: `openModal('${p.id}', 'overview')` },
+        { label: 'Team',     icon: 'fas fa-users', action: `openModal('${p.id}', 'team')` },
+        ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: `openModal('${p.id}', 'report')` }] : []),
+        ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
+      ];
 
-// Clipboard copy functionality
-function copyToClipboard(text, element) {
-    // Create a temporary notification element
-    const notification = document.createElement('div');
-    notification.className = 'clipboard-notification';
-    notification.textContent = 'Email copied to clipboard, reach out anytime! ';
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--primary-color);
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: var(--shadow-lg);
-        z-index: 9999;
-        opacity: 0;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-        font-family: var(--font-heading);
-        font-weight: 600;
-        pointer-events: none;
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Animate notification in
-    setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateY(0)';
-    }, 10);
-    
-    // Try to use the modern Clipboard API
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => {
-            showCopySuccess(element, notification);
-        }).catch(() => {
-            fallbackCopyToClipboard(text, element, notification);
-        });
+      const pills = links.map(l => {
+        if (l.url) {
+          return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
+        }
+        return `<button class="pill" onclick="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
+      }).join('');
+
+      return `
+        <div class="project-card reveal" style="transition-delay: ${i * 80}ms">
+          ${isImg
+            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
+            : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
+                <source src="${p.video}" type="video/mp4">
+               </video>`
+          }
+          <div class="project-info">
+            <h3 class="project-title">${p.title}</h3>
+            <p class="project-authors">${p.authors}</p>
+            <span class="project-venue">${p.venue}</span>
+            <div class="project-links">${pills}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  /* ── Leadership ─────────────────────────────────────────────── */
+  function renderLeadership() {
+    if (!$leadershipList) return;
+    $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
+      `<div class="record-item reveal" style="transition-delay: ${i * 50}ms">
+        <span class="record-desc">${item.description}</span>
+        <span class="record-year">${item.year}</span>
+      </div>`
+    ).join('');
+  }
+
+  /* ── Honors ─────────────────────────────────────────────────── */
+  function renderHonors() {
+    if (!$honorsList) return;
+    $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
+      `<div class="record-item reveal" style="transition-delay: ${i * 40}ms">
+        <span class="record-desc">${item.description}</span>
+        <span class="record-year">${item.year}</span>
+      </div>`
+    ).join('');
+  }
+
+  /* ── Footer ─────────────────────────────────────────────────── */
+  function renderFooter() {
+    if ($footerYear) {
+      $footerYear.textContent = new Date().getFullYear();
+    }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     MODAL (single shared instance)
+     ════════════════════════════════════════════════════════════════════ */
+
+  window.openModal = function (projectId, tab) {
+    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
+
+    const proj = PORTFOLIO.projects.find(p => p.id === projectId);
+    if (!proj) return;
+
+    const isTeam   = (tab === 'team');
+    const isReport = (tab === 'report');
+    const data = isReport ? proj.report : (isTeam ? proj.team : proj.overview);
+    const title = isReport ? `${proj.title} — Technical Report` : (isTeam ? `${proj.title} — Team` : `${proj.title} — Overview`);
+
+    $modalHeader.innerHTML = `
+      <h3>${title}</h3>
+      <p class="modal-subtitle">${proj.venue}</p>`;
+
+    $modalImage.innerHTML = `<img src="${data.image}" alt="${title}">`;
+
+    if (isTeam && Array.isArray(data.text)) {
+      $modalBody.innerHTML = data.text.map(t => `<p>${t}</p>`).join('');
     } else {
-        // Fallback for older browsers or insecure contexts
-        fallbackCopyToClipboard(text, element, notification);
+      $modalBody.innerHTML = `<p>${data.text}</p>`;
     }
-}
 
-// Popup functionality
-function openPopup(projectId, tabType) {
-    var popupId = projectId + '-' + tabType + '-popup';
-    var popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Prevent background scrolling
-        
-        // Hide navbar content, keep scroll tracker visible
-        var navbar = document.querySelector('.navbar');
-        if (navbar) {
-            navbar.classList.add('navbar-hidden');
-        }
-    }
-}
+    $modalOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    $navHeader.classList.add('hidden');
+  };
 
-function closePopup(popupId) {
-    var popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.remove('active');
-        document.body.style.overflow = ''; // Re-enable background scrolling
-        
-        // Show navbar content again
-        var navbar = document.querySelector('.navbar');
-        if (navbar) {
-            navbar.classList.remove('navbar-hidden');
-        }
-    }
-}
+  function closeModal() {
+    if (!$modalOverlay) return;
+    $modalOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+    $navHeader.classList.remove('hidden');
+  }
 
-// Close popup when clicking outside content
-document.addEventListener('click', function(e) {
-    var popups = document.querySelectorAll('.popup-overlay.active');
-    popups.forEach(function(popup) {
-        if (e.target === popup) {
-            var popupId = popup.id;
-            closePopup(popupId);
-        }
+  if ($modalClose) {
+    $modalClose.addEventListener('click', closeModal);
+  }
+
+  if ($modalOverlay) {
+    $modalOverlay.addEventListener('click', function (e) {
+      if (e.target === $modalOverlay) closeModal();
     });
-});
+  }
 
-// Close popup on Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        var activePopup = document.querySelector('.popup-overlay.active');
-        if (activePopup) {
-            var popupId = activePopup.id;
-            closePopup(popupId);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $modalOverlay && $modalOverlay.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  /* ════════════════════════════════════════════════════════════════════
+     INTERACTIONS
+     ════════════════════════════════════════════════════════════════════ */
+
+  /* ── Scroll Progress ────────────────────────────────────────── */
+  function updateScrollProgress() {
+    if (!$progress) return;
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    $progress.style.width = total > 0 ? `${(window.scrollY / total) * 100}%` : '0%';
+  }
+
+  /* ── Scroll-to-Top ──────────────────────────────────────────── */
+  function updateScrollTopVisibility() {
+    if (!$scrollTop) return;
+    $scrollTop.classList.toggle('visible', window.scrollY > 400);
+  }
+
+  if ($scrollTop) {
+    $scrollTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  /* ── Nav Scroll Spy ─────────────────────────────────────────── */
+  function updateActiveNav() {
+    const links = document.querySelectorAll('[data-nav]');
+    if (!links.length) return;
+
+    const scrollPos = window.scrollY + 80;
+    let current = null;
+
+    links.forEach(link => {
+      const id = link.getAttribute('data-nav');
+      const section = document.getElementById(id);
+      if (section && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
+        current = id;
+      }
+    });
+
+    links.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('data-nav') === current);
+    });
+  }
+
+  /* ── Nav Hide/Show on Scroll ─────────────────────────────────── */
+  let lastScroll = 0;
+  function updateNavVisibility() {
+    if (!$navHeader) return;
+    const currentScroll = window.scrollY;
+
+    const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
+    if (currentScroll > lastScroll && currentScroll > navH + 20) {
+      $navHeader.classList.add('hidden');
+    } else {
+      $navHeader.classList.remove('hidden');
+    }
+    lastScroll = currentScroll;
+  }
+
+  /* ── Nav Backdrop ─────────────────────────────────────────── */
+  const $navBackdrop = document.createElement('div');
+  $navBackdrop.classList.add('nav-backdrop');
+  document.body.appendChild($navBackdrop);
+
+  function openMobileNav() {
+    $navMenu.classList.add('open');
+    $navToggle.classList.add('open');
+    $navToggle.setAttribute('aria-expanded', 'true');
+    $navBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileNav() {
+    $navMenu.classList.remove('open');
+    $navToggle.classList.remove('open');
+    $navToggle.setAttribute('aria-expanded', 'false');
+    $navBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* ── Mobile Nav Toggle ──────────────────────────────────────── */
+  if ($navToggle && $navMenu) {
+    $navToggle.addEventListener('click', function () {
+      if ($navMenu.classList.contains('open')) {
+        closeMobileNav();
+      } else {
+        openMobileNav();
+      }
+    });
+
+    // Close on nav link click (mobile)
+    $navMenu.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') {
+        closeMobileNav();
+      }
+    });
+
+    // Close on backdrop click
+    $navBackdrop.addEventListener('click', function () {
+      closeMobileNav();
+    });
+  }
+
+  /* ── Scroll-Triggered Reveal ────────────────────────────────── */
+  function initRevealObserver() {
+    if (!('IntersectionObserver' in window)) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
         }
-    }
-});
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
 
-function fallbackCopyToClipboard(text, element, notification) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            showCopySuccess(element, notification);
-        } else {
-            showCopyError(notification);
-        }
-    } catch (err) {
-        showCopyError(notification);
-    } finally {
-        document.body.removeChild(textArea);
-    }
-}
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  }
 
-function showCopySuccess(element, notification) {
-    // Add success animation to the clicked element
-    if (element) {
-        element.style.transform = 'scale(0.95)';
-        element.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-        setTimeout(() => {
-            if (element) {
-                element.style.transform = '';
-                element.style.background = 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))';
-            }
-        }, 200);
-    }
-    
-    // Keep notification visible for a moment, then fade out
-    setTimeout(() => {
-        if (notification) {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                if (notification && notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }
-    }, 1500);
-}
+  /* ── Smooth Scroll for Anchor Links ─────────────────────────── */
+  function initSmoothScroll() {
+    document.addEventListener('click', function (e) {
+      const link = e.target.closest('a[href^="#"]');
+      if (!link) return;
 
-function showCopyError(notification) {
-    if (notification) {
-        notification.textContent = 'Failed to copy. Please try again.';
-        notification.style.background = '#dc3545';
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-10px)';
-            setTimeout(() => {
-                if (notification && notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 1500);
-    }
-}
+      const href = link.getAttribute('href');
+      if (href === '#') return;
 
-// Debounce utility function
-function debounce(func, wait = 20, immediate = false) {
-    let timeout;
-    return function executedFunction() {
-        const context = this;
-        const args = arguments;
-        const later = () => {
-            timeout = null;
-            if (!immediate) func.apply(context, args);
-        };
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(context, args);
-    };
-}
-
-// Performance optimized scroll handler
-const handleScroll = debounce(() => {
-    // Update scroll progress
-    if (scrollProgress) {
-        const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-        scrollProgress.style.width = `${scrolled}%`;
-    }
-    
-    // Update navigation active states
-    if (navLinks.length > 0) {
-        const sections = document.querySelectorAll('section[id]');
-        const scrollPosition = window.scrollY + 100;
-        
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop;
-            const sectionHeight = section.offsetHeight;
-            const sectionId = section.getAttribute('id');
-            
-            if (scrollPosition >= sectionTop && scrollPosition < sectionTop + sectionHeight) {
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href') === `#${sectionId}`) {
-                        link.classList.add('active');
-                    }
-                });
-            }
+      const target = document.querySelector(href);
+      if (target) {
+        e.preventDefault();
+        const offset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
+        window.scrollTo({
+          top: target.offsetTop - offset,
+          behavior: 'smooth'
         });
+      }
+    });
+  }
+
+  /* ── Combined Scroll Handler (throttled) ────────────────────── */
+  let ticking = false;
+  function onScroll() {
+    if (!ticking) {
+      requestAnimationFrame(function () {
+        updateScrollProgress();
+        updateScrollTopVisibility();
+        updateActiveNav();
+        updateNavVisibility();
+        ticking = false;
+      });
+      ticking = true;
     }
-}, 100);
+  }
 
-// Attach optimized scroll handler
-window.addEventListener('scroll', handleScroll);
+  /* ════════════════════════════════════════════════════════════════════
+     CLIPBOARD
+     ════════════════════════════════════════════════════════════════════ */
 
-// Export functions for external use
-window.portfolio = {
-    smoothScrollTo,
-    updateFooterYear
-};
+  window.copyToClipboard = function (text, el) {
+    const showToast = (msg, isError) => {
+      const toast = document.createElement('div');
+      toast.textContent = msg;
+      toast.style.cssText = `
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        background: ${isError ? 'var(--danger, #dc322f)' : 'var(--bg-card, #073642)'};
+        color: var(--text-bright, #eee8d5);
+        padding: 12px 24px; border-radius: 8px; font-family: var(--font-heading);
+        font-weight: 600; font-size: 0.9rem; z-index: 9999;
+        border: 1px solid var(--border, rgba(88,110,117,0.35));
+        transition: opacity 300ms ease;
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; }, 1800);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2200);
+    };
+
+    if (el) {
+      el.style.transform = 'scale(0.96)';
+      setTimeout(() => { if (el) el.style.transform = ''; }, 150);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => showToast('Email copied — reach out anytime!')).catch(() => showToast('Could not copy', true));
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Email copied — reach out anytime!');
+      } catch (e) {
+        showToast('Could not copy', true);
+      }
+      document.body.removeChild(ta);
+    }
+  };
+
+  /* ════════════════════════════════════════════════════════════════════
+     HELPERS
+     ════════════════════════════════════════════════════════════════════ */
+
+  function isImage(src) {
+    return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(src);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     INIT
+     ════════════════════════════════════════════════════════════════════ */
+
+  function init() {
+    renderNav();
+    renderHero();
+    renderNews();
+    renderProjects();
+    renderLeadership();
+    renderHonors();
+    renderFooter();
+
+    initRevealObserver();
+    initSmoothScroll();
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll(); // initial state
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
