@@ -13,6 +13,7 @@
   const $navToggle  = document.getElementById('navToggle');
   const $navMenu    = document.getElementById('navMenu');
   const $navList    = document.getElementById('navList');
+  const $heroPhoto  = document.getElementById('heroPhoto');
   const $heroBio    = document.getElementById('heroBio');
   const $heroLinks  = document.getElementById('heroLinks');
   const $newsTimeline = document.getElementById('newsTimeline');
@@ -46,13 +47,16 @@
 
   /* ── Hero ──────────────────────────────────────────────────── */
   function renderHero() {
+    if ($heroPhoto) {
+      $heroPhoto.src = PORTFOLIO.profileImage;
+    }
     if ($heroBio) {
       $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
     }
     if ($heroLinks) {
       $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
         if (item.copy) {
-          return `<button class="pill" onclick="copyToClipboard('${item.copy}', this)" aria-label="Copy email">
+          return `<button class="pill" data-action="copy" data-copy="${item.copy}" aria-label="Copy ${item.label.toLowerCase()}">
             <i class="${item.icon}"></i> ${item.label}
           </button>`;
         }
@@ -80,9 +84,9 @@
     $projectList.innerHTML = PORTFOLIO.projects.map((p, i) => {
       const isImg = isImage(p.video);
       const links = [
-        { label: 'Overview', icon: 'fas fa-eye', action: `openModal('${p.id}', 'overview')` },
-        { label: 'Team',     icon: 'fas fa-users', action: `openModal('${p.id}', 'team')` },
-        ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: `openModal('${p.id}', 'report')` }] : []),
+        { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
+        { label: 'Team',     icon: 'fas fa-users', action: 'team' },
+        ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
         ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
       ];
 
@@ -90,7 +94,7 @@
         if (l.url) {
           return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
         }
-        return `<button class="pill" onclick="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
+        return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
       }).join('');
 
       return `
@@ -144,7 +148,7 @@
      MODAL (single shared instance)
      ════════════════════════════════════════════════════════════════════ */
 
-  window.openModal = function (projectId, tab) {
+  function openModal(projectId, tab) {
     if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
 
     const proj = PORTFOLIO.projects.find(p => p.id === projectId);
@@ -170,7 +174,7 @@
     $modalOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
     $navHeader.classList.add('hidden');
-  };
+  }
 
   function closeModal() {
     if (!$modalOverlay) return;
@@ -194,6 +198,24 @@
       closeModal();
     }
   });
+
+  /* ── Event Delegation: Project modal buttons ──────────────────── */
+  if ($projectList) {
+    $projectList.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-action="modal"]');
+      if (!btn) return;
+      openModal(btn.dataset.project, btn.dataset.tab);
+    });
+  }
+
+  /* ── Event Delegation: Copy-to-clipboard buttons ──────────────── */
+  if ($heroLinks) {
+    $heroLinks.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-action="copy"]');
+      if (!btn) return;
+      copyToClipboard(btn.dataset.copy, btn);
+    });
+  }
 
   /* ════════════════════════════════════════════════════════════════════
      INTERACTIONS
@@ -339,17 +361,17 @@
   }
 
   /* ── Combined Scroll Handler (throttled) ────────────────────── */
-  let ticking = false;
+  let throttled = false;
   function onScroll() {
-    if (!ticking) {
+    if (!throttled) {
       requestAnimationFrame(function () {
         updateScrollProgress();
         updateScrollTopVisibility();
         updateActiveNav();
         updateNavVisibility();
-        ticking = false;
+        throttled = false;
       });
-      ticking = true;
+      throttled = true;
     }
   }
 
@@ -357,19 +379,11 @@
      CLIPBOARD
      ════════════════════════════════════════════════════════════════════ */
 
-  window.copyToClipboard = function (text, el) {
+  function copyToClipboard(text, el) {
     const showToast = (msg, isError) => {
       const toast = document.createElement('div');
+      toast.className = 'toast' + (isError ? ' toast--error' : '');
       toast.textContent = msg;
-      toast.style.cssText = `
-        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-        background: ${isError ? 'var(--danger, #dc322f)' : 'var(--bg-card, #073642)'};
-        color: var(--text-bright, #eee8d5);
-        padding: 12px 24px; border-radius: 8px; font-family: var(--font-heading);
-        font-weight: 600; font-size: 0.9rem; z-index: 9999;
-        border: 1px solid var(--border, rgba(88,110,117,0.35));
-        transition: opacity 300ms ease;
-      `;
       document.body.appendChild(toast);
       setTimeout(() => { toast.style.opacity = '0'; }, 1800);
       setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2200);
@@ -397,7 +411,7 @@
       }
       document.body.removeChild(ta);
     }
-  };
+  }
 
   /* ════════════════════════════════════════════════════════════════════
      HELPERS
