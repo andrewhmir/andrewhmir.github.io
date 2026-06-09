@@ -153,7 +153,7 @@ const PORTFOLIO = {
   leadership: [
     { description: "AGHAM Research Club – Founder",                           year: "June 2025 - April 2026" },
     { description: "High School Student Council – STEM-Engineering Level Representative",  year: "July 2023 - May 2025" },
-    { description: "Personnel's Week 2024 & 2026 – Event Head ", year: "July 2023 - May 2025" },
+    { description: "Personnel's Week 2024 & 2025 – Event Head ", year: "August 2023 - October 2025" },
     { description: "Media and Coverages Committee – Head",                   year: "July 2023 - May 2025" }
   ],
 
