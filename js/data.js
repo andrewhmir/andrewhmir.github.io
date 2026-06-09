@@ -11,7 +11,7 @@ const PORTFOLIO = {
   bio: [
     "My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development.",
     "All to improve everyday life for people in the Philippines and around the world.",
-    "I also like flowers and gardening in my free time."
+    "I like spending my free time gardening and caring for my flowers."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
@@ -34,8 +34,8 @@ const PORTFOLIO = {
 
   /* ── News ──────────────────────────────────────────────────────── */
   news: [
-    { date: "May 2026",   text: "Hired as a Data Engineer at Airalabs – Quezon City" },
-    { date: "April 2026", text: "Graduated High School as High Honors – San Beda Alabang, Muntinlupa City" },
+    { date: "May 2026",   text: "Started a Data Engineering Role at Airalabs – Quezon City" },
+    { date: "April 2026", text: "Graduated High School with High Honors – San Beda Alabang, Muntinlupa City" },
     { date: "April 2026", text: "Gave a Speech of Inspiration at the Heroes Tribute Celebration – San Beda Alabang, Muntinlupa City" },
     { date: "March 2026", text: "Invited as a Guest Speaker at the STEAM Ed Conference of First Eduspec Inc. – San Beda Alabang, Muntinlupa City" }
   ],
@@ -46,7 +46,7 @@ const PORTFOLIO = {
       id: "project1",
       title: "Project PALAD",
       authors: "<strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra",
-      venue: "August 2025 - Current",
+      venue: "August 2025 - April 2026",
       report: { image: "", text: "" },
       video: "files/Palad_Preview.mp4",
       links: [
@@ -68,11 +68,7 @@ const PORTFOLIO = {
       id: "project2",
       title: "BiyaHey!",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
-      venue: "March 2026 - Current",
-      report: { 
-        image: "", 
-        text: "" 
-    },
+      venue: "March 2026 - April 2026",
       video: "files/BiyaHey!.mp4",
       links: [],
       overview: {
@@ -92,10 +88,6 @@ const PORTFOLIO = {
       title: "Inventi RAG Chatbot",
       authors: "<strong>Andrew Alangcao*</strong>, James Balolong*, and Romeo Esguerra",
       venue: "August 2025 - September 2025",
-      report: { 
-        image: "", 
-        text: "" 
-    },
       video: "files/PlaceHolder.png",
       links: [
         { label: "Repository", icon: "fas fa-external-link-alt", url: "https://github.com/Jamsekun/Inventi_Asia_Hackathon/tree/develop" }
@@ -117,10 +109,6 @@ const PORTFOLIO = {
       title: "C.E.N.T.H.R.O.",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
       venue: "October 2024 - May 2025",
-      report: { 
-        image: "", 
-        text: "" 
-    },
       video: "files/CENTHRO_Preview.mp4",
       links: [
         { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=jknjW6C9JpY" }
@@ -142,10 +130,6 @@ const PORTFOLIO = {
       title: "Focus Buddy",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
       venue: "December 2023 - February 2024",
-      report: { 
-        image: "", 
-        text: "" 
-    },
       video: "files/FocusBuddy_Preview.mp4",
       links: [
         { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=SedhOQ-z65Y&t" },
@@ -175,16 +159,18 @@ const PORTFOLIO = {
 
   /* ── Honors ─────────────────────────────────────────────────────── */
   honors: [
-    { description: "Developer Camp Manila - Finalist",                                                     year: "March 2026" },
-    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",                year: "February 2026" },
-    { description: "2025 Muntinlupa Robotics Fair – Champion",                                             year: "December 2025" },
-    { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up",                year: "November 2025" },
-    { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)",                year: "July 2025" },
-    { description: "5th DLSU-D Research Conference – Best Paper Presentation",                              year: "May 2025" },
-    { description: "21st National Youth Congress – Delegate",                                               year: "March 2025" },
-    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",                year: "March 2025" },
-    { description: "2024 International Robothon – Innovative Open Category, Champion",                     year: "November 2024" },
-    { description: "20th National Youth Congress – Delegate",                                               year: "November 2023" },
-    { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",        year: "February 2023" }
+    { description: "Annual Commencement Exercises – High Honors",                                         year: "April 2026" },
+    { description: "Annual Commencement Exercises – Best in Work Immersion",                              year: "April 2026" },
+    { description: "Developer Camp Manila – Finalist",                                                    year: "March 2026" },
+    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "February 2026" },
+    { description: "2025 Muntinlupa Robotics Fair – Champion",                                            year: "December 2025" },
+    { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up",               year: "November 2025" },
+    { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)",              year: "July 2025" },
+    { description: "5th DLSU-D Research Conference – Best Paper Presentation",                            year: "May 2025" },
+    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025" },
+    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "March 2025" },
+    { description: "2024 International Robothon – Innovative Open Category, Champion",                    year: "November 2024" },
+    { description: "20th National Youth Congress – Delegate",                                             year: "November 2023" },
+    { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",       year: "February 2023" }
   ]
 };

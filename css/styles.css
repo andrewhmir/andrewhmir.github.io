@@ -2,7 +2,32 @@
    Portfolio Styles — Solarized Dark · Flat · Clean
    ========================================================================== */
 
-/* ── Custom Properties (Solarized Palette) ─────────────────────────── */
+/*
+   Table of Contents
+   ─────────────────
+   1.  Custom Properties
+   2.  Reset & Base
+   3.  Typography
+   4.  Layout: Container, Section
+   5.  Scroll Progress
+   6.  Navigation
+   7.  Hero
+   8.  Buttons / Pills
+   9.  Timeline (News)
+   10. Project Cards
+   11. Modal / Popup
+   12. Record Lists (Leadership / Honors)
+   13. Footer
+   14. Scroll-to-Top Button
+   15. Toast Notification
+   16. Utility Classes
+   17. Reduced Motion
+   18. Hover States
+   19. Nav Backdrop (mobile)
+   20. Responsive
+   ========================================================================== */
+
+/* ── 1. Custom Properties (Solarized Palette) ─────────────────────── */
 :root {
   /* Backgrounds */
   --bg-deep:    #002b36;  /* base03 */
@@ -45,7 +70,7 @@
   --navbar-h: 56px;
 }
 
-/* ── Reset & Base ──────────────────────────────────────────────────── */
+/* ── 2. Reset & Base ────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -69,7 +94,7 @@ body {
   min-height: 100vh;
 }
 
-/* ── Typography ────────────────────────────────────────────────────── */
+/* ── 3. Typography ──────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   color: var(--text-heading);
@@ -93,7 +118,7 @@ b, strong {
   color: var(--bg-deep);
 }
 
-/* ── Container ──────────────────────────────────────────────────────── */
+/* ── 4. Container ────────────────────────────────────────────────────── */
 .container {
   max-width: 960px;
   margin: 0 auto;
@@ -131,7 +156,7 @@ b, strong {
   font-size: 0.85rem;
 }
 
-/* ── Scroll Progress ────────────────────────────────────────────────── */
+/* ── 5. Scroll Progress ──────────────────────────────────────────────── */
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -143,7 +168,7 @@ b, strong {
   transition: width 60ms linear;
 }
 
-/* ── Navigation ─────────────────────────────────────────────────────── */
+/* ── 6. Navigation ───────────────────────────────────────────────────── */
 .nav-header {
   position: fixed;
   top: 0;
@@ -229,7 +254,7 @@ b, strong {
   background: var(--bg-card);
 }
 
-/* ── Hero ───────────────────────────────────────────────────────────── */
+/* ── 7. Hero ─────────────────────────────────────────────────────────── */
 .hero {
   padding-top: calc(var(--navbar-h) + 140px);
   padding-bottom: 80px;
@@ -292,7 +317,7 @@ b, strong {
   margin-top: 32px;
 }
 
-/* ── Buttons / Links (Pills) ──────────────────────────────────────── */
+/* ── 8. Buttons / Links (Pills) ────────────────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -317,7 +342,7 @@ b, strong {
   color: var(--accent);
 }
 
-/* ── Timeline (News) ────────────────────────────────────────────────── */
+/* ── 9. Timeline (News) ──────────────────────────────────────────────── */
 .timeline {
   position: relative;
   padding-left: 28px;
@@ -359,7 +384,7 @@ b, strong {
   line-height: 1.65;
 }
 
-/* ── Project Cards ──────────────────────────────────────────────────── */
+/* ── 10. Project Cards ────────────────────────────────────────────────── */
 .project-list {
   display: flex;
   flex-direction: column;
@@ -445,7 +470,7 @@ b, strong {
   padding: 6px 14px;
 }
 
-/* ── Modal / Popup ──────────────────────────────────────────────────── */
+/* ── 11. Modal / Popup ────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -549,7 +574,7 @@ b, strong {
   font-size: 0.95rem;
 }
 
-/* ── Record Lists (Leadership / Honors) ─────────────────────────────── */
+/* ── 12. Record Lists (Leadership / Honors) ───────────────────────────── */
 .record-list {
   display: flex;
   flex-direction: column;
@@ -586,7 +611,7 @@ b, strong {
   padding-top: 3px;
 }
 
-/* ── Footer ─────────────────────────────────────────────────────────── */
+/* ── 13. Footer ───────────────────────────────────────────────────────── */
 .site-footer {
   padding: 48px 0;
   text-align: center;
@@ -596,7 +621,7 @@ b, strong {
   letter-spacing: 0.03em;
 }
 
-/* ── Scroll-to-Top Button ───────────────────────────────────────────── */
+/* ── 14. Scroll-to-Top Button ─────────────────────────────────────────── */
 .scroll-top {
   position: fixed;
   bottom: 28px;
@@ -621,7 +646,29 @@ b, strong {
   pointer-events: auto;
 }
 
-/* ── Utility: Fade-in Reveal ──────────────────────────────────────── */
+/* ── 15. Toast Notification ───────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-bright);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.9rem;
+  z-index: 9999;
+  border: 1px solid var(--border);
+  transition: opacity 300ms ease;
+}
+
+.toast--error {
+  background: var(--danger);
+}
+
+/* ── 16. Utility: Fade-in Reveal ────────────────────────────────────── */
 .reveal {
   opacity: 0;
   transform: translateY(24px);
@@ -634,7 +681,7 @@ b, strong {
   transform: translateY(0);
 }
 
-/* ── Utility: Screen Reader Only ──────────────────────────────────── */
+/* ── 16. Utility: Screen Reader Only ────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -647,7 +694,7 @@ b, strong {
   border: 0;
 }
 
-/* ── Reduced Motion ─────────────────────────────────────────────────── */
+/* ── 17. Reduced Motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -661,7 +708,7 @@ b, strong {
   }
 }
 
-/* ── Hover States (only for devices with hover-capable pointers) ─── */
+/* ── 18. Hover States (only for devices with hover-capable pointers) ─── */
 @media (hover: hover) {
   a:hover {
     color: var(--accent-alt);
@@ -714,7 +761,7 @@ b, strong {
   }
 }
 
-/* ── Nav Backdrop (mobile) ───────────────────────────────────────── */
+/* ── 19. Nav Backdrop (mobile) ─────────────────────────────────────── */
 .nav-backdrop {
   display: none;
   position: fixed;
@@ -730,7 +777,7 @@ b, strong {
 }
 
 /* ==========================================================================
-   Responsive
+   20. Responsive
    ========================================================================== */
 
 /* Tablet & Small Desktop */
