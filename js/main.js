@@ -46,9 +46,37 @@
   }
 
   /* ── Hero ──────────────────────────────────────────────────── */
+
+  /* Sync photo height to match bio text box (desktop only).
+     flexbox stretch is unreliable on replaced <img> elements, so we
+     explicitly set height from the bio container's computed height. */
+  var MOBILE_BP = 768;
+  function syncPhotoHeight() {
+    if (!$heroPhoto || !$heroBio) return;
+    if (window.innerWidth <= MOBILE_BP) {
+      /* Mobile: CSS handles fixed 100×100 — reset inline styles */
+      $heroPhoto.style.height = '';
+      $heroPhoto.style.width  = '';
+      return;
+    }
+    var bioH = $heroBio.offsetHeight;
+    if (bioH > 0) {
+      $heroPhoto.style.height = bioH + 'px';
+      $heroPhoto.style.width  = 'auto';
+    }
+  }
+
+  var _resizeTimer;
+  function onResize() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(syncPhotoHeight, 80);
+  }
+
   function renderHero() {
     if ($heroPhoto) {
       $heroPhoto.src = PORTFOLIO.profileImage;
+      /* Sync once image loads so we have correct intrinsic dimensions */
+      $heroPhoto.addEventListener('load', syncPhotoHeight, { once: true });
     }
     if ($heroBio) {
       $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
@@ -65,6 +93,9 @@
         </a>`;
       }).join('');
     }
+    /* Initial sync + listen for resize */
+    syncPhotoHeight();
+    window.addEventListener('resize', onResize);
   }
 
   /* ── News Timeline ──────────────────────────────────────────── */
