@@ -8,23 +8,24 @@
    1.  Custom Properties
    2.  Reset & Base
    3.  Typography
-   4.  Layout: Container, Section
-   5.  Scroll Progress
-   6.  Navigation
-   7.  Hero
-   8.  Buttons / Pills
-   9.  Timeline (News)
-   10. Project Cards
-   11. Modal / Popup
-   12. Record Lists (Leadership / Honors)
-   13. Footer
-   14. Scroll-to-Top Button
-   15. Toast Notification
-   16. Utility Classes
-   17. Reduced Motion
-   18. Hover States
-   19. Nav Backdrop (mobile)
-   20. Responsive
+   4.  Atmosphere (Painting, Grain)
+   5.  Layout: Container, Section
+   6.  Scroll Progress
+   7.  Navigation
+   8.  Hero
+   9.  Buttons / Pills
+   10. Timeline (News)
+   11. Project Cards
+   12. Modal / Popup
+   13. Record Lists (Leadership / Honors)
+   14. Footer
+   15. Scroll-to-Top Button
+   16. Toast Notification
+   17. Utility Classes
+   18. Reduced Motion
+   19. Hover States
+   20. Nav Backdrop (mobile)
+   21. Responsive
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */
@@ -151,7 +152,49 @@ p:last-child {
   margin-bottom: 0;
 }
 
-/* ── 4. Container ────────────────────────────────────────────────────── */
+/* ── 4. Atmosphere ────────────────────────────────────────────────── */
+
+/* Fixed layer behind all content */
+.bg-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Full-bleed painting — the soul of the site */
+.bg-painting {
+  position: absolute;
+  inset: -5%;
+  width: 110%;
+  height: 110%;
+  background-image: url('../files/painting.jpg');
+  background-size: cover;
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  /* Strong presence at top, fades toward bottom */
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
+  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
+}
+
+/* Subtle grain overlay — using CSS noise via SVG data URI */
+.bg-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Content sits above atmosphere */
+.content-layer {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── 5. Container ────────────────────────────────────────────────────── */
 .container {
   max-width: 960px;
   margin: 0 auto;
@@ -189,7 +232,7 @@ p:last-child {
   font-size: 0.85rem;
 }
 
-/* ── 5. Scroll Progress ──────────────────────────────────────────────── */
+/* ── 6. Scroll Progress ──────────────────────────────────────────────── */
 .scroll-progress {
   position: fixed;
   top: 0;
@@ -201,7 +244,7 @@ p:last-child {
   transition: width 60ms linear;
 }
 
-/* ── 6. Navigation ───────────────────────────────────────────────────── */
+/* ── 7. Navigation ───────────────────────────────────────────────────── */
 .nav-header {
   position: fixed;
   top: 0;
@@ -287,7 +330,7 @@ p:last-child {
   background: var(--bg-card);
 }
 
-/* ── 7. Hero ─────────────────────────────────────────────────────────── */
+/* ── 8. Hero ─────────────────────────────────────────────────────────── */
 .hero {
   padding-top: calc(var(--navbar-h) + 140px);
   padding-bottom: 80px;
@@ -350,7 +393,7 @@ p:last-child {
   margin-top: 32px;
 }
 
-/* ── 8. Buttons / Links (Pills) ────────────────────────────────────── */
+/* ── 9. Buttons / Links (Pills) ────────────────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
@@ -375,7 +418,7 @@ p:last-child {
   color: var(--accent);
 }
 
-/* ── 9. Timeline (News) ──────────────────────────────────────────────── */
+/* ── 10. Timeline (News) ──────────────────────────────────────────────── */
 .timeline {
   position: relative;
   padding-left: 28px;
@@ -417,7 +460,7 @@ p:last-child {
   line-height: 1.65;
 }
 
-/* ── 10. Project Cards ────────────────────────────────────────────────── */
+/* ── 11. Project Cards ────────────────────────────────────────────────── */
 .project-list {
   display: flex;
   flex-direction: column;
@@ -503,7 +546,7 @@ p:last-child {
   padding: 6px 14px;
 }
 
-/* ── 11. Modal / Popup ────────────────────────────────────────────────── */
+/* ── 12. Modal / Popup ────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -607,7 +650,7 @@ p:last-child {
   font-size: 0.95rem;
 }
 
-/* ── 12. Record Lists (Leadership / Honors) ───────────────────────────── */
+/* ── 13. Record Lists (Leadership / Honors) ───────────────────────────── */
 .record-list {
   display: flex;
   flex-direction: column;
@@ -644,7 +687,7 @@ p:last-child {
   padding-top: 3px;
 }
 
-/* ── 13. Footer ───────────────────────────────────────────────────────── */
+/* ── 14. Footer ───────────────────────────────────────────────────────── */
 .site-footer {
   padding: 48px 0;
   text-align: center;
@@ -654,7 +697,7 @@ p:last-child {
   letter-spacing: 0.03em;
 }
 
-/* ── 14. Scroll-to-Top Button ─────────────────────────────────────────── */
+/* ── 15. Scroll-to-Top Button ─────────────────────────────────────────── */
 .scroll-top {
   position: fixed;
   bottom: 28px;
@@ -679,7 +722,7 @@ p:last-child {
   pointer-events: auto;
 }
 
-/* ── 15. Toast Notification ───────────────────────────────────────────── */
+/* ── 16. Toast Notification ───────────────────────────────────────────── */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -701,7 +744,7 @@ p:last-child {
   background: var(--danger);
 }
 
-/* ── 16. Utility: Fade-in Reveal ────────────────────────────────────── */
+/* ── 17. Utility: Fade-in Reveal ────────────────────────────────────── */
 .reveal {
   opacity: 0;
   transform: translateY(24px);
@@ -714,7 +757,7 @@ p:last-child {
   transform: translateY(0);
 }
 
-/* ── 16. Utility: Screen Reader Only ────────────────────────────────── */
+/* ── 17. Utility: Screen Reader Only ────────────────────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -727,7 +770,7 @@ p:last-child {
   border: 0;
 }
 
-/* ── 17. Reduced Motion ───────────────────────────────────────────────── */
+/* ── 18. Reduced Motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -741,7 +784,7 @@ p:last-child {
   }
 }
 
-/* ── 18. Hover States (only for devices with hover-capable pointers) ─── */
+/* ── 19. Hover States (only for devices with hover-capable pointers) ─── */
 @media (hover: hover) {
   a:hover {
     color: var(--accent-alt);
@@ -794,7 +837,7 @@ p:last-child {
   }
 }
 
-/* ── 19. Nav Backdrop (mobile) ─────────────────────────────────────── */
+/* ── 20. Nav Backdrop (mobile) ─────────────────────────────────────── */
 .nav-backdrop {
   display: none;
   position: fixed;
@@ -810,7 +853,7 @@ p:last-child {
 }
 
 /* ==========================================================================
-   20. Responsive
+   21. Responsive
    ========================================================================== */
 
 /* Tablet & Small Desktop */
