@@ -424,13 +424,22 @@ p:last-child {
     radial-gradient(ellipse 900px 600px at 50% 20%, rgba(200, 137, 46, 0.05) 0%, transparent 70%);
 }
 
+/* Photo + bio side by side */
+.hero-intro .container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-xl) var(--space-2xl);
+}
+
 .hero-photo-print {
-  width: 100px;
-  height: 100px;
+  width: 140px;
+  height: 140px;
   border-radius: var(--radius-sm);
   object-fit: cover;
   display: block;
-  margin: 0 auto var(--space-xl);
+  flex-shrink: 0;
   border: 3px solid var(--border-2);
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
   /* Warm print tone via sepia filter */
@@ -438,10 +447,11 @@ p:last-child {
 }
 
 .hero-bio-container {
+  flex: 1;
+  min-width: 280px;
   max-width: 560px;
-  margin: 0 auto var(--space-2xl);
   padding: var(--space-xl) var(--space-xl) var(--space-lg);
-  text-align: center;
+  text-align: left;
   font-size: 1.1rem;
   line-height: 1.9;
   color: var(--text-body);
@@ -455,7 +465,7 @@ p:last-child {
   display: block;
   width: 40px;
   height: 1px;
-  margin: 0 auto var(--space-lg);
+  margin: 0 0 var(--space-lg);
   background: var(--accent);
   opacity: 0.4;
 }
@@ -470,6 +480,7 @@ p:last-child {
 }
 
 .hero-links {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -1110,14 +1121,27 @@ p:last-child {
     font-size: 1.3rem;
   }
 
+  .hero-intro .container {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+
   .hero-photo-print {
-    width: 80px;
-    height: 80px;
-    margin-bottom: var(--space-lg);
+    width: 100px;
+    height: 100px;
   }
 
   .hero-bio-container {
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    text-align: center;
     font-size: 0.95rem;
+  }
+
+  .hero-bio-container::before {
+    margin: 0 auto var(--space-md);
   }
 
   .pill {
