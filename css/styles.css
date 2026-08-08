@@ -421,8 +421,7 @@ p:last-child {
 .hero-intro {
   padding: var(--space-5xl) 0 var(--space-4xl);
   background:
-    radial-gradient(ellipse 900px 600px at 50% 20%, rgba(200, 137, 46, 0.05) 0%, transparent 70%),
-    linear-gradient(to bottom, transparent 0%, var(--bg-root) 70%);
+    radial-gradient(ellipse 900px 600px at 50% 20%, rgba(200, 137, 46, 0.05) 0%, transparent 70%);
 }
 
 .hero-photo-print {
