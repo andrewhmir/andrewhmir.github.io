@@ -603,6 +603,31 @@ p:last-child {
   margin-bottom: 4px;
 }
 
+.project-source {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+  margin-left: 10px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  line-height: 1.6;
+}
+
+.project-source--open {
+  color: var(--accent);
+  border: 1px solid rgba(200, 137, 46, 0.35);
+  background: rgba(200, 137, 46, 0.08);
+}
+
+.project-source--closed {
+  color: var(--text-muted);
+  border: 1px solid var(--border-1);
+  background: var(--surface-1);
+}
+
 .project-authors {
   font-size: 0.82rem;
   color: var(--text-muted);

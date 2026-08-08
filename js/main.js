@@ -128,6 +128,10 @@
       ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
     ];
 
+    const sourceBadge = p.source
+      ? `<span class="project-source project-source--${p.source}">${p.source === 'open' ? 'Open Source' : 'Closed Source'}${p.sourceNote ? ' · ' + p.sourceNote : ''}</span>`
+      : '';
+
     const pills = links.map(l => {
       if (l.url) {
         return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
@@ -144,7 +148,7 @@
              </video>`
         }
         <div class="project-info">
-          <h3 class="project-title">${p.title}</h3>
+          <h3 class="project-title">${p.title}${sourceBadge}</h3>
           <p class="project-authors">${p.authors}</p>
           <span class="project-venue">${p.venue}</span>
           <div class="project-links">${pills}</div>
