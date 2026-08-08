@@ -552,7 +552,7 @@ p:last-child {
 
 .project-thumb {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
@@ -885,6 +885,8 @@ p:last-child {
 
 .modal-image-wrap img {
   width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   display: block;
 }
 
@@ -973,7 +975,6 @@ p:last-child {
   }
 
   .project-thumb {
-    aspect-ratio: 16 / 9;
     max-height: 260px;
   }
 
