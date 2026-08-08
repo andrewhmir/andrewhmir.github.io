@@ -82,6 +82,9 @@
   function renderProjects() {
     if (!$projectList) return;
     $projectList.innerHTML = PORTFOLIO.projects.map((p, i) => {
+      // Solo projects: author string has no comma → single author
+      const isSolo = !p.authors.includes(',');
+      const soloClass = isSolo ? ' project-card--solo' : '';
       const isImg = isImage(p.video);
       const links = [
         { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
@@ -98,7 +101,7 @@
       }).join('');
 
       return `
-        <div class="project-card reveal" style="transition-delay: ${i * 80}ms">
+        <div class="project-card${soloClass} reveal" style="transition-delay: ${i * 80}ms">
           ${isImg
             ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
             : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
