@@ -435,8 +435,7 @@ p:last-child {
 
 .hero-photo-print {
   display: block;
-  width: auto;
-  max-width: 200px;
+  width: 200px;
   height: auto;
   flex-shrink: 0;
   align-self: stretch;
