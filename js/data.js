@@ -72,8 +72,8 @@ const PORTFOLIO = {
       video: "files/BiyaHey!.mp4",
       links: [],
       overview: {
-        image: "files/Nailong.png",
-        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to aggregate real routes shared by commuters with current existing datasets and summarizes them through an AI engine into clear, step by step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
+        image: "files/BiyaHey_Overview.jpg",
+        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to combine real routes shared by commuters with existing datasets and summarize them through an AI engine into clear, step-by-step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
       },
       team: {
         image: "files/BiyaHey_Team.jpg",
