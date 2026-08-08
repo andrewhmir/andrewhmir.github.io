@@ -47,6 +47,7 @@ const PORTFOLIO = {
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra",
       venue: "August 2025 - April 2026",
+      source: "closed",
       report: { image: "", text: "" },
       video: "files/Palad_Preview.mp4",
       links: [
@@ -70,6 +71,7 @@ const PORTFOLIO = {
       category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Derrick Valdellon*, and Darryl Ty*",
       venue: "June 2026 - Current",
+      source: "closed",
       video: "files/PlaceHolder.png",
       links: [],
       overview: {
@@ -89,6 +91,7 @@ const PORTFOLIO = {
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
       venue: "October 2024 - May 2025",
+      source: "closed",
       video: "files/CENTHRO_Preview.mp4",
       links: [
         { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=jknjW6C9JpY" }
@@ -111,6 +114,7 @@ const PORTFOLIO = {
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
       venue: "December 2023 - February 2024",
+      source: "closed",
       video: "files/FocusBuddy_Preview.mp4",
       links: [
         { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=SedhOQ-z65Y&t" },
@@ -134,6 +138,7 @@ const PORTFOLIO = {
       category: "Software",
       authors: "<strong>Andrew Alangcao</strong>",
       venue: "July 2026 - Current",
+      source: "open",
       video: "files/PlaceHolder.png",
       links: [],
       overview: {
@@ -153,6 +158,7 @@ const PORTFOLIO = {
       category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",
+      source: "closed",
       video: "files/BiyaHey!.mp4",
       links: [],
       overview: {
