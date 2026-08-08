@@ -20,8 +20,7 @@ const PORTFOLIO = {
   social: [
     { label: "Resume",    icon: "fas fa-file-alt",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
     { label: "GitHub",    icon: "fab fa-github",     url: "https://github.com/andrewhmir" },
-    { label: "LinkedIn",  icon: "fab fa-linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" },
-    { label: "Email",     icon: "fas fa-envelope",   copy: "andrew.alangcao@gmail.com" }
+    { label: "LinkedIn",  icon: "fab fa-linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" }
   ],
 
   /* ── Navigation ─────────────────────────────────────────────────── */
