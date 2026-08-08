@@ -44,7 +44,7 @@
   /* Text — cream/paper tones, not cold gray */
   --text-bright:   #f5f0e8;
   --text-body:     #b8b0a0;
-  --text-muted:    #706860;
+  --text-muted:    #9e9488;
 
   /* Accent — warm amber/ochre */
   --accent:        #c8892e;
@@ -172,7 +172,7 @@ p:last-child {
   background-position: center 30%;
   background-repeat: no-repeat;
   /* Strong presence at top, fades toward bottom */
-  opacity: 0.6;
+  opacity: 0.5;
   -webkit-mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
   mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
 }
@@ -206,10 +206,6 @@ p:last-child {
   padding: 100px 0;
 }
 
-/* Warm section divider — a thin rule, not a full border */
-.section + .section {
-  border-top: 1px solid var(--border-1);
-}
 
 /* Section label — conversational, not monospaced uppercase */
 .section-label {
