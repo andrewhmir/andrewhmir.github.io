@@ -347,6 +347,7 @@ p:last-child {
 
 .hero-painting-stage {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1096,10 +1097,6 @@ p:last-child {
     grid-template-columns: 1fr;
   }
 
-  .hero-painting-stage {
-    min-height: 80vh;
-  }
-
   .hero-signature {
     font-size: 1.6rem;
   }
@@ -1155,10 +1152,6 @@ p:last-child {
   /* Heading margin shrinks to 24px here — keep the note 8px below it */
   .section-note {
     margin-top: -16px;
-  }
-
-  .hero-painting-stage {
-    min-height: 70vh;
   }
 
   .hero-signature {
