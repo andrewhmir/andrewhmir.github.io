@@ -15,6 +15,7 @@
   const $navList    = document.getElementById('navList');
   const $heroPhoto  = document.getElementById('heroPhoto');
   const $heroBio    = document.getElementById('heroBio');
+  const $heroEmail  = document.getElementById('heroEmail');
   const $heroLinks  = document.getElementById('heroLinks');
   const $newsTimeline = document.getElementById('newsTimeline');
   const $projectList  = document.getElementById('projectList');
@@ -80,6 +81,11 @@
     }
     if ($heroBio) {
       $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
+    }
+    if ($heroEmail) {
+      const obfuscated = PORTFOLIO.email.replace('.', ' [dot] ').replace('@', ' [at] ').replace('.', ' [dot] ');
+      $heroEmail.innerHTML = `<i class="far fa-envelope" style="margin-right:7px;"></i>${obfuscated}`;
+      $heroEmail.dataset.copy = PORTFOLIO.email;
     }
     if ($heroLinks) {
       $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
@@ -286,6 +292,13 @@
       const btn = e.target.closest('[data-action="copy"]');
       if (!btn) return;
       copyToClipboard(btn.dataset.copy, btn);
+    });
+  }
+
+  /* Email click-to-copy */
+  if ($heroEmail) {
+    $heroEmail.addEventListener('click', function () {
+      copyToClipboard($heroEmail.dataset.copy, $heroEmail);
     });
   }
 
