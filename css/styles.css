@@ -194,42 +194,48 @@ p:last-child {
   z-index: 1;
 }
 
-/* ── 5. Container ────────────────────────────────────────────────────── */
+/* ── 5. Layout ──────────────────────────────────────────────────── */
 .container {
-  max-width: 960px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 0 var(--space-lg);
+  padding: 0 var(--space-xl);
 }
 
-/* ── Section ────────────────────────────────────────────────────────── */
 .section {
-  padding: 40px 0;
+  padding: 100px 0;
+}
+
+/* Warm section divider — a thin rule, not a full border */
+.section + .section {
+  border-top: 1px solid var(--border-1);
+}
+
+/* Section label — conversational, not monospaced uppercase */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
 }
 
 .section-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 0;
-  padding-bottom: var(--space-md);
-}
-
-.section-heading::after {
-  content: '';
-  display: block;
-  width: 40px;
-  height: 2px;
-  background: var(--accent);
-  margin-top: var(--space-sm);
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text-bright);
+  margin-bottom: var(--space-2xl);
+  line-height: 1.1;
 }
 
 .section-note {
-  font-style: italic;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
   color: var(--text-muted);
+  margin-top: -36px;
   margin-bottom: var(--space-xl);
-  font-size: 0.85rem;
 }
 
 /* ── 6. Scroll Progress ──────────────────────────────────────────────── */
@@ -244,42 +250,66 @@ p:last-child {
   transition: width 60ms linear;
 }
 
-/* ── 7. Navigation ───────────────────────────────────────────────────── */
+/* ── 7. Navigation — simple, warm, appears on scroll-up ─────────── */
 .nav-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--navbar-h);
-  background: var(--bg-deep);
-  border-bottom: 1px solid var(--border);
   z-index: 1000;
-  transition: transform var(--transition);
+  padding: 16px var(--space-xl);
+  background: linear-gradient(to bottom, var(--bg-root) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 300ms var(--ease-out),
+              opacity 300ms ease;
 }
 
 .nav-header.hidden {
   transform: translateY(-100%);
-}
-
-.nav-inner {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 0 var(--space-lg);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  opacity: 0;
 }
 
 .nav-brand {
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
+  font-weight: 400;
+  font-style: italic;
   color: var(--text-bright);
-  letter-spacing: -0.02em;
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
-/* Hamburger */
+.nav-brand:hover {
+  color: var(--accent);
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  gap: 2px;
+}
+
+.nav-list a {
+  display: block;
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast),
+              background var(--transition-fast);
+}
+
+.nav-list a:hover,
+.nav-list a.active {
+  color: var(--text-bright);
+  background: var(--surface-1);
+}
+
+/* Hamburger (mobile) */
 .nav-toggle {
   display: none;
   flex-direction: column;
@@ -288,46 +318,23 @@ p:last-child {
   border: none;
   cursor: pointer;
   padding: var(--space-sm);
+  z-index: 1010;
 }
 
 .nav-toggle-bar {
   display: block;
   width: 22px;
   height: 2px;
-  background: var(--text-heading);
+  background: var(--text-bright);
   border-radius: 1px;
-  transition: transform var(--transition), opacity var(--transition);
+  transition: transform var(--transition-base), opacity var(--transition-base);
 }
 
-/* Animate to X when open */
 .nav-toggle.open .nav-toggle-bar:first-child {
   transform: translateY(7px) rotate(45deg);
 }
-
 .nav-toggle.open .nav-toggle-bar:last-child {
   transform: translateY(-7px) rotate(-45deg);
-}
-
-.nav-list {
-  list-style: none;
-  display: flex;
-  gap: var(--space-sm);
-}
-
-.nav-list a {
-  display: block;
-  padding: var(--space-sm) var(--space-md);
-  font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: var(--text-body);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition), color var(--transition);
-}
-
-.nav-list a.active {
-  color: var(--text-bright);
-  background: var(--bg-card);
 }
 
 /* ── 8. Hero ─────────────────────────────────────────────────────────── */
@@ -790,15 +797,6 @@ p:last-child {
     color: var(--accent-alt);
   }
 
-  .nav-brand:hover {
-    color: var(--accent);
-  }
-
-  .nav-list a:hover {
-    color: var(--text-bright);
-    background: var(--bg-card);
-  }
-
   .hero-photo:hover {
     filter: saturate(1) brightness(1);
   }
@@ -900,26 +898,6 @@ p:last-child {
   /* Mobile nav */
   .nav-toggle {
     display: flex;
-  }
-
-  .nav-menu {
-    position: fixed;
-    top: var(--navbar-h);
-    left: 0;
-    right: 0;
-    background: var(--bg-deep);
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-md);
-    transform: translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 200ms ease, opacity 200ms ease;
-  }
-
-  .nav-menu.open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .nav-list {
