@@ -45,6 +45,7 @@ const PORTFOLIO = {
     {
       id: "project1",
       title: "Project PALAD",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra",
       venue: "August 2025 - April 2026",
       report: { image: "", text: "" },
@@ -67,6 +68,7 @@ const PORTFOLIO = {
     {
       id: "project2",
       title: "BiyaHey!",
+      category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",
       video: "files/BiyaHey!.mp4",
@@ -86,6 +88,7 @@ const PORTFOLIO = {
     {
       id: "project3",
       title: "Inventi RAG Chatbot",
+      category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, James Balolong*, and Romeo Esguerra",
       venue: "August 2025 - September 2025",
       video: "files/PlaceHolder.png",
@@ -107,6 +110,7 @@ const PORTFOLIO = {
     {
       id: "project4",
       title: "C.E.N.T.H.R.O.",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
       venue: "October 2024 - May 2025",
       video: "files/CENTHRO_Preview.mp4",
@@ -128,6 +132,7 @@ const PORTFOLIO = {
     {
       id: "project5",
       title: "Focus Buddy",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
       venue: "December 2023 - February 2024",
       video: "files/FocusBuddy_Preview.mp4",

@@ -79,43 +79,81 @@
   }
 
   /* ── Projects ──────────────────────────────────────────────── */
+  function renderProjectCard(p, i) {
+    const isSolo = !p.authors.includes(',');
+    const soloClass = isSolo ? ' project-card--solo' : '';
+    const isImg = isImage(p.video);
+    const links = [
+      { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
+      { label: 'Team',     icon: 'fas fa-users', action: 'team' },
+      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
+      ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
+    ];
+
+    const pills = links.map(l => {
+      if (l.url) {
+        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
+      }
+      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
+    }).join('');
+
+    return `
+      <div class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
+        ${isImg
+          ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
+          : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
+              <source src="${p.video}" type="video/mp4">
+             </video>`
+        }
+        <div class="project-info">
+          <h3 class="project-title">${p.title}</h3>
+          <p class="project-authors">${p.authors}</p>
+          <span class="project-venue">${p.venue}</span>
+          <div class="project-links">${pills}</div>
+        </div>
+      </div>`;
+  }
+
   function renderProjects() {
     if (!$projectList) return;
-    $projectList.innerHTML = PORTFOLIO.projects.map((p, i) => {
-      // Solo projects: author string has no comma → single author
-      const isSolo = !p.authors.includes(',');
-      const soloClass = isSolo ? ' project-card--solo' : '';
-      const isImg = isImage(p.video);
-      const links = [
-        { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
-        { label: 'Team',     icon: 'fas fa-users', action: 'team' },
-        ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
-        ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
-      ];
 
-      const pills = links.map(l => {
-        if (l.url) {
-          return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
-        }
-        return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
-      }).join('');
+    // Group projects by category, preserving category order
+    var cats = [];
+    var groups = {};
+    PORTFOLIO.projects.forEach(function (p) {
+      var cat = p.category || '';
+      if (!groups[cat]) {
+        groups[cat] = [];
+        cats.push(cat);
+      }
+      groups[cat].push(p);
+    });
 
-      return `
-        <div class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
-          ${isImg
-            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-            : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
-                <source src="${p.video}" type="video/mp4">
-               </video>`
-          }
-          <div class="project-info">
-            <h3 class="project-title">${p.title}</h3>
-            <p class="project-authors">${p.authors}</p>
-            <span class="project-venue">${p.venue}</span>
-            <div class="project-links">${pills}</div>
-          </div>
-        </div>`;
-    }).join('');
+    // Reorder: Software first, then Robotics, then any uncategorized
+    var order = ['Software', 'Robotics'];
+    var ordered = [];
+    order.forEach(function (cat) {
+      if (groups[cat]) {
+        ordered.push({ category: cat, projects: groups[cat] });
+        delete groups[cat];
+      }
+    });
+    // Append any remaining categories not in the explicit order
+    cats.forEach(function (cat) {
+      if (groups[cat]) {
+        ordered.push({ category: cat, projects: groups[cat] });
+      }
+    });
+
+    var cardIndex = 0;
+    var html = '';
+    ordered.forEach(function (group) {
+      html += '<h3 class="project-subheading">' + group.category + '</h3>';
+      group.projects.forEach(function (p) {
+        html += renderProjectCard(p, cardIndex++);
+      });
+    });
+    $projectList.innerHTML = html;
   }
 
   /* ── Leadership ─────────────────────────────────────────────── */

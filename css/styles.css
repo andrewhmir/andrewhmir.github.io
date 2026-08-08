@@ -506,6 +506,7 @@ p:last-child {
 .project-card {
   display: flex;
   flex-direction: column;
+  gap: var(--space-md);
   padding: var(--space-lg);
   background: var(--surface-1);
   border: 1px solid var(--border-1);
@@ -663,6 +664,20 @@ p:last-child {
 /* Honors get a subtle highlight different from leadership */
 .record-list--honors .record-item:hover {
   border-left-color: var(--accent-2);
+}
+
+/* Subheading separating project categories — spans the full grid */
+.project-subheading {
+  grid-column: 1 / -1;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-bright);
+  margin-bottom: var(--space-sm);
+}
+
+.project-subheading:not(:first-child) {
+  margin-top: var(--space-xl);
 }
 
 /* Subheading separating Honors from Leadership within #Records */
@@ -930,10 +945,6 @@ p:last-child {
 
   .project-list {
     grid-template-columns: 1fr 1fr;
-  }
-
-  .project-card {
-    gap: var(--space-md);
   }
 
   .project-thumb {
