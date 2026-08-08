@@ -15,6 +15,7 @@
   const $navList    = document.getElementById('navList');
   const $heroPhoto  = document.getElementById('heroPhoto');
   const $heroBio    = document.getElementById('heroBio');
+  const $heroEmail  = document.getElementById('heroEmail');
   const $heroLinks  = document.getElementById('heroLinks');
   const $newsTimeline = document.getElementById('newsTimeline');
   const $projectList  = document.getElementById('projectList');
@@ -26,7 +27,7 @@
   const $modalImage     = document.getElementById('modalImage');
   const $modalBody      = document.getElementById('modalBody');
   const $footerYear     = document.getElementById('currentYear');
-  const $bgPainting     = document.querySelector('.bg-painting');
+  const $footerEmail    = document.getElementById('footerEmail');
 
   /* ── Guard ──────────────────────────────────────────────────────── */
   if (typeof PORTFOLIO === 'undefined') {
@@ -47,12 +48,45 @@
   }
 
   /* ── Hero ──────────────────────────────────────────────────── */
+
+  /* Sync photo height to match bio text box (desktop only).
+     flexbox stretch is unreliable on replaced <img> elements, so we
+     explicitly set height from the bio container's computed height. */
+  var MOBILE_BP = 768;
+  function syncPhotoHeight() {
+    if (!$heroPhoto || !$heroBio) return;
+    if (window.innerWidth <= MOBILE_BP) {
+      /* Mobile: CSS handles fixed 100×100 — reset inline styles */
+      $heroPhoto.style.height = '';
+      $heroPhoto.style.width  = '';
+      return;
+    }
+    var bioH = $heroBio.offsetHeight;
+    if (bioH > 0) {
+      $heroPhoto.style.height = bioH + 'px';
+      $heroPhoto.style.width  = 'auto';
+    }
+  }
+
+  var _resizeTimer;
+  function onResize() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(syncPhotoHeight, 80);
+  }
+
   function renderHero() {
     if ($heroPhoto) {
       $heroPhoto.src = PORTFOLIO.profileImage;
+      /* Sync once image loads so we have correct intrinsic dimensions */
+      $heroPhoto.addEventListener('load', syncPhotoHeight, { once: true });
     }
     if ($heroBio) {
       $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
+    }
+    if ($heroEmail) {
+      const obfuscated = PORTFOLIO.email.replace('.', ' [dot] ').replace('@', ' [at] ').replace('.', ' [dot] ');
+      $heroEmail.innerHTML = `<i class="far fa-envelope" style="margin-right:7px;"></i>${obfuscated}`;
+      $heroEmail.dataset.copy = PORTFOLIO.email;
     }
     if ($heroLinks) {
       $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
@@ -66,13 +100,16 @@
         </a>`;
       }).join('');
     }
+    /* Initial sync + listen for resize */
+    syncPhotoHeight();
+    window.addEventListener('resize', onResize);
   }
 
   /* ── News Timeline ──────────────────────────────────────────── */
   function renderNews() {
     if (!$newsTimeline) return;
     $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) =>
-      `<div class="timeline-item glass-card reveal" style="transition-delay: ${i * 60}ms">
+      `<div class="timeline-item reveal" style="--reveal-delay: ${i * 60}ms">
         <span class="timeline-date">${item.date}</span>
         <p class="timeline-text">${item.text}</p>
       </div>`
@@ -80,47 +117,88 @@
   }
 
   /* ── Projects ──────────────────────────────────────────────── */
+  function renderProjectCard(p, i) {
+    const isSolo = !p.authors.includes(',');
+    const soloClass = isSolo ? ' project-card--solo' : '';
+    const isImg = isImage(p.video);
+    const links = [
+      { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
+      { label: 'Team',     icon: 'fas fa-users', action: 'team' },
+      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
+      ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
+    ];
+
+    const pills = links.map(l => {
+      if (l.url) {
+        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
+      }
+      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
+    }).join('');
+
+    return `
+      <div class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
+        ${isImg
+          ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
+          : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
+              <source src="${p.video}" type="video/mp4">
+             </video>`
+        }
+        <div class="project-info">
+          <h3 class="project-title">${p.title}</h3>
+          <p class="project-authors">${p.authors}</p>
+          <span class="project-venue">${p.venue}</span>
+          <div class="project-links">${pills}</div>
+        </div>
+      </div>`;
+  }
+
   function renderProjects() {
     if (!$projectList) return;
-    $projectList.innerHTML = PORTFOLIO.projects.map((p, i) => {
-      const isImg = isImage(p.video);
-      const links = [
-        { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
-        { label: 'Team',     icon: 'fas fa-users', action: 'team' },
-        ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
-        ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
-      ];
 
-      const pills = links.map(l => {
-        if (l.url) {
-          return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
-        }
-        return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
-      }).join('');
+    // Group projects by category, preserving category order
+    var cats = [];
+    var groups = {};
+    PORTFOLIO.projects.forEach(function (p) {
+      var cat = p.category || '';
+      if (!groups[cat]) {
+        groups[cat] = [];
+        cats.push(cat);
+      }
+      groups[cat].push(p);
+    });
 
-      return `
-        <div class="project-card glass-card reveal" style="transition-delay: ${i * 80}ms">
-          ${isImg
-            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-            : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
-                <source src="${p.video}" type="video/mp4">
-               </video>`
-          }
-          <div class="project-info">
-            <h3 class="project-title">${p.title}</h3>
-            <p class="project-authors">${p.authors}</p>
-            <span class="project-venue">${p.venue}</span>
-            <div class="project-links">${pills}</div>
-          </div>
-        </div>`;
-    }).join('');
+    // Reorder: Software first, then Robotics, then any uncategorized
+    var order = ['Software', 'Robotics'];
+    var ordered = [];
+    order.forEach(function (cat) {
+      if (groups[cat]) {
+        ordered.push({ category: cat, projects: groups[cat] });
+        delete groups[cat];
+      }
+    });
+    // Append any remaining categories not in the explicit order
+    cats.forEach(function (cat) {
+      if (groups[cat]) {
+        ordered.push({ category: cat, projects: groups[cat] });
+      }
+    });
+
+    var cardIndex = 0;
+    var html = '';
+    ordered.forEach(function (group) {
+      html += '<h3 class="project-subheading">' + group.category + '</h3>';
+      group.projects.forEach(function (p) {
+        html += renderProjectCard(p, cardIndex++);
+      });
+    });
+    $projectList.innerHTML = html;
   }
 
   /* ── Leadership ─────────────────────────────────────────────── */
   function renderLeadership() {
     if (!$leadershipList) return;
     $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
-      `<div class="record-item glass-card reveal" style="transition-delay: ${i * 50}ms">
+      `<div class="record-item reveal" style="--reveal-delay: ${i * 50}ms">
         <span class="record-desc">${item.description}</span>
         <span class="record-year">${item.year}</span>
       </div>`
@@ -131,7 +209,7 @@
   function renderHonors() {
     if (!$honorsList) return;
     $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
-      `<div class="record-item glass-card reveal" style="transition-delay: ${i * 40}ms">
+      `<div class="record-item reveal" style="--reveal-delay: ${i * 40}ms">
         <span class="record-desc">${item.description}</span>
         <span class="record-year">${item.year}</span>
       </div>`
@@ -215,6 +293,19 @@
       const btn = e.target.closest('[data-action="copy"]');
       if (!btn) return;
       copyToClipboard(btn.dataset.copy, btn);
+    });
+  }
+
+  /* Email click-to-copy */
+  if ($heroEmail) {
+    $heroEmail.addEventListener('click', function () {
+      copyToClipboard($heroEmail.dataset.copy, $heroEmail);
+    });
+  }
+
+  if ($footerEmail) {
+    $footerEmail.addEventListener('click', function () {
+      copyToClipboard($footerEmail.dataset.copy, $footerEmail);
     });
   }
 
@@ -361,13 +452,6 @@
     });
   }
 
-  /* ── Painting Parallax ─────────────────────────────────────── */
-  function updatePaintingParallax() {
-    if (!$bgPainting) return;
-    var offset = window.scrollY * -0.04;
-    $bgPainting.style.transform = 'translateY(' + offset + 'px)';
-  }
-
   /* ── Combined Scroll Handler (throttled) ────────────────────── */
   let throttled = false;
   function onScroll() {
@@ -377,7 +461,6 @@
         updateScrollTopVisibility();
         updateActiveNav();
         updateNavVisibility();
-        updatePaintingParallax();
         throttled = false;
       });
       throttled = true;
