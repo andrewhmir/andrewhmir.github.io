@@ -34,12 +34,12 @@
   /* Paper surfaces — warm off-white at low opacity */
   --surface-1:  rgba(255, 248, 240, 0.03);
   --surface-2:  rgba(255, 248, 240, 0.06);
-  --surface-3:  rgba(255, 248, 240, 0.10);
+  /* Solid paper — toast, modal card, mobile nav */
+  --surface-solid: #1e1b18;
 
   /* Warm borders */
   --border-1:   rgba(255, 248, 240, 0.08);
   --border-2:   rgba(255, 248, 240, 0.14);
-  --border-3:   rgba(255, 248, 240, 0.20);
 
   /* Text — cream/paper tones, not cold gray */
   --text-bright:   #f5f0e8;
@@ -48,7 +48,6 @@
 
   /* Accent — warm amber/ochre */
   --accent:        #c8892e;
-  --accent-glow:   rgba(200, 137, 46, 0.18);
   --accent-2:      #a47c48;
   --danger:        #d14b3c;
 
@@ -71,17 +70,14 @@
   /* Radii — slightly softer */
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
 
   /* Shadows — warm, not cold */
   --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-lift:  0 8px 40px rgba(0, 0, 0, 0.5);
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast:  150ms ease;
   --transition-base:  220ms ease;
-  --transition-slow:  400ms var(--ease-out);
 
   /* Fixed nav height — single source of truth for JS scroll offsets
      (16px top + 16px bottom padding + 36px link row) */
@@ -190,10 +186,13 @@ p:last-child {
   background-size: 256px 256px;
 }
 
-/* Content sits above atmosphere */
+/* Content sits above atmosphere.
+   NOTE: no z-index here — a stacking context would trap the fixed
+   nav (and modal/toast) below the .nav-backdrop, which is appended
+   to <body> at z-index 997. Positioned z-index:auto paints above the
+   z-index:0 atmosphere by DOM order, so layering is preserved. */
 .content-layer {
   position: relative;
-  z-index: 1;
 }
 
 /* ── 5. Layout ──────────────────────────────────────────────────── */
@@ -343,7 +342,8 @@ p:last-child {
 
 /* Painting stage — the opening moment, full viewport */
 .hero {
-  padding: 0;
+  /* !important: later responsive `.section` rules must not re-add padding */
+  padding: 0 !important;
   text-align: center;
   position: relative;
 }
@@ -666,6 +666,16 @@ p:last-child {
   border-left-color: var(--accent-2);
 }
 
+/* Subheading separating Honors from Leadership within #Records */
+.records-subheading {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-bright);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-sm);
+}
+
 /* ── 13. Footer ────────────────────────────────────── */
 .site-footer {
   padding: var(--space-4xl) 0;
@@ -718,7 +728,7 @@ p:last-child {
   transform: translateX(-50%);
   z-index: 3000;
   padding: 10px 20px;
-  background: #1e1b18;
+  background: var(--surface-solid);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-sm);
   color: var(--text-bright);
@@ -758,7 +768,7 @@ p:last-child {
 }
 
 .modal-card {
-  background: #1e1b18;
+  background: var(--surface-solid);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-md);
   max-width: 680px;
@@ -850,13 +860,18 @@ p:last-child {
 .reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 600ms var(--ease-out),
-              transform 600ms var(--ease-out);
 }
 
+/* Fire-and-forget: an animation (not a transition) so the inline
+   --reveal-delay never lingers as a permanent hover transition-delay */
 .reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+  animation: revealIn 600ms var(--ease-out) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes revealIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── 17. Utility: Screen Reader Only ────────────────── */
@@ -880,6 +895,10 @@ p:last-child {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* Signature must stay visible even if animations are suppressed */
+  .hero-signature {
+    opacity: 1;
   }
   html {
     scroll-behavior: auto;
@@ -905,6 +924,11 @@ p:last-child {
     margin-bottom: var(--space-xl);
   }
 
+  /* Heading margin shrinks to 32px here — keep the note 8px below it */
+  .section-note {
+    margin-top: -24px;
+  }
+
   .project-card {
     grid-template-columns: 1fr;
     gap: var(--space-md);
@@ -925,7 +949,7 @@ p:last-child {
     top: 60px;
     left: 16px;
     right: 16px;
-    background: #1e1b18;
+    background: var(--surface-solid);
     border: 1px solid var(--border-2);
     border-radius: var(--radius-md);
     padding: var(--space-md);
@@ -952,13 +976,15 @@ p:last-child {
     font-size: 0.95rem;
   }
 
-  /* Dim behind the open menu — keeps the backdrop-to-close wiring in main.js working */
+  /* Dim behind the open menu — keeps the backdrop-to-close wiring in main.js working.
+     z-index 997: above content (no stacking context on .content-layer) but below
+     .nav-header / .nav-menu (stacked at 1000, at root level). */
   .nav-backdrop {
     display: none;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
-    z-index: 998;
+    z-index: 997;
   }
 
   .nav-backdrop.open {
@@ -1037,6 +1063,11 @@ p:last-child {
   .section-heading {
     font-size: 1.3rem;
     margin-bottom: var(--space-lg);
+  }
+
+  /* Heading margin shrinks to 24px here — keep the note 8px below it */
+  .section-note {
+    margin-top: -16px;
   }
 
   .hero-painting-stage {
