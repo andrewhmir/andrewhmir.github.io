@@ -9,14 +9,14 @@ const PORTFOLIO = {
   name: "Andrew Alangcao",
   title: "Data Engineer | Computational Cognition Researcher",
   bio: [
-    "My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development.",
-    "All to improve everyday life for people in the Philippines and around the world.",
-    "I like spending my free time gardening and caring for my flowers."
+    "I garden. I build things that try to understand the world a little better. I live in the Philippines, where I work on data infrastructure, study computational cognition, and compete in robot competitions when I get the chance.",
+    "This site is where I keep track of what I've been up to — projects I've built, things I've learned, and what I'm working on next.",
+    "I'm always happy to hear from people who care about building things that matter. Say hello."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
-  favicon: "files/Nailong.png",
-  scrollerIcon: "files/Nailong.png",
+  favicon: "",
+  scrollerIcon: "",
   social: [
     { label: "Resume",    icon: "fas fa-file-alt",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
     { label: "GitHub",    icon: "fab fa-github",     url: "https://github.com/andrewhmir" },
@@ -28,8 +28,8 @@ const PORTFOLIO = {
   nav: [
     { label: "Home",       id: "Home" },
     { label: "Projects",   id: "Projects" },
-    { label: "Leadership", id: "Leadership" },
-    { label: "Honors",     id: "Honors" }
+    { label: "News",       id: "News" },
+    { label: "Records",    id: "Records" }
   ],
 
   /* ── News ──────────────────────────────────────────────────────── */
