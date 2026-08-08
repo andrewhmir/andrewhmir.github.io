@@ -66,48 +66,25 @@ const PORTFOLIO = {
     },
     {
       id: "project2",
-      title: "BiyaHey!",
+      title: "Hivemind",
       category: "Software",
-      authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
-      venue: "March 2026 - April 2026",
-      video: "files/BiyaHey!.mp4",
+      authors: "<strong>Andrew Alangcao*</strong>, Derrick Valdellon*, and Darryl Ty*",
+      venue: "June 2026 - Current",
+      video: "files/PlaceHolder.png",
       links: [],
       overview: {
-        image: "files/BiyaHey_Overview.jpg",
-        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to combine real routes shared by commuters with existing datasets and summarize them through an AI engine into clear, step-by-step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
+        image: "files/PlaceHolder.png",
+        text: "Description coming soon."
       },
       team: {
-        image: "files/BiyaHey_Team.jpg",
+        image: "files/PlaceHolder.png",
         text: [
-          "The Team at Developer Camp Manila in Astbury, Makati.",
-          "From left to right: Andrew, Alain, Kisen, JJ, Derk, Matthew, Hans, Darryl."
+          "Team photo coming soon."
         ]
       }
     },
     {
       id: "project3",
-      title: "Inventi RAG Chatbot",
-      category: "Software",
-      authors: "<strong>Andrew Alangcao*</strong>, James Balolong*, and Romeo Esguerra",
-      venue: "August 2025 - September 2025",
-      video: "files/PlaceHolder.png",
-      links: [
-        { label: "Repository", icon: "fas fa-external-link-alt", url: "https://github.com/Jamsekun/Inventi_Asia_Hackathon/tree/develop" }
-      ],
-      overview: {
-        image: "files/PlaceHolder.png",
-        text: "Inventi RAG Chatbot is an AI-powered assistant designed for residents of the Inventi condominium, providing fast and accurate answers to tenant inquiries. Using a Retrieval-Augmented Generation (RAG) system, the chatbot retrieves relevant information from condominium documents — such as building policies, amenities guidelines, maintenance procedures, and announcements — to deliver reliable, context-based responses. This enables tenants to quickly access important information without needing to contact administration directly, improving communication and overall resident experience."
-      },
-      team: {
-        image: "files/InventiRAG_Team.jpg",
-        text: [
-          "The team in a Google Meeting brainstorming for the Inventi Hackathon.",
-          "From left to right: Sir James Balolong, Romeo Esguerra, and Andrew Alangcao."
-        ]
-      }
-    },
-    {
-      id: "project4",
       title: "C.E.N.T.H.R.O.",
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
@@ -129,7 +106,7 @@ const PORTFOLIO = {
       }
     },
     {
-      id: "project5",
+      id: "project4",
       title: "Focus Buddy",
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
@@ -152,28 +129,11 @@ const PORTFOLIO = {
       }
     },
     {
-      id: "project6",
-      title: "Axiom",
-      authors: "<strong>Andrew Alangcao</strong>",
-      venue: "June 2026",
-      video: "files/PlaceHolder.png",
-      links: [],
-      overview: {
-        image: "files/PlaceHolder.png",
-        text: "Axiom is an AI-powered knowledge graph explorer that transforms natural language queries about artificial intelligence into interactive, visual maps of research. Built with React 19, React Flow, and a Hono/TypeScript backend, it uses the DeepSeek API and arXiv to synthesize concepts, papers, and their relationships into a navigable canvas. Users can explore connections between ideas, ask follow-up questions anchored to the graph via a chat panel, and discover emerging research directions — turning fragmented search results into a coherent, living map of ideas."
-      },
-      team: {
-        image: "files/PlaceHolder.png",
-        text: [
-          "A solo project built to explore the intersection of knowledge representation, LLM-powered synthesis, and interactive visualization."
-        ]
-      }
-    },
-    {
-      id: "project7",
+      id: "project5",
       title: "SATLearn",
+      category: "Software",
       authors: "<strong>Andrew Alangcao</strong>",
-      venue: "July 2026",
+      venue: "July 2026 - Current",
       video: "files/PlaceHolder.png",
       links: [],
       overview: {
@@ -184,6 +144,26 @@ const PORTFOLIO = {
         image: "files/PlaceHolder.png",
         text: [
           "A solo project built to make high-quality SAT preparation accessible, offline-capable, and free."
+        ]
+      }
+    },
+    {
+      id: "project6",
+      title: "BiyaHey!",
+      category: "Software",
+      authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
+      venue: "March 2026 - April 2026",
+      video: "files/BiyaHey!.mp4",
+      links: [],
+      overview: {
+        image: "files/BiyaHey_Overview.jpg",
+        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to combine real routes shared by commuters with existing datasets and summarize them through an AI engine into clear, step-by-step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
+      },
+      team: {
+        image: "files/BiyaHey_Team.jpg",
+        text: [
+          "The Team at Developer Camp Manila in Astbury, Makati.",
+          "From left to right: Andrew, Alain, Kisen, JJ, Derk, Matthew, Hans, Darryl."
         ]
       }
     }

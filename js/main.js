@@ -227,6 +227,19 @@
      MODAL (single shared instance)
      ════════════════════════════════════════════════════════════════════ */
 
+  function lockBodyScroll() {
+    var w = window.innerWidth - document.documentElement.clientWidth;
+    document.documentElement.style.setProperty('--scrollbar-w', w + 'px');
+    document.body.style.paddingRight = w + 'px';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function unlockBodyScroll() {
+    document.documentElement.style.removeProperty('--scrollbar-w');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  }
+
   function openModal(projectId, tab) {
     if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
 
@@ -251,14 +264,14 @@
     }
 
     $modalOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
     $navHeader.classList.add('hidden');
   }
 
   function closeModal() {
     if (!$modalOverlay) return;
     $modalOverlay.classList.remove('active');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
     $navHeader.classList.remove('hidden');
   }
 
@@ -378,7 +391,7 @@
     $navToggle.classList.add('open');
     $navToggle.setAttribute('aria-expanded', 'true');
     $navBackdrop.classList.add('open');
-    document.body.style.overflow = 'hidden';
+    lockBodyScroll();
   }
 
   function closeMobileNav() {
@@ -386,7 +399,7 @@
     $navToggle.classList.remove('open');
     $navToggle.setAttribute('aria-expanded', 'false');
     $navBackdrop.classList.remove('open');
-    document.body.style.overflow = '';
+    unlockBodyScroll();
   }
 
   /* ── Mobile Nav Toggle ──────────────────────────────────────── */
