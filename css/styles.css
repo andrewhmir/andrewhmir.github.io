@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Portfolio Styles — Solarized Dark · Flat · Clean
+   Portfolio Styles — Warm Dark · Earthy · Serif
    ========================================================================== */
 
 /*
@@ -27,31 +27,36 @@
    20. Responsive
    ========================================================================== */
 
-/* ── 1. Custom Properties (Solarized Palette) ─────────────────────── */
+/* ── 1. Custom Properties ────────────────────────────────────────── */
 :root {
-  /* Backgrounds */
-  --bg-deep:    #002b36;  /* base03 */
-  --bg-card:    #073642;  /* base02 */
-  --bg-hover:   #0a4353;  /* slightly lighter base02 */
+  /* Warm dark background — NOT pure black */
+  --bg-root:    #1a1614;
 
-  /* Text */
-  --text-body:    #839496;  /* base0  */
-  --text-muted:   #586e75;  /* base01 */
-  --text-heading: #93a1a1;  /* base1  */
-  --text-bright:  #eee8d5;  /* base2  */
+  /* Paper surfaces — warm off-white at low opacity */
+  --surface-1:  rgba(255, 248, 240, 0.03);
+  --surface-2:  rgba(255, 248, 240, 0.06);
+  --surface-3:  rgba(255, 248, 240, 0.10);
 
-  /* Accents */
-  --accent:       #268bd2;  /* blue   */
-  --accent-alt:   #2aa198;  /* cyan   */
-  --accent-warm:  #b58900;  /* yellow */
-  --danger:       #dc322f;  /* red    */
+  /* Warm borders */
+  --border-1:   rgba(255, 248, 240, 0.08);
+  --border-2:   rgba(255, 248, 240, 0.14);
+  --border-3:   rgba(255, 248, 240, 0.20);
 
-  /* Borders */
-  --border:       rgba(88, 110, 117, 0.35);  /* base01 @ 35% */
+  /* Text — cream/paper tones, not cold gray */
+  --text-bright:   #f5f0e8;
+  --text-body:     #b8b0a0;
+  --text-muted:    #706860;
+
+  /* Accent — warm amber/ochre */
+  --accent:        #c8892e;
+  --accent-glow:   rgba(200, 137, 46, 0.18);
+  --accent-2:      #a47c48;
+  --danger:        #d14b3c;
 
   /* Typography */
-  --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body:    'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-body:    Georgia, 'Times New Roman', serif;
+  --font-mono:    'Courier Prime', 'Courier New', monospace;
 
   /* Spacing */
   --space-xs:  4px;
@@ -61,16 +66,26 @@
   --space-xl:  32px;
   --space-2xl: 48px;
   --space-3xl: 64px;
+  --space-4xl: 96px;
+  --space-5xl: 140px;
 
-  /* Misc */
+  /* Radii — slightly softer */
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
-  --transition: 180ms ease;
-  --navbar-h: 56px;
+
+  /* Shadows — warm, not cold */
+  --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lift:  0 8px 40px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-fast:  150ms ease;
+  --transition-base:  220ms ease;
+  --transition-slow:  400ms var(--ease-out);
 }
 
-/* ── 2. Reset & Base ────────────────────────────────────────────────── */
+/* ── 2. Reset & Base ──────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -87,35 +102,53 @@ html {
 
 body {
   font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-size: 1.05rem;
+  line-height: 1.75;
   color: var(--text-body);
-  background-color: var(--bg-deep);
+  background: var(--bg-root);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* ── 3. Typography ──────────────────────────────────────────────────── */
+img, video {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── 3. Typography ────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  color: var(--text-heading);
-  line-height: 1.2;
+  color: var(--text-bright);
+  line-height: 1.15;
+  font-weight: 400;
 }
 
 a {
   color: var(--accent);
   text-decoration: none;
-  transition: color var(--transition);
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-2);
 }
 
 b, strong {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-bright);
 }
 
-/* ── Selection ──────────────────────────────────────────────────── */
-::selection {
-  background: var(--accent);
-  color: var(--bg-deep);
+p {
+  margin-bottom: 1em;
+}
+
+p:last-child {
+  margin-bottom: 0;
 }
 
 /* ── 4. Container ────────────────────────────────────────────────────── */
