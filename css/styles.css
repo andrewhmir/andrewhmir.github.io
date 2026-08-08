@@ -498,15 +498,14 @@ p:last-child {
 
 /* ── 10. Project Cards ──────────────────────────────────────────── */
 .project-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
 }
 
 .project-card {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: var(--space-xl);
+  display: flex;
+  flex-direction: column;
   padding: var(--space-lg);
   background: var(--surface-1);
   border: 1px solid var(--border-1);
@@ -929,8 +928,11 @@ p:last-child {
     margin-top: -24px;
   }
 
+  .project-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .project-card {
-    grid-template-columns: 1fr;
     gap: var(--space-md);
   }
 
@@ -1007,6 +1009,10 @@ p:last-child {
 @media (max-width: 768px) {
   .section-heading {
     font-size: 1.5rem;
+  }
+
+  .project-list {
+    grid-template-columns: 1fr;
   }
 
   .hero-painting-stage {
