@@ -434,13 +434,14 @@ p:last-child {
 }
 
 .hero-photo-print {
-  width: auto;
-  height: auto;
-  border-radius: var(--radius-sm);
-  object-fit: cover;
   display: block;
+  width: auto;
+  max-width: 200px;
+  height: auto;
   flex-shrink: 0;
   align-self: stretch;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
   border: 3px solid var(--border-2);
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
   /* Warm print tone via sepia filter */
