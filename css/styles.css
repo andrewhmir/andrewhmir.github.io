@@ -494,89 +494,52 @@ p:last-child {
   color: var(--accent);
 }
 
-/* ── 10. Timeline (News) ──────────────────────────────────────────────── */
-.timeline {
-  position: relative;
-  padding-left: 28px;
-  border-left: 1px solid rgba(88, 110, 117, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.timeline-item {
-  position: relative;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: -33px;
-  top: 5px;
-  width: 9px;
-  height: 9px;
-  background: var(--accent);
-  border-radius: 50%;
-  border: 2px solid var(--bg-deep);
-}
-
-.timeline-date {
-  font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 0.78rem;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.timeline-text {
-  color: var(--text-body);
-  font-size: 0.9rem;
-  line-height: 1.65;
-}
-
-/* ── 11. Project Cards ────────────────────────────────────────────────── */
+/* ── 10. Project Cards ──────────────────────────────────────────── */
 .project-list {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .project-card {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 0;
-  padding: 28px;
-  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
-  position: relative;
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-xl);
+  padding: var(--space-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base),
+              border-color var(--transition-base);
 }
 
-.project-card:first-child {
-  border-radius: 6px 6px 0 0;
+.project-card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
 }
 
-.project-card:last-child {
-  border-radius: 0 0 6px 6px;
+/* Solo projects get a subtle warm tint */
+.project-card--solo {
+  border-left: 2px solid var(--accent);
 }
 
 .project-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 10;
   object-fit: cover;
-  border-radius: 3px;
-  border: 1px solid var(--border);
-  display: block;
-  background: var(--bg-deep);
-  transition: transform 300ms ease;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-1);
+  background: rgba(0, 0, 0, 0.2);
+  transition: border-color var(--transition-base);
+}
+
+.project-card:hover .project-thumb {
+  border-color: var(--border-2);
 }
 
 .project-thumb.img-fallback {
   object-fit: contain;
-  background: var(--bg-deep);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .project-info {
@@ -587,39 +550,71 @@ p:last-child {
 
 .project-title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.4rem;
+  font-weight: 400;
   color: var(--text-bright);
-  margin-bottom: 6px;
   letter-spacing: -0.01em;
+  margin-bottom: 4px;
 }
 
 .project-authors {
-  font-size: 0.85rem;
-  color: var(--text-body);
-  margin-bottom: 10px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
   line-height: 1.6;
 }
 
 .project-venue {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--accent);
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .project-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin-top: auto;
 }
 
 .project-links .pill {
-  font-size: 0.78rem;
-  padding: 6px 14px;
+  font-size: 0.75rem;
+  padding: 5px 12px;
+}
+
+/* ── 11. News Bulletin ────────────────────────────────────────────── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: var(--space-lg);
+  padding: 14px var(--space-lg);
+  border-left: 1px solid var(--border-1);
+  margin-left: 4px;
+  align-items: baseline;
+}
+
+.timeline-date {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+.timeline-text {
+  font-size: 0.95rem;
+  color: var(--text-body);
+  line-height: 1.7;
 }
 
 /* ── 12. Modal / Popup ────────────────────────────────────────────────── */
@@ -866,17 +861,6 @@ p:last-child {
     color: var(--accent-alt);
   }
 
-  .project-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-    z-index: 2;
-  }
-
-  .project-card:hover .project-thumb {
-    transform: scale(1.03);
-  }
-
   .modal-close:hover {
     color: var(--danger);
   }
@@ -922,16 +906,6 @@ p:last-child {
     padding: 20px;
   }
 
-  .project-thumb {
-    max-width: 100%;
-    aspect-ratio: 16 / 9;
-  }
-
-  .project-card:first-child,
-  .project-card:last-child {
-    border-radius: 0;
-  }
-
   /* Mobile nav */
   .nav-toggle {
     display: flex;
@@ -945,14 +919,6 @@ p:last-child {
   .nav-list a {
     padding: var(--space-md);
     font-size: 1rem;
-  }
-
-  .timeline {
-    padding-left: var(--space-md);
-  }
-
-  .timeline-item::before {
-    left: calc(-1 * var(--space-md) - 5px);
   }
 }
 
@@ -1007,14 +973,5 @@ p:last-child {
 
   .section-heading {
     font-size: 1rem;
-  }
-
-  .timeline {
-    padding-left: 20px;
-    gap: 20px;
-  }
-
-  .timeline-item::before {
-    left: -25px;
   }
 }
