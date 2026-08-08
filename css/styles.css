@@ -337,91 +337,160 @@ p:last-child {
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* ── 8. Hero ─────────────────────────────────────────────────────────── */
+/* ── 8. Hero ──────────────────────────────────────────────────────── */
+
+/* Painting stage — the opening moment, full viewport */
 .hero {
-  padding-top: calc(var(--navbar-h) + 140px);
-  padding-bottom: 80px;
+  padding: 0;
+  text-align: center;
+  position: relative;
 }
 
-.hero-grid {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 60px;
-  align-items: start;
+.hero-painting-stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
-.hero-photo {
+.hero-painting-stage .bg-painting {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  display: block;
-  filter: saturate(0.85) brightness(0.95);
-  transition: filter 400ms ease;
+  height: 100%;
+  background-image: url('../files/painting.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.7;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
-.hero-header {
-  margin-bottom: 28px;
-}
-
-.hero-name {
-  font-size: 3.25rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text-bright);
-  line-height: 1.05;
-  margin-bottom: 8px;
-}
-
-.hero-role {
+/* Name as artist's signature */
+.hero-signature {
+  position: relative;
+  z-index: 2;
   font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--accent-warm);
-  letter-spacing: 0.03em;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-bright);
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  animation: signatureReveal 1.2s var(--ease-out) 0.3s forwards;
+}
+
+@keyframes signatureReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Down cue */
+.hero-cue {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  animation: cuePulse 2s ease-in-out infinite;
+}
+
+@keyframes cuePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+.hero-cue::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 24px;
+  background: var(--text-muted);
+  margin: 8px auto 0;
+}
+
+/* Intro section below the painting */
+.hero-intro {
+  padding: var(--space-5xl) 0 var(--space-4xl);
+  background: linear-gradient(to bottom, transparent 0%, var(--bg-root) 30%);
+}
+
+.hero-photo-print {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  display: block;
+  margin: 0 auto var(--space-xl);
+  border: 3px solid var(--border-2);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+  /* Warm print tone via sepia filter */
+  filter: sepia(0.15);
+}
+
+.hero-bio-container {
+  max-width: 560px;
+  margin: 0 auto var(--space-2xl);
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.9;
+  color: var(--text-body);
 }
 
 .hero-bio-container p {
-  margin-bottom: 16px;
-  font-size: 1rem;
-  line-height: 1.8;
-  max-width: 620px;
+  margin-bottom: 1.2em;
 }
 
-.hero-bio-container p:last-of-type {
+.hero-bio-container p:last-child {
+  color: var(--text-bright);
   font-style: italic;
-  color: var(--text-muted);
-  font-size: 0.95rem;
 }
 
 .hero-links {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
-  margin-top: 32px;
 }
 
-/* ── 9. Buttons / Links (Pills) ────────────────────────────────────── */
+/* ── 9. Pills — warm, papery, not glass ─────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  font-family: var(--font-heading);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
+  gap: 7px;
+  padding: 8px 18px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
   color: var(--text-body);
-  background: transparent;
-  border: 1px solid rgba(88, 110, 117, 0.3);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: border-color var(--transition), color var(--transition);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
   text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-base);
   line-height: 1.4;
 }
 
 .pill i {
   font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.pill:hover {
+  color: var(--text-bright);
+  border-color: var(--accent);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.pill:hover i {
   color: var(--accent);
 }
 
@@ -797,15 +866,6 @@ p:last-child {
     color: var(--accent-alt);
   }
 
-  .hero-photo:hover {
-    filter: saturate(1) brightness(1);
-  }
-
-  .pill:hover {
-    border-color: var(--accent);
-    color: var(--text-bright);
-  }
-
   .project-card:hover {
     border-color: var(--accent);
     transform: translateY(-3px);
@@ -856,29 +916,6 @@ p:last-child {
 
 /* Tablet & Small Desktop */
 @media (max-width: 768px) {
-  .hero-grid {
-    grid-template-columns: 1fr;
-    text-align: center;
-    gap: 28px;
-  }
-
-  .hero-photo {
-    max-width: 180px;
-    margin: 0 auto;
-  }
-
-  .hero-name {
-    font-size: 2.4rem;
-  }
-
-  .hero-bio-container p {
-    max-width: 100%;
-  }
-
-  .hero-links {
-    justify-content: center;
-  }
-
   .project-card {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -930,27 +967,6 @@ p:last-child {
 
   .section {
     padding: 28px 0;
-  }
-
-  .hero-grid {
-    gap: 20px;
-  }
-
-  .hero {
-    padding-top: calc(var(--navbar-h) + 40px);
-    padding-bottom: 36px;
-  }
-
-  .hero-name {
-    font-size: 2rem;
-  }
-
-  .hero-role {
-    font-size: 0.9rem;
-  }
-
-  .hero-photo {
-    max-width: 140px;
   }
 
   .project-card {
