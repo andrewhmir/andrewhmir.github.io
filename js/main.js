@@ -26,6 +26,7 @@
   const $modalImage     = document.getElementById('modalImage');
   const $modalBody      = document.getElementById('modalBody');
   const $footerYear     = document.getElementById('currentYear');
+  const $bgPainting     = document.querySelector('.bg-painting');
 
   /* ── Guard ──────────────────────────────────────────────────────── */
   if (typeof PORTFOLIO === 'undefined') {
@@ -71,7 +72,7 @@
   function renderNews() {
     if (!$newsTimeline) return;
     $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) =>
-      `<div class="timeline-item reveal" style="transition-delay: ${i * 60}ms">
+      `<div class="timeline-item glass-card reveal" style="transition-delay: ${i * 60}ms">
         <span class="timeline-date">${item.date}</span>
         <p class="timeline-text">${item.text}</p>
       </div>`
@@ -98,7 +99,7 @@
       }).join('');
 
       return `
-        <div class="project-card reveal" style="transition-delay: ${i * 80}ms">
+        <div class="project-card glass-card reveal" style="transition-delay: ${i * 80}ms">
           ${isImg
             ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
             : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
@@ -119,7 +120,7 @@
   function renderLeadership() {
     if (!$leadershipList) return;
     $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
-      `<div class="record-item reveal" style="transition-delay: ${i * 50}ms">
+      `<div class="record-item glass-card reveal" style="transition-delay: ${i * 50}ms">
         <span class="record-desc">${item.description}</span>
         <span class="record-year">${item.year}</span>
       </div>`
@@ -130,7 +131,7 @@
   function renderHonors() {
     if (!$honorsList) return;
     $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
-      `<div class="record-item reveal" style="transition-delay: ${i * 40}ms">
+      `<div class="record-item glass-card reveal" style="transition-delay: ${i * 40}ms">
         <span class="record-desc">${item.description}</span>
         <span class="record-year">${item.year}</span>
       </div>`
@@ -360,6 +361,13 @@
     });
   }
 
+  /* ── Painting Parallax ─────────────────────────────────────── */
+  function updatePaintingParallax() {
+    if (!$bgPainting) return;
+    var offset = window.scrollY * -0.04;
+    $bgPainting.style.transform = 'translateY(' + offset + 'px)';
+  }
+
   /* ── Combined Scroll Handler (throttled) ────────────────────── */
   let throttled = false;
   function onScroll() {
@@ -369,6 +377,7 @@
         updateScrollTopVisibility();
         updateActiveNav();
         updateNavVisibility();
+        updatePaintingParallax();
         throttled = false;
       });
       throttled = true;
