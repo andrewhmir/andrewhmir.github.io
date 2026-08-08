@@ -146,6 +146,42 @@ const PORTFOLIO = {
           "From left to right: Pio Almera, Andrew Alangcao, Miguel Jambalos, Elisha Cacnio, and Audrey Tigson."
         ]
       }
+    },
+    {
+      id: "project6",
+      title: "Axiom",
+      authors: "<strong>Andrew Alangcao</strong>",
+      venue: "June 2026",
+      video: "files/PlaceHolder.png",
+      links: [],
+      overview: {
+        image: "files/PlaceHolder.png",
+        text: "Axiom is an AI-powered knowledge graph explorer that transforms natural language queries about artificial intelligence into interactive, visual maps of research. Built with React 19, React Flow, and a Hono/TypeScript backend, it uses the DeepSeek API and arXiv to synthesize concepts, papers, and their relationships into a navigable canvas. Users can explore connections between ideas, ask follow-up questions anchored to the graph via a chat panel, and discover emerging research directions — turning fragmented search results into a coherent, living map of ideas."
+      },
+      team: {
+        image: "files/PlaceHolder.png",
+        text: [
+          "A solo project built to explore the intersection of knowledge representation, LLM-powered synthesis, and interactive visualization."
+        ]
+      }
+    },
+    {
+      id: "project7",
+      title: "SATLearn",
+      authors: "<strong>Andrew Alangcao</strong>",
+      venue: "July 2026",
+      video: "files/PlaceHolder.png",
+      links: [],
+      overview: {
+        image: "files/PlaceHolder.png",
+        text: "SATLearn is a full-stack digital SAT practice test simulator that replicates the official College Board Bluebook testing experience entirely in the browser. It features a complete 4-module adaptive exam flow with wall-clock timers, split-pane Reading & Writing interface, grid-in math answers, and accurate scoring via official conversion tables. Built with React 18, TypeScript, and Vite, it runs fully client-side with localStorage persistence — no backend required. An integrated AI mistake diagnosis system powered by DeepSeek provides personalized explanations for every wrong answer, while an analytics dashboard tracks score trends and identifies weak areas for focused study."
+      },
+      team: {
+        image: "files/PlaceHolder.png",
+        text: [
+          "A solo project built to make high-quality SAT preparation accessible, offline-capable, and free."
+        ]
+      }
     }
   ],
 
