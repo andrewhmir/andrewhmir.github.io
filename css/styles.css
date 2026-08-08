@@ -156,6 +156,7 @@ p:last-child {
 .bg-atmosphere {
   position: fixed;
   inset: 0;
+  right: var(--scrollbar-w, 0px);
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
@@ -252,7 +253,7 @@ p:last-child {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
+  right: var(--scrollbar-w, 0px);
   z-index: 1000;
   padding: 16px var(--space-xl);
   background: linear-gradient(to bottom, var(--bg-root) 0%, transparent 100%);
@@ -751,7 +752,7 @@ p:last-child {
 .scroll-top {
   position: fixed;
   bottom: 28px;
-  right: 28px;
+  right: calc(28px + var(--scrollbar-w, 0px));
   z-index: 999;
   background: none;
   border: none;
