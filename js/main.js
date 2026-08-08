@@ -27,6 +27,7 @@
   const $modalImage     = document.getElementById('modalImage');
   const $modalBody      = document.getElementById('modalBody');
   const $footerYear     = document.getElementById('currentYear');
+  const $footerEmail    = document.getElementById('footerEmail');
 
   /* ── Guard ──────────────────────────────────────────────────────── */
   if (typeof PORTFOLIO === 'undefined') {
@@ -299,6 +300,12 @@
   if ($heroEmail) {
     $heroEmail.addEventListener('click', function () {
       copyToClipboard($heroEmail.dataset.copy, $heroEmail);
+    });
+  }
+
+  if ($footerEmail) {
+    $footerEmail.addEventListener('click', function () {
+      copyToClipboard($footerEmail.dataset.copy, $footerEmail);
     });
   }
 
