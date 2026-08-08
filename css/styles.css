@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Portfolio Styles — Atmospheric Glass · Dark · Depth
+   Portfolio Styles — Warm Dark · Earthy · Serif
    ========================================================================== */
 
 /*
@@ -8,55 +8,53 @@
    1.  Custom Properties
    2.  Reset & Base
    3.  Typography
-   4.  Atmospheric Background
+   4.  Atmosphere (Painting, Grain)
    5.  Layout: Container, Section
    6.  Scroll Progress
-   7.  Navigation (floating pill)
+   7.  Navigation
    8.  Hero
-   9.  Pills / Buttons
-   10. News Timeline
-   11. Project Cards (2-col grid)
-   12. Modal
-   13. Record Lists (Leadership / Honors)
-   14. Footer
-   15. Scroll-to-Top
-   16. Toast
-   17. Fade-in Reveal
-   18. Utility Classes
-   19. Reduced Motion
-   20. Responsive
+   9.  Buttons / Pills
+   10. Timeline (News)
+   11. Project Cards
+   12. Records (Leadership / Honors)
+   13. Footer
+   14. Scroll-to-Top
+   15. Modal
+   16. Fade-in Reveal
+   17. Utility: Screen Reader Only
+   18. Reduced Motion
+   19. Responsive
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */
 :root {
-  /* Background */
-  --bg-root:    #060608;
+  /* Warm dark background — NOT pure black */
+  --bg-root:    #1a1614;
 
-  /* Glass surfaces */
-  --surface-1:  rgba(255, 255, 255, 0.03);
-  --surface-2:  rgba(255, 255, 255, 0.05);
-  --surface-3:  rgba(255, 255, 255, 0.08);
+  /* Paper surfaces — warm off-white at low opacity */
+  --surface-1:  rgba(255, 248, 240, 0.03);
+  --surface-2:  rgba(255, 248, 240, 0.06);
+  /* Solid paper — toast, modal card, mobile nav */
+  --surface-solid: #1e1b18;
 
-  /* Borders */
-  --border-1:   rgba(255, 255, 255, 0.06);
-  --border-2:   rgba(255, 255, 255, 0.10);
-  --border-3:   rgba(255, 255, 255, 0.14);
+  /* Warm borders */
+  --border-1:   rgba(255, 248, 240, 0.08);
+  --border-2:   rgba(255, 248, 240, 0.14);
 
-  /* Text */
-  --text-bright:   #f1f5f9;
-  --text-body:     #94a3b8;
-  --text-muted:    #475569;
+  /* Text — cream/paper tones, not cold gray */
+  --text-bright:   #f5f0e8;
+  --text-body:     #b8b0a0;
+  --text-muted:    #9e9488;
 
-  /* Accents */
-  --accent:        #3b82f6;
-  --accent-glow:   rgba(59, 130, 246, 0.25);
-  --accent-2:      #2dd4bf;
-  --accent-warm:   #f59e0b;
-  --danger:        #ef4444;
+  /* Accent — warm amber/ochre */
+  --accent:        #c8892e;
+  --accent-2:      #a47c48;
+  --danger:        #d14b3c;
 
   /* Typography */
-  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-body:    Georgia, 'Times New Roman', serif;
+  --font-mono:    'Courier Prime', 'Courier New', monospace;
 
   /* Spacing */
   --space-xs:  4px;
@@ -67,27 +65,23 @@
   --space-2xl: 48px;
   --space-3xl: 64px;
   --space-4xl: 96px;
+  --space-5xl: 140px;
 
-  /* Radii */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-full: 999px;
+  /* Radii — slightly softer */
+  --radius-sm: 4px;
+  --radius-md: 6px;
 
-  /* Nav */
-  --nav-h: 56px;
-  --nav-top: 12px;
-
-  /* Shadows */
-  --shadow-card:  0 8px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow:  0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  --shadow-lift:  0 12px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  /* Shadows — warm, not cold */
+  --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
 
   /* Transitions */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast:  150ms ease;
   --transition-base:  220ms ease;
-  --transition-slow:  350ms var(--ease-out);
+
+  /* Fixed nav height — single source of truth for JS scroll offsets
+     (16px top + 16px bottom padding + 36px link row) */
+  --navbar-h: 68px;
 }
 
 /* ── 2. Reset & Base ──────────────────────────────────────────────── */
@@ -106,9 +100,9 @@ html {
 }
 
 body {
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.7;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.75;
   color: var(--text-body);
   background: var(--bg-root);
   min-height: 100vh;
@@ -127,27 +121,36 @@ img, video {
 
 /* ── 3. Typography ────────────────────────────────────────────────── */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-sans);
+  font-family: var(--font-heading);
   color: var(--text-bright);
-  line-height: 1.2;
+  line-height: 1.15;
+  font-weight: 400;
 }
 
 a {
-  color: var(--accent-2);
+  color: var(--accent);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--accent);
+  color: var(--accent-2);
 }
 
 b, strong {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-bright);
 }
 
-/* ── 4. Atmospheric Background ────────────────────────────────────── */
+p {
+  margin-bottom: 1em;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── 4. Atmosphere ────────────────────────────────────────────────── */
 
 /* Fixed layer behind all content */
 .bg-atmosphere {
@@ -158,173 +161,149 @@ b, strong {
   overflow: hidden;
 }
 
-/* Dot-grid pattern */
-.bg-dots {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-/* Painting — the focal point of the atmosphere.
-   Drop your artwork as files/painting.jpg */
+/* Full-bleed painting — the soul of the site */
 .bg-painting {
   position: absolute;
-  top: -5%;
-  left: -5%;
+  inset: -5%;
   width: 110%;
   height: 110%;
   background-image: url('../files/painting.jpg');
   background-size: cover;
-  background-position: center top;
+  background-position: center 30%;
   background-repeat: no-repeat;
-  opacity: 0.55;
-  /* Radial fade at edges so the painting blends into the dark background */
-  -webkit-mask-image: radial-gradient(ellipse 65% 65% at 50% 40%, black 35%, transparent 85%);
-  mask-image: radial-gradient(ellipse 65% 65% at 50% 40%, black 35%, transparent 85%);
+  /* Strong presence at top, fades toward bottom */
+  opacity: 0.5;
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
+  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
 }
 
-/* Gradient orbs */
-.bg-orb {
+/* Subtle grain overlay — using CSS noise via SVG data URI */
+.bg-grain {
   position: absolute;
-  border-radius: 50%;
-  filter: blur(120px);
-  animation: orbDrift 22s ease-in-out infinite;
-}
-.bg-orb--blue {
-  width: 700px; height: 700px;
-  background: rgba(59, 130, 246, 0.07);
-  top: -20%; left: -10%;
-}
-.bg-orb--teal {
-  width: 500px; height: 500px;
-  background: rgba(45, 212, 191, 0.04);
-  bottom: -15%; right: -8%;
-  animation-delay: -8s;
-  animation-duration: 26s;
-}
-.bg-orb--indigo {
-  width: 450px; height: 450px;
-  background: rgba(99, 102, 241, 0.05);
-  top: 55%; left: 50%;
-  animation-delay: -15s;
-  animation-duration: 30s;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
 }
 
-@keyframes orbDrift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25%  { transform: translate(60px, -40px) scale(1.08); }
-  50%  { transform: translate(-30px, 50px) scale(0.94); }
-  75%  { transform: translate(-50px, -20px) scale(1.04); }
-}
-
-/* ── 5. Layout: Container, Section ───────────────────────────────── */
+/* Content sits above atmosphere.
+   NOTE: no z-index here — a stacking context would trap the fixed
+   nav (and modal/toast) below the .nav-backdrop, which is appended
+   to <body> at z-index 997. Positioned z-index:auto paints above the
+   z-index:0 atmosphere by DOM order, so layering is preserved. */
 .content-layer {
   position: relative;
-  z-index: 1;
 }
 
+/* ── 5. Layout ──────────────────────────────────────────────────── */
 .container {
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 var(--space-xl);
 }
 
 .section {
-  padding: 60px 0;
+  padding: 100px 0;
 }
 
-/* Section label (monospace kicker) */
+
+/* Section label — conversational, not monospaced uppercase */
 .section-label {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
   margin-bottom: var(--space-sm);
 }
 
 .section-heading {
-  font-family: var(--font-sans);
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-family: var(--font-heading);
+  font-size: 2.4rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
   color: var(--text-bright);
-  margin-bottom: 36px;
+  margin-bottom: var(--space-2xl);
+  line-height: 1.1;
 }
 
 .section-note {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--text-muted);
-  margin-top: -28px;
+  margin-top: -36px;
   margin-bottom: var(--space-xl);
 }
 
-/* ── 6. Scroll Progress ──────────────────────────────────────────── */
+/* ── 6. Scroll Progress ──────────────────────────────────────────────── */
 .scroll-progress {
   position: fixed;
   top: 0;
   left: 0;
-  height: 2px;
+  width: 0%;
+  height: 3px;
   background: var(--accent);
   z-index: 1001;
-  width: 0%;
   transition: width 60ms linear;
 }
 
-/* ── 7. Navigation (floating pill) ────────────────────────────────── */
+/* ── 7. Navigation — simple, warm, appears on scroll-up ─────────── */
 .nav-header {
   position: fixed;
-  top: var(--nav-top);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
-  width: min(1200px, calc(100% - 32px));
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-lg);
-  padding: 0 var(--space-lg);
-  height: var(--nav-h);
+  padding: 16px var(--space-xl);
+  background: linear-gradient(to bottom, var(--bg-root) 0%, transparent 100%);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  transition: background var(--transition-base),
-              border-color var(--transition-base),
-              transform var(--transition-base),
-              opacity var(--transition-base);
+  transition: transform 300ms var(--ease-out),
+              opacity 300ms ease;
 }
 
 .nav-header.hidden {
-  transform: translateX(-50%) translateY(calc(-100% - 20px));
+  transform: translateY(-100%);
   opacity: 0;
-  pointer-events: none;
-}
-
-.nav-inner {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .nav-brand {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 1rem;
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 400;
+  font-style: italic;
   color: var(--text-bright);
-  letter-spacing: -0.01em;
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 .nav-brand:hover {
   color: var(--accent);
+}
+
+.nav-list {
+  list-style: none;
+  display: flex;
+  gap: 2px;
+}
+
+.nav-list a {
+  display: block;
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast),
+              background var(--transition-fast);
+}
+
+.nav-list a:hover,
+.nav-list a.active {
+  color: var(--text-bright);
+  background: var(--surface-1);
 }
 
 /* Hamburger (mobile) */
@@ -355,249 +334,288 @@ b, strong {
   transform: translateY(-7px) rotate(-45deg);
 }
 
-/* Nav menu */
-.nav-list {
-  list-style: none;
-  display: flex;
-  gap: var(--space-xs);
-}
-
-.nav-list a {
-  display: block;
-  padding: var(--space-sm) var(--space-md);
-  font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 0.84rem;
-  color: var(--text-body);
-  border-radius: var(--radius-sm);
-  transition: background var(--transition-fast),
-              color var(--transition-fast);
-  text-decoration: none;
-}
-
-.nav-list a:hover,
-.nav-list a.active {
-  color: var(--text-bright);
-  background: rgba(255, 255, 255, 0.06);
-}
-
 /* ── 8. Hero ──────────────────────────────────────────────────────── */
+
+/* Painting stage — the opening moment, full viewport */
 .hero {
-  padding-top: calc(var(--nav-h) + var(--nav-top) + 120px);
-  padding-bottom: 100px;
+  /* !important: later responsive `.section` rules must not re-add padding */
+  padding: 0 !important;
   text-align: center;
-}
-
-.hero-photo-wrap {
-  display: inline-block;
   position: relative;
-  margin-bottom: 36px;
 }
 
-.hero-photo {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  border: 2px solid rgba(255, 255, 255, 0.10);
+.hero-painting-stage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  z-index: 1;
-  transition: border-color var(--transition-slow);
 }
 
-.hero-photo-glow {
+.hero-painting-stage .bg-painting {
   position: absolute;
-  inset: -8px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
-  z-index: 0;
-  animation: pulseGlow 3s ease-in-out infinite;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../files/painting-hero.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.7;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.5; transform: scale(1); }
-  50%      { opacity: 1;   transform: scale(1.06); }
-}
-
-.hero-text-col {
-  /* centered via hero text-align:center */;
-}
-
-.hero-name {
-  font-family: var(--font-sans);
-  font-size: clamp(2.8rem, 6vw, 4.2rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
+/* Name as artist's signature */
+.hero-signature {
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 400;
+  font-style: italic;
   color: var(--text-bright);
-  line-height: 1.05;
-  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  animation: signatureReveal 1.2s var(--ease-out) 0.3s forwards;
 }
 
-.hero-role {
+@keyframes signatureReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Down cue */
+.hero-cue {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--accent);
-  letter-spacing: 0.02em;
-  margin-bottom: 28px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  animation: cuePulse 2s ease-in-out infinite;
+}
+
+@keyframes cuePulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+.hero-cue::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 24px;
+  background: var(--text-muted);
+  margin: 8px auto 0;
+}
+
+/* Intro section below the painting */
+.hero-intro {
+  padding: var(--space-5xl) 0 var(--space-4xl);
+  background:
+    radial-gradient(ellipse 900px 600px at 50% 20%, rgba(200, 137, 46, 0.05) 0%, transparent 70%);
+}
+
+/* Photo + bio side by side */
+.hero-intro .container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-xl) var(--space-2xl);
+}
+
+.hero-photo-print {
+  display: block;
+  width: auto;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 3px solid var(--border-2);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+  /* Warm print tone via sepia filter */
+  filter: sepia(0.15);
 }
 
 .hero-bio-container {
-  max-width: 580px;
-  margin: 0 auto 32px;
+  flex: 1;
+  min-width: 280px;
+  max-width: 560px;
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  text-align: left;
+  font-size: 1.1rem;
+  line-height: 1.9;
+  color: var(--text-body);
+  background: var(--surface-1);
+  border-radius: var(--radius-md);
+}
+
+/* Decorative rule above bio text — thin amber stroke */
+.hero-bio-container::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 1px;
+  margin: 0 0 var(--space-lg);
+  background: var(--accent);
+  opacity: 0.4;
 }
 
 .hero-bio-container p {
-  font-size: 1rem;
-  line-height: 1.8;
-  color: var(--text-body);
-  margin-bottom: 16px;
+  margin-bottom: 1.2em;
 }
 
-.hero-bio-container p:last-of-type {
+.hero-bio-container p:last-child {
+  color: var(--text-bright);
   font-style: italic;
-  color: var(--text-muted);
-  font-size: 0.95rem;
+}
+
+/* Obfuscated email — click to copy */
+.hero-email {
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--text-body);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  user-select: none;
+  padding: var(--space-sm) 0 0;
+  transition: color var(--transition-fast);
+  text-decoration: underline;
+  text-decoration-color: var(--border-2);
+  text-underline-offset: 5px;
+}
+
+.hero-email:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 
 .hero-links {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
 }
 
-/* ── 9. Pills / Buttons ───────────────────────────────────────────── */
+/* ── 9. Pills — warm, papery, not glass ─────────────────────────── */
 .pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 18px;
-  font-family: var(--font-sans);
-  font-size: 0.82rem;
-  font-weight: 500;
+  padding: 8px 18px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
   color: var(--text-body);
   background: var(--surface-1);
   border: 1px solid var(--border-1);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-base);
   line-height: 1.4;
-  white-space: nowrap;
 }
 
 .pill i {
   font-size: 0.75rem;
   color: var(--accent);
-  transition: color var(--transition-fast);
 }
 
 .pill:hover {
   color: var(--text-bright);
-  border-color: var(--border-2);
+  border-color: var(--accent);
   background: var(--surface-2);
   transform: translateY(-1px);
   box-shadow: var(--shadow-card);
 }
 
 .pill:hover i {
-  color: var(--accent-2);
-}
-
-/* ── 10. News Timeline ────────────────────────────────────────────── */
-.timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.timeline-item {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: var(--space-lg);
-  padding: 16px 20px;
-  align-items: baseline;
-}
-
-.timeline-date {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
   color: var(--accent);
-  letter-spacing: 0.03em;
-  text-align: right;
-  white-space: nowrap;
 }
 
-.timeline-text {
-  font-size: 0.9rem;
-  color: var(--text-body);
-  line-height: 1.6;
-}
-
-/* ── 11. Project Cards (2-col grid) ────────────────────────────────── */
+/* ── 10. Project Cards ──────────────────────────────────────────── */
 .project-list {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 12px;
 }
 
 .project-card {
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base),
+              border-color var(--transition-base);
+}
+
+.project-card:hover {
+  background: var(--surface-2);
+  border-color: var(--border-2);
+}
+
+/* Solo projects get a subtle warm tint */
+.project-card--solo {
+  border-left: 2px solid var(--accent);
 }
 
 .project-thumb {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
-  display: block;
-  background: rgba(0, 0, 0, 0.4);
-  margin-bottom: 18px;
-  transition: transform var(--transition-slow),
-              border-color var(--transition-slow);
+  background: rgba(0, 0, 0, 0.2);
+  transition: border-color var(--transition-base);
+}
+
+.project-card:hover .project-thumb {
+  border-color: var(--border-2);
 }
 
 .project-thumb.img-fallback {
   object-fit: contain;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .project-info {
   display: flex;
   flex-direction: column;
-  flex: 1;
   min-width: 0;
 }
 
 .project-title {
-  font-family: var(--font-sans);
-  font-size: 1.15rem;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 400;
   color: var(--text-bright);
-  letter-spacing: -0.02em;
-  margin-bottom: 2px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
 }
 
 .project-authors {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  margin-bottom: 6px;
-  line-height: 1.5;
+  margin-bottom: 8px;
+  line-height: 1.6;
 }
 
 .project-venue {
   font-family: var(--font-mono);
   font-size: 0.68rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--accent);
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .project-links {
@@ -608,17 +626,190 @@ b, strong {
 }
 
 .project-links .pill {
-  font-size: 0.73rem;
+  font-size: 0.75rem;
   padding: 5px 12px;
 }
 
-/* ── 12. Modal / Popup ────────────────────────────────────────────── */
+/* ── 11. News Bulletin ────────────────────────────────────────────── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: var(--space-lg);
+  padding: 14px var(--space-lg);
+  border-left: 1px solid var(--border-1);
+  margin-left: 4px;
+  align-items: baseline;
+}
+
+.timeline-date {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  text-align: right;
+}
+
+.timeline-text {
+  font-size: 0.95rem;
+  color: var(--text-body);
+  line-height: 1.7;
+}
+
+/* ── 12. Records (Leadership & Honors combined) ─────────────────── */
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding: 12px var(--space-lg);
+  border-left: 1px solid var(--border-1);
+  margin-left: 4px;
+  transition: border-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+.record-item:hover {
+  border-left-color: var(--accent);
+}
+
+.record-desc {
+  font-size: 0.95rem;
+  color: var(--text-body);
+  line-height: 1.7;
+  flex: 1;
+}
+
+.record-item:hover .record-desc {
+  color: var(--text-bright);
+}
+
+.record-year {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Honors get a subtle highlight different from leadership */
+.record-list--honors .record-item:hover {
+  border-left-color: var(--accent-2);
+}
+
+/* Subheading separating project categories — spans the full grid */
+.project-subheading {
+  grid-column: 1 / -1;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-bright);
+  margin-bottom: var(--space-sm);
+}
+
+.project-subheading:not(:first-child) {
+  margin-top: var(--space-xl);
+}
+
+/* Subheading separating Honors from Leadership within #Records */
+.records-subheading {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 400;
+  color: var(--text-bright);
+  margin-top: var(--space-2xl);
+  margin-bottom: var(--space-sm);
+}
+
+/* ── 13. Footer ────────────────────────────────────── */
+.site-footer {
+  padding: var(--space-4xl) 0;
+  text-align: center;
+  border-top: 1px solid var(--border-1);
+}
+
+.site-footer p {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── 14. Scroll-to-Top ──────────────────────────────── */
+.scroll-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base),
+              color var(--transition-base);
+  writing-mode: vertical-rl;
+  letter-spacing: 0.06em;
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scroll-top:hover {
+  color: var(--accent);
+}
+
+/* ── Toast (email-copy feedback) ────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  padding: 10px 20px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+  /* main.js fades it out via inline opacity before removing */
+}
+
+.toast--error {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ── 15. Modal ──────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(6, 6, 8, 0.92);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -634,9 +825,7 @@ b, strong {
 }
 
 .modal-card {
-  background: rgba(15, 15, 20, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--surface-solid);
   border: 1px solid var(--border-2);
   border-radius: var(--radius-md);
   max-width: 680px;
@@ -682,8 +871,9 @@ b, strong {
 }
 
 .modal-header h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 400;
   color: var(--text-bright);
   letter-spacing: -0.01em;
   margin-bottom: 4px;
@@ -691,10 +881,9 @@ b, strong {
 
 .modal-subtitle {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--accent);
   margin-bottom: 8px;
 }
@@ -714,6 +903,8 @@ b, strong {
 
 .modal-image-wrap img {
   width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   display: block;
 }
 
@@ -724,157 +915,25 @@ b, strong {
   font-size: 0.95rem;
 }
 
-/* ── 13. Record Lists (Leadership / Honors) ───────────────────────── */
-.record-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.record-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 20px;
-  padding: 14px 20px;
-  transition: background var(--transition-fast),
-              border-color var(--transition-fast);
-}
-
-.record-desc {
-  font-size: 0.9rem;
-  color: var(--text-body);
-  line-height: 1.6;
-  flex: 1;
-}
-
-.record-item:hover .record-desc {
-  color: var(--text-bright);
-}
-
-.record-year {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-/* ── 14. Footer ──────────────────────────────────────────────────── */
-.site-footer {
-  padding: 60px 0;
-  text-align: center;
-  border-top: 1px solid var(--border-1);
-  margin-top: 40px;
-  color: var(--text-muted);
-}
-
-.site-footer p {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.03em;
-}
-
-/* ── 15. Scroll-to-Top ───────────────────────────────────────────── */
-.scroll-top {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface-1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  transition: all var(--transition-base);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.scroll-top img {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-}
-
-.scroll-top.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.scroll-top:hover {
-  border-color: var(--border-2);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-card);
-}
-
-/* ── 16. Toast ───────────────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 15, 20, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-2);
-  color: var(--text-bright);
-  padding: 12px 24px;
-  border-radius: var(--radius-full);
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 0.88rem;
-  z-index: 9999;
-  transition: opacity 300ms ease;
-}
-
-.toast--error {
-  background: var(--danger);
-  border-color: var(--danger);
-}
-
-/* ── 17. Fade-in Reveal ──────────────────────────────────────────── */
+/* ── 16. Fade-in Reveal ─────────────────────────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 700ms var(--ease-out),
-              transform 700ms var(--ease-out);
+  transform: translateY(20px);
 }
 
+/* Fire-and-forget: an animation (not a transition) so the inline
+   --reveal-delay never lingers as a permanent hover transition-delay */
 .reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+  animation: revealIn 600ms var(--ease-out) forwards;
+  animation-delay: var(--reveal-delay, 0ms);
 }
 
-/* ── 18. Glass Card Utility ──────────────────────────────────────── */
-.glass-card {
-  background: var(--surface-1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  transition: all 280ms ease;
+@keyframes revealIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.glass-card:hover {
-  background: var(--surface-2);
-  border-color: var(--border-2);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-glow), var(--shadow-card);
-}
-
-.glass-card:hover .project-thumb {
-  border-color: var(--border-2);
-  transform: scale(1.02);
-}
-
-/* ── 19. Utility: Screen Reader Only ─────────────────────────────── */
+/* ── 17. Utility: Screen Reader Only ────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -887,7 +946,7 @@ b, strong {
   border: 0;
 }
 
-/* ── 20. Reduced Motion ──────────────────────────────────────────── */
+/* ── 18. Reduced Motion ─────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -896,38 +955,45 @@ b, strong {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  /* Signature must stay visible even if animations are suppressed */
+  .hero-signature {
+    opacity: 1;
+  }
   html {
     scroll-behavior: auto;
   }
 }
 
 /* ==========================================================================
-   21. Responsive
+   19. Responsive
    ========================================================================== */
 
 /* Tablet */
 @media (max-width: 900px) {
-  .project-list {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .hero {
-    padding-top: calc(var(--nav-h) + var(--nav-top) + 80px);
-    padding-bottom: 60px;
-  }
-
-  .hero-name {
-    font-size: 2.6rem;
+  .container {
+    padding: 0 var(--space-lg);
   }
 
   .section {
-    padding: 44px 0;
+    padding: 60px 0;
   }
 
   .section-heading {
-    font-size: 1.5rem;
-    margin-bottom: 28px;
+    font-size: 1.8rem;
+    margin-bottom: var(--space-xl);
+  }
+
+  /* Heading margin shrinks to 32px here — keep the note 8px below it */
+  .section-note {
+    margin-top: -24px;
+  }
+
+  .project-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .project-thumb {
+    max-height: 260px;
   }
 
   /* Mobile nav */
@@ -935,18 +1001,12 @@ b, strong {
     display: flex;
   }
 
-  .nav-header {
-    border-radius: var(--radius-md);
-  }
-
   .nav-menu {
     position: fixed;
-    top: calc(var(--nav-h) + var(--nav-top) + 4px);
+    top: 60px;
     left: 16px;
     right: 16px;
-    background: rgba(15, 15, 20, 0.96);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--surface-solid);
     border: 1px solid var(--border-2);
     border-radius: var(--radius-md);
     padding: var(--space-md);
@@ -973,14 +1033,15 @@ b, strong {
     font-size: 0.95rem;
   }
 
+  /* Dim behind the open menu — keeps the backdrop-to-close wiring in main.js working.
+     z-index 997: above content (no stacking context on .content-layer) but below
+     .nav-header / .nav-menu (stacked at 1000, at root level). */
   .nav-backdrop {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(6, 6, 8, 0.6);
-    z-index: 999;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 997;
   }
 
   .nav-backdrop.open {
@@ -988,9 +1049,9 @@ b, strong {
   }
 
   .timeline-item {
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 80px 1fr;
     gap: var(--space-md);
-    padding: 14px 16px;
+    padding: 12px var(--space-md);
   }
 
   .timeline-date {
@@ -1001,27 +1062,34 @@ b, strong {
 
 /* Small tablet / large phone */
 @media (max-width: 768px) {
+  .section-heading {
+    font-size: 1.5rem;
+  }
+
   .project-list {
     grid-template-columns: 1fr;
   }
 
-  .project-card {
-    padding: 20px;
+  .hero-painting-stage {
+    min-height: 80vh;
   }
 
-  .hero-name {
-    font-size: 2.2rem;
+  .hero-signature {
+    font-size: 1.6rem;
   }
 
-  .hero-photo {
-    width: 100px;
-    height: 100px;
+  .hero-intro {
+    padding: var(--space-3xl) 0 var(--space-2xl);
   }
 
   .record-item {
     flex-direction: column;
-    gap: 4px;
-    padding: 12px 16px;
+    gap: 2px;
+    padding: 10px var(--space-md);
+  }
+
+  .record-desc {
+    font-size: 0.88rem;
   }
 
   .modal-card {
@@ -1037,73 +1105,84 @@ b, strong {
   .modal-scroll {
     padding: 16px 20px 20px;
   }
-
-  .container {
-    padding: 0 var(--space-md);
-  }
 }
 
 /* Small mobile */
 @media (max-width: 480px) {
   :root {
-    --space-lg: 16px;
     --space-xl: 20px;
     --space-2xl: 32px;
     --space-3xl: 48px;
+    --space-4xl: 64px;
+    --space-5xl: 80px;
   }
 
   .section {
-    padding: 32px 0;
-  }
-
-  .hero {
-    padding-top: calc(var(--nav-h) + var(--nav-top) + 48px);
-    padding-bottom: 44px;
-  }
-
-  .hero-name {
-    font-size: 1.8rem;
-  }
-
-  .hero-role {
-    font-size: 0.78rem;
-  }
-
-  .hero-photo {
-    width: 88px;
-    height: 88px;
-  }
-
-  .hero-photo-wrap {
-    margin-bottom: 24px;
-  }
-
-  .hero-bio-container p {
-    font-size: 0.9rem;
+    padding: 40px 0;
   }
 
   .section-heading {
     font-size: 1.3rem;
-    margin-bottom: 24px;
+    margin-bottom: var(--space-lg);
+  }
+
+  /* Heading margin shrinks to 24px here — keep the note 8px below it */
+  .section-note {
+    margin-top: -16px;
+  }
+
+  .hero-painting-stage {
+    min-height: 70vh;
+  }
+
+  .hero-signature {
+    font-size: 1.3rem;
+  }
+
+  .hero-intro .container {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+
+  .hero-photo-print {
+    width: 100px;
+    height: 100px;
+    align-self: auto;
+  }
+
+  .hero-bio-container {
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .hero-bio-container::before {
+    margin: 0 auto var(--space-md);
   }
 
   .pill {
-    font-size: 0.75rem;
-    padding: 7px 14px;
+    font-size: 0.78rem;
+    padding: 6px 14px;
   }
 
   .project-card {
-    padding: 16px;
+    padding: var(--space-md);
   }
 
   .project-title {
-    font-size: 1.05rem;
+    font-size: 1.2rem;
   }
 
   .timeline-item {
     grid-template-columns: 1fr;
     gap: 2px;
-    padding: 12px 16px;
+    padding: 10px var(--space-md);
+    border-left: none;
+    margin-left: 0;
+    border-bottom: 1px solid var(--border-1);
   }
 
   .timeline-date {
@@ -1111,16 +1190,13 @@ b, strong {
   }
 
   .record-item {
-    padding: 10px 14px;
-  }
-
-  .record-desc {
-    font-size: 0.85rem;
+    padding: 8px var(--space-md);
+    border-left: none;
+    margin-left: 0;
+    border-bottom: 1px solid var(--border-1);
   }
 
   .nav-header {
-    top: 6px;
-    width: calc(100% - 12px);
-    padding: 0 var(--space-md);
+    padding: 12px var(--space-md);
   }
 }

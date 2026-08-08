@@ -9,27 +9,26 @@ const PORTFOLIO = {
   name: "Andrew Alangcao",
   title: "Data Engineer | Computational Cognition Researcher",
   bio: [
-    "My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development.",
-    "All to improve everyday life for people in the Philippines and around the world.",
-    "I like spending my free time gardening and caring for my flowers."
+    "I garden. I build things that try to understand the world a little better. I live in the Philippines, where I work on data infrastructure, study computational cognition, and compete in robot competitions when I get the chance.",
+    "This site is where I keep track of what I've been up to — projects I've built, things I've learned, and what I'm working on next.",
+    "I'm always happy to hear from people who care about building things that matter. Say hello."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
-  favicon: "files/Nailong.png",
-  scrollerIcon: "files/Nailong.png",
+  favicon: "",
+  scrollerIcon: "",
   social: [
     { label: "Resume",    icon: "fas fa-file-alt",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
     { label: "GitHub",    icon: "fab fa-github",     url: "https://github.com/andrewhmir" },
-    { label: "LinkedIn",  icon: "fab fa-linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" },
-    { label: "Email",     icon: "fas fa-envelope",   copy: "andrew.alangcao@gmail.com" }
+    { label: "LinkedIn",  icon: "fab fa-linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" }
   ],
 
   /* ── Navigation ─────────────────────────────────────────────────── */
   nav: [
     { label: "Home",       id: "Home" },
     { label: "Projects",   id: "Projects" },
-    { label: "Leadership", id: "Leadership" },
-    { label: "Honors",     id: "Honors" }
+    { label: "News",       id: "News" },
+    { label: "Records",    id: "Records" }
   ],
 
   /* ── News ──────────────────────────────────────────────────────── */
@@ -45,6 +44,7 @@ const PORTFOLIO = {
     {
       id: "project1",
       title: "Project PALAD",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra",
       venue: "August 2025 - April 2026",
       report: { image: "", text: "" },
@@ -67,13 +67,14 @@ const PORTFOLIO = {
     {
       id: "project2",
       title: "BiyaHey!",
+      category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",
       video: "files/BiyaHey!.mp4",
       links: [],
       overview: {
-        image: "files/Nailong.png",
-        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to aggregate real routes shared by commuters with current existing datasets and summarizes them through an AI engine into clear, step by step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
+        image: "files/BiyaHey_Overview.jpg",
+        text: "BiyaHey! is a grassroots community-driven commute map designed to help people navigate the unpublicized knowledge of Metro Manila's complex public transportation networks. Users enter a starting point and destination, allowing the platform to combine real routes shared by commuters with existing datasets and summarize them through an AI engine into clear, step-by-step instructions. By combining human validated local expertise with a RAG pipeline, BiyaHey! reveals practical routes that conventional navigation applications often miss."
       },
       team: {
         image: "files/BiyaHey_Team.jpg",
@@ -86,6 +87,7 @@ const PORTFOLIO = {
     {
       id: "project3",
       title: "Inventi RAG Chatbot",
+      category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, James Balolong*, and Romeo Esguerra",
       venue: "August 2025 - September 2025",
       video: "files/PlaceHolder.png",
@@ -107,6 +109,7 @@ const PORTFOLIO = {
     {
       id: "project4",
       title: "C.E.N.T.H.R.O.",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
       venue: "October 2024 - May 2025",
       video: "files/CENTHRO_Preview.mp4",
@@ -128,6 +131,7 @@ const PORTFOLIO = {
     {
       id: "project5",
       title: "Focus Buddy",
+      category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
       venue: "December 2023 - February 2024",
       video: "files/FocusBuddy_Preview.mp4",
