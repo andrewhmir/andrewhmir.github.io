@@ -123,7 +123,7 @@
     const isImg = isImage(p.video);
     const links = [
       { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
-      { label: 'Team',     icon: 'fas fa-users', action: 'team' },
+      ...(!isSolo ? [{ label: 'Team', icon: 'fas fa-users', action: 'team' }] : []),
       ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
       ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
     ];
