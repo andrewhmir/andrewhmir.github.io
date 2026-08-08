@@ -435,11 +435,11 @@ p:last-child {
 
 .hero-photo-print {
   width: 140px;
-  height: 140px;
   border-radius: var(--radius-sm);
   object-fit: cover;
   display: block;
   flex-shrink: 0;
+  align-self: stretch;
   border: 3px solid var(--border-2);
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
   /* Warm print tone via sepia filter */
@@ -1130,6 +1130,7 @@ p:last-child {
   .hero-photo-print {
     width: 100px;
     height: 100px;
+    align-self: auto;
   }
 
   .hero-bio-container {
