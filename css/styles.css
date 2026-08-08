@@ -16,16 +16,14 @@
    9.  Buttons / Pills
    10. Timeline (News)
    11. Project Cards
-   12. Modal / Popup
-   13. Record Lists (Leadership / Honors)
-   14. Footer
-   15. Scroll-to-Top Button
-   16. Toast Notification
-   17. Utility Classes
+   12. Records (Leadership / Honors)
+   13. Footer
+   14. Scroll-to-Top
+   15. Modal
+   16. Fade-in Reveal
+   17. Utility: Screen Reader Only
    18. Reduced Motion
-   19. Hover States
-   20. Nav Backdrop (mobile)
-   21. Responsive
+   19. Responsive
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */
@@ -617,20 +615,111 @@ p:last-child {
   line-height: 1.7;
 }
 
-/* ── 12. Modal / Popup ────────────────────────────────────────────────── */
+/* ── 12. Records (Leadership & Honors combined) ─────────────────── */
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
+  padding: 12px var(--space-lg);
+  border-left: 1px solid var(--border-1);
+  margin-left: 4px;
+  transition: border-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+.record-item:hover {
+  border-left-color: var(--accent);
+}
+
+.record-desc {
+  font-size: 0.95rem;
+  color: var(--text-body);
+  line-height: 1.7;
+  flex: 1;
+}
+
+.record-item:hover .record-desc {
+  color: var(--text-bright);
+}
+
+.record-year {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Honors get a subtle highlight different from leadership */
+.record-list--honors .record-item:hover {
+  border-left-color: var(--accent-2);
+}
+
+/* ── 13. Footer ────────────────────────────────────── */
+.site-footer {
+  padding: var(--space-4xl) 0;
+  text-align: center;
+  border-top: 1px solid var(--border-1);
+}
+
+.site-footer p {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── 14. Scroll-to-Top ──────────────────────────────── */
+.scroll-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-base),
+              color var(--transition-base);
+  writing-mode: vertical-rl;
+  letter-spacing: 0.06em;
+}
+
+.scroll-top.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.scroll-top:hover {
+  color: var(--accent);
+}
+
+/* ── 15. Modal ──────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 34, 42, 0.94);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  transition: opacity 220ms ease;
 }
 
 .modal-overlay.active {
@@ -639,17 +728,18 @@ p:last-child {
 }
 
 .modal-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: #1e1b18;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-md);
   max-width: 680px;
   width: 94%;
   max-height: 82vh;
   display: flex;
   flex-direction: column;
-  transform: scale(0.96) translateY(12px);
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+  transform: scale(0.96) translateY(12px);
+  transition: transform 280ms var(--ease-out);
 }
 
 .modal-overlay.active .modal-card {
@@ -672,7 +762,11 @@ p:last-child {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color var(--transition);
+  transition: color var(--transition-fast);
+}
+
+.modal-close:hover {
+  color: var(--danger);
 }
 
 .modal-header {
@@ -680,18 +774,19 @@ p:last-child {
 }
 
 .modal-header h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  font-weight: 400;
   color: var(--text-bright);
   letter-spacing: -0.01em;
   margin-bottom: 4px;
 }
 
 .modal-subtitle {
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   color: var(--accent);
   margin-bottom: 8px;
 }
@@ -704,9 +799,9 @@ p:last-child {
 
 .modal-image-wrap {
   margin-bottom: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-1);
 }
 
 .modal-image-wrap img {
@@ -721,106 +816,12 @@ p:last-child {
   font-size: 0.95rem;
 }
 
-/* ── 13. Record Lists (Leadership / Honors) ───────────────────────────── */
-.record-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.record-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(88, 110, 117, 0.2);
-  transition: padding 200ms ease;
-}
-
-.record-item:last-child {
-  border-bottom: none;
-}
-
-.record-desc {
-  color: var(--text-body);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  flex: 1;
-}
-
-.record-year {
-  font-family: var(--font-heading);
-  font-weight: 500;
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  color: var(--accent);
-  white-space: nowrap;
-  padding-top: 3px;
-}
-
-/* ── 14. Footer ───────────────────────────────────────────────────────── */
-.site-footer {
-  padding: 48px 0;
-  text-align: center;
-  border-top: 1px solid rgba(88, 110, 117, 0.2);
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  letter-spacing: 0.03em;
-}
-
-/* ── 15. Scroll-to-Top Button ─────────────────────────────────────────── */
-.scroll-top {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--transition), transform var(--transition), border-color var(--transition);
-}
-
-.scroll-top.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ── 16. Toast Notification ───────────────────────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-card);
-  color: var(--text-bright);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-family: var(--font-heading);
-  font-weight: 600;
-  font-size: 0.9rem;
-  z-index: 9999;
-  border: 1px solid var(--border);
-  transition: opacity 300ms ease;
-}
-
-.toast--error {
-  background: var(--danger);
-}
-
-/* ── 17. Utility: Fade-in Reveal ────────────────────────────────────── */
+/* ── 16. Fade-in Reveal ─────────────────────────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 600ms cubic-bezier(0.16, 1, 0.3, 1),
-              transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(20px);
+  transition: opacity 600ms var(--ease-out),
+              transform 600ms var(--ease-out);
 }
 
 .reveal.visible {
@@ -828,7 +829,7 @@ p:last-child {
   transform: translateY(0);
 }
 
-/* ── 17. Utility: Screen Reader Only ────────────────────────────────── */
+/* ── 17. Utility: Screen Reader Only ────────────────── */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -841,7 +842,7 @@ p:last-child {
   border: 0;
 }
 
-/* ── 18. Reduced Motion ───────────────────────────────────────────────── */
+/* ── 18. Reduced Motion ─────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -855,60 +856,60 @@ p:last-child {
   }
 }
 
-/* ── 19. Hover States (only for devices with hover-capable pointers) ─── */
-@media (hover: hover) {
-  a:hover {
-    color: var(--accent-alt);
-  }
-
-  .modal-close:hover {
-    color: var(--danger);
-  }
-
-  .record-item:hover {
-    padding-left: 12px;
-  }
-
-  .record-item:hover .record-desc {
-    color: var(--text-heading);
-  }
-
-  .scroll-top:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-  }
-}
-
-/* ── 20. Nav Backdrop (mobile) ─────────────────────────────────────── */
-.nav-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 34, 42, 0.75);
-  z-index: 999;
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
-}
-
-.nav-backdrop.open {
-  display: block;
-}
-
 /* ==========================================================================
-   21. Responsive
+   19. Responsive
    ========================================================================== */
 
-/* Tablet & Small Desktop */
-@media (max-width: 768px) {
+/* Tablet */
+@media (max-width: 900px) {
+  .container {
+    padding: 0 var(--space-lg);
+  }
+
+  .section {
+    padding: 60px 0;
+  }
+
+  .section-heading {
+    font-size: 1.8rem;
+    margin-bottom: var(--space-xl);
+  }
+
   .project-card {
     grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 20px;
+    gap: var(--space-md);
+  }
+
+  .project-thumb {
+    aspect-ratio: 16 / 9;
+    max-height: 260px;
   }
 
   /* Mobile nav */
   .nav-toggle {
     display: flex;
+  }
+
+  .nav-menu {
+    position: fixed;
+    top: 60px;
+    left: 16px;
+    right: 16px;
+    background: #1e1b18;
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 200ms var(--ease-out),
+                opacity 200ms ease;
+  }
+
+  .nav-menu.open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .nav-list {
@@ -918,29 +919,60 @@ p:last-child {
 
   .nav-list a {
     padding: var(--space-md);
-    font-size: 1rem;
+    font-size: 0.95rem;
+  }
+
+  /* Dim behind the open menu — keeps the backdrop-to-close wiring in main.js working */
+  .nav-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 998;
+  }
+
+  .nav-backdrop.open {
+    display: block;
+  }
+
+  .timeline-item {
+    grid-template-columns: 80px 1fr;
+    gap: var(--space-md);
+    padding: 12px var(--space-md);
+  }
+
+  .timeline-date {
+    text-align: left;
+    font-size: 0.68rem;
   }
 }
 
-/* Small Mobile */
-@media (max-width: 480px) {
-  :root {
-    --space-lg: 16px;
-    --space-xl: 24px;
-    --space-2xl: 36px;
-    --space-3xl: 48px;
+/* Small tablet / large phone */
+@media (max-width: 768px) {
+  .section-heading {
+    font-size: 1.5rem;
   }
 
-  .section {
-    padding: 28px 0;
+  .hero-painting-stage {
+    min-height: 80vh;
   }
 
-  .project-card {
-    padding: 16px;
+  .hero-signature {
+    font-size: 1.6rem;
   }
 
-  .project-title {
-    font-size: 1.1rem;
+  .hero-intro {
+    padding: var(--space-3xl) 0 var(--space-2xl);
+  }
+
+  .record-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px var(--space-md);
+  }
+
+  .record-desc {
+    font-size: 0.88rem;
   }
 
   .modal-card {
@@ -956,22 +988,79 @@ p:last-child {
   .modal-scroll {
     padding: 16px 20px 20px;
   }
+}
 
-  .pill {
-    font-size: 0.75rem;
-    padding: 5px 12px;
+/* Small mobile */
+@media (max-width: 480px) {
+  :root {
+    --space-xl: 20px;
+    --space-2xl: 32px;
+    --space-3xl: 48px;
+    --space-4xl: 64px;
+    --space-5xl: 80px;
   }
 
-  .record-item {
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .record-year {
-    text-align: left;
+  .section {
+    padding: 40px 0;
   }
 
   .section-heading {
-    font-size: 1rem;
+    font-size: 1.3rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  .hero-painting-stage {
+    min-height: 70vh;
+  }
+
+  .hero-signature {
+    font-size: 1.3rem;
+  }
+
+  .hero-photo-print {
+    width: 80px;
+    height: 80px;
+    margin-bottom: var(--space-lg);
+  }
+
+  .hero-bio-container {
+    font-size: 0.95rem;
+  }
+
+  .pill {
+    font-size: 0.78rem;
+    padding: 6px 14px;
+  }
+
+  .project-card {
+    padding: var(--space-md);
+  }
+
+  .project-title {
+    font-size: 1.2rem;
+  }
+
+  .timeline-item {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    padding: 10px var(--space-md);
+    border-left: none;
+    margin-left: 0;
+    border-bottom: 1px solid var(--border-1);
+  }
+
+  .timeline-date {
+    text-align: left;
+  }
+
+  .record-item {
+    padding: 8px var(--space-md);
+    border-left: none;
+    margin-left: 0;
+    border-bottom: 1px solid var(--border-1);
+  }
+
+  .nav-header {
+    padding: 12px var(--space-md);
   }
 }
