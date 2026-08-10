@@ -471,7 +471,7 @@ p:last-child {
   margin-bottom: 1.2em;
 }
 
-.hero-bio-container p:last-child {
+.hero-bio-container p:nth-child(3) {
   color: var(--text-bright);
   font-style: italic;
 }
