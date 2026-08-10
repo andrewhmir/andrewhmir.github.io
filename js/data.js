@@ -9,10 +9,10 @@ const PORTFOLIO = {
   name: "Andrew Alangcao",
   title: "Data Engineer | Computational Cognition Researcher",
   bio: [
-    "I like art. I build things.",
-    "I live in the Philippines, where everyday life constantly gives me problems worth solving. I work on software and data infrastructure, study computational cognition, and explore how machines can better understand the world around us.",
-    "This site is where I keep track of what I've been up to — things I've built, things I've learned, and the questions I'm exploring next.",
-    "I want to build things that make everyday life a little better, in the Philippines and beyond."
+    "I like art, and I like building things.",
+    "I'm fascinated by how we perceive and understand the world, and by the possibility of building machines that can do the same.",
+    "I want to use what I learn about intelligence to build things that make the world a little better.",
+    "This site is a record of that exploration."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
