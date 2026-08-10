@@ -604,6 +604,13 @@ p:last-child {
   margin-bottom: 4px;
 }
 
+.project-tagline {
+  font-size: 0.9rem;
+  color: var(--text-body);
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
 .project-source {
   display: inline-block;
   font-family: var(--font-mono);
