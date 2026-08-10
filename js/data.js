@@ -45,6 +45,7 @@ const PORTFOLIO = {
     {
       id: "project1",
       title: "Project PALAD",
+      tagline: "Contactless Palm Biometric Scanner for Retail & Transit",
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Irah Casil*, Dane Marianne Justiano*, Ben Singanon*, Kevin Paez, and Tyrone Sorra",
       venue: "August 2025 - April 2026",
@@ -69,6 +70,7 @@ const PORTFOLIO = {
     {
       id: "project2",
       title: "Hivemind",
+      tagline: "AI-Native Organizational Memory",
       category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Derrick Valdellon*, and Darryl Ty*",
       venue: "June 2026 - Current",
@@ -89,6 +91,7 @@ const PORTFOLIO = {
     {
       id: "project3",
       title: "C.E.N.T.H.R.O.",
+      tagline: "Fingerprint-Based Biometric System for Transit & Healthcare",
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Romeo Esguerra*, and Bryan Maglaya",
       venue: "October 2024 - May 2025",
@@ -112,6 +115,7 @@ const PORTFOLIO = {
     {
       id: "project4",
       title: "Focus Buddy",
+      tagline: "Desktop Robot Study Companion for ADHD Focus",
       category: "Robotics",
       authors: "<strong>Andrew Alangcao*</strong>, Audrey Tigson*, Elisha Cacnio*, Miguel Jambalos*, and Pio Almera",
       venue: "December 2023 - February 2024",
@@ -136,6 +140,7 @@ const PORTFOLIO = {
     {
       id: "project5",
       title: "SATLearn",
+      tagline: "AI-Powered SAT Practice with Personalized Analytics",
       category: "Software",
       authors: "<strong>Andrew Alangcao</strong>",
       venue: "July 2026 - Current",
@@ -156,6 +161,7 @@ const PORTFOLIO = {
     {
       id: "project6",
       title: "BiyaHey!",
+      tagline: "Community-Powered Commute Map for Metro Manila",
       category: "Software",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",

@@ -149,6 +149,7 @@
         }
         <div class="project-info">
           <h3 class="project-title">${p.title}${sourceBadge}</h3>
+          ${p.tagline ? `<p class="project-tagline">${p.tagline}</p>` : ''}
           <p class="project-authors">${p.authors}</p>
           <span class="project-venue">${p.venue}</span>
           <div class="project-links">${pills}</div>
