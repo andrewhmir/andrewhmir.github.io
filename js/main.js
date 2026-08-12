@@ -172,8 +172,8 @@
       groups[cat].push(p);
     });
 
-    // Reorder: Software first, then Robotics, then any uncategorized
-    var order = ['Software', 'Robotics'];
+    // Reorder: Applications first, then Robotics, then any uncategorized
+    var order = ['Applications', 'Robotics'];
     var ordered = [];
     order.forEach(function (cat) {
       if (groups[cat]) {
