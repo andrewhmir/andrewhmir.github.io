@@ -71,7 +71,7 @@ const PORTFOLIO = {
       id: "project2",
       title: "Hivemind",
       tagline: "AI-Native Organizational Memory",
-      category: "Software",
+      category: "Applications",
       authors: "<strong>Andrew Alangcao*</strong>, Derrick Valdellon*, and Darryl Ty*",
       venue: "June 2026 - Current",
       source: "closed",
@@ -141,7 +141,7 @@ const PORTFOLIO = {
       id: "project5",
       title: "SATLearn",
       tagline: "AI-Powered SAT Practice with Personalized Analytics",
-      category: "Software",
+      category: "Applications",
       authors: "<strong>Andrew Alangcao</strong>",
       venue: "July 2026 - Current",
       source: "open",
@@ -149,7 +149,7 @@ const PORTFOLIO = {
       links: [],
       overview: {
         image: "files/SATLearn_Overview.png",
-        text: "SATLearn started because I was studying for the SAT and ran into a pretty specific problem. Bluebook had realistic full-length practice tests, but there were only a limited number of them. There was also a much larger question bank, but it didn't really give me the same experience as taking an actual timed test. I wanted more practice tests without having to reuse the same ones over and over.\n\nSo I built one.\n\nI took over 3,000 SAT questions and used OCR to turn them into a structured question bank, then built an open-source platform that could generate full-length practice tests from them. But I didn't just want more questions. I wanted to know *how I was actually improving* — what concepts I kept getting wrong, what kinds of mistakes I was making, and what I should study next.\n\nSo I added AI to analyze my practice results and give me specific insights into where I was struggling and how I could improve.\n\nI originally built SATLearn just so I could study for my own SAT. But it became another example of something I've found myself doing repeatedly: when the tool I need doesn't quite exist, I usually end up building it myself."
+        text: "SATLearn started because I was studying for the SAT and ran into a pretty specific problem. Bluebook had realistic full-length practice tests, but there were only a limited number of them. There was also a much larger question bank, but it didn't really give me the same experience as taking an actual timed test. I wanted more practice tests without having to reuse the same ones over and over.\n\nSo I built one.\n\nI took over 3,000 SAT questions and used OCR to turn them into a structured question bank, then built an open-source platform that could generate full-length practice tests from them. But I didn't just want more questions. I wanted to know how I was actually improving — what concepts I kept getting wrong, what kinds of mistakes I was making, and what I should study next.\n\nSo I added AI to analyze my practice results and give me specific insights into where I was struggling and how I could improve.\n\nI originally built SATLearn just so I could study for my own SAT. But it became another example of something I've found myself doing repeatedly: when the tool I need doesn't quite exist, I usually end up building it myself."
       },
       team: {
         image: "files/PlaceHolder.png",
@@ -162,7 +162,7 @@ const PORTFOLIO = {
       id: "project6",
       title: "BiyaHey!",
       tagline: "Community-Powered Commute Map for Metro Manila",
-      category: "Software",
+      category: "Applications",
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",
       source: "closed",
