@@ -124,6 +124,7 @@
     const links = [
       { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
       ...(!isSolo ? [{ label: 'Team', icon: 'fas fa-users', action: 'team' }] : []),
+      ...(p.awards && p.awards.length ? [{ label: 'Awards', icon: 'fas fa-trophy', action: 'awards' }] : []),
       ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
       ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
     ];
@@ -253,19 +254,36 @@
 
     const isTeam   = (tab === 'team');
     const isReport = (tab === 'report');
-    const data = isReport ? proj.report : (isTeam ? proj.team : proj.overview);
-    const title = isReport ? `${proj.title} — Technical Report` : (isTeam ? `${proj.title} — Team` : `${proj.title} — Overview`);
+    const isAwards = (tab === 'awards');
+    const data = isReport ? proj.report : (isTeam ? proj.team : (isAwards ? proj.awards : proj.overview));
+    const title = isReport ? `${proj.title} — Technical Report`
+      : (isTeam ? `${proj.title} — Team`
+      : (isAwards ? `${proj.title} — Awards`
+      : `${proj.title} — Overview`));
 
     $modalHeader.innerHTML = `
       <h3>${title}</h3>
       <p class="modal-subtitle">${proj.venue}</p>`;
 
-    $modalImage.innerHTML = `<img src="${data.image}" alt="${title}">`;
-
-    if (isTeam && Array.isArray(data.text)) {
-      $modalBody.innerHTML = data.text.map(t => `<p>${t}</p>`).join('');
+    if (isAwards) {
+      $modalImage.innerHTML = '';
+      $modalImage.style.display = 'none';
+      $modalBody.innerHTML = '<div class="record-list">'
+        + data.map((a, i) =>
+            `<div class="record-item">
+              <span class="record-desc">${a.description}</span>
+              <span class="record-year">${a.year}</span>
+            </div>`
+          ).join('')
+        + '</div>';
     } else {
-      $modalBody.innerHTML = `<p>${data.text}</p>`;
+      $modalImage.style.display = '';
+      $modalImage.innerHTML = `<img src="${data.image}" alt="${title}">`;
+      if (isTeam && Array.isArray(data.text)) {
+        $modalBody.innerHTML = data.text.map(t => `<p>${t}</p>`).join('');
+      } else {
+        $modalBody.innerHTML = `<p>${data.text}</p>`;
+      }
     }
 
     $modalOverlay.classList.add('active');
