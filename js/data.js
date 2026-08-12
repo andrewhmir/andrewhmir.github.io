@@ -65,7 +65,12 @@ const PORTFOLIO = {
           "The team at the Muntinlupa Robotics Competition 2025 in Colegio de Muntinlupa.",
           "From left to right: Sir Mike Samar (Coach), Ben Singanon, Irah Casil, Dane Justiniano, and Andrew Alangcao"
         ]
-      }
+      },
+      awards: [
+        { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion", year: "February 2026" },
+        { description: "Muntinlupa Robotics Fair – Champion", year: "December 2025" },
+        { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up", year: "November 2025" }
+      ],
     },
     {
       id: "project2",
@@ -110,7 +115,12 @@ const PORTFOLIO = {
           "The team at the 4th DLSU-D Research Conference.",
           "From left to right: Ms. Joy Guinto (Coach), Audrey Tigson, Elisha Cacnio, Andrew Alangcao, and Romeo Esguerra."
         ]
-      }
+      },
+      awards: [
+        { description: "4th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025" },
+        { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion", year: "March 2025" },
+        { description: "2024 International Robothon – Innovative Open Category, Champion", year: "November 2024" }
+      ],
     },
     {
       id: "project4",
@@ -135,7 +145,10 @@ const PORTFOLIO = {
           "The team at the 9th Philippine Robothon in St. Paul College Pasig.",
           "From left to right: Pio Almera, Andrew Alangcao, Miguel Jambalos, Elisha Cacnio, and Audrey Tigson."
         ]
-      }
+      },
+      awards: [
+        { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award", year: "February 2023" }
+      ],
     },
     {
       id: "project5",
@@ -178,7 +191,10 @@ const PORTFOLIO = {
           "The Team at Developer Camp Manila in Astbury, Makati.",
           "From left to right: Andrew, Alain, Kisen, JJ, Derk, Matthew, Hans, Darryl."
         ]
-      }
+      },
+      awards: [
+        { description: "Developer Camp Manila – Finalist", year: "March 2026" }
+      ]
     }
   ],
 
