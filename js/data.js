@@ -179,7 +179,7 @@ const PORTFOLIO = {
       authors: "<strong>Andrew Alangcao*</strong>, Alain*, Kisen*, JJ*, Derk*, Matthew*, Hans*, Darryl*",
       venue: "March 2026 - April 2026",
       source: "closed",
-      video: "files/BiyaHey!.mp4",
+      video: "files/BiyaHey.mp4",
       links: [],
       overview: {
         image: "files/BiyaHey_Overview.jpg",
