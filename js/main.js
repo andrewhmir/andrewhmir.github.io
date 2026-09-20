@@ -108,12 +108,16 @@
   /* ── News Timeline ──────────────────────────────────────────── */
   function renderNews() {
     if (!$newsTimeline) return;
-    $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) =>
-      `<div class="timeline-item reveal" style="--reveal-delay: ${i * 60}ms">
+    $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) => {
+      const hasGallery = Array.isArray(item.images) && item.images.length > 0;
+      const attrs = hasGallery ? ` data-gallery="news" data-index="${i}"` : '';
+      const cls = hasGallery ? ' timeline-item--gallery' : '';
+      const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
+      return `<div class="timeline-item reveal${cls}" style="--reveal-delay: ${i * 60}ms"${attrs}>
         <span class="timeline-date">${item.date}</span>
-        <p class="timeline-text">${item.text}</p>
-      </div>`
-    ).join('');
+        <p class="timeline-text">${item.text}${hint}</p>
+      </div>`;
+    }).join('');
   }
 
   /* ── Projects ──────────────────────────────────────────────── */
@@ -201,13 +205,21 @@
   }
 
   /* ── Leadership ─────────────────────────────────────────────── */
+  function renderRecordItem(item, i, kind, step) {
+    const hasGallery = Array.isArray(item.images) && item.images.length > 0;
+    const attrs = hasGallery ? ` data-gallery="${kind}" data-index="${i}"` : '';
+    const cls = hasGallery ? ' record-item--gallery' : '';
+    const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
+    return `<div class="record-item reveal${cls}" style="--reveal-delay: ${i * step}ms"${attrs}>
+      <span class="record-desc">${item.description}${hint}</span>
+      <span class="record-year">${item.year}</span>
+    </div>`;
+  }
+
   function renderLeadership() {
     if (!$leadershipList) return;
     $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
-      `<div class="record-item reveal" style="--reveal-delay: ${i * 50}ms">
-        <span class="record-desc">${item.description}</span>
-        <span class="record-year">${item.year}</span>
-      </div>`
+      renderRecordItem(item, i, 'leadership', 50)
     ).join('');
   }
 
@@ -215,10 +227,7 @@
   function renderHonors() {
     if (!$honorsList) return;
     $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
-      `<div class="record-item reveal" style="--reveal-delay: ${i * 40}ms">
-        <span class="record-desc">${item.description}</span>
-        <span class="record-year">${item.year}</span>
-      </div>`
+      renderRecordItem(item, i, 'honors', 40)
     ).join('');
   }
 
@@ -244,6 +253,162 @@
     document.documentElement.style.removeProperty('--scrollbar-w');
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
+  }
+
+  /* ── Gallery (slow auto-scrolling photo carousel — Leadership / Honors / News) ── */
+
+  const galleryState = {
+    images: [],
+    current: 0
+  };
+
+  const GALLERY_LABELS = { news: 'News', leadership: 'Leadership', honors: 'Honors' };
+  const GALLERY_SPEED = 40; // px per second — slow, consistent glide
+
+  let galleryDriftId = null;
+  let galleryLastTick = null;
+
+  function openGallery(kind, index) {
+    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
+
+    const list = kind === 'news' ? PORTFOLIO.news
+      : (kind === 'leadership' ? PORTFOLIO.leadership : PORTFOLIO.honors);
+    const entry = list && list[index];
+    const images = entry && Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
+    if (!entry || !images.length) return;
+
+    galleryState.images = images;
+    galleryState.current = 0;
+
+    const title = entry.description || entry.text || '';
+    const meta = entry.year || entry.date || '';
+    const multi = images.length > 1;
+
+    $modalHeader.innerHTML = `
+      <h3>${title}</h3>
+      <p class="modal-subtitle">${GALLERY_LABELS[kind] || ''}${meta ? ' · ' + meta : ''}</p>`;
+
+    $modalImage.style.display = '';
+    $modalImage.innerHTML = `
+      <div class="gallery" id="gallery">
+        <div class="gallery-track" id="galleryTrack">
+          ${images.concat(images).map((src, i) => `
+            <figure class="gallery-slide">
+              <img src="${src}" alt="${title} — photo ${(i % images.length) + 1}"
+                   onerror="this.onerror=null;this.src='files/PlaceHolder.png';">
+            </figure>`).join('')}
+        </div>
+        ${multi ? `
+          <button class="gallery-arrow gallery-arrow--prev" id="galleryPrev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
+          <button class="gallery-arrow gallery-arrow--next" id="galleryNext" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+          <div class="gallery-dots" id="galleryDots">
+            ${images.map((_, i) => `<button class="gallery-dot${i === 0 ? ' active' : ''}" data-slide="${i}" aria-label="Go to photo ${i + 1}"></button>`).join('')}
+          </div>
+          <div class="gallery-counter" id="galleryCounter">1 / ${images.length}</div>
+        ` : ''}
+      </div>`;
+
+    $modalBody.innerHTML = '';
+
+    bindGalleryControls();
+    updateGalleryUI();
+
+    $modalOverlay.classList.add('active');
+    lockBodyScroll();
+    $navHeader.classList.add('hidden');
+
+    startGalleryDrift();
+  }
+
+  function bindGalleryControls() {
+    const $track = document.getElementById('galleryTrack');
+    const $prev = document.getElementById('galleryPrev');
+    const $next = document.getElementById('galleryNext');
+    const $gallery = document.getElementById('gallery');
+
+    if ($prev) $prev.addEventListener('click', () => goToSlide(galleryState.current - 1));
+    if ($next) $next.addEventListener('click', () => goToSlide(galleryState.current + 1));
+
+    document.querySelectorAll('#galleryDots .gallery-dot').forEach(dot => {
+      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide, 10)));
+    });
+
+    if ($track) {
+      $track.addEventListener('scroll', () => updateGalleryUI(), { passive: true });
+    }
+
+    if ($gallery) {
+      $gallery.addEventListener('mouseenter', stopGalleryDrift);
+      $gallery.addEventListener('mouseleave', startGalleryDrift);
+      $gallery.addEventListener('focusin', stopGalleryDrift);
+      $gallery.addEventListener('focusout', startGalleryDrift);
+    }
+  }
+
+  function goToSlide(n) {
+    const total = galleryState.images.length;
+    if (!total) return;
+    galleryState.current = ((n % total) + total) % total;
+
+    const $track = document.getElementById('galleryTrack');
+    if ($track) {
+      $track.scrollLeft = galleryState.current * $track.clientWidth;
+    }
+    updateGalleryUI();
+  }
+
+  function updateGalleryUI() {
+    const $track = document.getElementById('galleryTrack');
+    const total = galleryState.images.length;
+
+    if ($track && total && $track.clientWidth > 0) {
+      galleryState.current = Math.round($track.scrollLeft / $track.clientWidth) % total;
+    }
+
+    document.querySelectorAll('#galleryDots .gallery-dot').forEach((dot, i) => {
+      dot.classList.toggle('active', i === galleryState.current);
+    });
+    const $counter = document.getElementById('galleryCounter');
+    if ($counter) {
+      $counter.textContent = `${galleryState.current + 1} / ${total}`;
+    }
+  }
+
+  function startGalleryDrift() {
+    stopGalleryDrift();
+    if (galleryState.images.length < 2) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    galleryLastTick = null;
+    galleryDriftId = requestAnimationFrame(driftTick);
+  }
+
+  function stopGalleryDrift() {
+    if (galleryDriftId) {
+      cancelAnimationFrame(galleryDriftId);
+      galleryDriftId = null;
+    }
+  }
+
+  function driftTick(now) {
+    const $track = document.getElementById('galleryTrack');
+    if (!$track) { galleryDriftId = null; return; }
+
+    if (galleryLastTick == null) galleryLastTick = now;
+    const dt = (now - galleryLastTick) / 1000;
+    galleryLastTick = now;
+
+    const total = galleryState.images.length;
+    const setWidth = $track.clientWidth * total;
+
+    if (setWidth > 0) {
+      $track.scrollLeft += GALLERY_SPEED * dt;
+      if ($track.scrollLeft >= setWidth) {
+        $track.scrollLeft -= setWidth;
+      }
+      updateGalleryUI();
+    }
+
+    galleryDriftId = requestAnimationFrame(driftTick);
   }
 
   function openModal(projectId, tab) {
@@ -292,6 +457,7 @@
   }
 
   function closeModal() {
+    stopGalleryDrift();
     if (!$modalOverlay) return;
     $modalOverlay.classList.remove('active');
     unlockBodyScroll();
@@ -322,6 +488,19 @@
       openModal(btn.dataset.project, btn.dataset.tab);
     });
   }
+
+  /* ── Event Delegation: Gallery lines (Leadership / Honors / News) ── */
+  function bindGalleryList($el) {
+    if (!$el) return;
+    $el.addEventListener('click', function (e) {
+      const item = e.target.closest('[data-gallery]');
+      if (!item) return;
+      openGallery(item.dataset.gallery, parseInt(item.dataset.index, 10));
+    });
+  }
+  bindGalleryList($leadershipList);
+  bindGalleryList($honorsList);
+  bindGalleryList($newsTimeline);
 
   /* ── Event Delegation: Copy-to-clipboard buttons ──────────────── */
   if ($heroLinks) {
