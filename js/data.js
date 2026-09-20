@@ -9,10 +9,11 @@ const PORTFOLIO = {
   name: "Andrew Alangcao",
   title: "Data Engineer | Computational Cognition Researcher",
   bio: [
-    "I like art, and I like building things.",
-    "I'm fascinated by how we perceive and understand the world, and by the possibility of building machines that can do the same.",
-    "I want to use what I learn about intelligence to build things that make the world a little better.",
-    "This site is a record of that exploration."
+    "Hi, I'm Andrew.",
+    "I like art, and I have fun building things.",
+    "I'm inspired by how technology can make everyday life better.",
+    "I want to turn that inspiration into work that makes the world a little better.",
+    "This site is a record of my pursuit of knowledge."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
