@@ -3,6 +3,13 @@
    Add new projects, honors, leadership, or news by appending to the arrays.
    ========================================================================== */
 
+/* Gallery photos (optional)
+   Add an `images: [...]` array to any news / leadership / honors entry to make
+   that line clickable and open a rotating photo gallery in the modal.
+   Paths are relative to index.html (e.g. "files/leadership-aghj-founder-1.jpg").
+   Missing files automatically fall back to files/PlaceHolder.png, so you can
+   drop photos into files/ and name them to match these paths. */
+
 const PORTFOLIO = {
 
   /* ── Personal / Meta ───────────────────────────────────────────── */
@@ -35,10 +42,10 @@ const PORTFOLIO = {
 
   /* ── News ──────────────────────────────────────────────────────── */
   news: [
-    { date: "May 2026",   text: "Started a Data Engineering Role at REDACTED – Quezon City" },
-    { date: "April 2026", text: "Graduated High School with High Honors – San Beda Alabang, Muntinlupa City" },
-    { date: "April 2026", text: "Gave a Speech of Inspiration at the Heroes Tribute Celebration – San Beda Alabang, Muntinlupa City" },
-    { date: "March 2026", text: "Invited as a Guest Speaker at the STEAM Ed Conference of First Eduspec Inc. – San Beda Alabang, Muntinlupa City" }
+    { date: "May 2026",   text: "Started a Data Engineering Role at REDACTED – Quezon City",                                      images: ["files/news-REDACTED-1.jpg"] },
+    { date: "April 2026", text: "Graduated High School with High Honors – San Beda Alabang, Muntinlupa City",                     images: ["files/news-graduation-1.jpg", "files/news-graduation-2.jpg"] },
+    { date: "April 2026", text: "Gave a Speech of Inspiration at the Heroes Tribute Celebration – San Beda Alabang, Muntinlupa City", images: ["files/news-heroes-tribute-1.jpg"] },
+    { date: "March 2026", text: "Invited as a Guest Speaker at the STEAM Ed Conference of First Eduspec Inc. – San Beda Alabang, Muntinlupa City", images: ["files/news-steam-conference-1.jpg"] }
   ],
 
   /* ── Projects ──────────────────────────────────────────────────── */
@@ -201,26 +208,26 @@ const PORTFOLIO = {
 
   /* ── Leadership ─────────────────────────────────────────────────── */
   leadership: [
-    { description: "AGHAM Research Club – Founder",                           year: "June 2025 - April 2026" },
-    { description: "High School Student Council – STEM-Engineering Level Representative",  year: "July 2023 - May 2025" },
-    { description: "Personnel's Week 2024 & 2025 – Event Head ", year: "August 2023 - October 2025" },
-    { description: "Media and Coverages Committee – Head",                   year: "July 2023 - May 2025" }
+    { description: "AGHAM Research Club – Founder",                                           year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg"] },
+    { description: "High School Student Council – STEM-Engineering Level Representative",     year: "July 2023 - May 2025",        images: ["files/leadership-ssc-stem-rep-1.jpg"] },
+    { description: "Personnel's Week 2024 & 2025 – Event Head",                               year: "August 2023 - October 2025",  images: ["files/leadership-personnels-week-1.jpg", "files/leadership-personnels-week-2.jpg"] },
+    { description: "Media and Coverages Committee – Head",                                    year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg"] }
   ],
 
   /* ── Honors ─────────────────────────────────────────────────────── */
   honors: [
-    { description: "Annual Commencement Exercises – High Honors",                                         year: "April 2026" },
-    { description: "Annual Commencement Exercises – Best in Work Immersion",                              year: "April 2026" },
+    { description: "Annual Commencement Exercises – High Honors",                                         year: "April 2026", images: ["files/honors-commencement-1.jpg", "files/honors-commencement-2.jpg"] },
+    { description: "Annual Commencement Exercises – Best in Work Immersion",                              year: "April 2026", images: ["files/honors-work-immersion-1.jpg"] },
     { description: "Developer Camp Manila – Finalist",                                                    year: "March 2026" },
     { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "February 2026" },
     { description: "2025 Muntinlupa Robotics Fair – Champion",                                            year: "December 2025" },
     { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up",               year: "November 2025" },
     { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)",              year: "July 2025" },
     { description: "5th DLSU-D Research Conference – Best Paper Presentation",                            year: "May 2025" },
-    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025" },
+    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025", images: ["files/honors-nyc-2025-1.jpg"] },
     { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "March 2025" },
     { description: "2024 International Robothon – Innovative Open Category, Champion",                    year: "November 2024" },
-    { description: "20th National Youth Congress – Delegate",                                             year: "November 2023" },
+    { description: "20th National Youth Congress – Delegate",                                             year: "November 2023", images: ["files/honors-nyc-2023-1.jpg"] },
     { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",       year: "February 2023" }
   ]
 };
