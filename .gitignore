@@ -11,3 +11,7 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Agent / audit working dirs
+.superpowers/
+.audit-profile*/
