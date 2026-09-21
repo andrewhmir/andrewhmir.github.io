@@ -1416,6 +1416,34 @@ button.record-item {
   .modal-scroll {
     padding: 16px 20px 20px;
   }
+
+  /* Comfortable touch targets — Apple/Google guidance is 44x44 */
+  .nav-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .nav-brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .pill {
+    min-height: 44px;
+    padding: 11px 15px;
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .scroll-top {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px 10px;
+  }
 }
 
 /* Small mobile */
