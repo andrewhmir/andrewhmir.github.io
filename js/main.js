@@ -22,6 +22,7 @@
   const $leadershipList = document.getElementById('leadershipList');
   const $honorsList     = document.getElementById('honorsList');
   const $modalOverlay   = document.getElementById('modalOverlay');
+  const $modalCard      = document.getElementById('modalCard');
   const $modalClose     = document.getElementById('modalClose');
   const $modalHeader    = document.getElementById('modalHeader');
   const $modalImage     = document.getElementById('modalImage');
@@ -301,7 +302,7 @@
     const multi = images.length > 1;
 
     $modalHeader.innerHTML = `
-      <h3>${title}</h3>
+      <h3 id="modalTitle">${title}</h3>
       <p class="modal-subtitle">${GALLERY_LABELS[kind] || ''}${meta ? ' · ' + meta : ''}</p>`;
 
     $modalImage.style.display = '';
@@ -329,9 +330,7 @@
     bindGalleryControls();
     updateGalleryUI();
 
-    $modalOverlay.classList.add('active');
-    lockBodyScroll();
-    $navHeader.classList.add('hidden');
+    openDialog();
 
     startGalleryDrift();
   }
@@ -427,6 +426,54 @@
     galleryDriftId = requestAnimationFrame(driftTick);
   }
 
+  /* ── Dialog focus management ─────────────────────────────────── */
+
+  var lastFocused = null;
+
+  /* Make every sibling of the overlay inert: removes them from the tab
+     order and from the accessibility tree while the dialog is open. */
+  function setBackgroundInert(on) {
+    var layer = document.querySelector('.content-layer');
+    if (!layer) return;
+    Array.prototype.forEach.call(layer.children, function (el) {
+      if (el === $modalOverlay) return;
+      if (on) el.setAttribute('inert', '');
+      else el.removeAttribute('inert');
+    });
+  }
+
+  function openDialog() {
+    lastFocused = document.activeElement;
+    $modalOverlay.classList.add('active');
+    lockBodyScroll();
+    $navHeader.classList.add('hidden');
+    setBackgroundInert(true);
+    if ($modalCard) $modalCard.focus();
+  }
+
+  /* Wrap Tab/Shift+Tab inside the dialog. `inert` already handles assistive
+     tech and hit-testing; this keeps keyboard cycling deterministic. */
+  function trapFocus(e) {
+    if (e.key !== 'Tab') return;
+    if (!$modalOverlay.classList.contains('active') || !$modalCard) return;
+    var items = $modalCard.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    items = Array.prototype.filter.call(items, function (el) { return el.offsetParent !== null; });
+    if (!items.length) return;
+    var first = items[0];
+    var last = items[items.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === $modalCard)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  document.addEventListener('keydown', trapFocus);
+
   function openModal(projectId, tab) {
     if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
 
@@ -443,7 +490,7 @@
       : `${proj.title} — Overview`));
 
     $modalHeader.innerHTML = `
-      <h3>${title}</h3>
+      <h3 id="modalTitle">${title}</h3>
       <p class="modal-subtitle">${proj.venue}</p>`;
 
     if (isAwards) {
@@ -467,17 +514,18 @@
       }
     }
 
-    $modalOverlay.classList.add('active');
-    lockBodyScroll();
-    $navHeader.classList.add('hidden');
+    openDialog();
   }
 
   function closeModal() {
     stopGalleryDrift();
     if (!$modalOverlay) return;
     $modalOverlay.classList.remove('active');
+    setBackgroundInert(false);
     unlockBodyScroll();
     $navHeader.classList.remove('hidden');
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+    lastFocused = null;
   }
 
   if ($modalClose) {

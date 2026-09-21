@@ -1008,6 +1008,12 @@ button.record-item {
   transform: scale(1) translateY(0);
 }
 
+/* The dialog itself receives focus when it opens; a ring around the whole
+   card would be noise. Interactive children keep their own focus styles. */
+.modal-card:focus {
+  outline: none;
+}
+
 .modal-close {
   position: absolute;
   top: 14px;
