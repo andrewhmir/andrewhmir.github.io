@@ -93,7 +93,16 @@ const pressEnter = async () => {
   await sleep(450);
 };
 const modalOpen = () => evaluate(`document.getElementById('modalOverlay').classList.contains('active')`);
-const closeModal = async () => { await evaluate(`document.getElementById('modalOverlay').classList.remove('active'); document.body.style.overflow='';`); await sleep(200); };
+/* Dismiss via Escape so the app's own close path runs — removing the
+   .active class by hand would skip its teardown (inert background, scroll
+   lock, focus restore) and poison every later step. */
+const closeModal = async () => {
+  if (!(await modalOpen())) return;
+  const esc = { key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 };
+  await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...esc });
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...esc });
+  await sleep(400);
+};
 
 await setViewport(1440, 900, false);
 await goto(BASE);
@@ -211,6 +220,9 @@ await section('Modal dialog semantics', async () => {
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
   await sleep(350);
   check('Escape closes the modal', !(await modalOpen()));
+  check('focus returns to whatever opened the modal',
+    await evaluate(`document.activeElement === document.querySelector('[data-gallery]')`),
+    'activeElement=' + await evaluate(`document.activeElement.tagName + '.' + document.activeElement.className`));
   check('background is no longer inert', await evaluate(`!document.querySelector('.content-layer > [inert]')`));
 });
 
