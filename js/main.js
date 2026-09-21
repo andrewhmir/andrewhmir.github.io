@@ -154,7 +154,8 @@
         <div class="project-media">
           ${isImg
             ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-            : `<video class="project-thumb" playsinline autoplay loop muted preload="none">
+            : `<video class="project-thumb" playsinline loop muted preload="none"
+                     poster="${p.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg')}">
                 <source src="${p.video}" type="video/mp4">
                </video>`
           }
@@ -710,6 +711,33 @@
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   }
 
+  /* ── In-View Video Playback ──────────────────────────────────
+     Videos carry preload="none" and a poster, so nothing is fetched until a
+     card is actually on screen. Playback is skipped entirely when the visitor
+     has asked for reduced motion. */
+  function initVideoPlayback() {
+    var videos = document.querySelectorAll('.project-card video');
+    if (!videos.length) return;
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || !('IntersectionObserver' in window)) return;
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var v = entry.target;
+        if (entry.isIntersecting) {
+          var p = v.play();
+          /* autoplay can still be refused — the poster stays in place */
+          if (p && typeof p.catch === 'function') p.catch(function () {});
+        } else if (!v.paused) {
+          v.pause();
+        }
+      });
+    }, { threshold: 0.25 });
+
+    Array.prototype.forEach.call(videos, function (v) { observer.observe(v); });
+  }
+
   /* ── Smooth Scroll for Anchor Links ─────────────────────────── */
   function initSmoothScroll() {
     document.addEventListener('click', function (e) {
@@ -806,6 +834,7 @@
     renderFooter();
 
     initRevealObserver();
+    initVideoPlayback();
     initSmoothScroll();
 
     window.addEventListener('scroll', onScroll, { passive: true });

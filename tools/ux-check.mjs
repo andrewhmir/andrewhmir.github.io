@@ -257,7 +257,47 @@ await section('Share metadata', async () => {
   check('og:image actually resolves', res.ok, res.status + ' ' + ogPath);
 });
 
-/* -- 8. Mobile: no overflow, tappable targets ------------------------- */
+/* -- 8. Page weight: no video before a card is on screen -------------- */
+await section('Page weight', async () => {
+  const weight = new Map();
+  cdp.on('Network.responseReceived', (p) => weight.set(p.requestId, { url: p.response.url, type: p.type, n: 0 }));
+  cdp.on('Network.loadingFinished', (p) => { const w = weight.get(p.requestId); if (w) w.n = p.encodedDataLength; });
+  const isVideo = (w) => w.type === 'Media' || /\.mp4/i.test(w.url);
+  const sum = (pred) => [...weight.values()].filter(pred).reduce((a, w) => a + w.n, 0) / 1048576;
+
+  await setViewport(1440, 900, false);
+  await goto(BASE);          /* lands at the top of the page and stays there */
+  await sleep(3000);
+  const topVideo = sum(isVideo);
+  const topTotal = sum(() => true);
+  console.log('  info  page top:    ' + topVideo.toFixed(2) + ' MB video / ' + topTotal.toFixed(2) + ' MB total');
+  check('no video is fetched before Projects scrolls into view',
+    topVideo < 0.5, topVideo.toFixed(2) + ' MB of video at page top');
+
+  /* Then dwell on the projects section — this is what a real visit costs.
+     (A fast full-page scroll is a poor measure: Chrome aborts large media
+     the moment it leaves the viewport.) */
+  await evaluate(`document.getElementById('Projects').scrollIntoView({behavior:'instant', block:'start'})`);
+  await sleep(9000);
+  console.log('  info  projects view: ' + sum(isVideo).toFixed(2) + ' MB video / ' + sum(() => true).toFixed(2) + ' MB total');
+});
+
+/* -- 9. Reduced motion: nothing autoplays ----------------------------- */
+await section('Reduced motion', async () => {
+  await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+  await evaluate(`document.getElementById('Projects').scrollIntoView({behavior:'instant', block:'start'})`);
+  await sleep(4000);
+  const playing = await evaluate(`[...document.querySelectorAll('.project-card video')].filter(v => !v.paused).length`);
+  const posters = await evaluate(`[...document.querySelectorAll('.project-card video')].filter(v => !!v.getAttribute('poster')).length`);
+  const total = await evaluate(`document.querySelectorAll('.project-card video').length`);
+  check('no project video autoplays under prefers-reduced-motion', playing === 0, playing + ' of ' + total + ' playing');
+  check('every project video has a poster for the still frame', posters === total, posters + ' of ' + total);
+  await cdp.send('Emulation.setEmulatedMedia', { features: [] });
+});
+
+/* -- 10. Mobile: no overflow, tappable targets ------------------------ */
 await section('Mobile (390x844)', async () => {
   await setViewport(390, 844, true);
   await goto(BASE);
