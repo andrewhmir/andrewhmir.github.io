@@ -238,7 +238,26 @@ await section('Resources', async () => {
   check('no console errors beyond the pending photos', realErrors.length === 0, realErrors.join(' | '));
 });
 
-/* -- 7. Mobile: no overflow, tappable targets ------------------------- */
+/* -- 7. Share metadata ------------------------------------------------ */
+await section('Share metadata', async () => {
+  const meta = await evaluate(`({
+    description: (document.querySelector('meta[name="description"]') || {}).content || '',
+    ogImage: (document.querySelector('meta[property="og:image"]') || {}).content || '',
+    ogTitle: (document.querySelector('meta[property="og:title"]') || {}).content || '',
+    ogDesc: (document.querySelector('meta[property="og:description"]') || {}).content || '',
+    themeColor: (document.querySelector('meta[name="theme-color"]') || {}).content || '',
+  })`);
+  check('description present', meta.description.length > 50, meta.description.length + ' chars');
+  check('og:title present', meta.ogTitle.length > 0);
+  check('og:description present', meta.ogDesc.length > 0);
+  check('og:image is absolute', /^https:\/\//.test(meta.ogImage), meta.ogImage);
+  check('theme-color present', /^#/.test(meta.themeColor), meta.themeColor);
+  const ogPath = meta.ogImage.replace(/^https:\/\/[^/]+\//, '');
+  const res = await fetch(BASE + ogPath, { method: 'HEAD' });
+  check('og:image actually resolves', res.ok, res.status + ' ' + ogPath);
+});
+
+/* -- 8. Mobile: no overflow, tappable targets ------------------------- */
 await section('Mobile (390x844)', async () => {
   await setViewport(390, 844, true);
   await goto(BASE);
