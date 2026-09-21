@@ -265,12 +265,34 @@ await section('Mobile (390x844)', async () => {
   await sleep(600);
   const mob = await evaluate(`(() => {
     const de = document.documentElement;
+    /* Measure LAYOUT size (offsetWidth/Height), not getBoundingClientRect:
+       the closed modal card is scaled, which shrinks its children's rects
+       without changing how big the control really is. */
+    const effective = (el) => {
+      const ownW = el.offsetWidth, ownH = el.offsetHeight;
+      /* Full-area overlay pattern (.project-hit::after): the element's own box
+         is just the title text while the real tap target is the whole card. */
+      const after = getComputedStyle(el, '::after');
+      if (after.content && after.content !== 'none' && after.position === 'absolute') {
+        let anc = el.parentElement;
+        while (anc && getComputedStyle(anc).position === 'static') anc = anc.parentElement;
+        if (anc && (anc.offsetWidth > ownW || anc.offsetHeight > ownH)) {
+          return { w: anc.offsetWidth, h: anc.offsetHeight };
+        }
+      }
+      return { w: ownW, h: ownH };
+    };
     const small = [...document.querySelectorAll('a[href], button, [data-gallery]')].filter(el => {
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 && (r.height < 44 || r.width < 44);
+      if (el.offsetWidth < 1 || el.offsetHeight < 1) return false;
+      const t = effective(el);
+      return t.w < 44 || t.h < 44;
     });
     return { overflow: de.scrollWidth - de.clientWidth, small: small.length,
-             examples: small.slice(0, 5).map(el => (el.id || el.className) + ' ' + Math.round(el.getBoundingClientRect().width) + 'x' + Math.round(el.getBoundingClientRect().height)) };
+             examples: small.slice(0, 8).map(el => {
+               const t = effective(el);
+               const name = (el.id ? '#' + el.id : '') + (typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\\s+/)[0] : '');
+               return name + ' effective=' + Math.round(t.w) + 'x' + Math.round(t.h);
+             }) };
   })()`);
   check('no horizontal overflow on mobile', mob.overflow === 0, mob.overflow + 'px');
   check('all tap targets are at least 44x44', mob.small === 0, mob.examples.join(' | '));
