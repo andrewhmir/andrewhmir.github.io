@@ -145,21 +145,29 @@
     }).join('');
 
     return `
-      <div class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
-        ${isImg
-          ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-          : `<video class="project-thumb" playsinline autoplay loop muted preload="metadata">
-              <source src="${p.video}" type="video/mp4">
-             </video>`
-        }
+      <article class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
+        <div class="project-media">
+          ${isImg
+            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
+            : `<video class="project-thumb" playsinline autoplay loop muted preload="none">
+                <source src="${p.video}" type="video/mp4">
+               </video>`
+          }
+          <div class="project-cue" aria-hidden="true">
+            <span class="project-cue-icon"><i class="fas fa-eye"></i></span>
+            <span class="project-cue-label">View project</span>
+          </div>
+        </div>
         <div class="project-info">
-          <h3 class="project-title">${p.title}${sourceBadge}</h3>
+          <h3 class="project-title">
+            <button type="button" class="project-hit" data-action="modal" data-project="${p.id}" data-tab="overview">${p.title}</button>${sourceBadge}
+          </h3>
           ${p.tagline ? `<p class="project-tagline">${p.tagline}</p>` : ''}
           <p class="project-authors">${p.authors}</p>
           <span class="project-venue">${p.venue}</span>
           <div class="project-links">${pills}</div>
         </div>
-      </div>`;
+      </article>`;
   }
 
   function renderProjects() {

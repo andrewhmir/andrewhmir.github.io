@@ -551,6 +551,7 @@ p:last-child {
 }
 
 .project-card {
+  position: relative;               /* containing block for .project-hit::after */
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -558,13 +559,18 @@ p:last-child {
   background: var(--surface-1);
   border: 1px solid var(--border-1);
   border-radius: var(--radius-md);
+  cursor: pointer;
   transition: background var(--transition-base),
-              border-color var(--transition-base);
+              border-color var(--transition-base),
+              transform var(--transition-base),
+              box-shadow var(--transition-base);
 }
 
 .project-card:hover {
   background: var(--surface-2);
   border-color: var(--border-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
 }
 
 /* Solo projects get a subtle warm tint */
@@ -572,24 +578,122 @@ p:last-child {
   border-left: 2px solid var(--accent);
 }
 
-.project-thumb {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
+.project-media {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-1);
   background: rgba(0, 0, 0, 0.2);
   transition: border-color var(--transition-base);
 }
 
-.project-card:hover .project-thumb {
+.project-card:hover .project-media {
   border-color: var(--border-2);
+}
+
+.project-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  transition: transform 400ms var(--ease-out);
+}
+
+.project-card:hover .project-thumb {
+  transform: scale(1.04);
 }
 
 .project-thumb.img-fallback {
   object-fit: contain;
-  background: rgba(0, 0, 0, 0.15);
 }
+
+/* The title is the card's single control; its ::after covers the whole
+   card, so a click anywhere activates the primary action. */
+.project-hit {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition-base);
+}
+
+.project-hit::after {
+  content: '';
+  position: absolute;
+  inset: 0;                 /* resolves against .project-card */
+  z-index: 1;               /* above the media, below the pills */
+  border-radius: var(--radius-md);
+}
+
+.project-hit:hover,
+.project-hit:focus-visible {
+  border-bottom-color: var(--accent);
+}
+
+.project-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Pills sit above the full-card overlay so they stay individually clickable */
+.project-links {
+  position: relative;
+  z-index: 2;
+}
+
+/* View cue — hover/focus affordance naming the action */
+.project-cue {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  background: rgba(20, 16, 13, 0.62);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;     /* clicks fall through to the card overlay */
+}
+
+.project-cue-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  background: rgba(200, 137, 46, 0.12);
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
+.project-cue-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-bright);
+}
+
+/* Touch devices have no hover — the cue would only flash on tap, so limit
+   the pointer-driven reveal to hover-capable devices. Keyboard still gets it
+   via :focus-within below. */
+@media (hover: hover) {
+  .project-card:hover .project-cue { opacity: 1; }
+}
+
+.project-card:focus-within .project-cue { opacity: 1; }
 
 .project-info {
   display: flex;
