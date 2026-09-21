@@ -85,9 +85,11 @@ const pressTab = async (shift = false) => {
   await sleep(110);
 };
 const pressEnter = async () => {
-  const b = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 };
-  await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', ...b });
-  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...b });
+  const base = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 };
+  /* rawKeyDown does NOT activate a <button> over CDP — the key has to arrive
+     as a real keyDown carrying its text. */
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', ...base, text: '\r', unmodifiedText: '\r' });
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
   await sleep(450);
 };
 const modalOpen = () => evaluate(`document.getElementById('modalOverlay').classList.contains('active')`);
@@ -149,6 +151,13 @@ await section('View cue', async () => {
     check('cue appears on focus-within', false, 'no .project-cue yet');
     return;
   }
+  /* Clear focus and park the pointer away from the card: earlier sections
+     leave focus on a card control and the mouse hovering it, both of which
+     legitimately reveal the cue. */
+  await closeModal();
+  await evaluate(`document.activeElement && document.activeElement.blur && document.activeElement.blur();`);
+  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5, buttons: 0 });
+  await sleep(400);
   const cueHidden = await evaluate(`getComputedStyle(document.querySelector('.project-cue')).opacity`);
   await evaluate(`document.querySelector('.project-card .project-hit').focus()`);
   await sleep(400);
