@@ -1247,3 +1247,18 @@ Measured with headless Chrome 153 over CDP at 1440×900 and 390×844 against a l
 | 8 | 26 tap targets below the 44 px mobile guideline | e.g. nav toggle 38×25, pills 29–31 px tall | Task 6 |
 
 **Verified healthy in the same audit — deliberately unchanged:** no horizontal overflow at 1440 or 390 px; text contrast ≥ 6.03:1 for every sampled token (WCAG AA pass); Escape closes the modal; body scroll-lock and scrollbar-width compensation work; reveal-on-scroll fires correctly under real scrolling (0 → 27 elements, none stuck invisible); mobile nav opens, closes, and closes on backdrop click; `<noscript>` fallback present.
+
+---
+
+## Appendix B — Execution notes (deviations from the plan as written)
+
+Corrections found while executing. `tools/ux-check.mjs` as committed is authoritative; the Task 1 code block above is the pre-execution draft.
+
+1. **The check script must not abort.** Probing `.project-hit` before Task 2 existed threw and killed the run. Each numbered section is now wrapped in `section(title, fn)`, which catches and records an `ERROR` and continues — so the script is genuinely usable as a failing test *before* the fixes.
+2. **`rawKeyDown` does not activate a `<button>` over CDP.** Measured four dispatch shapes: only `type: 'keyDown'` carrying `text: '\\r'` produced a click (and `modalOpen: true`). Space activates on either shape. `pressEnter()` uses the `keyDown` form.
+3. **The harness must dismiss modals through the app.** Its original `closeModal()` stripped the `.active` class directly, which skipped the teardown Task 4 introduced — the background stayed `inert` and silently blocked every later click. It now sends Escape.
+4. **Measure tap targets by layout size.** `getBoundingClientRect()` reported the closed modal's close button as 42×42 because `.modal-card` is scaled; `offsetWidth`/`offsetHeight` report the true 44×44.
+5. **Tap targets need an "effective area" notion.** `.project-hit`'s own box is only the title text, but its `::after` overlay makes the whole card the target. The check walks up to the positioned ancestor when a full-area `::after` is present.
+6. **No `width: 100%` on the button resets.** It fought the existing `margin-left: 4px`, making every clickable row 1036 px wide against 1032 px for the inert `<div>` rows in the same list. Both containers are flex columns, so rows stretch correctly without it.
+7. **Two more controls needed enlarging** beyond the plan's three: `.modal-close` and `.scroll-top` (the "Top" button, 29×38).
+8. **Page weight is reported two ways.** "Video at page top" is the contract worth asserting (now 0.00 MB, was 2.74 MB). A single "full page" figure is unreliable — Chrome aborts large media when it leaves the viewport — so a dwell on the Projects section is reported as `info` instead: 32.73 MB before, 37.85 MB after, because previews that used to be aborted now actually play. **That number is dominated by `CENTHRO_Preview.mp4` (33.8 MB) and is the remaining open item.**
