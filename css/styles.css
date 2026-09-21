@@ -777,6 +777,31 @@ p:last-child {
   gap: 2px;
 }
 
+/* Gallery rows are <button> elements — reset UA styling but keep the
+   existing grid/flex row layout from .timeline-item / .record-item.
+   No width is set: both list containers are flex columns, so the rows
+   stretch to the same width as the inert <div> rows (including the
+   margin-left offset they already carry). */
+button.timeline-item,
+button.record-item {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--border-1);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.timeline-item:focus-visible,
+.record-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
 .timeline-item {
   display: grid;
   grid-template-columns: 110px 1fr;
@@ -1096,6 +1121,7 @@ p:last-child {
 }
 
 .gallery-slide {
+  position: relative;      /* anchors the placeholder caption */
   flex: 0 0 100%;
   margin: 0;
 }
@@ -1105,6 +1131,23 @@ p:last-child {
   aspect-ratio: 16 / 9;
   object-fit: cover;
   display: block;
+}
+
+/* The owner has chosen to keep these rows clickable while the photos are
+   still being collected, so label the placeholder instead of showing a
+   bare grey box. */
+.gallery-slide.is-placeholder::after {
+  content: 'Photos coming soon';
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 10px 14px;
+  background: rgba(20, 16, 13, 0.72);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
 }
 
 .gallery-arrow {

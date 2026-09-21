@@ -110,13 +110,17 @@
     if (!$newsTimeline) return;
     $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) => {
       const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-      const attrs = hasGallery ? ` data-gallery="news" data-index="${i}"` : '';
-      const cls = hasGallery ? ' timeline-item--gallery' : '';
       const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
-      return `<div class="timeline-item reveal${cls}" style="--reveal-delay: ${i * 60}ms"${attrs}>
-        <span class="timeline-date">${item.date}</span>
-        <p class="timeline-text">${item.text}${hint}</p>
-      </div>`;
+      const inner = `<span class="timeline-date">${item.date}</span>
+        <p class="timeline-text">${item.text}${hint}</p>`;
+      const delay = `style="--reveal-delay: ${i * 60}ms"`;
+
+      if (!hasGallery) {
+        return `<div class="timeline-item reveal" ${delay}>${inner}</div>`;
+      }
+      return `<button type="button" class="timeline-item timeline-item--gallery reveal" ${delay}
+        data-gallery="news" data-index="${i}"
+        aria-label="View photos: ${item.text}">${inner}</button>`;
     }).join('');
   }
 
@@ -215,13 +219,17 @@
   /* ── Leadership ─────────────────────────────────────────────── */
   function renderRecordItem(item, i, kind, step) {
     const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-    const attrs = hasGallery ? ` data-gallery="${kind}" data-index="${i}"` : '';
-    const cls = hasGallery ? ' record-item--gallery' : '';
     const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
-    return `<div class="record-item reveal${cls}" style="--reveal-delay: ${i * step}ms"${attrs}>
-      <span class="record-desc">${item.description}${hint}</span>
-      <span class="record-year">${item.year}</span>
-    </div>`;
+    const inner = `<span class="record-desc">${item.description}${hint}</span>
+      <span class="record-year">${item.year}</span>`;
+    const delay = `style="--reveal-delay: ${i * step}ms"`;
+
+    if (!hasGallery) {
+      return `<div class="record-item reveal" ${delay}>${inner}</div>`;
+    }
+    return `<button type="button" class="record-item record-item--gallery reveal" ${delay}
+      data-gallery="${kind}" data-index="${i}"
+      aria-label="View photos: ${item.description}">${inner}</button>`;
   }
 
   function renderLeadership() {
@@ -303,7 +311,7 @@
           ${images.concat(images).map((src, i) => `
             <figure class="gallery-slide">
               <img src="${src}" alt="${title} — photo ${(i % images.length) + 1}"
-                   onerror="this.onerror=null;this.src='files/PlaceHolder.png';">
+                   onerror="this.closest('.gallery-slide').classList.add('is-placeholder');this.onerror=null;this.src='files/PlaceHolder.png';">
             </figure>`).join('')}
         </div>
         ${multi ? `
