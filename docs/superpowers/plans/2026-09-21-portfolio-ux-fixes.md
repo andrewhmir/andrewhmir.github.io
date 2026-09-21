@@ -1261,6 +1261,19 @@ Corrections found while executing. `tools/ux-check.mjs` as committed is authorit
 5. **Tap targets need an "effective area" notion.** `.project-hit`'s own box is only the title text, but its `::after` overlay makes the whole card the target. The check walks up to the positioned ancestor when a full-area `::after` is present.
 6. **No `width: 100%` on the button resets.** It fought the existing `margin-left: 4px`, making every clickable row 1036 px wide against 1032 px for the inert `<div>` rows in the same list. Both containers are flex columns, so rows stretch correctly without it.
 7. **Two more controls needed enlarging** beyond the plan's three: `.modal-close` and `.scroll-top` (the "Top" button, 29×38).
-8. **Page weight is reported two ways.** "Video at page top" is the contract worth asserting (now 0.00 MB, was 2.74 MB). A single "full page" figure is unreliable — Chrome aborts large media when it leaves the viewport — so a dwell on the Projects section is reported as `info` instead: 32.73 MB before, 37.85 MB after Task 7 alone (previews that used to be aborted now actually play), and **6.77 MB after the re-encode below**.
-9. **`CENTHRO_Preview.mp4` was re-encoded with the owner's approval.** The source was 1920×1080 at 18.8 Mbps with a stereo AAC track the page never plays (the element is `muted`). Re-encoded to 960×540, CRF 27, libx264 preset slow, audio stripped, `+faststart`: **33.8 MB → 0.81 MB** — clean decode, identical duration. Total project video went 48.96 MB → 15.96 MB. `BiyaHey.mp4` (7.8 MB) and `HiveMind_Preview.mp4` (4.71 MB) are now the largest remaining and could be treated identically, but that is **not done — it needs the owner's decision**, since these are their source files.
+8. **Page weight is reported two ways.** "Video at page top" is the contract worth asserting (now 0.00 MB, was 2.74 MB). A single "full page" figure is unreliable — Chrome aborts large media when it leaves the viewport — so a dwell on the Projects section is reported as `info` instead: 32.73 MB before any fix, 37.85 MB after Task 7 alone (previews that used to be aborted now actually play), and **2.64 MB once every video was re-encoded**.
+9. **All six project videos were re-encoded, with the owner's approval.** Recipe: long side scaled to at most 960 px, libx264 preset slow, CRF 27, `yuv420p`, audio stripped (the elements are `muted`, so no track the page plays was lost), `+faststart`. Quality was measured rather than assumed, comparing each output against its source with ffmpeg's SSIM filter at a common resolution:
+
+    | Video | Source | Before | After | SSIM |
+    |---|---|---|---|---|
+    | CENTHRO_Preview | 1920×1080 @ 18.8 Mbps | 33.80 MB | 0.81 MB | — |
+    | BiyaHey | 1890×942 @ 1.73 Mbps | 7.80 MB | 0.61 MB | 0.981 |
+    | HiveMind_Preview | 1918×1078 @ 1.60 Mbps | 4.71 MB | 0.28 MB | 0.992 |
+    | SATLearn_Preview | 1918×1078 @ 0.71 Mbps | 1.13 MB | 0.06 MB | 0.996 |
+    | Palad_Preview | 960×540 @ 0.75 Mbps | 0.79 MB | 0.49 MB | 0.992 |
+    | FocusBuddy_Preview | 368×640 @ 0.66 Mbps | 0.72 MB | 0.38 MB | 0.983 |
+    | **Total** | | **48.96 MB** | **2.64 MB** | |
+
+    Every output decoded clean (`ffmpeg -f null -` silent) and every SSIM was ≥ 0.981. Originals remain recoverable from git history.
 10. **ffmpeg could not be installed normally.** `winget` failed, and the shell cannot do HTTPS at all under the sandbox (`schannel: SEC_E_NO_CREDENTIALS`). A portable build was fetched with a one-off escalation into the user's temp and deleted afterwards. The Playwright-bundled ffmpeg remains unusable (`--disable-everything`, no H.264 decoder) — which is why `tools/make-images.mjs` uses Chrome's canvas instead.
+11. **Posters were regenerated after every re-encode.** The five regenerated posters differ by a few hundred bytes from the originals, confirming the frames were re-extracted from the new files rather than left stale.
