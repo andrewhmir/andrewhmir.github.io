@@ -46,8 +46,8 @@ const PORTFOLIO = {
   /* ── Navigation ─────────────────────────────────────────────────── */
   nav: [
     { label: "Home",       id: "Home" },
-    { label: "Projects",   id: "Projects" },
     { label: "News",       id: "News" },
+    { label: "Projects",   id: "Projects" },
     { label: "Records",    id: "Records" }
   ],
 
