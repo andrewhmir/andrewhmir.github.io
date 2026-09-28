@@ -31,7 +31,7 @@ const PORTFOLIO = {
     "I like art, and I have fun building things.",
     "I'm inspired by how technology can make everyday life better.",
     "I want to turn that inspiration into work that makes the world a little better.",
-    "This site is a record of my pursuit of knowledge."
+    "This site is a record of my pursuit of that."
   ],
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
