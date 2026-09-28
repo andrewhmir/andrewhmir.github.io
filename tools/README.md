@@ -32,3 +32,31 @@ decoding and canvas.
 
 Do **not** substitute the ffmpeg bundled with Playwright — it is built with
 `--disable-everything` and has no H.264 decoder, so it cannot open these MP4s.
+
+## import-photos.mjs
+
+Imports the source photos from the staging folder (`~/Downloads/AAA` by default,
+override with `SRC=`) into `files/`, resized to 1600px on the long edge at JPEG
+quality 82. The `MAPPING` table at the top of the script is the contract between
+the source filenames and the paths referenced in `js/data.js`; add an entry there
+before wiring a new path into the data file.
+
+It serves the staging folder to a headless Chrome tab (same-origin, so the canvas
+stays untainted) and lets Chrome do the decoding and resizing. Re-running is
+idempotent and reports `source -> shipped` sizes.
+
+```powershell
+# terminal 1 — headless Chrome with debugging (also used by ux-check.mjs)
+& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
+  --headless=new --remote-debugging-port=9222 `
+  --user-data-dir="$env:TEMP\ux-check-profile" about:blank
+
+# terminal 2 — import
+node tools/import-photos.mjs
+```
+
+Source files whose extension lies about their format are handled — the server
+sniffs the JPEG/PNG magic bytes, so a `.CR3` that is really a JPEG imports fine.
+
+Note: headless Chrome needs Mojo named pipes to start, so these tools cannot run
+from a session whose sandbox forbids named-pipe access.

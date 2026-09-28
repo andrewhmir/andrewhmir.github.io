@@ -226,19 +226,106 @@ await section('Modal dialog semantics', async () => {
   check('background is no longer inert', await evaluate(`!document.querySelector('.content-layer > [inert]')`));
 });
 
-/* -- 6. No broken resources, no console errors ------------------------ */
+/* -- 6. Gallery photos resolve and render ----------------------------- */
+/* The owner has not supplied photos for these rows yet, and chose to keep
+   them clickable with a labelled placeholder. Those 404s are expected —
+   every other photo must resolve, and no wired photo may fall back to the
+   1.1 KB placeholder. Add a path here only while it is genuinely pending. */
+const PENDING_PHOTOS = [
+  'files/news-REDACTED-1.jpg',
+  'files/news-graduation-1.jpg',
+  'files/news-graduation-2.jpg',
+  'files/news-heroes-tribute-1.jpg',
+  'files/news-steam-conference-1.jpg',
+  'files/leadership-personnels-week-1.jpg',
+  'files/leadership-personnels-week-2.jpg',
+  'files/honors-commencement-1.jpg',
+  'files/honors-commencement-2.jpg',
+  'files/honors-work-immersion-1.jpg',
+  'files/honors-nyc-2023-1.jpg'
+];
+/* Matches both the bare path from js/data.js and the absolute URL carried by
+   a console or network event. */
+const isPendingPhoto = (src) => PENDING_PHOTOS.some((p) => String(src).replace(/\\/g, '/').includes(p));
+
+await section('Gallery photos', async () => {
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+
+  /* Read the paths out of the data module the page itself uses, so this check
+     tracks js/data.js instead of duplicating its contents. */
+  const wired = await evaluate(`(() => {
+    const out = [];
+    const collect = (kind, list) => list.forEach((entry, index) => {
+      (entry.images || []).forEach((src) => out.push({ kind, index, src }));
+    });
+    collect('news', PORTFOLIO.news);
+    collect('leadership', PORTFOLIO.leadership);
+    collect('honors', PORTFOLIO.honors);
+    return out;
+  })()`);
+
+  const shipped = wired.filter((w) => !isPendingPhoto(w.src));
+  const waiting = wired.filter((w) => isPendingPhoto(w.src));
+  console.log('  info  ' + shipped.length + ' photos wired, ' + waiting.length + ' still awaiting photos');
+
+  const unresolved = [];
+  const stubs = [];
+  for (const w of shipped) {
+    const head = await fetch(BASE + w.src, { method: 'HEAD' });
+    const len = Number(head.headers.get('content-length') || 0);
+    if (!head.ok) unresolved.push(head.status + ' ' + w.src);
+    else if (len < 5000) stubs.push(w.src + ' (' + len + ' bytes)');
+  }
+  check('every wired gallery photo resolves', unresolved.length === 0, unresolved.join(' | '));
+  check('no wired photo is a placeholder stub', stubs.length === 0, stubs.join(' | '));
+
+  /* Open each freshly wired gallery through the app's own click handler and
+     confirm the decoder produced real pixels — a 200 alone would not catch a
+     corrupt or mislabelled file. */
+  const rows = [...new Set(shipped.map((w) => w.kind + ':' + w.index))];
+  const broken = [];
+  for (const row of rows) {
+    const [kind, index] = row.split(':');
+    const opened = await evaluate(`(() => {
+      const el = document.querySelector('[data-gallery="${kind}"][data-index="${index}"]');
+      if (!el) return false;
+      el.click();
+      return true;
+    })()`);
+    if (!opened) { broken.push(row + ' (no such row)'); continue; }
+    const shown = await evaluate(`(async () => {
+      const track = document.getElementById('galleryTrack');
+      const imgs = track ? [...track.querySelectorAll('img')] : [];
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline && imgs.some((i) => !i.complete)) await new Promise((r) => setTimeout(r, 100));
+      const slides = track ? [...track.querySelectorAll('.gallery-slide')] : [];
+      return {
+        slides: slides.length,
+        empty: slides.filter((s) => {
+          const i = s.querySelector('img');
+          return !i || i.naturalWidth === 0;
+        }).length,
+        placeholders: slides.filter((s) => s.classList.contains('is-placeholder')).length
+      };
+    })()`);
+    if (!shown.slides || shown.empty || shown.placeholders) {
+      broken.push(row + ' (slides=' + shown.slides + ' broken=' + shown.empty + ' placeholder=' + shown.placeholders + ')');
+    }
+    await closeModal();
+  }
+  check('every wired gallery renders real photos', broken.length === 0, broken.join(' | '));
+});
+
+/* -- 7. No broken resources, no console errors ------------------------ */
 await section('Resources', async () => {
-  /* The News/Leadership/Honors photos are known to be pending — the owner
-     chose to keep those rows clickable with a labelled placeholder. Ignore
-     those specific files, but nothing else may 404. */
-  const pendingPhoto = (s) => /files[\\/](news|leadership|honors)-[^/\s]*\.jpg/i.test(s);
-  const unexpected = badResponses.filter((u) => !pendingPhoto(u));
-  const realErrors = consoleErrors.filter((t) => !pendingPhoto(t));
+  const unexpected = badResponses.filter((u) => !isPendingPhoto(u));
+  const realErrors = consoleErrors.filter((t) => !isPendingPhoto(t));
   check('no unexpected 4xx/5xx responses', unexpected.length === 0, unexpected.join(' | '));
   check('no console errors beyond the pending photos', realErrors.length === 0, realErrors.join(' | '));
 });
 
-/* -- 7. Share metadata ------------------------------------------------ */
+/* -- 8. Share metadata ------------------------------------------------ */
 await section('Share metadata', async () => {
   const meta = await evaluate(`({
     description: (document.querySelector('meta[name="description"]') || {}).content || '',
@@ -257,7 +344,7 @@ await section('Share metadata', async () => {
   check('og:image actually resolves', res.ok, res.status + ' ' + ogPath);
 });
 
-/* -- 8. Page weight: no video before a card is on screen -------------- */
+/* -- 9. Page weight: no video before a card is on screen -------------- */
 await section('Page weight', async () => {
   const weight = new Map();
   cdp.on('Network.responseReceived', (p) => weight.set(p.requestId, { url: p.response.url, type: p.type, n: 0 }));
@@ -282,7 +369,7 @@ await section('Page weight', async () => {
   console.log('  info  projects view: ' + sum(isVideo).toFixed(2) + ' MB video / ' + sum(() => true).toFixed(2) + ' MB total');
 });
 
-/* -- 9. Reduced motion: nothing autoplays ----------------------------- */
+/* -- 10. Reduced motion: nothing autoplays ----------------------------- */
 await section('Reduced motion', async () => {
   await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await setViewport(1440, 900, false);
@@ -297,7 +384,7 @@ await section('Reduced motion', async () => {
   await cdp.send('Emulation.setEmulatedMedia', { features: [] });
 });
 
-/* -- 10. Mobile: no overflow, tappable targets ------------------------ */
+/* -- 11. Mobile: no overflow, tappable targets ------------------------ */
 await section('Mobile (390x844)', async () => {
   await setViewport(390, 844, true);
   await goto(BASE);

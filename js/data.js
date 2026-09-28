@@ -8,7 +8,18 @@
    that line clickable and open a rotating photo gallery in the modal.
    Paths are relative to index.html (e.g. "files/leadership-aghj-founder-1.jpg").
    Missing files automatically fall back to files/PlaceHolder.png, so you can
-   drop photos into files/ and name them to match these paths. */
+   drop photos into files/ and name them to match these paths.
+
+   Name photos `<section>-<event>-<n>.jpg`, numbered from 1 in the order they
+   should appear. Competition photos use the year plus the level of the round:
+   `honors-robothon-<year>-<ph|intl>-<n>.jpg` (ph = Philippine Robothon).
+
+   Source photos are imported and resized by tools/import-photos.mjs, which owns
+   the mapping from the owner's staging filenames to these paths.
+
+   Still awaiting photos (rows stay clickable and show the labelled placeholder):
+   the four News entries, Personnel's Week, Commencement, Work Immersion, and
+   the 20th National Youth Congress. */
 
 const PORTFOLIO = {
 
@@ -208,10 +219,10 @@ const PORTFOLIO = {
 
   /* ── Leadership ─────────────────────────────────────────────────── */
   leadership: [
-    { description: "AGHAM Research Club – Founder",                                           year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg"] },
-    { description: "High School Student Council – STEM-Engineering Level Representative",     year: "July 2023 - May 2025",        images: ["files/leadership-ssc-stem-rep-1.jpg"] },
+    { description: "AGHAM Research Club – Founder",                                           year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg", "files/leadership-aghj-founder-3.jpg", "files/leadership-aghj-founder-4.jpg"] },
+    { description: "High School Student Council – STEM-Engineering Level Representative",     year: "July 2023 - May 2025",        images: ["files/leadership-ssc-stem-rep-1.jpg", "files/leadership-ssc-stem-rep-2.jpg", "files/leadership-ssc-stem-rep-3.jpg", "files/leadership-ssc-stem-rep-4.jpg"] },
     { description: "Personnel's Week 2024 & 2025 – Event Head",                               year: "August 2023 - October 2025",  images: ["files/leadership-personnels-week-1.jpg", "files/leadership-personnels-week-2.jpg"] },
-    { description: "Media and Coverages Committee – Head",                                    year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg"] }
+    { description: "Media and Coverages Committee – Head",                                    year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg", "files/leadership-media-coverages-2.jpg", "files/leadership-media-coverages-3.jpg"] }
   ],
 
   /* ── Honors ─────────────────────────────────────────────────────── */
@@ -219,14 +230,14 @@ const PORTFOLIO = {
     { description: "Annual Commencement Exercises – High Honors",                                         year: "April 2026", images: ["files/honors-commencement-1.jpg", "files/honors-commencement-2.jpg"] },
     { description: "Annual Commencement Exercises – Best in Work Immersion",                              year: "April 2026", images: ["files/honors-work-immersion-1.jpg"] },
     { description: "Developer Camp Manila – Finalist",                                                    year: "March 2026" },
-    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "February 2026" },
+    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "February 2026", images: ["files/honors-robothon-2026-ph-1.jpg"] },
     { description: "2025 Muntinlupa Robotics Fair – Champion",                                            year: "December 2025" },
     { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up",               year: "November 2025" },
     { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)",              year: "July 2025" },
     { description: "5th DLSU-D Research Conference – Best Paper Presentation",                            year: "May 2025" },
-    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025", images: ["files/honors-nyc-2025-1.jpg"] },
-    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "March 2025" },
-    { description: "2024 International Robothon – Innovative Open Category, Champion",                    year: "November 2024" },
+    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025", images: ["files/honors-nyc-2025-1.jpg", "files/honors-nyc-2025-2.jpg"] },
+    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "March 2025", images: ["files/honors-robothon-2025-ph-1.jpg", "files/honors-robothon-2025-ph-2.jpg", "files/honors-robothon-2025-ph-3.jpg"] },
+    { description: "2024 International Robothon – Innovative Open Category, Champion",                    year: "November 2024", images: ["files/honors-robothon-2024-intl-1.jpg", "files/honors-robothon-2024-intl-2.jpg"] },
     { description: "20th National Youth Congress – Delegate",                                             year: "November 2023", images: ["files/honors-nyc-2023-1.jpg"] },
     { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",       year: "February 2023" }
   ]
