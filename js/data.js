@@ -53,7 +53,7 @@ const PORTFOLIO = {
 
   /* ── News ──────────────────────────────────────────────────────── */
   news: [
-    { date: "May 2026",   text: "Started a Data Engineering Role at REDACTED – Quezon City",                                      images: ["files/news-REDACTED-1.jpg"] },
+    { date: "May 2026",   text: "Started a Data Engineering Role at Redacted",                                                      images: ["files/news-REDACTED-1.jpg"] },
     { date: "April 2026", text: "Graduated High School with High Honors – San Beda Alabang, Muntinlupa City",                     images: ["files/news-graduation-1.jpg", "files/news-graduation-2.jpg"] },
     { date: "April 2026", text: "Gave a Speech of Inspiration at the Heroes Tribute Celebration – San Beda Alabang, Muntinlupa City", images: ["files/news-heroes-tribute-1.jpg"] },
     { date: "March 2026", text: "Invited as a Guest Speaker at the STEAM Ed Conference of First Eduspec Inc. – San Beda Alabang, Muntinlupa City", images: ["files/news-steam-conference-1.jpg"] }
