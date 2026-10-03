@@ -54,8 +54,14 @@ node tests/light.test.mjs          # the light falloff maths
 node tests/lights.test.mjs         # the lighting controller's contract
 node tests/renderer.test.mjs       # the rendered DOM contract, under a DOM stub
 node tests/gallery-index.test.mjs  # the honours gallery index lookup
+node tests/delegation.test.mjs     # every control in the walk does something
 npm test                           # runs the above in order
 ```
+
+The two suites that drive `js/main.js` run it under a DOM stub (`tests/dom-harness.mjs`) that
+models the parent chain, `offsetLeft`/`offsetParent`, `dataset` and event propagation. It does
+**not** model CSS layout — a layout rule can still be wrong with every check green, so the browser
+suite above remains the authority on anything visual.
 
 `tools/ux-check.mjs` additionally drives headless Chrome over the DevTools Protocol to verify
 the interaction contract on the horizontal axis (the walk moves and settles, lights come up and
