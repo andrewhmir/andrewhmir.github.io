@@ -293,4 +293,30 @@ const PORTFOLIO = {
     return best;
   }
   globalThis.Site.visibleWork = visibleWork;
+
+  var GALLERY_LISTS = {
+    news: function () { return PORTFOLIO.news; },
+    leadership: function () { return PORTFOLIO.leadership; },
+    honors: function () { return PORTFOLIO.honors; }
+  };
+
+  /* Total lookup: always returns { title, meta, images }. An entry with no
+     photos yields an empty images array rather than a neighbour's photos.
+     This is the fix for the defect where renderRecordItem passed the *filtered*
+     loop index while openGallery indexed the *unfiltered* array, so selecting a
+     photo-less honour opened a different honour's photographs. */
+  function galleryFor(kind, entryIndex) {
+    var empty = { title: '', meta: '', images: [] };
+    var get = GALLERY_LISTS[kind];
+    if (!get) return empty;
+    var list = get();
+    var entry = list && list[entryIndex];
+    if (!entry) return empty;
+    return {
+      title: entry.description || entry.text || '',
+      meta: entry.year || entry.date || '',
+      images: (Array.isArray(entry.images) ? entry.images : []).filter(Boolean)
+    };
+  }
+  globalThis.Site.galleryFor = galleryFor;
 })();

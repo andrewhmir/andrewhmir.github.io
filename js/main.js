@@ -119,8 +119,10 @@
       if (!hasGallery) {
         return `<div class="timeline-item reveal" ${delay}>${inner}</div>`;
       }
+      /* data-entry carries the real index in the unfiltered list; indices are
+         never re-derived from a filtered loop. */
       return `<button type="button" class="timeline-item timeline-item--gallery reveal" ${delay}
-        data-gallery="news" data-index="${i}"
+        data-gallery="news" data-entry="${i}"
         aria-label="View photos: ${item.text}">${inner}</button>`;
     }).join('');
   }
@@ -219,18 +221,21 @@
   }
 
   /* ── Leadership ─────────────────────────────────────────────── */
-  function renderRecordItem(item, i, kind, step) {
+  /* `entryIndex` is the item's real index in the unfiltered list, passed in by
+     the caller — never the position within a filtered subset. It is what
+     Site.galleryFor resolves against, so a row opens its own entry. */
+  function renderRecordItem(item, entryIndex, kind, step) {
     const hasGallery = Array.isArray(item.images) && item.images.length > 0;
     const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
     const inner = `<span class="record-desc">${item.description}${hint}</span>
       <span class="record-year">${item.year}</span>`;
-    const delay = `style="--reveal-delay: ${i * step}ms"`;
+    const delay = `style="--reveal-delay: ${entryIndex * step}ms"`;
 
     if (!hasGallery) {
       return `<div class="record-item reveal" ${delay}>${inner}</div>`;
     }
     return `<button type="button" class="record-item record-item--gallery reveal" ${delay}
-      data-gallery="${kind}" data-index="${i}"
+      data-gallery="${kind}" data-entry="${entryIndex}"
       aria-label="View photos: ${item.description}">${inner}</button>`;
   }
 
@@ -286,28 +291,11 @@
   let galleryDriftId = null;
   let galleryLastTick = null;
 
-  function openGallery(kind, index) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    const list = kind === 'news' ? PORTFOLIO.news
-      : (kind === 'leadership' ? PORTFOLIO.leadership : PORTFOLIO.honors);
-    const entry = list && list[index];
-    const images = entry && Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
-    if (!entry || !images.length) return;
-
-    galleryState.images = images;
-    galleryState.current = 0;
-
-    const title = entry.description || entry.text || '';
-    const meta = entry.year || entry.date || '';
+  /* The carousel's markup, unchanged apart from taking its inputs as
+     parameters so openGallery can drive it from Site.galleryFor. */
+  function buildGalleryMarkup(images, title) {
     const multi = images.length > 1;
-
-    $modalHeader.innerHTML = `
-      <h3 id="modalTitle">${title}</h3>
-      <p class="modal-subtitle">${GALLERY_LABELS[kind] || ''}${meta ? ' · ' + meta : ''}</p>`;
-
-    $modalImage.style.display = '';
-    $modalImage.innerHTML = `
+    return `
       <div class="gallery" id="gallery">
         <div class="gallery-track" id="galleryTrack">
           ${images.concat(images).map((src, i) => `
@@ -325,14 +313,30 @@
           <div class="gallery-counter" id="galleryCounter">1 / ${images.length}</div>
         ` : ''}
       </div>`;
+  }
 
+  function openGallery(kind, entryIndex) {
+    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
+
+    /* Site.galleryFor is total: it resolves the entry by its real index in the
+       unfiltered list and always yields an images array. A row with no photos
+       therefore opens nothing — it never falls through to a neighbour's. */
+    var data = Site.galleryFor(kind, entryIndex);
+    if (!data.images.length) return;   /* nothing to show — do not open */
+
+    galleryState.images = data.images;
+    galleryState.current = 0;
+
+    var label = GALLERY_LABELS[kind] || '';
+    $modalHeader.innerHTML = '<h3 id="modalTitle">' + data.title + '</h3>'
+      + '<p class="modal-subtitle">' + label + (data.meta ? ' · ' + data.meta : '') + '</p>';
+
+    $modalImage.style.display = '';
+    $modalImage.innerHTML = buildGalleryMarkup(data.images, data.title);
     $modalBody.innerHTML = '';
-
     bindGalleryControls();
     updateGalleryUI();
-
     openDialog();
-
     startGalleryDrift();
   }
 
@@ -560,7 +564,7 @@
     $el.addEventListener('click', function (e) {
       const item = e.target.closest('[data-gallery]');
       if (!item) return;
-      openGallery(item.dataset.gallery, parseInt(item.dataset.index, 10));
+      openGallery(item.dataset.gallery, Number(item.dataset.entry));
     });
   }
   bindGalleryList($leadershipList);

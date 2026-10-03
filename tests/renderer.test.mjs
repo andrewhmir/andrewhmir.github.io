@@ -151,6 +151,23 @@ check('no photo-less honour is a gallery trigger', () => {
   assert.deepEqual(leaked, [], 'photo-less rows are clickable: ' + leaked.join(' | '));
 });
 
+check('every honours gallery row opens its own honour', () => {
+  /* The defect: the emitted index was the position within a filtered loop while
+     the lookup indexed the unfiltered array, so a photo-less row shifted every
+     later row's index and clicking one opened another's photographs. Each
+     emitted index must therefore name the very row that carries it. */
+  const rows = [...strip.matchAll(/data-gallery="honors"[^>]*data-entry="(\d+)"/g)]
+    .map((m) => Number(m[1]));
+  assert.ok(rows.length > 0, 'no honours gallery rows rendered');
+  rows.forEach((i) => {
+    const entry = PORTFOLIO.honors[i];
+    assert.ok(entry, 'data-entry ' + i + ' is not an honour');
+    assert.ok(Array.isArray(entry.images) && entry.images.length,
+      'data-entry ' + i + ' points at a photo-less honour');
+  });
+  assert.equal(new Set(rows).size, rows.length, 'two rows share one index');
+});
+
 /* ── The directory ───────────────────────────────────────────────────── */
 check('directory lists every room and nothing else', () => {
   const goto = [...directory.matchAll(/data-goto="([^"]+)"/g)].map((m) => m[1]);
