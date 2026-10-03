@@ -122,24 +122,22 @@ function reducedMotionRules() {
   return out;
 }
 
-check('reduced motion lights every work, with no transition', () => {
+check('reduced motion lights every piece, with no transition', () => {
   const rules = reducedMotionRules();
-  assert.ok(rules.length, 'no reduced-motion block for the works');
+  assert.ok(rules.length, 'no reduced-motion block for the pieces');
   const has = (target, decl) => rules.some((r) =>
     r.selector.split(',').some((s) => s.trim() === target) && decl.test(r.body));
 
-  assert.ok(has('.work .canvas', /transition:\s*none/),
-    'the canvas still transitions under reduced motion');
-  assert.ok(has('.work .pool', /opacity:\s*1/),
-    'a pool is not fully lit under reduced motion');
+  assert.ok(has('.piece', /transition:\s*none/) && has('.piece', /filter:\s*none/),
+    'a piece still transitions or dims under reduced motion');
 
   setReducedMotion(true);
   globalThis.Site.initLights();
   const values = workEls.map(litOf);
   assert.deepEqual(values, workEls.map(() => '1'),
-    'not every work was lit: ' + values.join(', '));
+    'not every piece was lit: ' + values.join(', '));
   assert.ok(strip.style.get('--lit') === undefined,
-    '--lit was written on #strip instead of the works');
+    '--lit was written on #strip instead of the pieces');
   setReducedMotion(false);
 });
 

@@ -47,7 +47,11 @@ check('a gallery row opens its own entry when clicked', () => {
   scene.click(row);
   assert.ok(modal.classList.contains('active'),
     'clicking the gallery row left the dialog closed — no listener handled it');
-  const entry = globalThis.PORTFOLIO.honors[Number(row.getAttribute('data-entry'))];
+  /* The entry key is scoped by its array (`honors:3`); the index is the tail. */
+  const ref = row.getAttribute('data-entry');
+  const index = Number(ref.slice(ref.indexOf(':') + 1));
+  const entry = globalThis.PORTFOLIO.honors[index];
+  assert.ok(entry, 'the row names an entry that does not exist: ' + ref);
   assert.ok(header.innerHTML.includes(entry.description),
     'the dialog opened a different entry: expected "' + entry.description + '"');
   scene.click(scene.el('modalClose'));

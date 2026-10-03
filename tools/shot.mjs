@@ -49,6 +49,22 @@ await send('Emulation.setDeviceMetricsOverride', {
 await send('Page.navigate', { url: BASE });
 await new Promise((r) => setTimeout(r, 3500));
 
+/* Photographs in a room the walk has not reached carry loading="lazy" and are
+   never fetched, so they render at the loading floor. Force them all to load,
+   or the capture shows placeholder-shaped frames rather than the real wall. */
+await send('Runtime.evaluate', {
+  expression: `(async () => {
+    const imgs = [...document.querySelectorAll('#strip img')];
+    imgs.forEach(i => { i.loading = 'eager'; });
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline && imgs.some(i => !i.complete)) {
+      await new Promise(r => setTimeout(r, 200));
+    }
+    await new Promise(r => setTimeout(r, 800));
+  })()`,
+  awaitPromise: true, returnByValue: true
+});
+
 if (SL) {
   await send('Runtime.evaluate', {
     expression: `document.getElementById('hall').scrollLeft = ${SL}`

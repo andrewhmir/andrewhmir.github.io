@@ -249,76 +249,71 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   await sleep(400);
 });
 
-/* -- 1. Whole project card is a click target -------------------------- */
-await section('Project card click targets', async () => {
-  /* Three points inside the first project work, in viewport coordinates: the
-     thumbnail centre, the title centre, and a spot inside the work's own
-     padding. The walk is horizontal, so the work is centred by scrolling the
-     hall rather than by scrollIntoView on the document. */
-  await centreWork('.work[data-project]');
+/* -- 1. The whole piece is a click target ----------------------------- */
+await section('Piece click targets', async () => {
+  /* A piece is one framed photograph inside a group. Its whole frame must
+     open the dialog, so the frame's own centre and a spot just inside its
+     border are both tested — a piece whose <img> swallowed the click but
+     whose frame padding did not would leave a control that only works if you
+     hit the photograph exactly. */
+  await centreWork('.piece[data-project]');
   const cardPoints = await evaluate(`(() => {
-    const card = document.querySelector('.work[data-project]');
+    const card = document.querySelector('.piece[data-project]');
     if (!card) return null;
-    const mid = (sel) => {
-      const el = card.querySelector(sel);
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const r = card.getBoundingClientRect();
+    return {
+      centre: { x: r.left + r.width / 2, y: r.top + r.height / 2 },
+      border: { x: r.left + 4, y: r.top + r.height / 2 },
+      edge:   { x: r.left + r.width / 2, y: r.bottom - 3 }
     };
-    const cr = card.getBoundingClientRect();
-    return { thumbnail: mid('.project-thumb'), title: mid('.project-hit'), padding: { x: cr.left + 6, y: cr.top + 6 } };
   })()`);
   await sleep(350);
-  if (!cardPoints) { check('thumbnail opens Overview', false, 'no work rendered yet'); return; }
-  for (const where of ['thumbnail', 'title', 'padding']) {
+  if (!cardPoints) { check('the piece frame opens Overview', false, 'no piece rendered yet'); return; }
+  for (const where of ['centre', 'border', 'edge']) {
     await closeModal();
     const p = cardPoints[where];
-    if (!p) { check(where + ' opens Overview', false, 'element not present yet'); continue; }
     await click(p.x, p.y);
-    check(where + ' opens Overview', await modalOpen(), 'modal did not open');
+    check(where + ' of the piece opens Overview', await modalOpen(), 'modal did not open');
   }
   await closeModal();
-  check('card shows pointer cursor',
-    (await evaluate(`getComputedStyle(document.querySelector('.work .canvas')).cursor`)) === 'pointer');
+  check('a piece shows a pointer cursor',
+    (await evaluate(`getComputedStyle(document.querySelector('.piece')).cursor`)) === 'pointer');
 });
 
-/* -- 2. Card is reachable and named by keyboard ----------------------- */
-await section('Project card keyboard access', async () => {
-  const has = await evaluate(`!!document.querySelector('.work[data-project] .project-hit')`);
-  check('card control is focusable',
-    has && (await evaluate(`document.querySelector('.work[data-project] .project-hit').tabIndex >= 0`)) === true,
-    has ? undefined : 'no .project-hit control yet');
-  check('card control has an accessible name',
-    has && (await evaluate(`(document.querySelector('.work[data-project] .project-hit').innerText || '').trim().length > 0`)) === true,
-    has ? undefined : 'no .project-hit control yet');
-  if (!has) { check('Enter on focused card opens Overview', false, 'no .project-hit control yet'); return; }
-  await evaluate(`document.querySelector('.work[data-project] .project-hit').focus()`);
+/* -- 2. A piece is reachable and named by keyboard -------------------- */
+await section('Piece keyboard access', async () => {
+  const has = await evaluate(`!!document.querySelector('.piece[data-project]')`);
+  check('a piece is focusable',
+    has && (await evaluate(`document.querySelector('.piece[data-project]').tabIndex >= 0`)) === true,
+    has ? undefined : 'no .piece control yet');
+  check('a piece has an accessible name',
+    has && (await evaluate(`(document.querySelector('.piece[data-project]').getAttribute('aria-label') || '').trim().length > 0`)) === true,
+    has ? undefined : 'no .piece control yet');
+  if (!has) { check('Enter on a focused piece opens Overview', false, 'no .piece control yet'); return; }
+  await evaluate(`document.querySelector('.piece[data-project]').focus()`);
   await pressEnter();
-  check('Enter on focused card opens Overview', await modalOpen(), 'modal did not open');
+  check('Enter on a focused piece opens Overview', await modalOpen(), 'modal did not open');
 });
 
-/* -- 3. View cue appears on hover / focus ----------------------------- */
-await section('View cue', async () => {
-  const hasCue = await evaluate(`!!document.querySelector('.work .project-cue')`);
-  if (!hasCue) {
-    check('cue is hidden by default', false, 'no .project-cue yet');
-    check('cue appears on focus-within', false, 'no .project-cue yet');
-    return;
-  }
-  /* Clear focus and park the pointer away from the work: earlier sections
-     leave focus on a control and the mouse hovering it, both of which
-     legitimately reveal the cue. */
+/* -- 3. A piece reads as a control ------------------------------------ */
+await section('A piece reads as a control', async () => {
+  /* The old build needed a "View project" cue because a bare thumbnail was
+     not obviously clickable. A framed piece is: it has a pointer cursor, a
+     visible border, and its own accessible name. This asserts the affordance
+     is still there rather than a hover-only cue that a keyboard user never
+     sees. */
   await closeModal();
-  await evaluate(`document.activeElement && document.activeElement.blur && document.activeElement.blur();`);
-  await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5, buttons: 0 });
-  await sleep(400);
-  const cueHidden = await evaluate(`getComputedStyle(document.querySelector('.work .project-cue')).opacity`);
-  await evaluate(`document.querySelector('.work[data-project] .project-hit').focus()`);
-  await sleep(400);
-  const cueShown = await evaluate(`getComputedStyle(document.querySelector('.work .project-cue')).opacity`);
-  check('cue is hidden by default', cueHidden === '0', 'opacity was ' + cueHidden);
-  check('cue appears on focus-within', Number(cueShown) > 0.9, 'opacity was ' + cueShown);
-  await closeModal();
+  const piece = await evaluate(`(() => {
+    const p = document.querySelector('.piece[data-project]');
+    if (!p) return null;
+    const cs = getComputedStyle(p);
+    return { cursor: cs.cursor, border: cs.borderTopWidth, label: p.getAttribute('aria-label') };
+  })()`);
+  check('a piece carries a pointer cursor', piece && piece.cursor === 'pointer', JSON.stringify(piece));
+  check('a piece is framed, so it reads as hung work',
+        piece && parseFloat(piece.border) > 0, JSON.stringify(piece));
+  check('a piece is named for assistive tech',
+        piece && (piece.label || '').trim().length > 0, JSON.stringify(piece));
 });
 
 /* -- 4. Gallery rows are real, keyboard-operable controls ------------- */
@@ -432,8 +427,9 @@ await section('Gallery photos', async () => {
   const broken = [];
   for (const row of rows) {
     const [kind, index] = row.split(':');
+    /* The entry key a piece carries is scoped by its array (`honors:3`). */
     const opened = await evaluate(`(() => {
-      const el = document.querySelector('[data-gallery="${kind}"][data-entry="${index}"]');
+      const el = document.querySelector('[data-gallery="${kind}"][data-entry="${row}"]');
       if (!el) return false;
       el.click();
       return true;
@@ -521,16 +517,16 @@ await section('Reduced motion', async () => {
   await setViewport(1440, 900, false);
   await goto(BASE);
   await sleep(1500);
-  /* Spec §7: under reduced motion every work renders at w = 1 with no
-     transition, including works the visitor has not walked to yet. */
+  /* Spec §7: under reduced motion every piece renders at w = 1 with no
+     transition, including pieces the visitor has not walked to yet. */
   const lit = await evaluate(`(() => {
-    const works = [...document.querySelectorAll('.work[data-work]')];
+    const works = [...document.querySelectorAll('.piece[data-piece]')];
     return {
       total: works.length,
       fully: works.filter(w => Number(getComputedStyle(w).getPropertyValue('--lit')) === 1).length,
     };
   })()`);
-  check('every work is fully lit under prefers-reduced-motion',
+  check('every piece is fully lit under prefers-reduced-motion',
     lit.total > 0 && lit.fully === lit.total, lit.fully + ' of ' + lit.total + ' lit');
   const playing = await evaluate(`[...document.querySelectorAll('video')].filter(v => !v.paused).length`);
   check('nothing autoplays under prefers-reduced-motion', playing === 0, playing + ' playing');
@@ -658,28 +654,34 @@ await section('The walk scrolls without a native scrollbar', async () => {
 
 /* -- 14. Lights come up and stay up ----------------------------------- */
 await section('Lights come up and stay up', async () => {
-  /* A work carries its own --lit, written on the work element. The first
-     .work in the strip is the About portrait, which is not a lighting target,
-     so this reads a work that actually lights. */
-  await centreWork('.work[data-work]');
+  /* Each piece carries its own --lit, written on the piece element. The About
+     room's portrait is a .work, not a piece, so this reads a piece that
+     actually lights. */
+  await centreWork('.piece[data-piece]');
   const lit = await evaluate(`(() => {
-    const w = document.querySelector('.work[data-work]');
+    const w = document.querySelector('.piece[data-piece]');
     return w ? Number(getComputedStyle(w).getPropertyValue('--lit')) : -1;
   })()`);
-  check('a work in view is lit', lit > 0.6, 'lit was ' + lit);
+  check('a piece in view is lit', lit > 0.6, 'lit was ' + lit);
   await scrollWalk(900);
   const still = await evaluate(`(() => {
-    const w = document.querySelector('.work[data-work]');
+    const w = document.querySelector('.piece[data-piece]');
     return w ? Number(getComputedStyle(w).getPropertyValue('--lit')) : -1;
   })()`);
-  check('a work already seen stays lit', still > 0.6, 'lit fell to ' + still);
+  check('a piece already seen stays lit', still > 0.6, 'lit fell to ' + still);
 });
 
-/* -- 15. No work hangs empty ------------------------------------------ */
-await section('No work hangs empty', async () => {
+/* -- 15. No piece hangs empty ----------------------------------------- */
+await section('No piece hangs empty', async () => {
+  /* A group whose photographs are all missing still hangs a labelled
+     placeholder, so a frame is never a conspicuous hole on a near-black
+     wall. */
   const empty = await evaluate(
-    `[...document.querySelectorAll('.work')].filter(w => !w.querySelector('img')).length`);
-  check('every work has an image', empty === 0, empty + ' empty frames');
+    `[...document.querySelectorAll('.piece')].filter(w => !w.querySelector('img')).length`);
+  check('every piece has an image', empty === 0, empty + ' empty frames');
+  const broken = await evaluate(
+    `[...document.querySelectorAll('.piece img')].filter(i => i.complete && i.naturalWidth === 0).length`);
+  check('every piece image decoded', broken === 0, broken + ' broken images');
 });
 
 await cdp.send('Target.closeTarget', { targetId });

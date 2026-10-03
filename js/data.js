@@ -280,6 +280,70 @@ const PORTFOLIO = {
   globalThis.Site.ROOM_TITLES = ROOM_TITLES;
   globalThis.Site.ROOM_ORDER = ROOM_ORDER;
 
+  /* ── The pieces of a group ──────────────────────────────────────────────
+     One record is one group; a group's pieces are its photographs, in the
+     order it declares them. A record with no photographs still yields one
+     placeholder: on a near-black wall a bare frame is a conspicuous hole, so
+     the placeholder is hung and labelled instead of nothing. */
+  var PLACEHOLDER = 'files/PlaceHolder.png';
+
+  function groupPieces(record, kind) {
+    if (!record) return [];
+    if (kind === 'project') {
+      var out = [];
+      if (record.overview && record.overview.image) out.push({ src: record.overview.image });
+      if (record.team && record.team.image) out.push({ src: record.team.image });
+      if (out.length) return out;
+      /* A project with no still falls back to the poster frame
+         tools/make-images.mjs generates for its video. */
+      if (typeof record.video === 'string' && record.video) {
+        return [{ src: record.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg') }];
+      }
+      return [{ src: PLACEHOLDER }];
+    }
+    var imgs = (Array.isArray(record.images) ? record.images : []).filter(Boolean);
+    return imgs.length
+      ? imgs.map(function (src) { return { src: src }; })
+      : [{ src: PLACEHOLDER }];
+  }
+  globalThis.Site.groupPieces = groupPieces;
+  globalThis.Site.PLACEHOLDER = PLACEHOLDER;
+
+  /* ── The honours split ──────────────────────────────────────────────────
+     A room is exactly one viewport tall with no vertical axis, and its groups
+     live in a grid of 3 columns x 2 rows — six exhibits, which is what the
+     room can hold. Thirteen honours is therefore three rooms.
+
+     The array is authored newest-first, so the split takes it in order rather
+     than guessing at a kind from the description text. The parts are as even
+     as integer division allows (5, 4, 4 for thirteen), and empty parts are
+     dropped by the renderer rather than hung as an empty wall.
+
+     This is a total partition: every record lands in exactly one part, in
+     input order, and an empty list yields empty parts rather than throwing. */
+  var HONOURS_ROOMS = 3;
+
+  /* Even chunks that between them hold every record: thirteen into four is
+     4, 3, 3, 3 — not 4, 4, 4, 1, which is what a plain `ceil` slice yields and
+     which would hang the last honour alone on a wall of its own. Chunking by
+     `floor(i * n / rooms)` boundaries keeps the parts even and keeps every
+     record, for any counts. */
+  function evenChunks(list, rooms) {
+    var out = [];
+    for (var i = 0; i < rooms; i++) {
+      out.push(list.slice(Math.floor(i * list.length / rooms),
+                          Math.floor((i + 1) * list.length / rooms)));
+    }
+    return out;
+  }
+
+  function honoursSplit(honors) {
+    var list = Array.isArray(honors) ? honors : [];
+    return { parts: evenChunks(list, HONOURS_ROOMS) };
+  }
+  globalThis.Site.honoursSplit = honoursSplit;
+  globalThis.Site.HONOURS_ROOMS = HONOURS_ROOMS;
+
   /* Index of the work whose centre is nearest the viewport centre.
      Pure: takes precomputed centres so it needs no DOM. */
   function visibleWork(scrollLeft, viewportW, workCentres) {

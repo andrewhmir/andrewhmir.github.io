@@ -196,8 +196,11 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
     roomEls.push(roomEl);
 
     for (const [wi, w] of (room.works || []).entries()) {
+      /* The unit that hangs is now the framed piece inside a group. The stub
+         keeps the field names `works`/`workEls` — the geometry a piece needs
+         is the geometry a work needed — but tags them as the renderer does. */
       const workEl = makeEl('article');
-      workEl.setAttribute('data-work', '');
+      workEl.setAttribute('data-piece', String(wi));
       workEl.rect = {
         left: room.left + w.left, top: 0,
         width: w.width, height: w.height ?? 300,
@@ -226,19 +229,23 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
         canvas.setAttribute('data-tab', 'overview');
       }
       if (w.gallery) {
+        /* The entry is scoped by the array it lives in (`honors:3`), because
+           both record arrays start their indices at 0 and a bare index would
+           collide across rooms. */
         canvas.setAttribute('data-gallery', w.gallery);
-        canvas.setAttribute('data-entry', String(w.entry));
+        canvas.setAttribute('data-entry', String(w.entry).includes(':')
+          ? String(w.entry) : w.gallery + ':' + w.entry);
       }
 
       workEls.push(workEl);
     }
 
-    /* One leadership-style plate, a gallery trigger, so the delegated handler is
-       exercised on both kinds of host. */
+    /* One leadership-style piece, a gallery trigger, so the delegated handler
+       is exercised on both kinds of host. */
     const plate = makeEl('button');
-    plate.className = 'plate';
+    plate.className = 'piece';
     plate.setAttribute('data-gallery', 'leadership');
-    plate.setAttribute('data-entry', '0');
+    plate.setAttribute('data-entry', 'leadership:0');
     plate.parentNode = roomEl;
     plate.offsetParent = roomEl;
     roomEl.children.push(plate);
@@ -246,7 +253,7 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
     plateEls.push(plate);
   }
   stripEl.querySelectorAll = (sel) => {
-    if (sel === '[data-work]') return workEls;
+    if (sel === '[data-piece]' || sel === '[data-work]') return workEls;
     if (sel === '[data-room]') return roomEls;
     if (sel === '[data-snap]') return roomEls;   /* rooms carry data-snap */
     return [];

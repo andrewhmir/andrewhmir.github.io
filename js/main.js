@@ -301,6 +301,21 @@
       </div>`;
   }
 
+  /* The data-gallery / data-entry pair a piece carries is now scoped by the
+     array the record lives in (`honors:3`), because both record arrays start
+     their indices at 0 and a bare index would collide across rooms. This
+     splits it back into the two arguments `Site.galleryFor` takes, and is
+     total: anything that is not a scoped key opens nothing rather than
+     falling through to a neighbour's photographs. */
+  function openGalleryRef(ref) {
+    var at = String(ref == null ? '' : ref).indexOf(':');
+    if (at < 1) return;
+    var kind = ref.slice(0, at);
+    var index = Number(ref.slice(at + 1));
+    if (!Number.isInteger(index) || index < 0) return;
+    openGallery(kind, index);
+  }
+
   function openGallery(kind, entryIndex) {
     if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
 
@@ -547,7 +562,7 @@
     if (modalBtn) { openModal(modalBtn.dataset.project, modalBtn.dataset.tab); return; }
 
     var galleryBtn = t.closest('[data-gallery]');
-    if (galleryBtn) { openGallery(galleryBtn.dataset.gallery, Number(galleryBtn.dataset.entry)); return; }
+    if (galleryBtn) { openGalleryRef(galleryBtn.dataset.entry); return; }
 
     var copyBtn = t.closest('[data-action="copy"]');
     if (copyBtn) { copyToClipboard(copyBtn.dataset.copy, copyBtn); }
@@ -559,7 +574,7 @@
     $el.addEventListener('click', function (e) {
       const item = e.target.closest('[data-gallery]');
       if (!item) return;
-      openGallery(item.dataset.gallery, Number(item.dataset.entry));
+      openGalleryRef(item.dataset.entry);
     });
   }
   bindGalleryList($leadershipList);
@@ -785,6 +800,106 @@
       .replace(/"/g, '&quot;');
   }
 
+  function pieceLetter(i) {
+    return String.fromCharCode(65 + i);
+  }
+
+  /* ── The cluster: how a group's photographs hang ────────────────────────
+     A group is one exhibit: its photographs hang together as one composition
+     rather than as N unrelated works.
+
+     A frame is given a HEIGHT and its width follows its photograph, so every
+     frame has its photograph's own proportions. The obvious alternative — a
+     fixed width and height per slot — gives the frame an aspect ratio of its
+     own, and then `object-fit: cover` crops a landscape photograph into a
+     strip: a 271x104 frame for a 1.72:1 photograph is a 2.6:1 letterbox, and
+     `contain` instead would leave black bars inside the mat. Neither is a
+     photograph hung on a wall, so the frame takes the photograph's shape.
+
+     The composition is two columns — a lead photograph and a supporting
+     stack — laid out in flow rather than at hand-placed coordinates, because
+     the widths are not known until the images have loaded. `--h` is the frame
+     height and `--shift` is the vertical offset that keeps a column from
+     reading as one tall frame. Both are `cqi`, one percent of the cell's
+     width, so the whole composition scales with the wall.
+
+     Every frame clears 44x44 at every supported width: the room carries a
+     width floor in css/styles.css, and the smallest frame is 22cqi x 40cqi. */
+  var PIECE_HEIGHTS = ['22cqi', '18cqi', '18cqi', '16cqi'];
+  var LEAD_HEIGHT = '30cqi';
+
+  /* A piece is a real focusable control: the whole frame opens the group's
+     dialog, and its accessible name says which photograph it is. The lead
+     photograph takes the first column; the rest stack beside it, each shifted
+     a little out of line so a stack reads as several frames rather than one. */
+  function renderCluster(pieces, record, kind, entryIndex) {
+    var title = record.title || record.description || '';
+    var lead = pieces.length > 1 ? 1 : 0;
+    var stack = pieces.slice(lead);
+    var piece = function (p, i, isLead) {
+      var open = groupOpener(kind, record, entryIndex);
+      var h = isLead ? LEAD_HEIGHT : (PIECE_HEIGHTS[Math.min(i, PIECE_HEIGHTS.length - 1)]);
+      var shift = isLead ? '0' : (i % 2 === 0 ? '0' : '4cqi');
+      return '<button type="button" class="piece' + (isLead ? ' piece--lead' : '') + '"'
+        + ' data-piece="' + i + '"' + open.attrs
+        + ' style="--h:' + h + ';--shift:' + shift + '"'
+        + ' aria-label="' + esc(open.name || (title + ' — photograph ' + pieceLetter(i))) + '"'
+        + '><img src="' + esc(p.src) + '" alt="" loading="lazy"'
+        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
+        + '</button>';
+    };
+    return '<div class="cluster">'
+      + (lead ? '<div class="hang-lead">' + piece(pieces[0], 0, true) + '</div>' : '')
+      + (lead ? '<div class="hang-stack">'
+          + stack.map(function (p, i) { return piece(p, i + 1, false); }).join('')
+          + '</div>' : '')
+      + (lead ? '' : piece(pieces[0], 0, false))
+      + '</div>';
+  }
+
+  /* What a piece does when activated. A project piece opens that project's
+     dialog; a record piece opens the record's photographs. The gallery index
+     is the record's own position in its array, so a record with no
+     photographs can never open a neighbour's gallery — it has no handler at
+     all, because there is nothing for it to open. */
+  function groupOpener(kind, record, entryIndex) {
+    if (kind === 'project') {
+      return {
+        attrs: ' data-action="modal" data-project="' + esc(record.id) + '" data-tab="overview"',
+        name: 'Open ' + (record.title || 'project')
+      };
+    }
+    var hasPhotos = Array.isArray(record.images) && record.images.length > 0;
+    if (!hasPhotos) return { attrs: '', name: '' };
+    return {
+      attrs: ' data-gallery="' + esc(kind) + '" data-entry="' + esc(entryIndex) + '"',
+      name: ''
+    };
+  }
+
+  function renderGroup(kind, index, record, roomKey) {
+    var pieces = Site.groupPieces(record, kind);
+    /* The entry key is scoped by room and by array. Project indices restart in
+       every project room, and leadership and honors each start at 0, so a bare
+       index would have rows on different walls claiming to be the same entry.
+       For a gallery room the room key and the data array name are the same. */
+    var entryKey = kind === 'project'
+      ? roomKey + ':' + index
+      : kind + ':' + index;
+    return '<div class="group" data-group data-kind="' + esc(kind) + '"'
+      + ' data-entry="' + esc(entryKey) + '">'
+      + renderCluster(pieces, record, kind, entryKey)
+      + renderGroupLabel(record, kind, index, pieces.length, roomKey)
+      + '</div>';
+  }
+
+  /* The label under a group. Task 5 of the edge-dock plan fills in the plan,
+     the narrative and the per-photograph catalogue; the container and the
+     piece count are here so a group always carries its own label. */
+  function renderGroupLabel(record, kind, index, pieceCount) {
+    return '<div class="label" data-pieces="' + pieceCount + '"></div>';
+  }
+
   function renderLabel(entry, index) {
     return '<div class="lbl">'
       + '<span class="no">CAT. ' + String(index + 1).padStart(2, '0') + ' &mdash; ' + esc(entry.venue) + '</span>'
@@ -832,9 +947,9 @@
     var rooms = Site.deriveRooms(PORTFOLIO.projects);
     var html = '';
 
-    /* Room 1 — About */
+    /* Room 1 — About. Not a group: a portrait, the bio and the ways to
+       reach him, hung as one composition. */
     html += '<section class="room" data-room="About" data-snap tabindex="-1">'
-      + '<div class="sign"><span class="no">ROOM 1</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">About</span>'
       + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
       + '<div class="hang"><div class="work" style="width:31%">'
@@ -851,71 +966,52 @@
       + esc(PORTFOLIO.email) + '">' + esc(PORTFOLIO.email) + '</button>'
       + '</div></div></div></section>';
 
-    /* Rooms 2..N — one per derived category */
+    /* Rooms 2..N — one per derived category. One project is one group. */
     rooms.forEach(function (room, ri) {
+      var groups = room.projects.map(function (p, i) {
+        return renderGroup('project', i, p, room.key);
+      }).join('');
       html += '<section class="room" data-room="' + esc(room.key) + '" tabindex="-1">'
-        + '<div class="sign"><span class="no">ROOM ' + (ri + 2) + '</span><span class="rule"></span></div>'
         + '<h2 class="room-title"><span class="t">' + esc(room.title) + '</span>'
-        + '<span class="sub">' + room.projects.length + ' works'
+        + '<span class="sub">' + room.projects.length + ' projects'
         + '<span class="count">' + esc(room.key.toUpperCase()) + '</span></span></h2>'
-        + '<div class="hang hang--works">'
-        + room.projects.map(function (p, i) { return renderWork(p, i); }).join('')
-        + '</div></section>';
+        + '<div class="groups">' + groups + '</div></section>';
     });
 
-    /* Leadership */
+    /* Leadership — one post is one group. */
     html += '<section class="room" data-room="Leadership" tabindex="-1">'
-      + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 2) + '</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Leadership</span>'
-      + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length + ' POSTS</span></span></h2>'
-      + '<div class="hang hang--plates">'
+      + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length
+      + ' POSTS</span></span></h2>'
+      + '<div class="groups">'
       + PORTFOLIO.leadership.map(function (l, i) {
-          var hasGallery = Array.isArray(l.images) && l.images.length > 0;
-          var inner = '<p class="pt">' + esc(l.description) + '</p><span class="py">' + esc(l.year) + '</span>';
-          return hasGallery
-            ? '<button type="button" class="plate" data-gallery="leadership" data-entry="' + i + '">' + inner + '</button>'
-            : '<div class="plate">' + inner + '</div>';
+          return renderGroup('leadership', i, l, 'Leadership');
         }).join('')
       + '</div></section>';
 
-    /* Honours — the photo-bearing entries hang as works on their own row, and
-       the ones still waiting for photos sit as compact plates beneath. Two rows
-       rather than one wrapping row: a room has exactly one viewport of height,
-       so works and plates cannot compete for the same wall space. */
-    var honourWorks = '';
-    var honourPlates = '';
-    PORTFOLIO.honors.forEach(function (h, i) {
-      var hasGallery = Array.isArray(h.images) && h.images.length > 0;
-      if (!hasGallery) { honourPlates += renderPlate(h); return; }
-      honourWorks += '<article class="work" data-work data-snap>'
-        + '<div class="pool"></div>'
-        + '<button type="button" class="project-hit canvas" data-gallery="honors"'
-        + ' data-entry="' + i + '" aria-label="View photos: ' + esc(h.description) + '">'
-        /* Some honours still await their photos (see tools/ux-check.mjs
-           PENDING_PHOTOS). A work whose first photo 404s falls back to the
-           labelled placeholder for the same reason the gallery rows do: on a
-           near-black wall a broken frame is a conspicuous hole. */
-        + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy"'
-        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';'
-        + 'this.closest(\'.work\').classList.add(\'is-placeholder\');">'
-        + '</button>'
-        + '<div class="lbl"><span class="no">DIST. ' + String(i + 1).padStart(2, '0')
-        + '</span><p class="lt">' + esc(h.description) + '</p>'
-        + '<p class="by">' + esc(h.year) + '</p></div></article>';
-    });
+    /* Honours — one award or event is one group, with its photographs hung
+       together. A record still waiting for its photographs hangs a labelled
+       placeholder rather than a plate: on a near-black wall a bare frame is a
+       conspicuous hole, and a plate would read as a different kind of thing
+       from every other exhibit on the wall.
 
-    html += '<section class="room" data-room="Honours" tabindex="-1">'
-      + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 3) + '</span><span class="rule"></span></div>'
-      + '<h2 class="room-title"><span class="t">Honours</span>'
-      + '<span class="sub">Competitions, conferences and citations'
-      + '<span class="count">' + PORTFOLIO.honors.length + ' HONOURS</span></span></h2>'
-      + (honourWorks ? '<div class="hang hang--works">' + honourWorks + '</div>' : '')
-      + (honourPlates ? '<div class="hang hang--plates">' + honourPlates + '</div>' : '')
-      + '</section>';
+       Thirteen groups will not fit one room's grid of six, so the array is
+       split in three. Each room keeps the true indices into PORTFOLIO.honors,
+       because Site.galleryFor resolves against that unfiltered array. */
+    honoursRooms().forEach(function (hr) {
+      html += '<section class="room" data-room="' + esc(hr.key) + '" tabindex="-1">'
+        + '<h2 class="room-title"><span class="t">' + esc(hr.label) + '</span>'
+        + '<span class="sub">Competitions, conferences and citations'
+        + '<span class="count">' + hr.records.length + ' GROUPS</span></span></h2>'
+        + '<div class="groups">'
+        + hr.records.map(function (h, i) {
+            return renderGroup('honors', hr.offset + i, h, hr.key);
+          }).join('')
+        + '</div></section>';
+    });
 
     /* Contact */
     html += '<section class="room" data-room="Contact" data-snap tabindex="-1">'
-      + '<div class="sign"><span class="no">&mdash;</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Contact</span>'
       + '<span class="sub">Thanks for walking the collection</span></h2>'
       + '<p class="note">Let&rsquo;s build something together.</p>'
@@ -928,24 +1024,49 @@
   /* ── The dock: the walk's directory, at its foot ────────────────────
      The dock shows a short name; the room heading keeps the full title, and
      the full title plus its count is the control's accessible name, so the
-     shortened label is never what a screen reader reads. */
+     shortened label is never what a screen reader reads. The short name comes
+     from walkRooms(), which also names the rooms, so the two cannot drift. */
   var ROOM_SHORT = {
     About: 'About', Robotics: 'Robotics', Applications: 'Applications',
-    Leadership: 'Leadership', 'Honours — Recent': 'Honours',
-    'Honours — Earlier': 'Earlier', Contact: 'Contact'
+    Leadership: 'Leadership', 'Honours — I': 'Honours',
+    'Honours — II': 'Honours II', 'Honours — III': 'Honours III',
+    'Honours — IV': 'Honours IV', Contact: 'Contact'
   };
 
+  /* The rooms the walk carries, in walk order — one source, so the dock and
+     the walk cannot drift apart. */
+  function walkRooms() {
+    var rooms = [{ key: 'About', note: 'bio & contact' }];
+    Site.deriveRooms(PORTFOLIO.projects).forEach(function (r) {
+      rooms.push({ key: r.key, note: r.projects.length + ' projects' });
+    });
+    rooms.push({ key: 'Leadership', note: PORTFOLIO.leadership.length + ' groups' });
+    honoursRooms().forEach(function (h) { rooms.push(h); });
+    rooms.push({ key: 'Contact', note: '—' });
+    return rooms;
+  }
+
+  /* The honours rooms, in walk order. Three of them, because a room holds six
+     exhibits and there are thirteen honours. */
+  function honoursRooms() {
+    var parts = Site.honoursSplit(PORTFOLIO.honors).parts;
+    var numerals = ['I', 'II', 'III', 'IV'];
+    return parts.map(function (records, i) {
+      return {
+        key: 'Honours — ' + numerals[i],
+        label: 'Honours · ' + numerals[i],
+        short: i === 0 ? 'Honours' : 'Honours ' + numerals[i],
+        note: records.length + ' groups',
+        records: records,
+        offset: parts.slice(0, i).reduce(function (n, p) { return n + p.length; }, 0)
+      };
+    }).filter(function (r) { return r.records.length > 0; });
+  }
+
   function dockItems() {
-    var rooms = Site.deriveRooms(PORTFOLIO.projects);
-    return [{ key: 'About', title: 'About', note: 'bio & contact' }]
-      .concat(rooms.map(function (r) {
-        return { key: r.key, title: r.title, note: r.projects.length + ' works' };
-      }))
-      .concat([
-        { key: 'Leadership', title: 'Leadership', note: PORTFOLIO.leadership.length + ' posts' },
-        { key: 'Honours', title: 'Honours', note: PORTFOLIO.honors.length + ' honours' },
-        { key: 'Contact', title: 'Contact', note: '—' }
-      ]);
+    return walkRooms().map(function (r) {
+      return { key: r.key, short: r.short, note: r.note };
+    });
   }
 
   /* Pure: given the dock's room keys and the room the walk is in, which entry
@@ -977,11 +1098,11 @@
     dir.innerHTML = '<ol>'
       + items.map(function (it, i) {
           var acc = (it.key === 'Contact') ? '&mdash;' : String(i + 1);
-          var name = 'Room ' + (i + 1) + ' — ' + it.title + ', ' + it.note;
+          var name = 'Room ' + (i + 1) + ' — ' + it.key + ', ' + it.note;
           return '<li><button type="button" class="dock-link" data-goto="' + esc(it.key) + '"'
             + ' aria-label="' + esc(name) + '">'
             + '<span class="dn">' + acc + '</span>'
-            + '<span class="dt">' + esc(ROOM_SHORT[it.key] || it.title) + '</span></button></li>';
+            + '<span class="dt">' + esc(ROOM_SHORT[it.key] || it.key) + '</span></button></li>';
         }).join('')
       + '</ol>';
   }
@@ -1045,7 +1166,7 @@
     }
     Site.updateRail = updateRail;
 
-    var works = Array.prototype.slice.call(strip.querySelectorAll('[data-work]'));
+    var works = Array.prototype.slice.call(strip.querySelectorAll('[data-piece]'));
 
     var reduce = window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;

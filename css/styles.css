@@ -54,7 +54,12 @@
   --font-body:    Georgia, 'Times New Roman', serif;
   --font-mono:    'Courier Prime', 'Courier New', monospace;
 
-  --room-w:       92vw;
+  /* A room is 92vw wide, but never narrower than 860px: below that a
+     two-column group grid gives each cluster so little width that a piece in
+     the narrowest slot falls under the 44px tap-target floor. A wider room
+     scrolls further, which the walk is built for; a smaller target is not
+     recoverable. */
+  --room-w:       max(92vw, 860px);
   --work-lg:      62%;
   --work-md:      45%;
   --work-sm:      31%;
@@ -1431,6 +1436,9 @@ button.record-item {
 .room {
   position: relative;
   flex: 0 0 auto;
+  /* --room-w is 92vw with a floor of 860px, so a two-column grid of 408px
+     cells still lets the narrowest slot (24% of a cluster) clear 44px: every
+     piece is a real control and must stay tappable at every width. */
   width: var(--room-w);
   /* No min-height. The hall already sizes the room; a second `100vh`
      constraint made the box 704 + 70 = 774px tall inside a 704px hall at the
@@ -1642,7 +1650,11 @@ body {
 }
 
 .room-title {
-  margin: 34px 0 26px;
+  /* No top margin: the 34px it carried was the gap under the room's sign row,
+     which is gone — the dock names the room now. The bottom margin is 14px,
+     not 26px, because 1280x704 leaves a room 543.7px of content and the
+     densest honours room needs all but a few of them. */
+  margin: 0 0 14px;
   font-family: var(--font-heading);
   font-weight: 400;
   font-size: clamp(1.7rem, 2.9vw, 3rem);
@@ -1668,73 +1680,122 @@ body {
   color: var(--accent);
 }
 
-/* ── The hang: works and plates share the wall, in varying widths so the
-      journey is not a metronome.
+/* ── The groups: one record is one exhibit ────────────────────────────
+   A room is exactly one viewport tall inside a hall that is exactly one
+   viewport tall with overflow-y hidden, so a room cannot scroll: whatever
+   does not fit is clipped AND unreachable. The groups therefore live in a
+   fixed grid of three columns and at most two rows — six exhibits a room.
 
-      Works are one row, never wrapped. A room is exactly one viewport tall
-      inside a hall that is exactly one viewport tall with overflow-y hidden,
-      so a second row of works would be clipped AND unreachable — the hall
-      cannot scroll to it and there is no vertical axis to rescue it. Three
-      works therefore share the row, at widths small enough that image + label
-      still clear the fold on a short laptop.
+   Three columns rather than two because a group is a lead photograph plus a
+   stack beside it, and in a 616px cell the lead alone took most of the width,
+   leaving the stack no room. A 403px cell divides cleanly.
 
-      The plate rooms hold text only, which is short and self-limiting, so they
-      wrap: four plates at 30% will not fit one row, and they do not need to. ── */
-.hang {
+   `align-content: start` matters: with the default the grid stretches its
+   tracks to fill the room, and a room holding a single row of groups would
+   have that row stretched to the full height — the cluster would take the
+   slack and the frames inside it would be squashed. */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(190px, 280px);
+  align-content: start;
+  gap: 14px 24px;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.group {
   display: flex;
-  flex-wrap: nowrap;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+/* The cluster is sized from the cell's width, not from the row's height.
+   A fixed height against a proportional width would give the frames an aspect
+   ratio of their own and `object-fit: cover` would crop every landscape
+   photograph into a strip. Each cell is a query container, so `cqi` is one
+   percent of the cell's width. */
+.groups > .group {
+  container-type: inline-size;
+  container-name: cell;
+}
+
+/* Two columns: a lead photograph, and the rest stacked beside it. Both are in
+   flow, so a frame takes its own photograph's width. */
+.cluster {
+  display: flex;
   align-items: flex-start;
-  align-content: flex-start;
-  gap: 74px 30px;
-  padding-left: 18px;
+  gap: 4cqi;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-/* A room of works: one row, never wrapped. A wrapper so a room can hold works
-   and plates as two separate rows. */
-.hang--works {
-  flex-wrap: nowrap;
-  gap: 40px 22px;
-  padding-left: 0;
+.hang-lead,
+.hang-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3cqi;
 }
 
-/* A room of plates, or the plate row under a room of works: these are one line
-   each and short, so they wrap and stay above the fold. */
-.hang--plates {
-  flex-wrap: wrap;
-  gap: 26px 22px;
-  padding-left: 0;
+.hang-stack {
+  padding-top: 3cqi;
 }
 
-.hang > .work {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 32%;
+/* A piece: a gold frame around a cream mat, drawn rather than loaded — no
+   image request, no asset. The frame is given a height and its width follows
+   the photograph inside it, so every frame has its photograph's proportions
+   and nothing is ever cropped or barred. */
+.piece {
+  display: block;
+  height: var(--h, 30cqi);
+  padding: 0;
+  border: 3px solid transparent;
+  border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
+  background: #000;
+  cursor: pointer;
+  margin-top: var(--shift, 0);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .66);
+  /* Its own light, exactly as a work carried one. Registered
+     `inherits: false`, so writing it touches one element, not a room. */
+  filter: brightness(calc(.6 + .4 * var(--lit)));
+  transition: filter .55s var(--ease-lit);
 }
 
-/* A plate is short and must shrink to fit its row, or four of them at a fixed
-   30% overflow the wall and wrap into rows the room has no height for. */
-.hang > .plate {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 30%;
+/* A frame is given a height; its width follows its photograph, so the frame
+   has the photograph's own proportions and nothing is cropped or barred.
+   `aspect-ratio: auto` on the image is what lets the height rule while the
+   width stays intrinsic — without it the `max-width` below would squash the
+   photograph out of proportion. */
+.piece img {
+  display: block;
+  height: 100%;
+  width: auto;
+  aspect-ratio: auto;
+  /* A photograph whose bytes have not arrived has no intrinsic width, so the
+     frame collapses to a sliver and the wall reflows when it loads. The floor
+     holds the frame open at the shape a landscape photograph will take. */
+  min-width: 22cqi;
+  max-width: 56cqi;      /* a very wide photograph must not push past the cell */
+  object-fit: cover;
+  border: 6px solid #ece3d2;
+  box-sizing: border-box;
 }
 
-.hang > .work {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 33%;
+/* A group with one photograph hangs it as the whole composition rather than
+   stranding it at the left of an empty two-column cluster. */
+.cluster > .piece:only-child {
+  height: 52cqi;
 }
 
-/* Exactly two works in a room: let them use the full width rather than
-   stranding 34% of the wall empty. */
-.hang > .work:first-child:nth-last-child(2),
-.hang > .work:first-child:nth-last-child(2) ~ .work {
-  max-width: 46%;
+@media (prefers-reduced-motion: reduce) {
+  .piece { transition: none; filter: none; }
 }
 
-/* About's portrait is presentation, not a hung work: the height cap scales it
-   down, so it sizes to the image instead of claiming a third of the wall and
-   leaving a gap between the portrait and the bio beside it. */
+/* About's portrait is presentation, not a hung piece: the height cap scales
+   it down, so it sizes to the image instead of claiming a third of the wall
+   and leaving a gap between the portrait and the bio beside it. */
 .room[data-room="About"] .work {
   flex: 0 1 auto;
   width: fit-content;
