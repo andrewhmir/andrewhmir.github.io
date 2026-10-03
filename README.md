@@ -49,6 +49,7 @@ ten-line runner (`tests/harness.mjs`) instead of `node --test`, which spawns chi
 and fails under a confined sandbox:
 
 ```powershell
+node tests/shell-check.mjs         # markup, palette and the hard constraints, statically
 node tests/derive-rooms.test.mjs   # rooms derived from project categories
 node tests/light.test.mjs          # the light falloff maths
 node tests/lights.test.mjs         # the lighting controller's contract
