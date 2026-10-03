@@ -183,44 +183,14 @@ p:last-child {
   margin-bottom: 0;
 }
 
-/* ── 4. Atmosphere ────────────────────────────────────────────────── */
+/* ── 4. Atmosphere ──────────────────────────────────────────────────
+   The fixed painting-and-grain layer is gone. The gallery's walls are the
+   light: the hall, the rooms and the works carry their own backgrounds, and a
+   fixed layer above them dimmed every room toward the old warm palette and
+   added the one texture the spec rules out — film grain lifts the blacks on
+   near-black and reads as dirt. The base of the walk is --night. */
 
-/* Fixed layer behind all content */
-.bg-atmosphere {
-  position: fixed;
-  inset: 0;
-  right: var(--scrollbar-w, 0px);
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-/* Full-bleed painting — the soul of the site */
-.bg-painting {
-  position: absolute;
-  inset: -5%;
-  width: 110%;
-  height: 110%;
-  background-image: url('../files/painting.jpg');
-  background-size: cover;
-  background-position: center 30%;
-  background-repeat: no-repeat;
-  /* Strong presence at top, fades toward bottom */
-  opacity: 0.5;
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
-  mask-image: linear-gradient(to bottom, black 0%, black 45%, transparent 85%);
-}
-
-/* Subtle grain overlay — using CSS noise via SVG data URI */
-.bg-grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
-}
-
-/* Content sits above atmosphere.
+/* Content sits above that base.
    NOTE: no z-index here — a stacking context would trap the fixed
    nav (and modal/toast) below the .nav-backdrop, which is appended
    to <body> at z-index 997. Positioned z-index:auto paints above the
