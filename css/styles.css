@@ -8,7 +8,7 @@
    1.  Custom Properties
    2.  Reset & Base
    3.  Typography
-   4.  Atmosphere (Painting, Grain)
+   4. Base (the page void; the old painting layer is gone)
    5.  Layout: Container, Section
    6.  Scroll Progress
    7.  Navigation
@@ -28,9 +28,9 @@
    21. Room — one leg of the walk (Night Gallery)
 
    Sections 5–14 style the vertical document this build replaces. They are kept
-   while the rooms are being built because the dialog, its carousel, the toast,
-   the nav and the atmosphere layer still live in them, and they are pruned once
-   nothing references them.
+   while the rooms are being built because the dialog, its carousel, the toast
+   and the nav still live in them, and they are pruned once nothing references
+   them.
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */
@@ -64,9 +64,9 @@
   --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ── Legacy aliases ───────────────────────────────────────────────
-     Rules for the dialog, carousel, toast, nav and atmosphere layer still
-     reference these names, as does index.html's <noscript>. They now resolve
-     to the palette above; nothing new should use them. */
+     Rules for the dialog, carousel, toast and nav still reference these
+     names, as does index.html's <noscript>. They now resolve to the palette
+     above; nothing new should use them. */
   --bg-root:       var(--night);
   --surface-1:     rgba(255, 240, 214, 0.03);
   --surface-2:     rgba(255, 240, 214, 0.06);
@@ -190,11 +190,11 @@ p:last-child {
    added the one texture the spec rules out — film grain lifts the blacks on
    near-black and reads as dirt. The base of the walk is --night. */
 
-/* Content sits above that base.
+/* Content sits above the page base.
    NOTE: no z-index here — a stacking context would trap the fixed
    nav (and modal/toast) below the .nav-backdrop, which is appended
-   to <body> at z-index 997. Positioned z-index:auto paints above the
-   z-index:0 atmosphere by DOM order, so layering is preserved. */
+   to <body> at z-index 997. Positioned z-index:auto children paint in
+   DOM order, so layering is preserved without one. */
 .content-layer {
   position: relative;
 }
@@ -1780,6 +1780,15 @@ body {
 .hang > .work:first-child:nth-last-child(2),
 .hang > .work:first-child:nth-last-child(2) ~ .work {
   max-width: 46%;
+}
+
+/* About's portrait is presentation, not a hung work: the height cap scales it
+   down, so it sizes to the image instead of claiming a third of the wall and
+   leaving a gap between the portrait and the bio beside it. */
+.room[data-room="About"] .work {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 31%;
 }
 
 /* .pool hangs outside the work (top -44px, height 150%) so it can spill as
