@@ -1119,6 +1119,10 @@
 
     hall.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
+    /* Images carry loading="lazy" and no intrinsic size, so the strip's offsets
+       shift as they arrive. Re-measure once everything has loaded; the scroll
+       and resize paths keep it current after that. */
+    window.addEventListener('load', function () { update(); }, { once: true });
     update();
   }
 
