@@ -71,6 +71,47 @@ const evaluate = async (expr) => {
 const setViewport = (width, height, mobile = false) =>
   cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
 const goto = async (url) => { const d = cdp.waitFor('Page.loadEventFired'); await cdp.send('Page.navigate', { url }); await d; await sleep(1500); };
+
+/* ── The walk is horizontal ──────────────────────────────────────────────
+   Bringing a work into view means scrolling #hall along its one axis, not the
+   document. Never assert on frame rate: the wall is that headless Chrome here
+   has no GPU. Assert geometry and state only. */
+const waitSettled = async (timeout = 4000) => {
+  /* Lenis moves the scroll position for a while after the input stops. Reading
+     scrollLeft mid-flight would measure the animation, not the destination. */
+  const deadline = Date.now() + timeout;
+  let last = await hallScrollLeft(), still = 0;
+  while (Date.now() < deadline && still < 3) {
+    await sleep(120);
+    const now = await hallScrollLeft();
+    still = Math.abs(now - last) < 0.5 ? still + 1 : 0;
+    last = now;
+  }
+  return last;
+};
+const hallScrollLeft = () => evaluate(`document.getElementById('hall').scrollLeft`);
+const hallScrollTop  = () => evaluate(`document.getElementById('hall').scrollTop`);
+const scrollWalk = async (px) => {
+  await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    h.scrollLeft += ${px};
+    return h.scrollLeft;
+  })()`);
+  await sleep(700);
+};
+/* Centre a work (or the first one matching a selector) on the hall's axis. */
+const centreWork = async (selector) => {
+  await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    const w = document.querySelector(${JSON.stringify(selector)});
+    if (!w) return null;
+    const hr = h.getBoundingClientRect(), wr = w.getBoundingClientRect();
+    h.scrollLeft += (wr.left + wr.width / 2) - (hr.left + h.clientWidth / 2);
+    return h.scrollLeft;
+  })()`);
+  await sleep(500);
+  await waitSettled(1500);
+};
 const click = async (x, y) => {
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
   await cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1, buttons: 1 });
@@ -109,12 +150,14 @@ await goto(BASE);
 
 /* -- 1. Whole project card is a click target -------------------------- */
 await section('Project card click targets', async () => {
-  /* Three points inside the first card, in viewport coordinates: the
-     thumbnail centre, the title centre, and a spot inside the card's own
-     padding (6px in from the top-left corner). */
+  /* Three points inside the first project work, in viewport coordinates: the
+     thumbnail centre, the title centre, and a spot inside the work's own
+     padding. The walk is horizontal, so the work is centred by scrolling the
+     hall rather than by scrollIntoView on the document. */
+  await centreWork('.work[data-project]');
   const cardPoints = await evaluate(`(() => {
-    const card = document.querySelector('#projectList .project-card');
-    card.scrollIntoView({ behavior: 'instant', block: 'center' });
+    const card = document.querySelector('.work[data-project]');
+    if (!card) return null;
     const mid = (sel) => {
       const el = card.querySelector(sel);
       if (!el) return null;
@@ -125,6 +168,7 @@ await section('Project card click targets', async () => {
     return { thumbnail: mid('.project-thumb'), title: mid('.project-hit'), padding: { x: cr.left + 6, y: cr.top + 6 } };
   })()`);
   await sleep(350);
+  if (!cardPoints) { check('thumbnail opens Overview', false, 'no work rendered yet'); return; }
   for (const where of ['thumbnail', 'title', 'padding']) {
     await closeModal();
     const p = cardPoints[where];
@@ -134,43 +178,43 @@ await section('Project card click targets', async () => {
   }
   await closeModal();
   check('card shows pointer cursor',
-    (await evaluate(`getComputedStyle(document.querySelector('.project-card')).cursor`)) === 'pointer');
+    (await evaluate(`getComputedStyle(document.querySelector('.work .canvas')).cursor`)) === 'pointer');
 });
 
 /* -- 2. Card is reachable and named by keyboard ----------------------- */
 await section('Project card keyboard access', async () => {
-  const has = await evaluate(`!!document.querySelector('.project-card .project-hit')`);
+  const has = await evaluate(`!!document.querySelector('.work[data-project] .project-hit')`);
   check('card control is focusable',
-    has && (await evaluate(`document.querySelector('.project-card .project-hit').tabIndex >= 0`)) === true,
+    has && (await evaluate(`document.querySelector('.work[data-project] .project-hit').tabIndex >= 0`)) === true,
     has ? undefined : 'no .project-hit control yet');
   check('card control has an accessible name',
-    has && (await evaluate(`(document.querySelector('.project-card .project-hit').innerText || '').trim().length > 0`)) === true,
+    has && (await evaluate(`(document.querySelector('.work[data-project] .project-hit').innerText || '').trim().length > 0`)) === true,
     has ? undefined : 'no .project-hit control yet');
   if (!has) { check('Enter on focused card opens Overview', false, 'no .project-hit control yet'); return; }
-  await evaluate(`document.querySelector('.project-card .project-hit').focus()`);
+  await evaluate(`document.querySelector('.work[data-project] .project-hit').focus()`);
   await pressEnter();
   check('Enter on focused card opens Overview', await modalOpen(), 'modal did not open');
 });
 
 /* -- 3. View cue appears on hover / focus ----------------------------- */
 await section('View cue', async () => {
-  const hasCue = await evaluate(`!!document.querySelector('.project-cue')`);
+  const hasCue = await evaluate(`!!document.querySelector('.work .project-cue')`);
   if (!hasCue) {
     check('cue is hidden by default', false, 'no .project-cue yet');
     check('cue appears on focus-within', false, 'no .project-cue yet');
     return;
   }
-  /* Clear focus and park the pointer away from the card: earlier sections
-     leave focus on a card control and the mouse hovering it, both of which
+  /* Clear focus and park the pointer away from the work: earlier sections
+     leave focus on a control and the mouse hovering it, both of which
      legitimately reveal the cue. */
   await closeModal();
   await evaluate(`document.activeElement && document.activeElement.blur && document.activeElement.blur();`);
   await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5, buttons: 0 });
   await sleep(400);
-  const cueHidden = await evaluate(`getComputedStyle(document.querySelector('.project-cue')).opacity`);
-  await evaluate(`document.querySelector('.project-card .project-hit').focus()`);
+  const cueHidden = await evaluate(`getComputedStyle(document.querySelector('.work .project-cue')).opacity`);
+  await evaluate(`document.querySelector('.work[data-project] .project-hit').focus()`);
   await sleep(400);
-  const cueShown = await evaluate(`getComputedStyle(document.querySelector('.project-cue')).opacity`);
+  const cueShown = await evaluate(`getComputedStyle(document.querySelector('.work .project-cue')).opacity`);
   check('cue is hidden by default', cueHidden === '0', 'opacity was ' + cueHidden);
   check('cue appears on focus-within', Number(cueShown) > 0.9, 'opacity was ' + cueShown);
   await closeModal();
@@ -288,7 +332,7 @@ await section('Gallery photos', async () => {
   for (const row of rows) {
     const [kind, index] = row.split(':');
     const opened = await evaluate(`(() => {
-      const el = document.querySelector('[data-gallery="${kind}"][data-index="${index}"]');
+      const el = document.querySelector('[data-gallery="${kind}"][data-entry="${index}"]');
       if (!el) return false;
       el.click();
       return true;
@@ -344,7 +388,7 @@ await section('Share metadata', async () => {
   check('og:image actually resolves', res.ok, res.status + ' ' + ogPath);
 });
 
-/* -- 9. Page weight: no video before a card is on screen -------------- */
+/* -- 9. Page weight: the walk costs nothing until it is walked -------- */
 await section('Page weight', async () => {
   const weight = new Map();
   cdp.on('Network.responseReceived', (p) => weight.set(p.requestId, { url: p.response.url, type: p.type, n: 0 }));
@@ -353,34 +397,42 @@ await section('Page weight', async () => {
   const sum = (pred) => [...weight.values()].filter(pred).reduce((a, w) => a + w.n, 0) / 1048576;
 
   await setViewport(1440, 900, false);
-  await goto(BASE);          /* lands at the top of the page and stays there */
+  await goto(BASE);          /* opens on room 1 and stays there */
   await sleep(3000);
   const topVideo = sum(isVideo);
   const topTotal = sum(() => true);
-  console.log('  info  page top:    ' + topVideo.toFixed(2) + ' MB video / ' + topTotal.toFixed(2) + ' MB total');
-  check('no video is fetched before Projects scrolls into view',
-    topVideo < 0.5, topVideo.toFixed(2) + ' MB of video at page top');
+  console.log('  info  opening room: ' + topVideo.toFixed(2) + ' MB video / ' + topTotal.toFixed(2) + ' MB total');
+  check('the opening room fetches no video',
+    topVideo < 0.5, topVideo.toFixed(2) + ' MB of video on arrival');
 
-  /* Then dwell on the projects section — this is what a real visit costs.
-     (A fast full-page scroll is a poor measure: Chrome aborts large media
-     the moment it leaves the viewport.) */
-  await evaluate(`document.getElementById('Projects').scrollIntoView({behavior:'instant', block:'start'})`);
-  await sleep(9000);
-  console.log('  info  projects view: ' + sum(isVideo).toFixed(2) + ' MB video / ' + sum(() => true).toFixed(2) + ' MB total');
+  /* Then walk the whole strip — this is what a real visit costs. (A fast
+     scroll is a poor measure: Chrome aborts large media the moment it leaves
+     the viewport.) */
+  const walkWidth = await evaluate(`document.getElementById('strip').scrollWidth`);
+  for (let x = 0; x < walkWidth; x += 900) await scrollWalk(900);
+  await waitSettled();
+  console.log('  info  whole walk:   ' + sum(isVideo).toFixed(2) + ' MB video / ' + sum(() => true).toFixed(2) + ' MB total');
 });
 
-/* -- 10. Reduced motion: nothing autoplays ----------------------------- */
+/* -- 10. Reduced motion: every work fully lit, nothing autoplays ------ */
 await section('Reduced motion', async () => {
   await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
   await setViewport(1440, 900, false);
   await goto(BASE);
-  await evaluate(`document.getElementById('Projects').scrollIntoView({behavior:'instant', block:'start'})`);
-  await sleep(4000);
-  const playing = await evaluate(`[...document.querySelectorAll('.project-card video')].filter(v => !v.paused).length`);
-  const posters = await evaluate(`[...document.querySelectorAll('.project-card video')].filter(v => !!v.getAttribute('poster')).length`);
-  const total = await evaluate(`document.querySelectorAll('.project-card video').length`);
-  check('no project video autoplays under prefers-reduced-motion', playing === 0, playing + ' of ' + total + ' playing');
-  check('every project video has a poster for the still frame', posters === total, posters + ' of ' + total);
+  await sleep(1500);
+  /* Spec §7: under reduced motion every work renders at w = 1 with no
+     transition, including works the visitor has not walked to yet. */
+  const lit = await evaluate(`(() => {
+    const works = [...document.querySelectorAll('.work[data-work]')];
+    return {
+      total: works.length,
+      fully: works.filter(w => Number(getComputedStyle(w).getPropertyValue('--lit')) === 1).length,
+    };
+  })()`);
+  check('every work is fully lit under prefers-reduced-motion',
+    lit.total > 0 && lit.fully === lit.total, lit.fully + ' of ' + lit.total + ' lit');
+  const playing = await evaluate(`[...document.querySelectorAll('video')].filter(v => !v.paused).length`);
+  check('nothing autoplays under prefers-reduced-motion', playing === 0, playing + ' playing');
   await cdp.send('Emulation.setEmulatedMedia', { features: [] });
 });
 
@@ -388,8 +440,11 @@ await section('Reduced motion', async () => {
 await section('Mobile (390x844)', async () => {
   await setViewport(390, 844, true);
   await goto(BASE);
-  await evaluate(`(async () => { const h = document.documentElement.scrollHeight; for (let y = 0; y < h; y += 500) { scrollTo(0, y); await new Promise(r => setTimeout(r, 40)); } return true; })()`);
-  await sleep(600);
+  /* Walk the whole strip on the phone: this is also the touch-path check, as
+     it puts every room through the layout at this width. */
+  const walkWidth = await evaluate(`document.getElementById('strip').scrollWidth`);
+  for (let x = 0; x < walkWidth; x += 500) await scrollWalk(500);
+  await waitSettled();
   const mob = await evaluate(`(() => {
     const de = document.documentElement;
     /* Measure LAYOUT size (offsetWidth/Height), not getBoundingClientRect:
@@ -423,6 +478,53 @@ await section('Mobile (390x844)', async () => {
   })()`);
   check('no horizontal overflow on mobile', mob.overflow === 0, mob.overflow + 'px');
   check('all tap targets are at least 44x44', mob.small === 0, mob.examples.join(' | '));
+});
+
+/* -- 12. The walk is horizontal --------------------------------------- */
+await section('The walk is horizontal', async () => {
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+  const before = await hallScrollLeft();
+  await scrollWalk(600);
+  const after = await hallScrollLeft();
+  check('scrolling advances the walk horizontally', after > before,
+    `scrollLeft ${before} -> ${after}`);
+  check('it never scrolls vertically', (await hallScrollTop()) === 0);
+});
+
+/* -- 13. Snap settles on a work --------------------------------------- */
+await section('Snap settles on a work', async () => {
+  await scrollWalk(430);
+  const a = await hallScrollLeft();
+  await sleep(900);
+  const b = await hallScrollLeft();
+  check('the walk comes to rest', Math.abs(a - b) < 2, `still moving: ${a} -> ${b}`);
+});
+
+/* -- 14. Lights come up and stay up ----------------------------------- */
+await section('Lights come up and stay up', async () => {
+  /* A work carries its own --lit, written on the work element. The first
+     .work in the strip is the About portrait, which is not a lighting target,
+     so this reads a work that actually lights. */
+  await centreWork('.work[data-work]');
+  const lit = await evaluate(`(() => {
+    const w = document.querySelector('.work[data-work]');
+    return w ? Number(getComputedStyle(w).getPropertyValue('--lit')) : -1;
+  })()`);
+  check('a work in view is lit', lit > 0.6, 'lit was ' + lit);
+  await scrollWalk(900);
+  const still = await evaluate(`(() => {
+    const w = document.querySelector('.work[data-work]');
+    return w ? Number(getComputedStyle(w).getPropertyValue('--lit')) : -1;
+  })()`);
+  check('a work already seen stays lit', still > 0.6, 'lit fell to ' + still);
+});
+
+/* -- 15. No work hangs empty ------------------------------------------ */
+await section('No work hangs empty', async () => {
+  const empty = await evaluate(
+    `[...document.querySelectorAll('.work')].filter(w => !w.querySelector('img')).length`);
+  check('every work has an image', empty === 0, empty + ' empty frames');
 });
 
 await cdp.send('Target.closeTarget', { targetId });

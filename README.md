@@ -2,7 +2,9 @@
 
 **Data Engineer | Computational Cognition Researcher**
 
-Personal portfolio website built with vanilla HTML, CSS, and JavaScript. No frameworks, no build tools — just clean, responsive code.
+Personal portfolio website, built as a single horizontal walk through a dark gallery: six rooms
+side by side in one strip, each project hung as a work in its own pool of light. Vanilla HTML, CSS
+and JavaScript — no frameworks and no build step.
 
 ## About
 
@@ -11,18 +13,24 @@ My work and studies revolve around understanding perception as a foundation for 
 ## Tech Stack
 
 - **HTML5** — Semantic, accessible markup
-- **CSS3** — Custom properties, responsive design, warm-toned palette
-- **Vanilla JavaScript** — Data-driven rendering, no dependencies
+- **CSS3** — Custom properties, responsive design, near-black gallery palette
+- **Vanilla JavaScript** — Data-driven rendering
+- **Lenis 1.3.26** — Smooth horizontal scrolling, vendored in `js/vendor/`. MIT ©
+  darkroom.engineering. This is the site's only dependency: it is committed, pinned by
+  size and SHA-256 (`js/vendor/README.md`), and never resolved from a CDN at runtime.
+  There is still no build step, no bundler and no package install needed to serve the site.
 
 ## Structure
 
 ```
-├── index.html          Entry point
+├── index.html          Entry point — the hall, the strip, the directory, the dialog
 ├── css/
 │   └── styles.css      All styles
 ├── js/
-│   ├── data.js         Single source of truth — all content
-│   └── main.js         Rendering engine & interactions
+│   ├── data.js         Single source of truth — all content, plus the room derivation
+│   ├── main.js         Room renderer, light controller, the Lenis walk, the dialog
+│   └── vendor/         Lenis 1.3.26, vendored and pinned (see its README)
+├── tests/              In-process unit suites (no test framework, no spawn)
 ├── files/              Images, videos, and assets
 │   └── posters/        Poster frames for the project preview videos
 ├── tools/              Dev-only checks and asset generators (not required to run the site)
@@ -34,12 +42,34 @@ My work and studies revolve around understanding perception as a foundation for 
 
 Open `index.html` in any browser — no server or build step required.
 
-## Development checks
+## Tests
 
-`tools/ux-check.mjs` drives headless Chrome to verify the interaction contract
-(card click targets, keyboard access, modal focus containment, page weight, tap
-targets). It is dev-only — the site itself still has no build step and no
-dependencies. See `tools/README.md`.
+Three unit suites plus a browser contract check. The unit suites run **in-process** with a
+ten-line runner (`tests/harness.mjs`) instead of `node --test`, which spawns child processes
+and fails under a confined sandbox:
+
+```powershell
+node tests/derive-rooms.test.mjs   # rooms derived from project categories
+node tests/light.test.mjs          # the light falloff maths
+node tests/lights.test.mjs         # the lighting controller's contract
+node tests/renderer.test.mjs       # the rendered DOM contract, under a DOM stub
+node tests/gallery-index.test.mjs  # the honours gallery index lookup
+npm test                           # runs the above in order
+```
+
+`tools/ux-check.mjs` additionally drives headless Chrome over the DevTools Protocol to verify
+the interaction contract on the horizontal axis (the walk moves and settles, lights come up and
+stay up, no work hangs empty, modal focus containment, tap targets at 390×844). It is dev-only
+and needs headless Chrome, which needs named pipes — see `tools/README.md`.
+
+## Credits
+
+Background paintings by Fernando Amorsolo y Cueto (1892–1972).
+
+## License
+
+All rights reserved.
+
 
 ## Credits
 
