@@ -27,8 +27,8 @@ await send('Page.enable'); await send('Runtime.enable');
 const MEASURE = `(() => {
   const hall = document.getElementById('hall');
   const out = { hallClientH: hall.clientHeight, hallOffsetH: hall.offsetHeight,
-                navHeaderH: document.getElementById('navHeader').getBoundingClientRect().height,
-                directoryH: document.getElementById('directory').getBoundingClientRect().height };
+                dockH: (document.querySelector('.dock') || { getBoundingClientRect: () => ({ height: 0 }) })
+                  .getBoundingClientRect().height };
   const rooms = [...document.querySelectorAll('#strip .room')];
   out.rooms = rooms.map(r => {
     const kids = [...r.children].filter(c => !c.classList.contains('sign'));

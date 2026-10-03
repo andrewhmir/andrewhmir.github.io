@@ -45,12 +45,12 @@ const res = await send('Runtime.evaluate', {
       hallScrollH: hall.scrollHeight,
       hallRectH: +hall.getBoundingClientRect().height.toFixed(1),
       docVerticalOverflow: document.documentElement.scrollHeight - innerHeight,
-      navMenuRect: document.getElementById('navMenu').getBoundingClientRect().height,
-      navListRect: document.getElementById('navList').getBoundingClientRect().height,
-      signVisible: (() => { const s = document.querySelector('#strip .room .sign');
-        const r = s.getBoundingClientRect(); const nav = document.getElementById('navHeader').getBoundingClientRect();
-        return { signTop: +r.top.toFixed(1), signBottom: +r.bottom.toFixed(1),
-                 navBottom: +nav.bottom.toFixed(1), coveredByNav: r.top < nav.bottom }; })()
+      dockRect: (() => { const d = document.querySelector('.dock');
+        if (!d) return null; const r = d.getBoundingClientRect();
+        return { top: +r.top.toFixed(1), bottom: +r.bottom.toFixed(1), height: +r.height.toFixed(1) }; })(),
+      railRect: (() => { const d = document.querySelector('.rail');
+        if (!d) return null; const r = d.getBoundingClientRect();
+        return { top: +r.top.toFixed(1), bottom: +r.bottom.toFixed(1), width: +r.width.toFixed(1) }; })()
     }, null, 2);
   })()`,
   returnByValue: true

@@ -105,11 +105,7 @@
   --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast:  150ms ease;
   --transition-base:  220ms ease;
-
-  /* Fixed nav height — single source of truth for JS scroll offsets */
-  --navbar-h: 68px;
 }
-
 /* ── 1b. --lit, registered so it does NOT inherit ──────────────────────
    Each work carries its own light value, written on the work element every
    frame the walk moves. An inherited custom property written on a large
@@ -197,10 +193,9 @@ p:last-child {
    near-black and reads as dirt. The base of the walk is --night. */
 
 /* Content sits above the page base.
-   NOTE: no z-index here — a stacking context would trap the fixed
-   nav (and modal/toast) below the .nav-backdrop, which is appended
-   to <body> at z-index 997. Positioned z-index:auto children paint in
-   DOM order, so layering is preserved without one. */
+   NOTE: no z-index here — a stacking context would trap the fixed dock and
+   the modal/toast below it. Positioned z-index:auto children paint in DOM
+   order, so layering is preserved without one. */
 .content-layer {
   position: relative;
 }
@@ -255,93 +250,6 @@ p:last-child {
   background: var(--accent);
   z-index: 1001;
   transition: width 60ms linear;
-}
-
-/* ── 7. Navigation — simple, warm, appears on scroll-up ─────────── */
-.nav-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: var(--scrollbar-w, 0px);
-  z-index: 1000;
-  padding: 16px var(--space-xl);
-  background: linear-gradient(to bottom, var(--bg-root) 0%, transparent 100%);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  transition: transform 300ms var(--ease-out),
-              opacity 300ms ease;
-}
-
-.nav-header.hidden {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.nav-brand {
-  font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 400;
-  font-style: italic;
-  color: var(--text-bright);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-.nav-brand:hover {
-  color: var(--accent);
-}
-
-.nav-list {
-  list-style: none;
-  display: flex;
-  gap: 2px;
-}
-
-.nav-list a {
-  display: block;
-  padding: 6px 14px;
-  font-family: var(--font-body);
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fast),
-              background var(--transition-fast);
-}
-
-.nav-list a:hover,
-.nav-list a.active {
-  color: var(--text-bright);
-  background: var(--surface-1);
-}
-
-/* Hamburger (mobile) */
-.nav-toggle {
-  display: none;
-  flex-direction: column;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--space-sm);
-  z-index: 1010;
-}
-
-.nav-toggle-bar {
-  display: block;
-  width: 22px;
-  height: 2px;
-  background: var(--text-bright);
-  border-radius: 0;
-  transition: transform var(--transition-base), opacity var(--transition-base);
-}
-
-.nav-toggle.open .nav-toggle-bar:first-child {
-  transform: translateY(7px) rotate(45deg);
-}
-.nav-toggle.open .nav-toggle-bar:last-child {
-  transform: translateY(-7px) rotate(-45deg);
 }
 
 /* ── 8. Hero ──────────────────────────────────────────────────────── */
@@ -1336,58 +1244,6 @@ button.record-item {
     max-height: 260px;
   }
 
-  /* Mobile nav */
-  .nav-toggle {
-    display: flex;
-  }
-
-  .nav-menu {
-    position: fixed;
-    top: 60px;
-    left: 16px;
-    right: 16px;
-    background: var(--surface-solid);
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius-md);
-    padding: var(--space-md);
-    transform: translateY(-8px);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 200ms var(--ease-out),
-                opacity 200ms ease;
-  }
-
-  .nav-menu.open {
-    transform: translateY(0);
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .nav-list {
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .nav-list a {
-    padding: var(--space-md);
-    font-size: 0.95rem;
-  }
-
-  /* Dim behind the open menu — keeps the backdrop-to-close wiring in main.js working.
-     z-index 997: above content (no stacking context on .content-layer) but below
-     .nav-header / .nav-menu (stacked at 1000, at root level). */
-  .nav-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 997;
-  }
-
-  .nav-backdrop.open {
-    display: block;
-  }
-
   .timeline-item {
     grid-template-columns: 80px 1fr;
     gap: var(--space-md);
@@ -1443,16 +1299,6 @@ button.record-item {
   }
 
   /* Comfortable touch targets — Apple/Google guidance is 44x44 */
-  .nav-toggle {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .nav-brand {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-  }
 
   .pill {
     min-height: 44px;
@@ -1555,10 +1401,6 @@ button.record-item {
     margin-left: 0;
     border-bottom: 1px solid var(--border-1);
   }
-
-  .nav-header {
-    padding: 12px var(--space-md);
-  }
 }
 
 /* ==========================================================================
@@ -1650,10 +1492,12 @@ body {
   scroll-behavior: auto;   /* Lenis owns the scrolling; CSS smoothing would fight it */
 }
 
-/* ── The directory: the room list, printed at the top of the walk ── */
+/* ── The directory: the room list, printed at the top of the walk ──
+   Task 2 of the edge-dock plan moves this to the foot of the walk; the
+   literal offset below stands in for the nav bar it used to sit under. */
 .directory {
   position: fixed;
-  top: var(--navbar-h);
+  top: 68px;
   left: 0;
   right: 0;
   z-index: 900;

@@ -160,9 +160,8 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
      design), the render targets, the announcer, and the dialog — without the
      dialog elements openModal/openGallery bail out and every control looks dead
      for the wrong reason. */
-  for (const id of ['strip', 'directory', 'navList', 'hall', 'announcer',
+  for (const id of ['strip', 'directory', 'hall', 'announcer',
     'modalOverlay', 'modalCard', 'modalClose', 'modalHeader', 'modalImage', 'modalBody',
-    'scrollProgress', 'scrollTopBtn', 'navToggle', 'navMenu', 'navHeader',
     'heroPhoto', 'heroBio', 'heroEmail', 'heroLinks',
     'newsTimeline', 'projectList', 'leadershipList', 'honorsList',
     'footerEmail', 'currentYear']) el(id);

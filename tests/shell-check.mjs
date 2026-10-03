@@ -35,8 +35,6 @@ ok('html tags balance', errors.length === 0 && stack.length === 0,
 
 /* ---- HTML: the DOM contract later tasks consume ---- */
 const required = [
-  ['id="navHeader"', 'navHeader'],
-  ['id="navList"', 'navList'],
   ['id="directory"', 'directory'],
   ['id="hall"', 'hall'],
   ['id="strip"', 'strip'],
@@ -65,10 +63,29 @@ const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(x => x[1]);
 ok('ids appear once each', new Set(ids).size === ids.length, ids.join(','));
 
 /* ---- HTML: the vertical document is gone ---- */
-const dead = ['scrollProgress', 'scrollTopBtn', 'navToggle', 'heroPhoto', 'heroBio', 'heroEmail',
+const dead = ['scrollProgress', 'scrollTopBtn', 'heroPhoto', 'heroBio', 'heroEmail',
   'heroLinks', 'newsTimeline', 'projectList', 'leadershipList', 'honorsList', 'footerEmail', 'currentYear'];
 const present = dead.filter(id => html.includes('id="' + id + '"'));
 ok('dead vertical-document ids removed', present.length === 0, 'still present: ' + present.join(', '));
+
+/* ---- The dead navigation bar ----
+   The bar held one italic wordmark and two elements that measured 0x0:
+   renderNav() is deliberately never called, because the nav it filled listed
+   #News, #Projects and #Records, none of which exist in the walk. The
+   directory beneath it is the only working navigation, and it was the band
+   covering the room title. Nothing may reintroduce it. */
+ok('the shell has no navigation bar', !/class="nav-header"/.test(html));
+ok('the shell has no nav list',        !/id="navList"/.test(html));
+ok('the shell has no nav menu',        !/id="navMenu"/.test(html));
+ok('the shell has no mobile toggle',   !/id="navToggle"/.test(html));
+ok('the navbar height token is gone',  !/--navbar-h/.test(css));
+ok('no rule styles .nav-header',       !/\.nav-header\b/.test(css));
+ok('no rule styles .nav-toggle',       !/\.nav-toggle\b/.test(css));
+ok('main.js has no renderNav',         !/function renderNav\b/.test(main));
+ok('main.js has no updateNavVisibility', !/function updateNavVisibility\b/.test(main));
+ok('main.js has no updateActiveNav',   !/function updateActiveNav\b/.test(main));
+ok('main.js has no initSmoothScroll',  !/function initSmoothScroll\b/.test(main));
+ok('no live-region reads .nav-backdrop', !/nav-backdrop/.test(css) && !/nav-backdrop/.test(main));
 ok('modal stays a child of .content-layer',
   /class="content-layer"[\s\S]*id="modalOverlay"[\s\S]*<\/div><!-- \/content-layer -->/.test(html));
 

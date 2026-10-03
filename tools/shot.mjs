@@ -73,9 +73,6 @@ const geom = await send('Runtime.evaluate', {
     const sign  = first && first.querySelector('.sign');
     return JSON.stringify({
       viewport: { w: innerWidth, h: innerHeight },
-      navHeader: g('#navHeader'),
-      navList: g('#navList'),
-      navMenu: g('#navMenu'),
       directory: g('#directory'),
       directoryFirstLink: g('#directory .room-link'),
       directoryLastLink: g('#directory li:last-child .room-link'),

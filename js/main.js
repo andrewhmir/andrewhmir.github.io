@@ -7,12 +7,6 @@
   'use strict';
 
   /* ── DOM References ─────────────────────────────────────────────── */
-  const $progress   = document.getElementById('scrollProgress');
-  const $scrollTop  = document.getElementById('scrollTopBtn');
-  const $navHeader  = document.getElementById('navHeader');
-  const $navToggle  = document.getElementById('navToggle');
-  const $navMenu    = document.getElementById('navMenu');
-  const $navList    = document.getElementById('navList');
   const $heroPhoto  = document.getElementById('heroPhoto');
   const $heroBio    = document.getElementById('heroBio');
   const $heroEmail  = document.getElementById('heroEmail');
@@ -39,14 +33,6 @@
   /* ════════════════════════════════════════════════════════════════════
      RENDER
      ════════════════════════════════════════════════════════════════════ */
-
-  /* ── Navigation ──────────────────────────────────────────────── */
-  function renderNav() {
-    if (!$navList) return;
-    $navList.innerHTML = PORTFOLIO.nav.map(item =>
-      `<li><a href="#${item.id}" data-nav="${item.id}">${item.label}</a></li>`
-    ).join('');
-  }
 
   /* ── Hero ──────────────────────────────────────────────────── */
 
@@ -451,7 +437,6 @@
     lastFocused = document.activeElement;
     $modalOverlay.classList.add('active');
     lockBodyScroll();
-    $navHeader.classList.add('hidden');
     setBackgroundInert(true);
     if ($modalCard) $modalCard.focus();
   }
@@ -528,7 +513,6 @@
     $modalOverlay.classList.remove('active');
     setBackgroundInert(false);
     unlockBodyScroll();
-    $navHeader.classList.remove('hidden');
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
     lastFocused = null;
   }
@@ -613,105 +597,6 @@
      INTERACTIONS
      ════════════════════════════════════════════════════════════════════ */
 
-  /* ── Scroll Progress ────────────────────────────────────────── */
-  function updateScrollProgress() {
-    if (!$progress) return;
-    const total = document.documentElement.scrollHeight - window.innerHeight;
-    $progress.style.width = total > 0 ? `${(window.scrollY / total) * 100}%` : '0%';
-  }
-
-  /* ── Scroll-to-Top ──────────────────────────────────────────── */
-  function updateScrollTopVisibility() {
-    if (!$scrollTop) return;
-    $scrollTop.classList.toggle('visible', window.scrollY > 400);
-  }
-
-  if ($scrollTop) {
-    $scrollTop.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  /* ── Nav Scroll Spy ─────────────────────────────────────────── */
-  function updateActiveNav() {
-    const links = document.querySelectorAll('[data-nav]');
-    if (!links.length) return;
-
-    const scrollPos = window.scrollY + 80;
-    let current = null;
-
-    links.forEach(link => {
-      const id = link.getAttribute('data-nav');
-      const section = document.getElementById(id);
-      if (section && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
-        current = id;
-      }
-    });
-
-    links.forEach(link => {
-      link.classList.toggle('active', link.getAttribute('data-nav') === current);
-    });
-  }
-
-  /* ── Nav Hide/Show on Scroll ─────────────────────────────────── */
-  let lastScroll = 0;
-  function updateNavVisibility() {
-    if (!$navHeader) return;
-    const currentScroll = window.scrollY;
-
-    const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
-    if (currentScroll > lastScroll && currentScroll > navH + 20) {
-      $navHeader.classList.add('hidden');
-    } else {
-      $navHeader.classList.remove('hidden');
-    }
-    lastScroll = currentScroll;
-  }
-
-  /* ── Nav Backdrop ─────────────────────────────────────────── */
-  const $navBackdrop = document.createElement('div');
-  $navBackdrop.classList.add('nav-backdrop');
-  document.body.appendChild($navBackdrop);
-
-  function openMobileNav() {
-    $navMenu.classList.add('open');
-    $navToggle.classList.add('open');
-    $navToggle.setAttribute('aria-expanded', 'true');
-    $navBackdrop.classList.add('open');
-    lockBodyScroll();
-  }
-
-  function closeMobileNav() {
-    $navMenu.classList.remove('open');
-    $navToggle.classList.remove('open');
-    $navToggle.setAttribute('aria-expanded', 'false');
-    $navBackdrop.classList.remove('open');
-    unlockBodyScroll();
-  }
-
-  /* ── Mobile Nav Toggle ──────────────────────────────────────── */
-  if ($navToggle && $navMenu) {
-    $navToggle.addEventListener('click', function () {
-      if ($navMenu.classList.contains('open')) {
-        closeMobileNav();
-      } else {
-        openMobileNav();
-      }
-    });
-
-    // Close on nav link click (mobile)
-    $navMenu.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') {
-        closeMobileNav();
-      }
-    });
-
-    // Close on backdrop click
-    $navBackdrop.addEventListener('click', function () {
-      closeMobileNav();
-    });
-  }
-
   /* ── Scroll-Triggered Reveal ────────────────────────────────── */
   function initRevealObserver() {
     if (!('IntersectionObserver' in window)) {
@@ -756,42 +641,6 @@
     }, { threshold: 0.25 });
 
     Array.prototype.forEach.call(videos, function (v) { observer.observe(v); });
-  }
-
-  /* ── Smooth Scroll for Anchor Links ─────────────────────────── */
-  function initSmoothScroll() {
-    document.addEventListener('click', function (e) {
-      const link = e.target.closest('a[href^="#"]');
-      if (!link) return;
-
-      const href = link.getAttribute('href');
-      if (href === '#') return;
-
-      const target = document.querySelector(href);
-      if (target) {
-        e.preventDefault();
-        const offset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
-        window.scrollTo({
-          top: target.offsetTop - offset,
-          behavior: 'smooth'
-        });
-      }
-    });
-  }
-
-  /* ── Combined Scroll Handler (throttled) ────────────────────── */
-  let throttled = false;
-  function onScroll() {
-    if (!throttled) {
-      requestAnimationFrame(function () {
-        updateScrollProgress();
-        updateScrollTopVisibility();
-        updateActiveNav();
-        updateNavVisibility();
-        throttled = false;
-      });
-      throttled = true;
-    }
   }
 
   /* ════════════════════════════════════════════════════════════════════
@@ -1205,7 +1054,7 @@
     /* The walk first: the renderer below fills #strip, and the MutationObserver
        in initWalk registers the snap targets as the rooms appear.
        The rooms are built from PORTFOLIO, so the gallery cannot drift from the
-       data; the directory is the same list, printed at the top of the walk. */
+       data; the directory is the same list. */
     Site.walk = initWalk();
 
     renderDirectory();
@@ -1215,9 +1064,6 @@
        Lenis has measured the strip and every work has an offsetLeft. */
     initLights();
 
-    /* renderNav() is deliberately not called: the nav it filled listed #News,
-       #Projects and #Records, none of which exist in the walk any more. The
-       directory above is the room navigation now. */
     renderHero();
     renderNews();
     renderProjects();
@@ -1227,10 +1073,6 @@
 
     initRevealObserver();
     initVideoPlayback();
-    initSmoothScroll();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // initial state
   }
 
   if (document.readyState === 'loading') {

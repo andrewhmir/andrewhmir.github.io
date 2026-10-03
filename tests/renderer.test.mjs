@@ -34,7 +34,7 @@ const els = new Map();
 const el = (id) => { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); };
 /* Current markup: the renderer's output targets, plus the walk's two anchors.
    #hall must exist or initWalk returns null by design. */
-for (const id of ['strip', 'directory', 'navList', 'hall']) el(id);
+for (const id of ['strip', 'directory', 'hall']) el(id);
 
 globalThis.document = {
   readyState: 'complete',
