@@ -104,6 +104,19 @@
   --navbar-h: 68px;
 }
 
+/* ── 1b. --lit, registered so it does NOT inherit ──────────────────────
+   Each work carries its own light value, written on the work element every
+   frame the walk moves. An inherited custom property written on a large
+   subtree invalidates style for the whole subtree; that is the documented
+   cause of a measured 503ms of RecalcStyleDuration per 3s of scrolling in the
+   owner's prior project. Registered `inherits: false` and written only to the
+   few elements that read it, so an update touches one element, not a room. */
+@property --lit {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
 /* ── 2. Reset & Base ──────────────────────────────────────────────── */
 *,
 *::before,

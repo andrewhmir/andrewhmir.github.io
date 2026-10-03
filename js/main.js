@@ -1052,6 +1052,71 @@
   }
 
   /* ════════════════════════════════════════════════════════════════════
+     LIGHTING — a work's light rises as it arrives and never goes back out
+     ════════════════════════════════════════════════════════════════════ */
+
+  /* `--lit` is written to the .work element itself (a leaf-ish node), and it is
+     registered `inherits: false` in css/styles.css. Never write an inherited
+     custom property on a large subtree per frame: measured at 503ms of
+     RecalcStyleDuration per 3s of scroll in a prior project. */
+  function initLights() {
+    var strip = document.getElementById('strip');
+    var hall = document.getElementById('hall');
+    if (!strip || !hall) return;
+
+    var works = Array.prototype.slice.call(strip.querySelectorAll('[data-work]'));
+    if (!works.length) return;
+
+    var reduce = window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduce) {
+      works.forEach(function (w) { w.style.setProperty('--lit', '1'); });
+      return;
+    }
+
+    /* Restored mid-walk on load: mark everything already passed as seen so the
+       lighting does not sweep across the whole strip on the first frame. */
+    var startMid = hall.scrollLeft + hall.clientWidth / 2;
+    works.forEach(function (w) {
+      if (w.offsetLeft + w.offsetWidth / 2 < startMid) w.dataset.seen = '1';
+    });
+
+    var ticking = false;
+    function update() {
+      var vw = hall.clientWidth;
+      var mid = hall.scrollLeft + vw / 2;
+      var centres = works.map(function (w) { return w.offsetLeft + w.offsetWidth / 2; });
+      var active = Site.visibleWork(hall.scrollLeft, vw, centres);
+
+      works.forEach(function (w, i) {
+        var c = centres[i];
+        var d = Math.abs(c - mid) / (vw * 0.62);
+        var v = Math.max(0, 1 - d);
+        v = v * v * (3 - 2 * v);                  /* smoothstep */
+        if (i === active) v = 1;
+        if (v > 0.5) w.dataset.seen = '1';
+        var lit = (w.dataset.seen === '1') ? Math.max(v, 0.72) : v * 0.62;
+        w.style.setProperty('--lit', lit.toFixed(3));
+      });
+    }
+
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () { update(); ticking = false; });
+    }
+
+    hall.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    update();
+  }
+
+  /* Exposed so a test can re-run the controller against a seeded DOM, and so
+     the renderer can relight after a re-render. */
+  Site.initLights = initLights;
+
+  /* ════════════════════════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════════════════════════ */
 
@@ -1064,6 +1129,10 @@
 
     renderDirectory();
     renderRooms();
+
+    /* After the walk and the rooms, so the first update() sees real geometry:
+       Lenis has measured the strip and every work has an offsetLeft. */
+    initLights();
 
     /* renderNav() is deliberately not called: the nav it filled listed #News,
        #Projects and #Records, none of which exist in the walk any more. The
