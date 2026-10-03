@@ -821,10 +821,80 @@
   }
 
   /* ════════════════════════════════════════════════════════════════════
+     THE WALK — Lenis smooth horizontal scrolling + proximity snap
+     ════════════════════════════════════════════════════════════════════ */
+
+  /* Native CSS scroll-snap is deliberately off: it re-snaps whenever the
+     scroll position is set programmatically, so it fights every Lenis
+     animation. lenis/snap replaces it and handles wheel, touch and keys. */
+  function initWalk() {
+    var hall = document.getElementById('hall');
+    var strip = document.getElementById('strip');
+    if (!hall || !strip || typeof Lenis === 'undefined') return null;
+
+    var lenis = new Lenis({
+      wrapper: hall,
+      content: strip,
+      orientation: 'horizontal',
+      lerp: 0.1,
+      autoRaf: true,
+      anchors: true,          /* without this, in-page links stop working */
+      prevent: function (node) {
+        return !!(node.closest && node.closest('.modal-overlay'));
+      }
+    });
+
+    var snap = null;
+    if (typeof Snap !== 'undefined') {
+      snap = new Snap(lenis, {
+        type: 'proximity',
+        distanceThreshold: '35%',
+        debounce: 150        /* the 500ms default feels sluggish */
+      });
+    }
+
+    function registerTargets() {
+      if (!snap) return;
+      snap.stop();
+      var els = strip.querySelectorAll('[data-snap]');
+      Array.prototype.forEach.call(els, function (el) {
+        snap.addElement(el, { align: 'center' });
+      });
+      snap.start();
+    }
+
+    /* Rooms are rendered after this runs, so register snap targets when they
+       appear rather than depending on a call-order contract with the renderer. */
+    if ('MutationObserver' in window) {
+      var mo = new MutationObserver(function () { registerTargets(); });
+      mo.observe(strip, { childList: true });
+    }
+
+    function goToRoom(key) {
+      var room = strip.querySelector('[data-room="' + key + '"]');
+      if (room) lenis.scrollTo(room, { offset: 0 });
+    }
+
+    return {
+      lenis: lenis,
+      snap: snap,
+      goToRoom: goToRoom,
+      registerTargets: registerTargets,
+      resize: function () { lenis.resize(); if (snap) snap.resize(); },
+      stop: function () { lenis.stop(); if (snap) snap.stop(); },
+      start: function () { lenis.start(); if (snap) snap.start(); }
+    };
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════════════════════════ */
 
   function init() {
+    /* The walk first: the renderer below fills #strip, and the MutationObserver
+       in initWalk registers the snap targets as the rooms appear. */
+    Site.walk = initWalk();
+
     renderNav();
     renderHero();
     renderNews();
