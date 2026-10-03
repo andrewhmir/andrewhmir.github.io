@@ -258,6 +258,70 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   check('no frame paints over another group\'s photographs',
         inner.collide.length === 0, inner.collide.slice(0, 5).join(' | '));
 
+  /* The rendered walk against the data it is built from. This is the assertion
+     that catches content disappearing without anything looking broken — a
+     group dropped, a photograph hung twice, a catalogue that lost an entry.
+     Both Critical faults the adversarial review found were content silently
+     missing from a wall that still rendered. */
+  const inventory = await evaluate(`(() => {
+    const groups = [...document.querySelectorAll('#strip .group')];
+    const perKind = {};
+    groups.forEach(g => {
+      const k = g.dataset.kind;
+      perKind[k] = perKind[k] || { groups: 0, pieces: 0, labels: 0, entries: 0 };
+      perKind[k].groups++;
+      perKind[k].pieces += g.querySelectorAll('.piece').length;
+      if (g.querySelector('.label')) perKind[k].labels++;
+      perKind[k].entries += g.querySelectorAll('.cat-entry').length;
+    });
+    /* Grouped pieces only. The About portrait is also a .piece — it hangs in
+       the same frame — but it is presentation rather than a record's
+       photograph, and the data declares it separately. */
+    const srcs = [...document.querySelectorAll('#strip .group .piece img')]
+      .map(i => i.getAttribute('src'));
+    const portrait = document.querySelector('#strip .room[data-room="About"] .piece img');
+    return { perKind, srcs, portrait: portrait ? portrait.getAttribute('src') : null,
+             rooms: document.querySelectorAll('#strip .room').length,
+             dock: document.querySelectorAll('.dock-link').length };
+  })()`);
+  const expected = await evaluate(`(() => {
+    const P = globalThis.PORTFOLIO, S = globalThis.Site;
+    const want = { project: 0, honors: 0, leadership: 0 };
+    P.projects.forEach(p => { want.project += S.groupPieces(p, 'project').length; });
+    P.honors.forEach(h => { want.honors += S.groupPieces(h, 'record').length; });
+    P.leadership.forEach(l => { want.leadership += S.groupPieces(l, 'record').length; });
+    const all = [];
+    P.projects.forEach(p => S.groupPieces(p, 'project').forEach(x => all.push(x.src)));
+    P.honors.forEach(h => S.groupPieces(h, 'record').forEach(x => all.push(x.src)));
+    P.leadership.forEach(l => S.groupPieces(l, 'record').forEach(x => all.push(x.src)));
+    return { want, all, groups: P.projects.length + P.honors.length + P.leadership.length };
+  })()`);
+
+  const counts = Object.entries(expected.want).map(([kind, n]) => {
+    const got = inventory.perKind[kind] || { pieces: 0, labels: 0, entries: 0, groups: 0 };
+    return { kind, want: n, got: got.pieces, labels: got.labels, entries: got.entries, groups: got.groups };
+  });
+  const short = counts.filter((c) => c.got !== c.want);
+  check('every photograph the data declares is hung exactly once',
+        short.length === 0, JSON.stringify(short));
+  check('every group carries one label with one catalogue entry per photograph',
+        counts.every((c) => c.labels === c.groups && c.entries === c.got),
+        JSON.stringify(counts));
+  /* Multiset equality: a photograph hung twice is as wrong as one hung never. */
+  const tally = (arr) => arr.reduce((m, v) => (m[v] = (m[v] || 0) + 1, m), {});
+  const gotTally = tally(inventory.srcs), wantTally = tally(expected.all);
+  const differing = [...new Set([...Object.keys(gotTally), ...Object.keys(wantTally)])]
+    .filter((k) => gotTally[k] !== wantTally[k]);
+  check('the wall\'s photographs are exactly the data\'s, no more and no fewer',
+        differing.length === 0,
+        differing.slice(0, 5).map((k) => k + ' ' + (gotTally[k] || 0) + ' vs ' + (wantTally[k] || 0)).join(' | '));
+  check('the dock carries every room the walk does',
+        inventory.dock === inventory.rooms,
+        inventory.dock + ' dock entries for ' + inventory.rooms + ' rooms');
+  check('the About portrait hangs in the same frame as the works',
+        inventory.portrait === (await evaluate(`globalThis.PORTFOLIO.profileImage`)),
+        'portrait is ' + inventory.portrait);
+
   /* The same check at the spec's floor. 1280x704 leaves the least room above
      the dock, so it is where a room overflows first — and the DOM stub in
      tests/ cannot see layout, so this is the only place it is caught. */
