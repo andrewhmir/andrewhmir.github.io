@@ -54,8 +54,12 @@
 
     <!-- The walk. Six rooms sit side by side in one strip; Lenis smooths the
          journey and lenis/snap settles it. Rooms are rendered by JS from
-         PORTFOLIO + Site.deriveRooms. -->
-    <main id="hall" class="hall">
+         PORTFOLIO + Site.deriveRooms.
+
+         tabindex="0" makes the scroll container itself reachable by keyboard:
+         it is the document's only scroller, so without it the arrow keys cannot
+         move the walk and nothing inside it can be tabbed to. -->
+    <main id="hall" class="hall" tabindex="0" aria-label="The collection">
       <div id="strip" class="strip">
         <!-- Rooms rendered by JS from PORTFOLIO + Site.deriveRooms -->
       </div>

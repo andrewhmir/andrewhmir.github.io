@@ -1105,6 +1105,33 @@
     var hall = document.getElementById('hall');
     if (!strip || !hall) return;
 
+    /* The live region that names the room the walk is in (spec §9). It is set up
+       before the lighting's early returns: announcing the room is independent of
+       whether any work is currently lit, so a room of plates still announces
+       itself. Only writes when the room changes, so scrolling does not spam a
+       screen reader with the same name dozens of times a second. */
+    var announcer = document.getElementById('announcer');
+    var lastRoom = null;
+    function announceRoom() {
+      var mid = hall.scrollLeft + hall.clientWidth / 2;
+      var rooms = strip.querySelectorAll('[data-room]');
+      for (var i = 0; i < rooms.length; i++) {
+        var r = rooms[i];
+        var left = pageX(r), right = left + r.offsetWidth;
+        if (mid >= left && mid < right) {
+          var titleEl = r.querySelector('.room-title .t');
+          var name = (titleEl && titleEl.textContent) || r.getAttribute('data-room') || '';
+          if (announcer && name && name !== lastRoom) {
+            lastRoom = name;
+            announcer.textContent = 'Room: ' + name;
+          }
+          return name;
+        }
+      }
+      return '';
+    }
+    Site.announceRoom = announceRoom;
+
     var works = Array.prototype.slice.call(strip.querySelectorAll('[data-work]'));
     if (!works.length) return;
 
@@ -1140,6 +1167,8 @@
         var lit = (w.dataset.seen === '1') ? Math.max(v, 0.72) : v * 0.62;
         w.style.setProperty('--lit', lit.toFixed(3));
       });
+
+      announceRoom();
     }
 
     function onScroll() {

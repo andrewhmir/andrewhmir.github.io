@@ -7,6 +7,7 @@
    check noticed, because the stub's closest() returned null and its
    addEventListener was a no-op. */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { check, run } from './harness.mjs';
 import { loadSite } from './dom-harness.mjs';
 
@@ -74,6 +75,41 @@ check('an email button copies the address when clicked', () => {
 check('the dialog is closed again after each of those', () => {
   assert.ok(!modal.classList.contains('active'), 'a dialog was left open');
   assert.equal(card.getAttribute('role'), 'dialog', 'the card is not a dialog');
+});
+
+check('the live region names the room the walk is in', () => {
+  /* The announcer exists in index.html with role="status" aria-live="polite";
+     spec §9 requires it to announce the current room. An aria-live region nobody
+     writes to is dead markup, and nothing else in the build notices. */
+  assert.ok(scene.announcer, 'no announcer element');
+  assert.equal(scene.announcer.getAttribute('role') || 'status', 'status');
+  const hall = scene.hall;
+  hall.scrollLeft = 2880 + 300;         /* inside the Applications room */
+  globalThis.Site.announceRoom();
+  assert.equal(scene.announcer.textContent,
+    scene.announcer.textContent.trim(), 'the announcement has stray whitespace');
+  assert.ok(scene.announcer.textContent.length > 0,
+    'the live region was never written to — screen readers get no room change');
+  assert.ok(/Applications/.test(scene.announcer.textContent), 
+    'announced "' + scene.announcer.textContent + '" while in Applications');
+
+  hall.scrollLeft = 0;                  /* back to the opening room */
+  globalThis.Site.announceRoom();
+  assert.ok(/About/.test(scene.announcer.textContent),
+    'announced "' + scene.announcer.textContent + '" while in About');
+});
+
+check('the walk is reachable from the keyboard', () => {
+  /* Spec §9 assumes the strip is natively scrollable so keyboard scrolling
+     "works without custom handling". That premise only holds if the scroll
+     container can take focus: a scrollable region that is not focusable is
+     skipped by the tab order, and with no pointer the works inside it can never
+     be reached. */
+  const html = readFileSync('index.html', 'utf8');
+  const hall = html.match(/<main[^>]*id="hall"[^>]*>/);
+  assert.ok(hall, 'no #hall element in index.html');
+  assert.match(hall[0], /tabindex="0"/,
+    'the scroll container is not focusable, so the keyboard cannot reach the walk');
 });
 
 run();

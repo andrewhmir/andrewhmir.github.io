@@ -174,6 +174,7 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   const hall = el('hall');
   hall.scrollLeft = 0;
   hall.clientWidth = 1440;
+  hall.offsetWidth = 1440;
   hall.rect = { left: 0, top: 0, width: 1440, height: 900 };
 
   const stripEl = el('strip');
@@ -187,6 +188,8 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
     const roomEl = makeEl('section');
     roomEl.setAttribute('data-room', room.key || 'Room' + ri);
     roomEl.rect = { left: room.left, top: 0, width: room.width, height: 900 };
+    roomEl.offsetWidth = room.width;
+    roomEl.offsetHeight = 900;
     /* .room { position: relative } — this is what makes offsetLeft room-relative. */
     roomEl.positioned = true;
     roomEl.parentNode = stripEl;
@@ -243,7 +246,21 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
     roomEl.plate = plate;
     plateEls.push(plate);
   }
-  stripEl.querySelectorAll = (sel) => (sel === '[data-work]' ? workEls : []);
+  stripEl.querySelectorAll = (sel) => {
+    if (sel === '[data-work]') return workEls;
+    if (sel === '[data-room]') return roomEls;
+    if (sel === '[data-snap]') return roomEls;   /* rooms carry data-snap */
+    return [];
+  };
+  /* A room's title, as renderRooms emits it. */
+  for (const [ri, roomEl] of roomEls.entries()) {
+    const title = makeEl('span');
+    title.className = 't';
+    title.textContent = rooms[ri].title || rooms[ri].key || '';
+    title.parentNode = roomEl;
+    roomEl.children.push(title);
+    roomEl.querySelector = (sel) => (sel === '.room-title .t' ? title : null);
+  }
 
   const listeners = new Map();
   docEl = {
