@@ -64,7 +64,7 @@
      inside a hall that is one viewport tall with no vertical axis, so the wall
      must close above the fold; this shrinks with the viewport, which a fixed px
      cap would not. See the note on .hang .canvas img. */
-  --img-max-h:    26vh;
+  --img-max-h:    22vh;
 
   --lit:          0;
   --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
@@ -1420,6 +1420,9 @@ button.record-item {
 #strip {
   display: flex;
   align-items: stretch;
+  /* The strip is exactly the hall's height, so each room's `height: 100%`
+     resolves to one viewport rather than to the strip's content height. */
+  height: 100%;
 }
 
 /* ==========================================================================
@@ -1429,8 +1432,20 @@ button.record-item {
   position: relative;
   flex: 0 0 auto;
   width: var(--room-w);
-  min-height: 100vh;
-  padding: 64px 34px 34px;
+  /* No min-height. The hall already sizes the room; a second `100vh`
+     constraint made the box 704 + 70 = 774px tall inside a 704px hall at the
+     spec's floor, which pushed the densest rooms past the fold. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* The room is exactly one hall tall. Without this the room is only as tall
+     as its content plus its padding, so its centring axis and its dock
+     reserve are measured against a box that does not match the fold: content
+     centres too low and can slide under the dock. */
+  height: 100%;
+  /* 124px at the foot reserves the dock (58px) plus breathing room. Content
+     is centred in what is left, so no room is top-heavy. */
+  padding: 36px 34px 124px;
   background:
     radial-gradient(74% 42% at 50% -10%, rgba(255,240,214,.06), transparent 74%),
     linear-gradient(180deg, var(--room-warm) 0%, var(--room) 58%, #080807 100%);
@@ -1439,7 +1454,10 @@ button.record-item {
 
 /* Wall nap — two offset dot grids at 2–3%, pure CSS, no image request.
    Film grain is deliberately not used: on near-black it lifts the blacks and
-   reads as dirt. */
+   reads as dirt.
+   `pointer-events: none` is load-bearing: this layer covers the whole room and
+   would otherwise swallow the click on every control inside it. Keyboard
+   access still worked, which is why the delegation suite never caught it. */
 .room::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background-image:
@@ -1448,6 +1466,9 @@ button.record-item {
   background-size: 4px 4px, 4px 4px;
   background-position: 0 0, 2px 2px;
 }
+
+/* Everything a room holds paints above the wall nap. */
+.room > * { position: relative; }
 
 /* ── A work: no frame. Light is the frame. ── */
 .work {
@@ -1477,7 +1498,10 @@ button.record-item {
 
 /* ── The walk fills the viewport, so the horizontal axis is the only one.
       No vertical page axis exists: the hall is the document's one scroll
-      container. ── */
+      container.
+      `scrollbar-width: none` is not cosmetic: the hall's own horizontal
+      scrollbar consumed 15px of its box, so every room lost its last 15px to
+      a strip no room could scroll back to. The rail carries position now. ── */
 body {
   background: var(--night);
   overflow: hidden;
@@ -1485,11 +1509,18 @@ body {
 
 .content-layer {
   height: 100vh;
+  height: 100dvh;
 }
 
 #hall {
   height: 100vh;
+  height: 100dvh;
   scroll-behavior: auto;   /* Lenis owns the scrolling; CSS smoothing would fight it */
+  scrollbar-width: none;   /* the rail replaces it */
+}
+
+#hall::-webkit-scrollbar {
+  display: none;
 }
 
 /* ── The dock: the walk's directory, gathered at its foot ──
@@ -1738,7 +1769,7 @@ body {
      label each is ~260px a row, and the plate rooms add two rows of ~76px. 26vh
      keeps all of that above 900px and shrinks as the viewport shortens, which a
      fixed px cap would not. */
-  max-height: var(--img-max-h, 26vh);
+  max-height: var(--img-max-h, 22vh);
   object-fit: contain;
 }
 
@@ -1829,7 +1860,22 @@ button.plate:hover, button.plate:focus-visible {
 
 .lbl .by { margin-top: 5px; font-size: 0.86rem; color: var(--text); }
 
-.lbl .med { margin-top: 7px; font-size: 0.86rem; color: var(--text-quiet); }
+/* The medium line is the only unbounded text in a work: it is a whole
+   paragraph, and in a nowrap row of works it is what decides the row's
+   height. A room is exactly one viewport tall, so an unbounded line here
+   pushed the densest room past the fold at 1280x704 — where the label ran
+   under the dock, unreachable, because there is no vertical axis. Three
+   lines is the entire story the label needs to tell; the dialog carries the
+   rest. */
+.lbl .med {
+  margin-top: 7px;
+  font-size: 0.86rem;
+  color: var(--text-quiet);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 .lbl .pro {
   margin-top: 7px;

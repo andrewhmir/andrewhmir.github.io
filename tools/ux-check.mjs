@@ -148,6 +148,107 @@ const closeModal = async () => {
 await setViewport(1440, 900, false);
 await goto(BASE);
 
+/* -- Layout: the fold, the dock and the rail --------------------------- */
+await section('Layout: nothing is clipped and nothing overlaps', async () => {
+  /* The hall is the document's only scroller and it is one viewport tall.
+     If its own horizontal scrollbar is visible it eats 15px of that box, and
+     every room loses its last 15px — which no room can scroll back to. */
+  const hall = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    return { clientH: h.clientHeight, offsetH: h.offsetHeight,
+             scrollbar: h.offsetHeight - h.clientHeight };
+  })()`);
+  check('the hall is its full height', hall.scrollbar === 0, JSON.stringify(hall));
+
+  /* The room has to be the same height as the hall, or its own centring and
+     its dock reserve are computed against a box that extends past the fold:
+     content is centred too low and can slide under the dock. */
+  const boxes = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    const room = document.querySelector('#strip .room');
+    return { hall: h.clientHeight, room: room.getBoundingClientRect().height, vh: innerHeight };
+  })()`);
+  check('a room is exactly one viewport tall',
+        Math.abs(boxes.room - boxes.vh) <= 1,
+        JSON.stringify(boxes));
+
+  /* Nothing in a room may cross into the dock's band at the foot, or sit
+     above the top edge. The dock is fixed, so content that overflows the
+     fold is both clipped and unreachable: there is no vertical axis to
+     scroll to it.
+     The band is checked across the whole viewport width, not just where the
+     dock's own box happens to be: the dock is centred and a room is wider
+     than the viewport, so a group scrolled to either edge would otherwise
+     pass while sitting inside the band. */
+  const bad = await evaluate(`(() => {
+    const dock = document.querySelector('.dock').getBoundingClientRect();
+    const out = [];
+    document.querySelectorAll('#strip .room').forEach(room => {
+      room.querySelectorAll('h2, .group, .hang, .about-copy').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const name = room.getAttribute('data-room');
+        const cls = el.className || el.tagName;
+        if (r.height === 0) return;
+        if (r.bottom > dock.top) {
+          out.push(name + ' / ' + cls + ' crosses into the dock band: ' +
+            Math.round(r.bottom) + ' > ' + Math.round(dock.top));
+        }
+        if (r.top < 24) {
+          out.push(name + ' / ' + cls + ' sits above the room padding: ' + Math.round(r.top));
+        }
+      });
+    });
+    return out;
+  })()`);
+  check('no room content crosses into the dock band or off the top', bad.length === 0, bad.join('; '));
+
+  /* The same check at the spec's floor. 1280x704 leaves the least room above
+     the dock, so it is where a room overflows first — and the DOM stub in
+     tests/ cannot see layout, so this is the only place it is caught. */
+  await setViewport(1280, 704, false);
+  await goto(BASE);
+  const floor = await evaluate(`(() => {
+    const dock = document.querySelector('.dock').getBoundingClientRect();
+    const out = [];
+    document.querySelectorAll('#strip .room').forEach(room => {
+      room.querySelectorAll('h2, .group, .hang, .about-copy').forEach(el => {
+        const r = el.getBoundingClientRect();
+        const name = room.getAttribute('data-room');
+        const cls = el.className || el.tagName;
+        if (r.height === 0) return;
+        if (r.bottom > dock.top) out.push(name + ' / ' + cls + ' bottom ' + Math.round(r.bottom) + ' > ' + Math.round(dock.top));
+        if (r.top < 24) out.push(name + ' / ' + cls + ' top ' + Math.round(r.top));
+      });
+    });
+    return out;
+  })()`);
+  check('no room overflows the fold at 1280x704', floor.length === 0, floor.join('; '));
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+
+  /* The rail is the position cue that replaced the native scrollbar. */
+  const railAt = async (left) => {
+    await evaluate(`document.getElementById('hall').scrollLeft = ${left}`);
+    await sleep(280);
+    return evaluate(`document.querySelector('.rail').getBoundingClientRect().width`);
+  };
+  const r0 = await railAt(0);
+  const rMid = await railAt(3000);
+  await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
+  await sleep(400);
+  const full = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    const rail = document.querySelector('.rail').getBoundingClientRect().width;
+    return { rail, scrollLeft: h.scrollLeft, max: h.scrollWidth - h.clientWidth, vw: innerWidth };
+  })()`);
+  check('the rail starts empty', r0 === 0, 'width was ' + r0);
+  check('the rail grows as the walk moves', rMid > r0, r0 + ' -> ' + rMid);
+  check('the rail fills the edge at the end of the walk',
+        Math.abs(full.rail - full.vw) <= 2, JSON.stringify(full));
+  await evaluate(`document.getElementById('hall').scrollLeft = 0`);
+  await sleep(400);
+});
+
 /* -- 1. Whole project card is a click target -------------------------- */
 await section('Project card click targets', async () => {
   /* Three points inside the first project work, in viewport coordinates: the

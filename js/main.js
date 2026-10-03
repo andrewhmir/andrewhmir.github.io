@@ -1005,37 +1005,58 @@
        itself. Only writes when the room changes, so scrolling does not spam a
        screen reader with the same name dozens of times a second. */
     var announcer = document.getElementById('announcer');
+    var rail = document.getElementById('rail');
     var lastRoom = null;
-    function announceRoom() {
+
+    /* Which room the middle of the viewport is standing in. */
+    function roomAt() {
       var mid = hall.scrollLeft + hall.clientWidth / 2;
       var rooms = strip.querySelectorAll('[data-room]');
       for (var i = 0; i < rooms.length; i++) {
         var r = rooms[i];
         var left = pageX(r), right = left + r.offsetWidth;
-        if (mid >= left && mid < right) {
-          var titleEl = r.querySelector('.room-title .t');
-          var name = (titleEl && titleEl.textContent) || r.getAttribute('data-room') || '';
-          if (announcer && name && name !== lastRoom) {
-            lastRoom = name;
-            announcer.textContent = 'Room: ' + name;
-          }
-          return name;
-        }
+        if (mid >= left && mid < right) return r;
       }
-      return '';
+      return null;
+    }
+
+    function announceRoom() {
+      var r = roomAt();
+      if (!r) return '';
+      var titleEl = r.querySelector('.room-title .t');
+      var name = (titleEl && titleEl.textContent) || r.getAttribute('data-room') || '';
+      if (name && name !== lastRoom) {
+        lastRoom = name;
+        if (announcer) announcer.textContent = 'Room: ' + name;
+        /* The dock follows the walk. Keyed on data-room, not the display
+           title: the two differ where the dock shortens a name. */
+        markCurrentRoom(r.getAttribute('data-room'));
+      }
+      return name;
     }
     Site.announceRoom = announceRoom;
 
+    /* The rail is the walk's position, along the bottom edge. It replaced the
+       native scrollbar, which cost every room 15px of height. */
+    function updateRail() {
+      if (!rail) return;
+      var max = hall.scrollWidth - hall.clientWidth;
+      rail.style.width = (max > 0 ? (hall.scrollLeft / max) * 100 : 0) + '%';
+    }
+    Site.updateRail = updateRail;
+
     var works = Array.prototype.slice.call(strip.querySelectorAll('[data-work]'));
-    if (!works.length) return;
 
     var reduce = window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (reduce) {
       works.forEach(function (w) { w.style.setProperty('--lit', '1'); });
+      updateRail();
       return;
     }
+
+    if (!works.length) { updateRail(); return; }
 
     /* Restored mid-walk on load: mark everything already passed as seen so the
        lighting does not sweep across the whole strip on the first frame. */
@@ -1063,6 +1084,7 @@
       });
 
       announceRoom();
+      updateRail();
     }
 
     function onScroll() {
