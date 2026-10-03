@@ -1928,17 +1928,26 @@ body {
   margin: 1px 0 0;
 }
 
-/* About's portrait is presentation, not a hung piece. The `.work` selector it
-   used to carry is no longer emitted — the About room's markup never had a
-   `.work` class after the group rewrite — so the height cap is set on the
-   image itself, which is what actually stops the portrait claiming a third of
-   the wall. */
-.room[data-room="About"] .hang img {
+/* About's portrait is presentation, not a hung piece: the same frame as
+   everything else on the walk, but a figure rather than a control, sized to the
+   image inside it rather than to the space beside the bio. */
+.piece--portrait {
+  flex: 0 0 auto;
+  width: fit-content;
+  max-width: 32%;
+  cursor: default;
+}
+
+.piece--portrait img {
   width: auto;
-  height: auto;
   max-width: 100%;
-  max-height: var(--img-max-h, 22vh);
-  object-fit: contain;
+}
+
+/* The About room's row: the portrait, then the bio and the links. */
+.room[data-room="About"] .hang {
+  display: flex;
+  align-items: flex-start;
+  gap: 26px;
 }
 
 .about-copy { flex: 1 1 38%; max-width: 46%; }

@@ -379,7 +379,7 @@ await section('Piece click targets', async () => {
   }
   await closeModal();
   check('a piece shows a pointer cursor',
-    (await evaluate(`getComputedStyle(document.querySelector('.piece')).cursor`)) === 'pointer');
+    (await evaluate(`getComputedStyle(document.querySelector('.piece[data-piece]')).cursor`)) === 'pointer');
 });
 
 /* -- 2. A piece is reachable and named by keyboard -------------------- */

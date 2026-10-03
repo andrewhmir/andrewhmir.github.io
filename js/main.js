@@ -1045,14 +1045,18 @@
     var html = '';
 
     /* Room 1 — About. Not a group: a portrait, the bio and the ways to
-       reach him, hung as one composition. */
+       reach him, hung as one composition.
+       The portrait hangs in the same frame as everything else on the walk. It
+       used to carry `.pool` and `.canvas`, whose rules are gone, so it was
+       unstyled — and because neither element ever received a `--lit` write, the
+       brightness they still read left the portrait permanently at 60% while
+       every other work lit up. */
     html += '<section class="room" data-room="About" data-snap tabindex="-1">'
       + '<h2 class="room-title"><span class="t">About</span>'
       + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
-      + '<div class="hang"><div class="work" style="width:31%">'
-      + '<div class="pool"></div>'
-      + '<div class="canvas"><img src="' + esc(PORTFOLIO.profileImage) + '" alt="' + esc(PORTFOLIO.name) + '"></div>'
-      + '</div><div class="about-copy">'
+      + '<div class="hang"><figure class="piece piece--portrait" style="--h:min(22cqi, 190px)">'
+      + '<img src="' + esc(PORTFOLIO.profileImage) + '" alt="' + esc(PORTFOLIO.name) + '">'
+      + '</figure><div class="about-copy">'
       + PORTFOLIO.bio.map(function (p) { return '<p class="note">' + esc(p) + '</p>'; }).join('')
       + '<div class="about-links">'
       + PORTFOLIO.social.map(function (s) {
