@@ -1,0 +1,9 @@
+{
+  "name": "portfolio",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/derive-rooms.test.mjs && node tests/gallery-index.test.mjs && node tests/light.test.mjs",
+    "serve": "npx http-server -p 3333"
+  }
+}

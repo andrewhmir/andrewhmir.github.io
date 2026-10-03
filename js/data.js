@@ -242,3 +242,41 @@ const PORTFOLIO = {
     { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",       year: "February 2023" }
   ]
 };
+
+/* ==========================================================================
+   Gallery structure — derived from the data above, never hand-authored
+   ========================================================================== */
+(function () {
+  'use strict';
+  globalThis.Site = globalThis.Site || {};
+
+  /* A top-level `const` stays in the script's own scope, so a classic script
+     imported as a module (tests/) cannot see PORTFOLIO at all. Publishing it
+     on globalThis changes nothing in the browser, where the bare identifier
+     already resolved — it is what makes the data reachable from Node. */
+  if (typeof PORTFOLIO !== 'undefined') globalThis.PORTFOLIO = PORTFOLIO;
+
+  var ROOM_TITLES = { Robotics: 'Works in Robotics', Applications: 'Works in Applications' };
+  var ROOM_ORDER  = ['Robotics', 'Applications'];
+
+  /* Group projects into rooms. Known categories come first in ROOM_ORDER;
+     anything else follows in first-seen order so no project is ever dropped. */
+  function deriveRooms(projects) {
+    var groups = {};
+    var seen = [];
+    (projects || []).forEach(function (p) {
+      var key = p && p.category ? p.category : 'Other';
+      if (!groups[key]) { groups[key] = []; seen.push(key); }
+      groups[key].push(p);
+    });
+    var ordered = ROOM_ORDER.filter(function (k) { return groups[k]; })
+      .concat(seen.filter(function (k) { return ROOM_ORDER.indexOf(k) === -1; }));
+    return ordered.map(function (key) {
+      return { key: key, title: ROOM_TITLES[key] || key, projects: groups[key] };
+    });
+  }
+
+  globalThis.Site.deriveRooms = deriveRooms;
+  globalThis.Site.ROOM_TITLES = ROOM_TITLES;
+  globalThis.Site.ROOM_ORDER = ROOM_ORDER;
+})();
