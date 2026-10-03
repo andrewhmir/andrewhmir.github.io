@@ -1009,7 +1009,7 @@
         + '<h2 class="room-title"><span class="t">' + esc(room.title) + '</span>'
         + '<span class="sub">' + room.projects.length + ' works'
         + '<span class="count">' + esc(room.key.toUpperCase()) + '</span></span></h2>'
-        + '<div class="hang">'
+        + '<div class="hang hang--works">'
         + room.projects.map(function (p, i) { return renderWork(p, i); }).join('')
         + '</div></section>';
     });
@@ -1029,33 +1029,40 @@
         }).join('')
       + '</div></section>';
 
-    /* Honours */
+    /* Honours — the photo-bearing entries hang as works on their own row, and
+       the ones still waiting for photos sit as compact plates beneath. Two rows
+       rather than one wrapping row: a room has exactly one viewport of height,
+       so works and plates cannot compete for the same wall space. */
+    var honourWorks = '';
+    var honourPlates = '';
+    PORTFOLIO.honors.forEach(function (h, i) {
+      var hasGallery = Array.isArray(h.images) && h.images.length > 0;
+      if (!hasGallery) { honourPlates += renderPlate(h); return; }
+      honourWorks += '<article class="work" data-work data-snap>'
+        + '<div class="pool"></div>'
+        + '<button type="button" class="project-hit canvas" data-gallery="honors"'
+        + ' data-entry="' + i + '" aria-label="View photos: ' + esc(h.description) + '">'
+        /* Some honours still await their photos (see tools/ux-check.mjs
+           PENDING_PHOTOS). A work whose first photo 404s falls back to the
+           labelled placeholder for the same reason the gallery rows do: on a
+           near-black wall a broken frame is a conspicuous hole. */
+        + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy"'
+        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';'
+        + 'this.closest(\'.work\').classList.add(\'is-placeholder\');">'
+        + '</button>'
+        + '<div class="lbl"><span class="no">DIST. ' + String(i + 1).padStart(2, '0')
+        + '</span><p class="lt">' + esc(h.description) + '</p>'
+        + '<p class="by">' + esc(h.year) + '</p></div></article>';
+    });
+
     html += '<section class="room" data-room="Honours">'
       + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 3) + '</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Honours</span>'
       + '<span class="sub">Competitions, conferences and citations'
       + '<span class="count">' + PORTFOLIO.honors.length + ' HONOURS</span></span></h2>'
-      + '<div class="hang hang--plates">'
-      + PORTFOLIO.honors.map(function (h, i) {
-          var hasGallery = Array.isArray(h.images) && h.images.length > 0;
-          if (!hasGallery) return renderPlate(h);
-          return '<article class="work" data-work data-snap>'
-            + '<div class="pool"></div>'
-            + '<button type="button" class="project-hit canvas" data-gallery="honors"'
-            + ' data-entry="' + i + '" aria-label="View photos: ' + esc(h.description) + '">'
-            /* Some honours still await their photos (see tools/ux-check.mjs
-               PENDING_PHOTOS). A work whose first photo 404s falls back to the
-               labelled placeholder for the same reason the gallery rows do:
-               on a near-black wall a broken frame is a conspicuous hole. */
-            + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy"'
-            + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';'
-            + 'this.closest(\'.work\').classList.add(\'is-placeholder\');">'
-            + '</button>'
-            + '<div class="lbl"><span class="no">DIST. ' + String(i + 1).padStart(2, '0')
-            + '</span><p class="lt">' + esc(h.description) + '</p>'
-            + '<p class="by">' + esc(h.year) + '</p></div></article>';
-        }).join('')
-      + '</div></section>';
+      + (honourWorks ? '<div class="hang hang--works">' + honourWorks + '</div>' : '')
+      + (honourPlates ? '<div class="hang hang--plates">' + honourPlates + '</div>' : '')
+      + '</section>';
 
     /* Contact */
     html += '<section class="room" data-room="Contact" data-snap>'

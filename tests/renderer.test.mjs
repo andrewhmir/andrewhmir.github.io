@@ -112,19 +112,26 @@ check('work rooms are not snap targets', () => {
 check('a room of works never wraps, a room of plates does', () => {
   /* A room is one viewport tall inside a hall that is one viewport tall with
      overflow-y hidden: a second row of works would be clipped and unreachable,
-     because there is no vertical axis to scroll to it. Plate rooms hold text
-     only, which is short, so they wrap. */
+     because there is no vertical axis to scroll to it. Plate rows hold one-liners
+     and are short, so they wrap and still close above the fold. A room may hold
+     both, as two separate rows. */
   for (const room of ['Robotics', 'Applications']) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
     const hang = section.match(/<div class="hang([^"]*)"/);
     assert.ok(hang, room + ' has no hang container');
-    assert.ok(!/plates/.test(hang[1]), room + ' wraps its works, so a row would be clipped');
+    assert.ok(/works/.test(hang[1]), room + ' does not declare a single row of works');
   }
   for (const room of ['Leadership', 'Honours']) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
-    const hang = section.match(/<div class="hang([^"]*)"/);
-    assert.ok(hang && /plates/.test(hang[1]), room + ' does not let its plates wrap');
+    assert.ok(/class="hang hang--plates"/.test(section),
+      room + ' has no wrapping plate row');
   }
+  /* Honours holds both kinds, and they must not share one wrapping row. */
+  const honours = strip.split('data-room="Honours"')[1].split('</section>')[0];
+  assert.match(honours, /class="hang hang--works"/,
+    'the honours works have no single-row container of their own');
+  assert.match(honours, /class="hang hang--plates"/,
+    'the honours plates have no wrapping row of their own');
 });
 
 /* ── Task 5 Step 8: no work hangs empty ──────────────────────────────── */
