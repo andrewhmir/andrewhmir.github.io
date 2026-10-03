@@ -51,47 +51,23 @@
        ════════════════════════════════════════════════════════════ -->
   <div class="content-layer">
 
-    <!-- Scroll Progress -->
-    <div class="scroll-progress" id="scrollProgress"></div>
-
     <!-- Navigation -->
     <header class="nav-header" id="navHeader">
-      <a href="#Home" class="nav-brand">Andrew Alangcao</a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-      </button>
-      <nav class="nav-menu" id="navMenu">
-        <ul class="nav-list" id="navList">
-          <!-- Rendered by JS -->
-        </ul>
-      </nav>
+      <a href="#hall" class="nav-brand">Andrew Alangcao</a>
+      <nav class="nav-menu" id="navMenu"><ul class="nav-list" id="navList"></ul></nav>
     </header>
 
-    <!-- ═══ Opening Moment — Painting + Signature ═══ -->
-    <section class="section hero" id="Home">
-      <div class="hero-painting-stage">
-        <div class="bg-painting"></div>
-        <h1 class="hero-signature">Andrew Alangcao</h1>
-        <div class="hero-cue">scroll</div>
-      </div>
+    <!-- The directory: every room, one click away -->
+    <nav class="directory" id="directory" aria-label="Rooms"></nav>
 
-      <!-- ═══ Hello ═══ -->
-      <div class="hero-intro">
-        <div class="container">
-          <img class="hero-photo-print" id="heroPhoto" loading="lazy" alt="Andrew Alangcao">
-          <div class="hero-bio-container" id="heroBio">
-            <!-- Rendered by JS -->
-          </div>
-          <div class="hero-email" id="heroEmail">
-            <!-- Rendered by JS -->
-          </div>
-          <div class="hero-links" id="heroLinks">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
+    <!-- The walk. Six rooms sit side by side in one strip; Lenis smooths the
+         journey and lenis/snap settles it. Rooms are rendered by JS from
+         PORTFOLIO + Site.deriveRooms. -->
+    <main id="hall" class="hall">
+      <div id="strip" class="strip">
+        <!-- Rooms rendered by JS from PORTFOLIO + Site.deriveRooms -->
       </div>
-    </section>
+    </main>
 
     <!-- No-JS Fallback -->
     <noscript>
@@ -110,48 +86,11 @@
       </section>
     </noscript>
 
-    <!-- ═══ News ═══ -->
-    <section class="section" id="News">
-      <div class="container">
-        <p class="section-label">What's happening</p>
-        <h2 class="section-heading">Things that happened</h2>
-        <div class="timeline" id="newsTimeline">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Projects ═══ -->
-    <section class="section" id="Projects">
-      <div class="container">
-        <p class="section-label">What I've made</p>
-        <h2 class="section-heading">Projects</h2>
-        <p class="section-note">(* equal contribution)</p>
-        <div class="project-list" id="projectList">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Leadership & Honors ═══ -->
-    <section class="section" id="Records">
-      <div class="container">
-        <p class="section-label">Where I've been</p>
-        <h2 class="section-heading">Leadership & Honors</h2>
-        <h3 class="records-subheading">Leadership</h3>
-        <div class="record-list" id="leadershipList">
-          <!-- Rendered by JS -->
-        </div>
-        <h3 class="records-subheading">Honors</h3>
-        <div class="record-list record-list--honors" id="honorsList">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Popup Modal (single shared instance) -->
+    <!-- Popup Modal (single shared instance). A child of .content-layer so the
+         existing inert logic keeps working. -->
     <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-card" id="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+      <div class="modal-card" id="modalCard" role="dialog" aria-modal="true"
+           aria-labelledby="modalTitle" tabindex="-1">
         <button class="modal-close" id="modalClose" aria-label="Close modal">&times;</button>
         <div class="modal-header" id="modalHeader"></div>
         <div class="modal-scroll">
@@ -161,21 +100,8 @@
       </div>
     </div>
 
-    <!-- ═══ Closing ═══ -->
-    <footer class="site-footer">
-      <div class="container">
-        <p>Let's build something together.</p>
-        <p style="margin-top:8px;cursor:pointer;" id="footerEmail" data-copy="andrew.alangcao@gmail.com">
-          <i class="far fa-envelope" style="margin-right:7px;"></i>andrew.alangcao@gmail.com
-        </p>
-        <p style="margin-top:12px;">Background paintings by Fernando Amorsolo y Cueto (1892&ndash;1972)</p>
-        <p style="margin-top:32px;">&copy; <span id="currentYear"></span> Andrew Alangcao</p>
-      </div>
-    </footer>
-
-    <!-- Back to Top -->
-    <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top">Top</button>
-
+    <!-- Announces the current room on change -->
+    <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   </div><!-- /content-layer -->
 
   <!-- Data -->

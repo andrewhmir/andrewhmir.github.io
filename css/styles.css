@@ -24,39 +24,61 @@
    17. Utility: Screen Reader Only
    18. Reduced Motion
    19. Responsive
+   20. Hall — the horizontal walk (Night Gallery)
+   21. Room — one leg of the walk (Night Gallery)
+
+   Sections 5–14 style the vertical document this build replaces. They are kept
+   while the rooms are being built because the dialog, its carousel, the toast,
+   the nav and the atmosphere layer still live in them, and they are pruned once
+   nothing references them.
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */
 :root {
-  /* Warm dark background — NOT pure black */
-  --bg-root:    #1a1614;
+  /* Night Gallery palette. Two solid text tiers and an accent — there is no
+     third tier. #6d6559 measured 3.17:1 and failed WCAG AA, and a tier built
+     from opacity or color-mix() is not covered by the spec's measured ratios,
+     which hold for solid colours only. */
+  --night:        #0d0c0b;
+  --room:         #131211;
+  --room-warm:    #171513;
+  --text:         #e8dcc6;
+  --text-strong:  #f6efe0;
+  --text-quiet:   #8c8375;
+  --accent:       #c9a45c;
 
-  /* Paper surfaces — warm off-white at low opacity */
-  --surface-1:  rgba(255, 248, 240, 0.03);
-  --surface-2:  rgba(255, 248, 240, 0.06);
-  /* Solid paper — toast, modal card, mobile nav */
-  --surface-solid: #1e1b18;
+  --edge:         rgba(255, 240, 214, 0.16);
+  --edge-soft:    rgba(255, 240, 214, 0.07);
 
-  /* Warm borders */
-  --border-1:   rgba(255, 248, 240, 0.08);
-  --border-2:   rgba(255, 248, 240, 0.14);
-
-  /* Text — cream/paper tones, not cold gray */
-  --text-bright:   #f5f0e8;
-  --text-body:     #b8b0a0;
-  --text-muted:    #9e9488;
-
-  /* Accent — warm amber/ochre */
-  --accent:        #c8892e;
-  --accent-2:      #a47c48;
-  --danger:        #d14b3c;
-
-  /* Typography */
   --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-body:    Georgia, 'Times New Roman', serif;
   --font-mono:    'Courier Prime', 'Courier New', monospace;
 
-  /* Spacing */
+  --room-w:       92vw;
+  --work-lg:      62%;
+  --work-md:      45%;
+  --work-sm:      31%;
+  --plate-w:      30%;
+
+  --lit:          0;
+  --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Legacy aliases ───────────────────────────────────────────────
+     Rules for the dialog, carousel, toast, nav and atmosphere layer still
+     reference these names, as does index.html's <noscript>. They now resolve
+     to the palette above; nothing new should use them. */
+  --bg-root:       var(--night);
+  --surface-1:     rgba(255, 240, 214, 0.03);
+  --surface-2:     rgba(255, 240, 214, 0.06);
+  --surface-solid: #1e1b18;
+  --border-1:      rgba(255, 240, 214, 0.08);
+  --border-2:      rgba(255, 240, 214, 0.14);
+  --text-bright:   var(--text-strong);
+  --text-body:     var(--text);
+  --text-muted:    var(--text-quiet);
+  --accent-2:      #a47c48;
+  --danger:        #d14b3c;
+
   --space-xs:  4px;
   --space-sm:  8px;
   --space-md:  16px;
@@ -67,20 +89,18 @@
   --space-4xl: 96px;
   --space-5xl: 140px;
 
-  /* Radii — slightly softer */
-  --radius-sm: 4px;
-  --radius-md: 6px;
+  /* Border radius is zero everywhere. */
+  --radius-sm: 0;
+  --radius-md: 0;
 
-  /* Shadows — warm, not cold */
   --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
 
-  /* Transitions */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* --ease-out carries the walk's easing curve as well as the old chrome's. */
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
   --transition-fast:  150ms ease;
   --transition-base:  220ms ease;
 
-  /* Fixed nav height — single source of truth for JS scroll offsets
-     (16px top + 16px bottom padding + 36px link row) */
+  /* Fixed nav height — single source of truth for JS scroll offsets */
   --navbar-h: 68px;
 }
 
@@ -1535,3 +1555,336 @@ button.record-item {
     padding: 12px var(--space-md);
   }
 }
+
+/* ==========================================================================
+   20. Hall — the horizontal walk
+   One axis only. Native CSS scroll-snap stays off: a CSS snap container
+   re-snaps whenever the scroll position is set programmatically, so it fights
+   every Lenis animation. lenis/snap replaces it.
+   ========================================================================== */
+#hall {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: none;       /* Lenis forbids native snap; see the spec §5 */
+  overscroll-behavior-x: contain;
+  background: var(--night);
+}
+
+#strip {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ==========================================================================
+   21. Room — one leg of the walk
+   ========================================================================== */
+.room {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--room-w);
+  min-height: 100vh;
+  padding: 64px 34px 34px;
+  background:
+    radial-gradient(74% 42% at 50% -10%, rgba(255,240,214,.06), transparent 74%),
+    linear-gradient(180deg, var(--room-warm) 0%, var(--room) 58%, #080807 100%);
+  border-right: 1px solid var(--edge-soft);
+}
+
+/* Wall nap — two offset dot grids at 2–3%, pure CSS, no image request.
+   Film grain is deliberately not used: on near-black it lifts the blacks and
+   reads as dirt. */
+.room::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255,240,214,.03) 0.5px, transparent 0.6px),
+    radial-gradient(rgba(255,240,214,.02) 0.5px, transparent 0.6px);
+  background-size: 4px 4px, 4px 4px;
+  background-position: 0 0, 2px 2px;
+}
+
+/* ── A work: no frame. Light is the frame. ── */
+.work {
+  position: relative;
+}
+
+.work .pool {
+  position: absolute; left: 50%; top: -44px; transform: translateX(-50%);
+  width: 136%; height: 150%; pointer-events: none;
+  background: radial-gradient(closest-side,
+    rgba(255,240,214,.14), rgba(255,240,214,.04) 52%, transparent 76%);
+  opacity: calc(.22 + .78 * var(--lit));
+  transition: opacity .55s var(--ease-lit);
+}
+
+.work .canvas {
+  position: relative; background: #000; padding: 2px;
+  box-shadow:
+    0 0 0 1px rgba(255,240,214, calc(.17 * var(--lit)));
+  filter: brightness(calc(.6 + .4 * var(--lit)));
+  transition: filter .55s var(--ease-lit);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .work .pool, .work .canvas { transition: none; opacity: 1; filter: none; }
+}
+
+/* ── The walk fills the viewport, so the horizontal axis is the only one.
+      No vertical page axis exists: the hall is the document's one scroll
+      container. ── */
+body {
+  background: var(--night);
+  overflow: hidden;
+}
+
+.content-layer {
+  height: 100vh;
+}
+
+#hall {
+  height: 100vh;
+  scroll-behavior: auto;   /* Lenis owns the scrolling; CSS smoothing would fight it */
+}
+
+/* ── The directory: the room list, printed at the top of the walk ── */
+.directory {
+  position: fixed;
+  top: var(--navbar-h);
+  left: 0;
+  right: 0;
+  z-index: 900;
+  padding: 10px var(--space-xl) 14px;
+  background: linear-gradient(to bottom, var(--night) 0%, rgba(13, 12, 11, 0) 100%);
+  pointer-events: none;    /* the list itself is interactive; the band is not */
+}
+
+.directory .dh {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+  margin-bottom: 6px;
+}
+
+.directory ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+
+.directory .room-link {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  min-height: 44px;        /* tap target, at every width */
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 0.94rem;
+  color: var(--text);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.directory .room-link .rn {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.directory .room-link .rd {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  color: var(--text-quiet);
+}
+
+.directory .room-link:hover,
+.directory .room-link:focus-visible {
+  color: var(--text-strong);
+  border-color: var(--edge);
+}
+
+/* ── Room furniture: the sign, the title, the hang ── */
+.sign {
+  position: absolute;
+  top: 26px;
+  left: 34px;
+  right: 34px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sign .no {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.sign .rule {
+  flex: 1;
+  height: 1px;
+  background: var(--edge);
+}
+
+.room-title {
+  margin: 34px 0 26px;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 2.9vw, 3rem);
+  line-height: 1.15;
+  color: var(--text-strong);
+}
+
+.room-title .t { display: block; }
+
+.room-title .sub {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+}
+
+.room-title .sub .count {
+  display: inline-block;
+  margin-left: 10px;
+  color: var(--accent);
+}
+
+/* ── The hang: works and plates share the wall, in varying widths so the
+      journey is not a metronome. ── */
+.hang {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
+  gap: 74px 30px;
+  padding-left: 18px;
+}
+
+.hang > .work {
+  flex: 0 0 auto;
+  width: var(--work-md);
+}
+
+.hang > .work:nth-child(3n + 1) { width: var(--work-lg); }
+
+.hang .canvas {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: #000;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.hang .canvas img { width: 100%; height: auto; }
+
+.about-copy { flex: 1 1 38%; max-width: 46%; }
+
+.about-copy .note {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.about-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+.plate-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid var(--edge);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.plate-link:hover, .plate-link:focus-visible {
+  color: var(--text-strong);
+  border-color: var(--text-quiet);
+}
+
+/* ── A plate: a text-only record, hung flat on the wall ── */
+.plate {
+  flex: 0 0 auto;
+  width: var(--plate-w);
+  display: block;
+  min-height: 44px;
+  text-align: left;
+  padding: 16px 18px;
+  border: 0;
+  border-top: 1px solid var(--edge);
+  background: none;
+  font: inherit;
+  color: var(--text);
+}
+
+button.plate { cursor: pointer; }
+
+button.plate:hover, button.plate:focus-visible {
+  border-top-color: var(--accent);
+  color: var(--text-strong);
+}
+
+.plate .pt { font-family: var(--font-heading); font-size: 1rem; line-height: 1.4; }
+
+.plate .py {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-quiet);
+}
+
+/* ── The wall label under a work ── */
+.lbl { padding-top: 14px; max-width: 46ch; }
+
+.lbl .no {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+}
+
+.lbl .lt {
+  margin-top: 7px;
+  font-family: var(--font-heading);
+  font-size: 1.12rem;
+  line-height: 1.35;
+  color: var(--text-strong);
+}
+
+.lbl .by { margin-top: 5px; font-size: 0.86rem; color: var(--text); }
+
+.lbl .med { margin-top: 7px; font-size: 0.86rem; color: var(--text-quiet); }
+
+.lbl .pro {
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--text-quiet);
+}
+
+/* ── A work's frame went empty (its image 404'd): leave no conspicuous gap ── */
+.work.is-empty .canvas { min-height: 180px; }
+
