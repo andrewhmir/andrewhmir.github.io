@@ -549,16 +549,27 @@
     }
   });
 
-  /* ── Event Delegation: Project modal buttons ──────────────────── */
-  if ($projectList) {
-    $projectList.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-action="modal"]');
-      if (!btn) return;
-      openModal(btn.dataset.project, btn.dataset.tab);
-    });
-  }
+  /* ── Event Delegation: the walk's controls ────────────────────────
+     These are bound to `document`, not to a host element. The rooms are
+     rendered into #strip after this file runs, and the host elements the old
+     build used (#projectList, #honorsList, #leadershipList, #newsTimeline,
+     #heroLinks) no longer exist — a handler bound to one of them would never
+     fire, and every work, gallery row and email button would be inert. */
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.closest) return;
 
-  /* ── Event Delegation: Gallery lines (Leadership / Honors / News) ── */
+    var modalBtn = t.closest('[data-action="modal"]');
+    if (modalBtn) { openModal(modalBtn.dataset.project, modalBtn.dataset.tab); return; }
+
+    var galleryBtn = t.closest('[data-gallery]');
+    if (galleryBtn) { openGallery(galleryBtn.dataset.gallery, Number(galleryBtn.dataset.entry)); return; }
+
+    var copyBtn = t.closest('[data-action="copy"]');
+    if (copyBtn) { copyToClipboard(copyBtn.dataset.copy, copyBtn); }
+  });
+
+  /* Host-bound gallery lists, kept for the containers that still exist. */
   function bindGalleryList($el) {
     if (!$el) return;
     $el.addEventListener('click', function (e) {
@@ -829,6 +840,26 @@
     return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(src);
   }
 
+  /* A work's centre in PAGE coordinates — the same frame as hall.scrollLeft.
+     `offsetLeft` alone is not that: it resolves against the nearest POSITIONED
+     ancestor, which is .room (it is position: relative), not the strip. Reading
+     it directly compares a room-local number against a viewport-global one, so
+     each room ends up lighting whichever of its works is furthest right, and
+     works fade again as you walk past them. offsetParent is walked instead, the
+     way lenis-snap itself does. */
+  function pageX(el) {
+    var x = 0;
+    for (var n = el; n; n = n.offsetParent) {
+      x += n.offsetLeft || 0;
+      if (n.offsetParent === n) break;      /* detached or body: stop */
+    }
+    return x;
+  }
+
+  function centreX(el) {
+    return pageX(el) + el.offsetWidth / 2;
+  }
+
   /* ════════════════════════════════════════════════════════════════════
      THE WALK — Lenis smooth horizontal scrolling + proximity snap
      ════════════════════════════════════════════════════════════════════ */
@@ -1089,14 +1120,14 @@
        lighting does not sweep across the whole strip on the first frame. */
     var startMid = hall.scrollLeft + hall.clientWidth / 2;
     works.forEach(function (w) {
-      if (w.offsetLeft + w.offsetWidth / 2 < startMid) w.dataset.seen = '1';
+      if (centreX(w) < startMid) w.dataset.seen = '1';
     });
 
     var ticking = false;
     function update() {
       var vw = hall.clientWidth;
       var mid = hall.scrollLeft + vw / 2;
-      var centres = works.map(function (w) { return w.offsetLeft + w.offsetWidth / 2; });
+      var centres = works.map(centreX);
       var active = Site.visibleWork(hall.scrollLeft, vw, centres);
 
       works.forEach(function (w, i) {

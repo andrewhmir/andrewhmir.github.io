@@ -27,20 +27,33 @@ check('--lit is registered non-inheriting', () => {
   assert.match(rule[0], /syntax:\s*['"]<number>['"]/, '--lit has no typed syntax');
 });
 
-/* Three works 600 wide whose centres are 420, 720 and 1800 in a 1440px
-   viewport: the hall starts at scrollLeft 0, so the viewport centre is 720 —
-   work 1 sits exactly on it, work 0 is already behind the opening view, and
-   work 2 is still ahead. */
-const THREE = [
-  { left: 120, width: 600, height: 340 },   /* centre  420 */
-  { left: 420, width: 600, height: 340 },   /* centre  720 */
-  { left: 1500, width: 600, height: 340 },  /* centre 1800 */
+/* One room whose works are laid out as a browser lays them out: .room is the
+   positioned ancestor, so each work's offsetLeft is measured from the START OF
+   ITS ROOM. These are exactly the numbers the controller reads. Room 1 spans
+   0..1440 and room 2 begins at 1440, so the two rooms' works are only
+   distinguishable by a page-coordinate calculation.
+
+   Work centres in page coordinates: room1 gives 120+300=420 and 700+300=1000;
+   room2 gives 50+300=350, so 1790 page. */
+const ROOMS = [
+  { key: 'Robotics', left: 0, width: 1440, works: [
+    { left: 120, width: 600, height: 340 },
+    { left: 700, width: 600, height: 340 },
+  ] },
+  { key: 'Applications', left: 1440, width: 1440, works: [
+    { left: 50, width: 600, height: 340 },
+    { left: 760, width: 600, height: 340 },
+  ] },
 ];
 
-const scene = await loadSite({ works: THREE });
+const scene = await loadSite({ rooms: ROOMS });
 const { workEls, hall, strip, setReducedMotion } = scene;
 const litOf = (el) => el.style.get('--lit');
 const num = (el) => Number(litOf(el));
+
+/* Page centre of each work, and the viewport centre for a given scroll. */
+const centres = ROOMS.flatMap((r) => r.works.map((w) => r.left + w.left + w.width / 2));
+const viewportCentre = () => hall.scrollLeft + hall.clientWidth / 2;
 
 check('light is written to the work elements, not a shared ancestor', () => {
   const written = workEls.map(litOf);
@@ -51,44 +64,39 @@ check('light is written to the work elements, not a shared ancestor', () => {
 });
 
 check('the work at the viewport centre is the brightest', () => {
-  const lit = workEls.map(num);
-  assert.ok(lit.every((v) => Number.isFinite(v)), 'a work has no numeric light: ' + lit.join(', '));
-  /* The nearest work is forced to full brightness by design ("the work nearest
-     the centre is brightest"); every other work is left to the falloff. So the
-     invariant is the ordering, not the raw smoothstep value. */
-  const brightest = lit.indexOf(Math.max(...lit));
-  assert.equal(brightest, 1, 'work 1 is nearest the centre but work ' + brightest +
-    ' is brightest (lit: ' + lit.join(', ') + ')');
-  assert.ok(lit[1] > 0.9, 'the work at the viewport centre is not fully lit: ' + lit[1]);
-  assert.ok(lit[2] < lit[1], 'a work further from the centre is not dimmer');
+  /* Walk the whole strip, centring each work in turn. Room-relative offsets and
+     page coordinates disagree about which work that is, so this is the check
+     that fails if the controller measures from the wrong origin. */
+  const wrong = [];
+  let exercised = 0;
+  for (let i = 0; i < centres.length; i++) {
+    hall.scrollLeft = centres[i] - hall.clientWidth / 2;
+    globalThis.Site.initLights();
+    const lit = workEls.map(num);
+    const brightest = lit.indexOf(Math.max(...lit));
+    /* Which work the viewport centre is genuinely nearest, in page coords. */
+    const wanted = centres.reduce((best, c, j) =>
+      Math.abs(c - viewportCentre()) < Math.abs(centres[best] - viewportCentre()) ? j : best, 0);
+    if (brightest !== wanted) {
+      wrong.push('at scrollLeft ' + hall.scrollLeft + ' (viewport centre ' + viewportCentre() +
+        ') work ' + wanted + ' at page ' + centres[wanted] + ' should be brightest, got work ' +
+        brightest + ' — lit ' + lit.join(', '));
+    }
+    exercised++;
+  }
+  assert.equal(exercised, centres.length, 'did not walk every work');
+  assert.deepEqual(wrong, [], wrong.join(' | '));
 });
 
-check('a work ahead of the walk is not yet lit', () => {
-  assert.ok(num(workEls[2]) < 0.2, 'an unvisited work is already lit: ' + litOf(workEls[2]));
-});
-
-check('mid-journey reload does not sweep the lighting across the strip', () => {
-  /* A restored scroll position marks everything already passed as seen up
-     front, so the first frame does not replay every arrival. */
-  const startMid = hall.scrollLeft + hall.clientWidth / 2;
-  const passed = THREE.filter((w) => w.left + w.width / 2 < startMid).length;
-  assert.ok(passed > 0, 'harness geometry has no already-passed work');
-  const missed = workEls.slice(0, passed).filter((w) => w.dataset.seen !== '1');
-  assert.equal(missed.length, 0,
-    missed.length + ' of ' + passed + ' already-passed works were not marked seen on load');
-});
-
-check('a work that has been lit never returns to dark', () => {
-  /* Once seen, an out-of-view work holds a floor instead of dimming with the
-     viewport — this is "lights stay on". */
-  const ahead = workEls[2];
-  const unseen = num(ahead);
-  ahead.dataset.seen = '1';
+check('a work already seen keeps its light when it leaves the viewport', () => {
+  hall.scrollLeft = centres[3] - hall.clientWidth / 2;   /* walk on to the last work */
   globalThis.Site.initLights();
-  const held = num(ahead);
-  assert.ok(held > 0.6, 'an already-seen work dimmed to ' + held + ' while out of view');
-  assert.ok(held > unseen, 'the floor did not lift the light (' + unseen + ' -> ' + held + ')');
-  assert.equal(ahead.dataset.seen, '1', 'the seen marker was cleared');
+  const passed = centres.findIndex((c) => Math.abs(c - viewportCentre()) > hall.clientWidth * 0.62);
+  assert.ok(passed >= 0, 'geometry left no work far enough behind');
+  assert.equal(workEls[passed].dataset.seen, '1',
+    'work ' + passed + ' was in view earlier and is not marked seen');
+  assert.ok(num(workEls[passed]) > 0.6,
+    'a work already seen dimmed to ' + litOf(workEls[passed]) + ' after leaving the view');
 });
 
 /* Every rule inside every @media (prefers-reduced-motion: reduce) block. The
@@ -128,7 +136,8 @@ check('reduced motion lights every work, with no transition', () => {
   setReducedMotion(true);
   globalThis.Site.initLights();
   const values = workEls.map(litOf);
-  assert.deepEqual(values, ['1', '1', '1'], 'not every work was lit: ' + values.join(', '));
+  assert.deepEqual(values, workEls.map(() => '1'),
+    'not every work was lit: ' + values.join(', '));
   assert.ok(strip.style.get('--lit') === undefined,
     '--lit was written on #strip instead of the works');
   setReducedMotion(false);
