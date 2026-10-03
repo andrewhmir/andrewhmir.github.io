@@ -944,11 +944,20 @@
       + '</div>';
   }
 
-  /* The technical line is derived, never authored: the file's own name. */
-  function techLine(src, kind) {
-    var name = String(src || '').replace(/^.*\//, '').replace(/\.[a-z0-9]+$/i, '');
-    var what = kind === 'project' ? 'Project photograph' : 'Event photograph';
-    return what + (name ? ' · ' + name : '');
+  /* The technical line is derived, never authored, and is short: the file's own
+     name, dashed stems turned into words. A full path or a warehouse word like
+     "Event photograph" costs a line the label does not have — the row is 226px
+     at the spec's floor and the label gets 60 of them. */
+  function techLine(src) {
+    var stem = String(src || '')
+      .replace(/^.*\//, '')
+      .replace(/\.[a-z0-9]+$/i, '')
+      /* A date-like run reads as a date, not as two words. */
+      .replace(/-(\d{4})-/, ' $1 ')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return stem;
   }
 
   function renderCatalogue(record, kind, pieceCount, sources) {
@@ -962,7 +971,7 @@
         + (pieceCount > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
         + esc(p.title || ('Photograph ' + letter)) + '</p>'
         + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')
-        + '<p class="ce-tech">' + esc(techLine((sources || [])[i], kind)) + '</p>'
+        + '<p class="ce-tech">' + esc(techLine((sources || [])[i])) + '</p>'
         + '</div>';
     }
     return out;

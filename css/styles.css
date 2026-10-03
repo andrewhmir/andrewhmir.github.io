@@ -1799,7 +1799,7 @@ body {
   display: flex;
   gap: 10px;
   border-top: 1px solid var(--edge);
-  padding-top: 7px;
+  padding-top: 6px;
   overflow: hidden;
 }
 
@@ -1842,18 +1842,18 @@ body {
 
 .narr-text {
   font-size: 0.62rem;
-  line-height: 1.35;
+  line-height: 1.3;
   color: var(--text);
-  margin: 3px 0 0;
+  margin: 2px 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .cat { flex: 1 1 auto; min-width: 0; }
 
-.cat-entry { margin-bottom: 4px; }
+.cat-entry { margin-bottom: 3px; }
 
 .ce-title {
   font-family: var(--font-heading);
