@@ -63,6 +63,9 @@ const PORTFOLIO = {
   projects: [
     {
       id: "project1",
+        /* DRAFT COPY — review */
+        summary: "A contactless palm scanner for retail and transit: RGB and near-infrared imaging, a Raspberry Pi 5 running the model locally, and a decision to keep the biometric data on the device.",
+        pieces: [{ title: "The palm scanner" }, { title: "The team" }],
       title: "Project PALAD",
       tagline: "Contactless Palm Biometric Scanner for Retail & Transit",
       category: "Robotics",
@@ -93,6 +96,9 @@ const PORTFOLIO = {
     },
     {
       id: "project2",
+        /* DRAFT COPY — review */
+        summary: "An organization's documents, conversations and code, indexed so the organization can ask what it already knows. Answers carry citations back to the source, and permissions are respected.",
+        pieces: [{ title: "The product" }, { title: "The team — photograph awaited" }],
       title: "Hivemind",
       tagline: "AI-Native Organizational Memory",
       category: "Applications",
@@ -114,6 +120,9 @@ const PORTFOLIO = {
     },
     {
       id: "project3",
+        /* DRAFT COPY — review */
+        summary: "A fingerprint system for train fares and hospital records, built on a NodeMCU and a cloud database. Your identity should be enough — you should not need to carry another card.",
+        pieces: [{ title: "The reader" }, { title: "The team" }],
       title: "C.E.N.T.H.R.O.",
       tagline: "Fingerprint-Based Biometric System for Transit & Healthcare",
       category: "Robotics",
@@ -143,6 +152,9 @@ const PORTFOLIO = {
     },
     {
       id: "project4",
+        /* DRAFT COPY — review */
+        summary: "A desktop robot on a LEGO EV3 frame and an Arduino Uno. It moves around the desk, gives verbal reminders and shows progress on an LCD. Deliberately hard to ignore.",
+        pieces: [{ title: "The robot" }, { title: "The team" }],
       title: "Focus Buddy",
       tagline: "Desktop Robot Study Companion for ADHD Focus",
       category: "Robotics",
@@ -171,6 +183,9 @@ const PORTFOLIO = {
     },
     {
       id: "project5",
+        /* DRAFT COPY — review */
+        summary: "Over 3,000 SAT questions turned into a structured bank with OCR, then a practice-test generator with analytics on what keeps going wrong. Built so its author could study for the SAT.",
+        pieces: [{ title: "The platform" }, { title: "The team — photograph awaited" }],
       title: "SATLearn",
       tagline: "AI-Powered SAT Practice with Personalized Analytics",
       category: "Applications",
@@ -192,6 +207,9 @@ const PORTFOLIO = {
     },
     {
       id: "project6",
+        /* DRAFT COPY — review */
+        summary: "A commute map for Metro Manila built from what regular commuters know: where to catch a particular jeep, which side of the road to wait on, which route is actually faster.",
+        pieces: [{ title: "The map" }, { title: "The team" }],
       title: "BiyaHey!",
       tagline: "Community-Powered Commute Map for Metro Manila",
       category: "Applications",
@@ -219,27 +237,27 @@ const PORTFOLIO = {
 
   /* ── Leadership ─────────────────────────────────────────────────── */
   leadership: [
-    { description: "AGHAM Research Club – Founder",                                           year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg", "files/leadership-aghj-founder-3.jpg", "files/leadership-aghj-founder-4.jpg"] },
-    { description: "High School Student Council – STEM-Engineering Level Representative",     year: "July 2023 - May 2025",        images: ["files/leadership-ssc-stem-rep-1.jpg", "files/leadership-ssc-stem-rep-2.jpg", "files/leadership-ssc-stem-rep-3.jpg", "files/leadership-ssc-stem-rep-4.jpg"] },
-    { description: "Personnel's Week 2024 & 2025 – Event Head",                               year: "August 2023 - October 2025",  images: ["files/leadership-personnels-week-1.jpg", "files/leadership-personnels-week-2.jpg"] },
-    { description: "Media and Coverages Committee – Head",                                    year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg", "files/leadership-media-coverages-2.jpg", "files/leadership-media-coverages-3.jpg"] }
+    { description: "AGHAM Research Club – Founder", year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg", "files/leadership-aghj-founder-3.jpg", "files/leadership-aghj-founder-4.jpg"], /* DRAFT COPY — review */ summary: "Founded the research club and led it through the 2025–2026 school year.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }, { title: "Third photograph" }, { title: "Fourth photograph" }] },
+    { description: "High School Student Council – STEM-Engineering Level Representative", year: "July 2023 - May 2025",        images: ["files/leadership-ssc-stem-rep-1.jpg", "files/leadership-ssc-stem-rep-2.jpg", "files/leadership-ssc-stem-rep-3.jpg", "files/leadership-ssc-stem-rep-4.jpg"], /* DRAFT COPY — review */ summary: "Represented the STEM-Engineering level on the student council across two school years.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }, { title: "Third photograph" }, { title: "Fourth photograph" }] },
+    { description: "Personnel's Week 2024 & 2025 – Event Head", year: "August 2023 - October 2025",  images: ["files/leadership-personnels-week-1.jpg", "files/leadership-personnels-week-2.jpg"], /* DRAFT COPY — review */ summary: "Ran Personnel's Week twice, in 2024 and 2025.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }] },
+    { description: "Media and Coverages Committee – Head", year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg", "files/leadership-media-coverages-2.jpg", "files/leadership-media-coverages-3.jpg"], /* DRAFT COPY — review */ summary: "Headed the committee that covered school events.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }, { title: "Third photograph" }] },
   ],
 
   /* ── Honors ─────────────────────────────────────────────────────── */
   honors: [
-    { description: "Annual Commencement Exercises – High Honors",                                         year: "April 2026", images: ["files/honors-commencement-1.jpg", "files/honors-commencement-2.jpg"] },
-    { description: "Annual Commencement Exercises – Best in Work Immersion",                              year: "April 2026", images: ["files/honors-work-immersion-1.jpg"] },
-    { description: "Developer Camp Manila – Finalist",                                                    year: "March 2026" },
-    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "February 2026", images: ["files/honors-robothon-2026-ph-1.jpg"] },
-    { description: "2025 Muntinlupa Robotics Fair – Champion",                                            year: "December 2025" },
-    { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up",               year: "November 2025" },
-    { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)",              year: "July 2025" },
-    { description: "5th DLSU-D Research Conference – Best Paper Presentation",                            year: "May 2025" },
-    { description: "21st National Youth Congress – Delegate",                                             year: "March 2025", images: ["files/honors-nyc-2025-1.jpg", "files/honors-nyc-2025-2.jpg"] },
-    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion",               year: "March 2025", images: ["files/honors-robothon-2025-ph-1.jpg", "files/honors-robothon-2025-ph-2.jpg", "files/honors-robothon-2025-ph-3.jpg"] },
-    { description: "2024 International Robothon – Innovative Open Category, Champion",                    year: "November 2024", images: ["files/honors-robothon-2024-intl-1.jpg", "files/honors-robothon-2024-intl-2.jpg"] },
-    { description: "20th National Youth Congress – Delegate",                                             year: "November 2023", images: ["files/honors-nyc-2023-1.jpg"] },
-    { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award",       year: "February 2023" }
+    { description: "Annual Commencement Exercises – High Honors", year: "April 2026", images: ["files/honors-commencement-1.jpg", "files/honors-commencement-2.jpg"], /* DRAFT COPY — review */ summary: "Graduating with high honours, and the ceremony that closed it.", pieces: [{ title: "Receiving the citation" }, { title: "After the ceremony" }] },
+    { description: "Annual Commencement Exercises – Best in Work Immersion", year: "April 2026", images: ["files/honors-work-immersion-1.jpg"], /* DRAFT COPY — review */ summary: "The citation for work immersion, awarded at the same commencement.", pieces: [{ title: "The award" }] },
+    { description: "Developer Camp Manila – Finalist", year: "March 2026", /* DRAFT COPY — review */ summary: "BiyaHey! reached the finalist round at Developer Camp Manila.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion", year: "February 2026", images: ["files/honors-robothon-2026-ph-1.jpg"], /* DRAFT COPY — review */ summary: "The second national title in the innovative open category, a year after the first.", pieces: [{ title: "The award" }] },
+    { description: "2025 Muntinlupa Robotics Fair – Champion", year: "December 2025", /* DRAFT COPY — review */ summary: "A home-city title, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up", year: "November 2025", /* DRAFT COPY — review */ summary: "The second international placing, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)", year: "July 2025", /* DRAFT COPY — review */ summary: "Shortlisted for the 4th CERN-Solvay Student Camp, in the top 7% of 2,500 applicants.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "5th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025", /* DRAFT COPY — review */ summary: "Best paper presentation at the 5th DLSU-D Research Conference, with C.E.N.T.H.R.O.", pieces: [{ title: "At the conference" }] },
+    { description: "21st National Youth Congress – Delegate", year: "March 2025", images: ["files/honors-nyc-2025-1.jpg", "files/honors-nyc-2025-2.jpg"], /* DRAFT COPY — review */ summary: "Selected as a delegate to the 21st National Youth Congress.", pieces: [{ title: "At the congress" }, { title: "With the delegation" }] },
+    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion", year: "March 2025", images: ["files/honors-robothon-2025-ph-1.jpg", "files/honors-robothon-2025-ph-2.jpg", "files/honors-robothon-2025-ph-3.jpg"], /* DRAFT COPY — review */ summary: "The first national title in the innovative open category, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "At the table" }, { title: "The run-through" }] },
+    { description: "2024 International Robothon – Innovative Open Category, Champion", year: "November 2024", images: ["files/honors-robothon-2024-intl-1.jpg", "files/honors-robothon-2024-intl-2.jpg"], /* DRAFT COPY — review */ summary: "The first international win, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "With the machine" }] },
+    { description: "20th National Youth Congress – Delegate", year: "November 2023", images: ["files/honors-nyc-2023-1.jpg"], /* DRAFT COPY — review */ summary: "Selected as a delegate to the 20th National Youth Congress.", pieces: [{ title: "At the congress" }] },
+    { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award", year: "February 2023", /* DRAFT COPY — review */ summary: "The team's first competition, and its first award.", pieces: [{ title: "Photograph awaited" }] },
   ]
 };
 
@@ -323,11 +341,12 @@ const PORTFOLIO = {
      input order, and an empty list yields empty parts rather than throwing. */
   var HONOURS_ROOMS = 3;
 
-  /* Even chunks that between them hold every record: thirteen into four is
-     4, 3, 3, 3 — not 4, 4, 4, 1, which is what a plain `ceil` slice yields and
-     which would hang the last honour alone on a wall of its own. Chunking by
-     `floor(i * n / rooms)` boundaries keeps the parts even and keeps every
-     record, for any counts. */
+  /* Even chunks that between them hold every record. Boundaries fall at
+     `floor(i * n / rooms)`, so any remainder lands in the LAST part: thirteen
+     into four is 3, 3, 3, 4. A plain `ceil` slice is the rule this replaces —
+     it gives 4, 4, 4, 1 for the same input, three full walls and a fourth
+     holding one honour alone, and it is even only when the count divides. The
+     floor rule is even for every count, and never loses a record. */
   function evenChunks(list, rooms) {
     var out = [];
     for (var i = 0; i < rooms; i++) {
@@ -343,6 +362,7 @@ const PORTFOLIO = {
   }
   globalThis.Site.honoursSplit = honoursSplit;
   globalThis.Site.HONOURS_ROOMS = HONOURS_ROOMS;
+  globalThis.Site.evenChunks = evenChunks;
 
   /* Index of the work whose centre is nearest the viewport centre.
      Pure: takes precomputed centres so it needs no DOM. */

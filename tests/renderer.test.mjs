@@ -270,6 +270,37 @@ check('a project label names the venue, a record label names the year', () => {
   assert.match(record, /April 2026/);
 });
 
+/* ── The copy ────────────────────────────────────────────────────────────
+   Every group has authored text rather than the renderer's derived filler.
+   Without this the labels would fall back one by one and nobody would notice:
+   a fallback renders a label that looks complete. */
+check('every group has authored copy, not derived filler', () => {
+  const missing = [];
+  const inspect = (rec, kind) => {
+    const name = rec.title || rec.description || '(unnamed)';
+    if (!rec.summary) missing.push(name + ': no summary');
+    const n = Site.groupPieces(rec, kind).length;
+    const p = Array.isArray(rec.pieces) ? rec.pieces : [];
+    if (p.length !== n) missing.push(name + ': ' + p.length + ' pieces vs ' + n + ' hung');
+    p.forEach((e, i) => {
+      if (!e || !e.title) missing.push(name + ': piece ' + i + ' untitled');
+    });
+  };
+  PORTFOLIO.projects.forEach((p) => inspect(p, 'project'));
+  PORTFOLIO.leadership.forEach((l) => inspect(l, 'record'));
+  PORTFOLIO.honors.forEach((h) => inspect(h, 'record'));
+  assert.deepEqual(missing, []);
+});
+
+check('no label falls back to a derived narrative', () => {
+  /* The narrative falls back to the record's own description. That is the
+     safety net for a record added without copy; it must not be what every
+     group actually shows. */
+  const derived = PORTFOLIO.honors.filter((h) => h.summary === h.description);
+  assert.deepEqual(derived.map((h) => h.description), [],
+    'these groups narrate their own description verbatim');
+});
+
 /* ── Photo-less honours must not open a neighbour's gallery ──────────── */
 check('gallery rows carry their real array index', () => {
   /* Each piece of a group carries that group's entry key, so this counts

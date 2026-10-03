@@ -89,4 +89,69 @@ check('every real record yields at least one piece', () => {
   });
 });
 
+/* ── The honours split ───────────────────────────────────────────────────
+   A room is exactly one viewport tall with no vertical axis, and its groups
+   live in a fixed grid. Thirteen honours will not fit one room, so the array
+   is split. These are the assertions that stop a split from silently hiding
+   an honour: a partition that loses a record looks exactly like one that does
+   not, until someone counts. */
+const { honoursSplit, HONOURS_ROOMS, evenChunks } = globalThis.Site;
+
+check('the honours split is a total partition', () => {
+  const { parts } = honoursSplit(globalThis.PORTFOLIO.honors);
+  const flat = parts.flat();
+  assert.equal(flat.length, globalThis.PORTFOLIO.honors.length,
+    'records dropped or duplicated: ' + flat.length + ' of ' + globalThis.PORTFOLIO.honors.length);
+  assert.equal(new Set(flat).size, flat.length, 'a record appears in two parts');
+  assert.deepEqual(flat, globalThis.PORTFOLIO.honors, 'the split did not keep input order');
+});
+
+check('no honours part exceeds what a room can hold', () => {
+  /* Three columns by two rows is six exhibits. A seventh is a row the room
+     has no height for. */
+  const { parts } = honoursSplit(globalThis.PORTFOLIO.honors);
+  parts.forEach((p, i) => {
+    assert.ok(p.length <= 6, 'part ' + i + ' holds ' + p.length + ' groups');
+  });
+});
+
+check('the split is even, not one crowded room and a wall of one', () => {
+  const { parts } = honoursSplit(globalThis.PORTFOLIO.honors);
+  const sizes = parts.map(p => p.length).filter(n => n > 0);
+  const spread = Math.max(...sizes) - Math.min(...sizes);
+  assert.ok(spread <= 1, 'parts are uneven: ' + sizes.join('/'));
+  assert.equal(parts.length, HONOURS_ROOMS);
+
+  /* The rule this asserts against, spelled out: slicing at a ceil-computed
+     stride partitions evenly only when the count divides. Thirteen into four
+     is 4/4/4/1 by that rule — three full walls and a fourth holding a single
+     honour alone, which is the unevenness a visitor actually sees. Spelled out
+     here because the real data divides by three and would never show it. */
+  const ceilSlice = (list, rooms) => {
+    const per = Math.ceil(list.length / rooms);
+    return Array.from({ length: rooms }, (_, i) => list.slice(i * per, (i + 1) * per));
+  };
+  const thirteen = Array.from({ length: 13 }, (_, i) => i);
+  assert.deepEqual(ceilSlice(thirteen, 4).map((c) => c.length), [4, 4, 4, 1],
+    'the ceil-slice rule changed shape, so this no longer documents what it guards against');
+  assert.deepEqual(evenChunks(thirteen, 4).map((c) => c.length), [3, 3, 3, 4]);
+  assert.equal(evenChunks(thirteen, 4).flat().length, 13, 'evenChunks lost a record');
+  /* And across a range of counts, never a record short. */
+  for (let n = 0; n <= 40; n++) {
+    const list = Array.from({ length: n }, (_, i) => i);
+    for (let rooms = 1; rooms <= 6; rooms++) {
+      const flat = evenChunks(list, rooms).flat();
+      assert.equal(flat.length, n, n + ' into ' + rooms + ' gave ' + flat.length);
+    }
+  }
+});
+
+check('an empty, short or single honours list does not throw', () => {
+  assert.deepEqual(honoursSplit([]).parts.flat(), []);
+  assert.deepEqual(honoursSplit(null).parts.flat(), []);
+  const one = honoursSplit([globalThis.PORTFOLIO.honors[0]]);
+  assert.deepEqual(one.parts.flat(), [globalThis.PORTFOLIO.honors[0]]);
+  assert.equal(one.parts.length, HONOURS_ROOMS, 'the split must always yield one part per room');
+});
+
 run();
