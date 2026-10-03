@@ -825,8 +825,14 @@
 
      Every frame clears 44x44 at every supported width: the room carries a
      width floor in css/styles.css, and the smallest frame is 22cqi x 40cqi. */
-  var PIECE_HEIGHTS = ['22cqi', '18cqi', '18cqi', '16cqi'];
-  var LEAD_HEIGHT = '30cqi';
+  /* The lead frame's height, then the supporting frames'. `cqi` is one percent
+     of the cell's width, so the whole composition scales with the wall.
+     Every height clears 44px at the narrowest supported cell: the room's width
+     floor in css/styles.css puts a cell at 403px and a cluster at ~371px, so
+     the smallest of these is 12% of 371 = 44px. A shorter support frame would
+     be a control below the tap-target floor. */
+  var PIECE_HEIGHTS = ['26cqi', '26cqi', '26cqi', '26cqi'];
+  var LEAD_HEIGHT = '36cqi';
 
   /* A piece is a real focusable control: the whole frame opens the group's
      dialog, and its accessible name says which photograph it is. The lead
@@ -848,13 +854,17 @@
         + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
         + '</button>';
     };
+    /* A lone photograph is the lead: it is the whole composition, and the lead
+       height is what makes a single-photograph group read as a hung work
+       rather than as a small frame with an empty column beside it. */
+    if (pieces.length === 1) {
+      return '<div class="cluster">' + piece(pieces[0], 0, true) + '</div>';
+    }
     return '<div class="cluster">'
-      + (lead ? '<div class="hang-lead">' + piece(pieces[0], 0, true) + '</div>' : '')
-      + (lead ? '<div class="hang-stack">'
-          + stack.map(function (p, i) { return piece(p, i + 1, false); }).join('')
-          + '</div>' : '')
-      + (lead ? '' : piece(pieces[0], 0, false))
-      + '</div>';
+      + '<div class="hang-lead">' + piece(pieces[0], 0, true) + '</div>'
+      + '<div class="hang-stack">'
+      + stack.map(function (p, i) { return piece(p, i + 1, false); }).join('')
+      + '</div></div>';
   }
 
   /* What a piece does when activated. A project piece opens that project's
@@ -889,56 +899,96 @@
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
       + ' data-entry="' + esc(entryKey) + '">'
       + renderCluster(pieces, record, kind, entryKey)
-      + renderGroupLabel(record, kind, index, pieces.length, roomKey)
+      + renderGroupLabel(record, kind, index, pieces.length, pieces)
       + '</div>';
   }
 
-  /* The label under a group. Task 5 of the edge-dock plan fills in the plan,
-     the narrative and the per-photograph catalogue; the container and the
-     piece count are here so a group always carries its own label. */
-  function renderGroupLabel(record, kind, index, pieceCount) {
-    return '<div class="label" data-pieces="' + pieceCount + '"></div>';
+  /* ── The exhibition label ───────────────────────────────────────────────
+     One label per group, and it is where every photograph gets its text. The
+     shape is the reference wall's: a plan of the hang, the narrative that
+     frames the group, and a catalogue entry per photograph.
+
+     Every level falls back rather than rendering an empty box, because the
+     owner will not have written copy for every group on day one: a group with
+     no `summary` narrates its own description, and a piece with no title is
+     named for its position. */
+  function labelTitle(record) {
+    return record.title || record.description || '';
   }
 
-  function renderLabel(entry, index) {
-    return '<div class="lbl">'
-      + '<span class="no">CAT. ' + String(index + 1).padStart(2, '0') + ' &mdash; ' + esc(entry.venue) + '</span>'
-      + '<p class="lt">' + esc(entry.tagline || entry.title) + '</p>'
-      + '<p class="by">' + entry.authors + '</p>'
-      + (entry.overview && entry.overview.text
-          ? '<p class="med">' + esc(entry.overview.text.split('\n\n')[0]) + '</p>' : '')
-      + '<p class="pro">' + esc(entry.source === 'open' ? 'Open source' : 'Closed source')
-      + (entry.awards && entry.awards.length ? ' &middot; ' + entry.awards.length + ' awards' : '')
-      + '</p></div>';
+  function labelMeta(record) {
+    return record.venue || record.year || '';
   }
 
-  /* A work needs an image. Projects with video also have a poster frame, which
-     make-images.mjs generates — use it so no frame is ever empty. */
-  function workImage(p) {
-    if (isImage(p.video)) return p.video;
-    if (p.overview && p.overview.image) return p.overview.image;
-    return p.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg');
+  function labelNarrative(record) {
+    if (record.summary) return record.summary;
+    /* A project's own framing is its first paragraph; a record has none. */
+    if (record.overview && record.overview.text) {
+      return String(record.overview.text).split('\n\n')[0];
+    }
+    return labelTitle(record);
   }
 
-  function renderWork(p, index) {
-    var img = workImage(p);
-    return '<article class="work" data-work data-snap data-project="' + esc(p.id) + '">'
-      + '<div class="pool"></div>'
-      + '<button type="button" class="project-hit canvas" data-action="modal"'
-      + ' data-project="' + esc(p.id) + '" data-tab="overview"'
-      + ' aria-label="Open ' + esc(p.title) + '">'
-      + '<img class="project-thumb" src="' + esc(img) + '" alt="' + esc(p.title) + '" loading="lazy"'
-      + ' onerror="this.closest(\'.work\').classList.add(\'is-empty\');this.remove();">'
-      + '</button>'
-      + '<div class="project-cue" aria-hidden="true"><span>View project</span></div>'
-      + renderLabel(p, index)
-      + '</article>';
+  /* The plan: the same composition the cluster hangs, drawn small. It is built
+     from the piece count rather than from coordinates, so it cannot disagree
+     with what is on the wall. */
+  function renderPlan(pieceCount) {
+    var lead = pieceCount > 1 ? 1 : 0;
+    var stack = pieceCount - lead;
+    return '<div class="plan" aria-hidden="true">'
+      + (lead ? '<i class="pi pi-lead"></i>' : '')
+      + (stack ? '<span class="pi-stack">'
+          + Array.apply(null, Array(stack)).map(function () { return '<i class="pi"></i>'; }).join('')
+          + '</span>' : '')
+      + (lead ? '' : '<i class="pi pi-lead"></i>')
+      + '</div>';
   }
 
-  function renderPlate(entry) {
-    return '<div class="plate">'
-      + '<p class="pt">' + esc(entry.description) + '</p>'
-      + '<span class="py">' + esc(entry.year) + '</span></div>';
+  /* The technical line is derived, never authored: the file's own name. */
+  function techLine(src, kind) {
+    var name = String(src || '').replace(/^.*\//, '').replace(/\.[a-z0-9]+$/i, '');
+    var what = kind === 'project' ? 'Project photograph' : 'Event photograph';
+    return what + (name ? ' · ' + name : '');
+  }
+
+  function renderCatalogue(record, kind, pieceCount, sources) {
+    var pieces = Array.isArray(record.pieces) ? record.pieces : [];
+    var out = '';
+    for (var i = 0; i < pieceCount; i++) {
+      var p = pieces[i] || {};
+      var letter = pieceLetter(i);
+      out += '<div class="cat-entry" data-piece="' + i + '">'
+        + '<p class="ce-title">'
+        + (pieceCount > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
+        + esc(p.title || ('Photograph ' + letter)) + '</p>'
+        + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')
+        + '<p class="ce-tech">' + esc(techLine((sources || [])[i], kind)) + '</p>'
+        + '</div>';
+    }
+    return out;
+  }
+
+  function renderLabel(record, kind, index, pieceCount, sources) {
+    var title = labelTitle(record);
+    var meta = labelMeta(record);
+    return '<div class="label">'
+      + renderPlan(pieceCount)
+      + '<div class="narr">'
+      + '<p class="narr-title">' + esc(title) + '</p>'
+      + (meta ? '<p class="narr-meta">' + esc(meta)
+          + (pieceCount > 1 ? ' · ' + pieceCount + ' photographs' : '') + '</p>' : '')
+      + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
+      + '</div>'
+      + '<div class="cat">' + renderCatalogue(record, kind, pieceCount, sources) + '</div>'
+      + '</div>';
+  }
+  Site.renderLabel = renderLabel;
+
+  /* Every group's label is built by renderLabel above; the group carries the
+     pieces' sources so the label's technical line can name each file. */
+  function renderGroupLabel(record, kind, index, pieceCount, pieces) {
+    var sources = (pieces || []).map(function (p) { return p.src; });
+    return renderLabel(record, kind, index, pieceCount, sources);
   }
 
   function renderRooms() {

@@ -80,25 +80,26 @@ await import('../js/main.js');
 const PORTFOLIO = globalThis.PORTFOLIO;
 const Site = globalThis.Site;
 const currentRoomMarkup = Site.currentRoomMarkup;
+const renderLabelFor = Site.renderLabel;
 const strip = el('strip').innerHTML;
 const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
 
 /* ── The DOM contract ────────────────────────────────────────────────── */
-check('the walk carries the rooms in order, honours split four ways', () => {
+check('the walk carries the rooms in order, honours split three ways', () => {
   const roomKeys = [...strip.matchAll(/data-room="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(roomKeys, ['About', 'Robotics', 'Applications', 'Leadership',
-    'Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV', 'Contact']);
+    'Honours — I', 'Honours — II', 'Honours — III', 'Contact']);
 });
 
 check('room titles name every room', () => {
   assert.deepEqual(titles, ['About', 'Works in Robotics', 'Works in Applications', 'Leadership',
-    'Honours · I', 'Honours · II', 'Honours · III', 'Honours · IV', 'Contact']);
+    'Honours · I', 'Honours · II', 'Honours · III', 'Contact']);
 });
 
 /* The honours rooms, in walk order, each bounded at its own closing tag so
    one room's markup cannot leak into the next. */
-const honoursStrip = ['Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV']
+const honoursStrip = ['Honours — I', 'Honours — II', 'Honours — III']
   .map((k) => (strip.split('data-room="' + k + '"')[1] || '').split('</section>')[0])
   .join('');
 
@@ -129,7 +130,7 @@ check('work rooms are not snap targets', () => {
 check('every room holds its groups in the grid', () => {
   /* A room is one viewport tall with no vertical axis, so its groups live in
      a fixed grid of known rows rather than a wrapping flow. */
-  for (const room of ['Robotics', 'Applications', 'Leadership', 'Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV']) {
+  for (const room of ['Robotics', 'Applications', 'Leadership', 'Honours — I', 'Honours — II', 'Honours — III']) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
     assert.match(section, /<div class="groups">/, room + ' has no group grid');
   }
@@ -139,7 +140,7 @@ check('every group hangs at least one piece', () => {
   const groups = strip.split('<div class="group"').slice(1);
   assert.ok(groups.length > 0, 'no groups rendered at all');
   groups.forEach((g, i) => {
-    assert.match(g, /class="piece" data-piece="0"/, 'group ' + i + ' has no first piece');
+    assert.match(g, /class="piece[^"]*" data-piece="0"/, 'group ' + i + ' has no first piece');
   });
 });
 
@@ -157,17 +158,22 @@ check('no photograph is dropped or duplicated by grouping', () => {
   });
 });
 
-check('a single-piece group claims slot a and grows it', () => {
-  /* Most honours are single-photograph. A lone piece must fill the cluster
-     rather than sit in slot a at slot a's size, which would read as a
-     truncated composition. */
+check('a single-piece group hangs its piece tall', () => {
+  /* Most honours are single-photograph. A lone frame sits in the lead column
+     at the lead height, rather than stranding itself at the left of an empty
+     two-column cluster at a supporting frame's size. */
   const single = Site.groupPieces({ description: 'x', images: ['only.jpg'] }, 'record');
   assert.equal(single.length, 1);
   const groups = strip.split('<div class="group"').slice(1);
-  const withOne = groups.filter((g) => (g.match(/class="piece"/g) || []).length === 1);
+  const withOne = groups.filter((g) => {
+    const body = g.split('<div class="group"')[0];
+    return (body.match(/class="piece/g) || []).length === 1;
+  });
   assert.ok(withOne.length > 0, 'no single-piece group in the strip');
   withOne.forEach((g) => {
-    assert.match(g, /--h:160px/, 'a lone piece does not take the grown slot');
+    const body = g.split('<div class="group"')[0];
+    assert.match(body, /class="piece piece--lead"/, 'a lone piece is not hung as the lead');
+    assert.match(body, /--h:36cqi/, 'a lone piece does not take the lead height');
   });
 });
 
@@ -188,6 +194,80 @@ check('a piece is a real button with a named target', () => {
     const label = p.match(/aria-label="([^"]*)"/);
     assert.ok(label && label[1].trim().length > 0, 'a piece has no accessible name');
   });
+});
+
+/* ── The label ───────────────────────────────────────────────────────────
+   One label per group: a plan of the hang, the narrative that frames the
+   group, and a catalogue entry per photograph. This is where a photograph
+   gets its text, so a group shipping without one is a group whose
+   photographs are never explained. */
+check('every group carries a plan, a narrative and a catalogue', () => {
+  const groups = strip.split('<div class="group"').slice(1);
+  assert.ok(groups.length > 0, 'no groups rendered');
+  const bad = [];
+  groups.forEach((g, i) => {
+    if (!/<div class="plan"/.test(g)) bad.push('group ' + i + ': no plan');
+    const title = g.match(/<p class="narr-title">([^<]*)<\/p>/);
+    if (!title || !title[1].trim()) bad.push('group ' + i + ': no narrative title');
+    const text = g.match(/<p class="narr-text">([^<]*)<\/p>/);
+    if (!text || !text[1].trim()) bad.push('group ' + i + ': empty narrative');
+    if (!/class="cat-entry"/.test(g)) bad.push('group ' + i + ': no catalogue entry');
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the catalogue has one entry per piece', () => {
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    /* Bound the group at the next group, so the count cannot pick up a
+       neighbouring group's catalogue. */
+    const body = g.split('<div class="group"')[0];
+    const pieces = (body.match(/class="piece/g) || []).length;
+    const entries = (body.match(/class="cat-entry"/g) || []).length;
+    if (entries !== pieces) bad.push('group ' + i + ': ' + entries + ' entries for ' + pieces + ' pieces');
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the plan is hidden from assistive tech', () => {
+  /* It is a picture of the hang; the catalogue already names every piece in
+     order, so a screen reader reading both would hear the group twice. */
+  const plans = [...strip.matchAll(/<div class="plan"[^>]*>/g)].map((m) => m[0]);
+  assert.ok(plans.length > 0, 'no plan rendered');
+  plans.forEach((p) => assert.match(p, /aria-hidden="true"/, 'a plan is not aria-hidden'));
+});
+
+check('a record with no summary still renders a narrative', () => {
+  const stripped = { description: 'Some Award – Champion', year: '2026' };
+  const html = renderLabelFor(stripped, 'record', 0, 1, ['files/x.jpg']);
+  assert.match(html, /Some Award/, 'fell through to nothing');
+  assert.match(html, /class="narr-text">[^<]*Some Award/, 'the narrative is empty');
+});
+
+check('a pieces array shorter than images falls back per entry', () => {
+  const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
+  const html = renderLabelFor(record, 'record', 0, 2, record.images);
+  assert.match(html, /Only one/, 'the first entry lost its title');
+  assert.match(html, /Photograph B/, 'the missing tail did not fall back');
+});
+
+check('a pieces array longer than images is ignored, not thrown', () => {
+  const record = { description: 'X', images: ['a.jpg'], pieces: [{ title: 'A' }, { title: 'B' }] };
+  assert.doesNotThrow(() => renderLabelFor(record, 'record', 0, 1, record.images));
+  const html = renderLabelFor(record, 'record', 0, 1, record.images);
+  assert.equal((html.match(/class="cat-entry"/g) || []).length, 1,
+    'an extra pieces entry was hung as a photograph that does not exist');
+});
+
+check('a project label names the venue, a record label names the year', () => {
+  const project = renderLabelFor(
+    { title: 'Project X', venue: 'August 2025', overview: { text: 'why' } },
+    'project', 0, 2, ['files/o.jpg', 'files/t.jpg']);
+  assert.match(project, /Project X/);
+  assert.match(project, /August 2025/);
+  const record = renderLabelFor({ description: 'Some Honour', year: 'April 2026' }, 'record', 0, 1, ['files/a.jpg']);
+  assert.match(record, /Some Honour/);
+  assert.match(record, /April 2026/);
 });
 
 /* ── Photo-less honours must not open a neighbour's gallery ──────────── */
