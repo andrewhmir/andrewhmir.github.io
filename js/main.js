@@ -988,7 +988,7 @@
       + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 2) + '</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Leadership</span>'
       + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length + ' POSTS</span></span></h2>'
-      + '<div class="hang">'
+      + '<div class="hang hang--plates">'
       + PORTFOLIO.leadership.map(function (l, i) {
           var hasGallery = Array.isArray(l.images) && l.images.length > 0;
           var inner = '<p class="pt">' + esc(l.description) + '</p><span class="py">' + esc(l.year) + '</span>';
@@ -1004,7 +1004,7 @@
       + '<h2 class="room-title"><span class="t">Honours</span>'
       + '<span class="sub">Competitions, conferences and citations'
       + '<span class="count">' + PORTFOLIO.honors.length + ' HONOURS</span></span></h2>'
-      + '<div class="hang">'
+      + '<div class="hang hang--plates">'
       + PORTFOLIO.honors.map(function (h, i) {
           var hasGallery = Array.isArray(h.images) && h.images.length > 0;
           if (!hasGallery) return renderPlate(h);

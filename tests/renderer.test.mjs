@@ -109,6 +109,24 @@ check('work rooms are not snap targets', () => {
     'a work room carries data-snap, which would fight its works');
 });
 
+check('a room of works never wraps, a room of plates does', () => {
+  /* A room is one viewport tall inside a hall that is one viewport tall with
+     overflow-y hidden: a second row of works would be clipped and unreachable,
+     because there is no vertical axis to scroll to it. Plate rooms hold text
+     only, which is short, so they wrap. */
+  for (const room of ['Robotics', 'Applications']) {
+    const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
+    const hang = section.match(/<div class="hang([^"]*)"/);
+    assert.ok(hang, room + ' has no hang container');
+    assert.ok(!/plates/.test(hang[1]), room + ' wraps its works, so a row would be clipped');
+  }
+  for (const room of ['Leadership', 'Honours']) {
+    const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
+    const hang = section.match(/<div class="hang([^"]*)"/);
+    assert.ok(hang && /plates/.test(hang[1]), room + ' does not let its plates wrap');
+  }
+});
+
 /* ── Task 5 Step 8: no work hangs empty ──────────────────────────────── */
 check('every hung work has an image', () => {
   const works = strip.split('<article class="work"').slice(1);

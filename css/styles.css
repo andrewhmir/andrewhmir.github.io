@@ -1745,22 +1745,50 @@ body {
 }
 
 /* ── The hang: works and plates share the wall, in varying widths so the
-      journey is not a metronome. ── */
+      journey is not a metronome.
+
+      Works are one row, never wrapped. A room is exactly one viewport tall
+      inside a hall that is exactly one viewport tall with overflow-y hidden,
+      so a second row of works would be clipped AND unreachable — the hall
+      cannot scroll to it and there is no vertical axis to rescue it. Three
+      works therefore share the row, at widths small enough that image + label
+      still clear the fold on a short laptop.
+
+      The plate rooms hold text only, which is short and self-limiting, so they
+      wrap: four plates at 30% will not fit one row, and they do not need to. ── */
 .hang {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: flex-start;
   align-content: flex-start;
   gap: 74px 30px;
   padding-left: 18px;
 }
 
-.hang > .work {
-  flex: 0 0 auto;
-  width: var(--work-md);
+.hang--plates {
+  flex-wrap: wrap;
 }
 
-.hang > .work:nth-child(3n + 1) { width: var(--work-lg); }
+.hang > .work {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 33%;
+}
+
+/* Exactly two works in a room: let them use the full width rather than
+   stranding 34% of the wall empty. */
+.hang > .work:first-child:nth-last-child(2),
+.hang > .work:first-child:nth-last-child(2) ~ .work {
+  max-width: 46%;
+}
+
+/* .pool hangs outside the work (top -44px, height 150%) so it can spill as
+   light. It must never take part in the flex row's sizing. */
+.hang > .work > .pool {
+  position: absolute;
+  flex: 0 0 auto;
+  width: 136%;
+}
 
 .hang .canvas {
   display: block;
@@ -1771,7 +1799,15 @@ body {
   cursor: pointer;
 }
 
-.hang .canvas img { width: 100%; height: auto; }
+.hang .canvas img {
+  width: 100%;
+  height: auto;
+  /* Height budget: the viewport minus the room's padding, the title block and
+     the label. 34vh keeps image + label inside one screen from 900px tall down
+     to ~700px, where a wrapped room would have hidden content instead. */
+  max-height: 34vh;
+  object-fit: contain;
+}
 
 .about-copy { flex: 1 1 38%; max-width: 46%; }
 
