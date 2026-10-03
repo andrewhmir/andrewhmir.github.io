@@ -329,17 +329,19 @@ const PORTFOLIO = {
 
   /* ── The honours split ──────────────────────────────────────────────────
      A room is exactly one viewport tall with no vertical axis, and its groups
-     live in a grid of 3 columns x 2 rows — six exhibits, which is what the
-     room can hold. Thirteen honours is therefore three rooms.
+     live in a grid of 2 columns x 2 rows — four exhibits, which is what a room
+     can hold once a group is tall enough to hang four photographs beside a
+     label that shows all of their catalogue text. Thirteen honours is
+     therefore four rooms.
 
      The array is authored newest-first, so the split takes it in order rather
      than guessing at a kind from the description text. The parts are as even
-     as integer division allows (5, 4, 4 for thirteen), and empty parts are
+     as integer division allows (4, 3, 3, 3 for thirteen), and empty parts are
      dropped by the renderer rather than hung as an empty wall.
 
      This is a total partition: every record lands in exactly one part, in
      input order, and an empty list yields empty parts rather than throwing. */
-  var HONOURS_ROOMS = 3;
+  var HONOURS_ROOMS = 4;
 
   /* Even chunks that between them hold every record. Boundaries fall at
      `floor(i * n / rooms)`, so any remainder lands in the LAST part: thirteen

@@ -86,20 +86,21 @@ const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
 
 /* ── The DOM contract ────────────────────────────────────────────────── */
-check('the walk carries the rooms in order, honours split three ways', () => {
+check('the walk carries the rooms in order, honours split four ways', () => {
   const roomKeys = [...strip.matchAll(/data-room="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(roomKeys, ['About', 'Robotics', 'Applications', 'Leadership',
-    'Honours — I', 'Honours — II', 'Honours — III', 'Contact']);
+    'Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV', 'Contact']);
 });
 
 check('room titles name every room', () => {
   assert.deepEqual(titles, ['About', 'Works in Robotics', 'Works in Applications', 'Leadership',
-    'Honours · I', 'Honours · II', 'Honours · III', 'Contact']);
+    'Honours · I', 'Honours · II', 'Honours · III', 'Honours · IV', 'Contact']);
 });
 
 /* The honours rooms, in walk order, each bounded at its own closing tag so
    one room's markup cannot leak into the next. */
-const honoursStrip = ['Honours — I', 'Honours — II', 'Honours — III']
+const HONOURS_KEYS = ['Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV'];
+const honoursStrip = HONOURS_KEYS
   .map((k) => (strip.split('data-room="' + k + '"')[1] || '').split('</section>')[0])
   .join('');
 
@@ -130,7 +131,7 @@ check('work rooms are not snap targets', () => {
 check('every room holds its groups in the grid', () => {
   /* A room is one viewport tall with no vertical axis, so its groups live in
      a fixed grid of known rows rather than a wrapping flow. */
-  for (const room of ['Robotics', 'Applications', 'Leadership', 'Honours — I', 'Honours — II', 'Honours — III']) {
+  for (const room of ['Robotics', 'Applications', 'Leadership', ...HONOURS_KEYS]) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
     assert.match(section, /<div class="groups">/, room + ' has no group grid');
   }
@@ -161,7 +162,9 @@ check('no photograph is dropped or duplicated by grouping', () => {
 check('a single-piece group hangs its piece tall', () => {
   /* Most honours are single-photograph. A lone frame sits in the lead column
      at the lead height, rather than stranding itself at the left of an empty
-     two-column cluster at a supporting frame's size. */
+     two-column cluster at a supporting frame's size.
+     A group whose photograph is still awaited is not a button — there is
+     nothing to open — so its frame is a labelled span at the same height. */
   const single = Site.groupPieces({ description: 'x', images: ['only.jpg'] }, 'record');
   assert.equal(single.length, 1);
   const groups = strip.split('<div class="group"').slice(1);
@@ -172,9 +175,25 @@ check('a single-piece group hangs its piece tall', () => {
   assert.ok(withOne.length > 0, 'no single-piece group in the strip');
   withOne.forEach((g) => {
     const body = g.split('<div class="group"')[0];
-    assert.match(body, /class="piece piece--lead"/, 'a lone piece is not hung as the lead');
-    assert.match(body, /--h:36cqi/, 'a lone piece does not take the lead height');
+    assert.match(body, /class="piece piece--(lead|pending)"/, 'a lone piece is not hung as the lead');
+    assert.match(body, /--h:max\(min\(20cqi, 96px\),54px\)/,
+      'a lone piece does not take the lead height');
   });
+});
+
+check('a photograph that is still awaited is not a dead control', () => {
+  /* Six honours declare no photograph at all. A focusable button that does
+     nothing when activated is worse than a frame that plainly is not one, so
+     those frames are labelled spans. */
+  const pending = [...strip.matchAll(/<span class="piece piece--pending"[^>]*>/g)].map((m) => m[0]);
+  const noPhoto = PORTFOLIO.honors.filter((h) => !Array.isArray(h.images) || !h.images.length).length;
+  assert.equal(pending.length, noPhoto, pending.length + ' pending frames, expected ' + noPhoto);
+  pending.forEach((p) => {
+    assert.match(p, /role="img"/, 'a pending frame has no role');
+    assert.match(p, /aria-label="[^"]*awaited/, 'a pending frame is not named as awaited');
+    assert.ok(!/data-gallery|data-action/.test(p), 'a pending frame carries a handler it cannot honour');
+  });
+  assert.match(strip, /Photograph awaited/, 'the placeholder is still named after its file');
 });
 
 check('every piece falls back to the placeholder when its image fails', () => {
@@ -235,6 +254,25 @@ check('the plan is hidden from assistive tech', () => {
   const plans = [...strip.matchAll(/<div class="plan"[^>]*>/g)].map((m) => m[0]);
   assert.ok(plans.length > 0, 'no plan rendered');
   plans.forEach((p) => assert.match(p, /aria-hidden="true"/, 'a plan is not aria-hidden'));
+});
+
+check('the plan draws one rectangle per photograph', () => {
+  /* The plan is a picture of the hang, so its box count has to match the
+     wall's. It emitted two rectangles for every single-photograph group once,
+     because the lead index was computed from `pieceCount > 1`. */
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const pieces = (body.match(/class="piece/g) || []).length;
+    const plan = body.match(/<div class="plan"[\s\S]*?<\/div>/);
+    if (!plan) { bad.push('group ' + i + ': no plan'); return; }
+    const boxes = (plan[0].match(/<i class=/g) || []).length;
+    if (boxes !== pieces) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + pieces + ' photographs');
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+  /* And the nine single-photograph honours groups are among them. */
+  const single = Site.groupPieces({ description: 'x', images: ['a.jpg'] }, 'record');
+  assert.equal(single.length, 1);
 });
 
 check('a record with no summary still renders a narrative', () => {

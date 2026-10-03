@@ -825,14 +825,33 @@
 
      Every frame clears 44x44 at every supported width: the room carries a
      width floor in css/styles.css, and the smallest frame is 22cqi x 40cqi. */
-  /* The lead frame's height, then the supporting frames'. `cqi` is one percent
-     of the cell's width, so the whole composition scales with the wall.
-     Every height clears 44px at the narrowest supported cell: the room's width
-     floor in css/styles.css puts a cell at 403px and a cluster at ~371px, so
-     the smallest of these is 12% of 371 = 44px. A shorter support frame would
-     be a control below the tap-target floor. */
-  var PIECE_HEIGHTS = ['26cqi', '26cqi', '26cqi', '26cqi'];
-  var LEAD_HEIGHT = '36cqi';
+  /* ── The cluster's frame heights ────────────────────────────────────────
+     A group is one exhibit: its photographs hang together as one composition
+     rather than as N unrelated works.
+
+     Each height is a percentage of the CELL's width (`cqi`), so the whole
+     composition scales with the wall and the cluster's own height is bounded
+     by its width rather than by its content. That bound is what makes a room
+     fit: measured with the supporting column sized by its frames, a
+     four-photograph group stood 329px tall against a 232px row and spilled
+     under the neighbouring exhibit.
+
+     The numbers come from the two ends of the supported range. At 1280x704 a
+     cell is 359px, so the lead frame is 79px and a support 59px — both past
+     the 44px tap floor — and the cluster spans 275px of the 359px cell. At
+     1440x900 a cell is 403px and the same proportions give a larger wall. */
+  /* A proportion of the cell, capped in pixels. The proportion scales the wall
+     with the room; the cap is what bounds a GROUP's height, because a room is
+     exactly one viewport tall with no vertical axis to scroll and its rows
+     have to fit. Measured without the cap, a four-photograph group in a wide
+     two-column cell stood 299px tall against the 270px a room can afford for
+     one of its two rows, and that room's title was pushed off the top of the
+     screen. The floors keep a frame a legal 44x44 tap target at the narrowest
+     cell. */
+  var PIECE_HEIGHTS = ['min(14cqi, 62px)', 'min(14cqi, 62px)', 'min(14cqi, 62px)', 'min(14cqi, 62px)'];
+  var LEAD_HEIGHT = 'min(20cqi, 96px)';
+  var PIECE_MIN = '46px';
+  var LEAD_MIN = '54px';
 
   /* A piece is a real focusable control: the whole frame opens the group's
      dialog, and its accessible name says which photograph it is. The lead
@@ -845,11 +864,25 @@
     var piece = function (p, i, isLead) {
       var open = groupOpener(kind, record, entryIndex);
       var h = isLead ? LEAD_HEIGHT : (PIECE_HEIGHTS[Math.min(i, PIECE_HEIGHTS.length - 1)]);
+      var floorH = isLead ? LEAD_MIN : PIECE_MIN;
       var shift = isLead ? '0' : (i % 2 === 0 ? '0' : '4cqi');
+      var label = open.name || (title + ' — photograph ' + pieceLetter(i));
+      var style = '--h:max(' + h + ',' + floorH + ');--shift:' + shift + '"';
+      /* A photograph still waiting for its file has nothing to open, so it is
+         not a button: a focusable control that does nothing when activated is
+         worse than a frame that plainly is not one. */
+      if (open.inert) {
+        return '<span class="piece piece--pending" data-piece="' + i + '"'
+          + ' style="' + style
+          + ' role="img" aria-label="' + esc(label + ' — photograph awaited') + '">'
+          + '<img src="' + esc(p.src) + '" alt="" loading="lazy"'
+          + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
+          + '</span>';
+      }
       return '<button type="button" class="piece' + (isLead ? ' piece--lead' : '') + '"'
         + ' data-piece="' + i + '"' + open.attrs
-        + ' style="--h:' + h + ';--shift:' + shift + '"'
-        + ' aria-label="' + esc(open.name || (title + ' — photograph ' + pieceLetter(i))) + '"'
+        + ' style="' + style
+        + ' aria-label="' + esc(label) + '"'
         + '><img src="' + esc(p.src) + '" alt="" loading="lazy"'
         + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
         + '</button>';
@@ -880,7 +913,7 @@
       };
     }
     var hasPhotos = Array.isArray(record.images) && record.images.length > 0;
-    if (!hasPhotos) return { attrs: '', name: '' };
+    if (!hasPhotos) return { attrs: '', name: '', inert: true };
     return {
       attrs: ' data-gallery="' + esc(kind) + '" data-entry="' + esc(entryIndex) + '"',
       name: ''
@@ -931,33 +964,38 @@
 
   /* The plan: the same composition the cluster hangs, drawn small. It is built
      from the piece count rather than from coordinates, so it cannot disagree
-     with what is on the wall. */
+     with what is on the wall — a first version emitted a stack box AND a lead
+     box for a one-photograph group, drawing two frames for a wall that hangs
+     one. */
   function renderPlan(pieceCount) {
-    var lead = pieceCount > 1 ? 1 : 0;
-    var stack = pieceCount - lead;
+    if (pieceCount < 1) return '<div class="plan" aria-hidden="true"></div>';
+    var stack = pieceCount - 1;
     return '<div class="plan" aria-hidden="true">'
-      + (lead ? '<i class="pi pi-lead"></i>' : '')
-      + (stack ? '<span class="pi-stack">'
-          + Array.apply(null, Array(stack)).map(function () { return '<i class="pi"></i>'; }).join('')
-          + '</span>' : '')
-      + (lead ? '' : '<i class="pi pi-lead"></i>')
+      + '<i class="pi pi-lead"></i>'
+      + (stack > 0
+          ? '<span class="pi-stack">'
+            + Array.apply(null, Array(stack)).map(function () { return '<i class="pi"></i>'; }).join('')
+            + '</span>'
+          : '')
       + '</div>';
   }
 
   /* The technical line is derived, never authored, and is short: the file's own
      name, dashed stems turned into words. A full path or a warehouse word like
      "Event photograph" costs a line the label does not have — the row is 226px
-     at the spec's floor and the label gets 60 of them. */
+     at the spec's floor and the label gets 60 of them.
+     The placeholder is not a photograph a visitor can go and look at, so it is
+     named for what it is rather than for its file. */
   function techLine(src) {
-    var stem = String(src || '')
-      .replace(/^.*\//, '')
+    var file = String(src || '').replace(/^.*\//, '');
+    if (/^PlaceHolder\./i.test(file)) return 'Photograph awaited';
+    return file
       .replace(/\.[a-z0-9]+$/i, '')
       /* A date-like run reads as a date, not as two words. */
       .replace(/-(\d{4})-/, ' $1 ')
       .replace(/[-_]+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-    return stem;
   }
 
   function renderCatalogue(record, kind, pieceCount, sources) {
@@ -1140,12 +1178,19 @@
 
   function markCurrentRoom(key) {
     Site.currentRoom = key || null;
-    var keys = [];
     var links = document.querySelectorAll('#directory .dock-link');
+    var keys = [];
     for (var i = 0; i < links.length; i++) keys.push(links[i].getAttribute('data-goto'));
     var marked = currentRoomMarkup(keys, Site.currentRoom);
+    var live = document.getElementById('dockCurrent');
     for (var j = 0; j < links.length; j++) {
       links[j].setAttribute('aria-current', marked[j].current ? 'true' : 'false');
+      /* The narrow dock's live name is read from the control that owns it, so
+         the short name has one source and the two cannot drift. */
+      if (marked[j].current && live) {
+        var dt = links[j].querySelector('.dt');
+        live.textContent = (dt && dt.textContent) || Site.currentRoom || '';
+      }
     }
   }
   Site.markCurrentRoom = markCurrentRoom;
@@ -1157,13 +1202,19 @@
     dir.innerHTML = '<ol>'
       + items.map(function (it, i) {
           var acc = (it.key === 'Contact') ? '&mdash;' : String(i + 1);
+          var short = ROOM_SHORT[it.key] || it.key;
           var name = 'Room ' + (i + 1) + ' — ' + it.key + ', ' + it.note;
           return '<li><button type="button" class="dock-link" data-goto="' + esc(it.key) + '"'
             + ' aria-label="' + esc(name) + '">'
             + '<span class="dn">' + acc + '</span>'
-            + '<span class="dt">' + esc(ROOM_SHORT[it.key] || it.key) + '</span></button></li>';
+            + '<span class="dt">' + esc(short) + '</span></button></li>';
         }).join('')
-      + '</ol>';
+      + '</ol>'
+      /* The narrow dock's live name. It is a span beside the pips, so the
+         current room stays named when the labels collapse — the alternative,
+         scrolling the dock to find the aria-current control, is what shipped
+         before and left five of eight rooms unnamed on a phone. */
+      + '<span class="dock-live" id="dockCurrent" aria-hidden="true"></span>';
   }
 
   /* ════════════════════════════════════════════════════════════════════
@@ -1225,18 +1276,47 @@
     }
     Site.updateRail = updateRail;
 
+    /* The rail and the live region are not motion: they still have to work
+       under `prefers-reduced-motion`. This is what the early return below
+       falls back to, and it is what the lighting path calls once per frame. */
+    function trackScroll() {
+      announceRoom();
+      updateRail();
+    }
+
+    function bindTracking() {
+      /* Frame-throttled, like the lighting path: a scroll handler that writes
+         two elements per event would do it dozens of times a frame. */
+      var queued = false;
+      var flush = function () {
+        queued = false;
+        trackScroll();
+      };
+      var onScrollTracking = function () {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(flush);
+      };
+      hall.addEventListener('scroll', onScrollTracking, { passive: true });
+      window.addEventListener('resize', flush);
+      trackScroll();
+    }
+
     var works = Array.prototype.slice.call(strip.querySelectorAll('[data-piece]'));
 
     var reduce = window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    if (reduce) {
+    /* Reduced motion removes the light falloff, not the walk's bookkeeping:
+       returning here without binding was a real defect — under reduced motion
+       the rail stayed empty and the dock never followed the walk, while the
+       spec requires the live region to keep announcing and the rail to still
+       be set. */
+    if (reduce || !works.length) {
       works.forEach(function (w) { w.style.setProperty('--lit', '1'); });
-      updateRail();
+      bindTracking();
       return;
     }
-
-    if (!works.length) { updateRail(); return; }
 
     /* Restored mid-walk on load: mark everything already passed as seen so the
        lighting does not sweep across the whole strip on the first frame. */
@@ -1263,8 +1343,7 @@
         w.style.setProperty('--lit', lit.toFixed(3));
       });
 
-      announceRoom();
-      updateRail();
+      trackScroll();
     }
 
     function onScroll() {

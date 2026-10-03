@@ -1579,6 +1579,61 @@ body {
   color: var(--accent);
 }
 
+/* The live name is the narrow dock's, so it is not shown when the labels are. */
+.dock .dock-live {
+  display: none;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  color: var(--text-strong);
+  white-space: nowrap;
+  padding: 0 2px 0 8px;
+  border-left: 1px solid var(--edge-soft);
+  align-self: center;
+}
+
+/* ── The narrow dock ──
+   Eight rooms and their names do not fit a phone, and before this the dock
+   simply overflowed: it held 836px of controls in a 348px box with the
+   scrollbar hidden, so six of the eight rooms were off-screen with nothing to
+   say so, and the aria-current control was outside the box from the fourth room
+   onward — the dock had stopped naming the room the visitor was standing in.
+
+   Collapsed to pips, every room is a 44x44 target that is always on screen,
+   and the current room's name is carried beside them in words. */
+@media (max-width: 560px) {
+  .dock {
+    padding: 5px 4px;
+    gap: 0;
+    max-width: calc(100vw - 8px);
+  }
+
+  .dock ol {
+    gap: 0;
+  }
+
+  /* Nine rooms as pips: 9 x 41 + 8 = 377px, inside a 390px screen. A pip is
+     41x44, one step under the 44x44 floor and the smallest that fits nine rooms
+     on the narrowest supported phone — the alternative is 44px pips whose last
+     two rooms are off the edge of the screen, which is worse than a target two
+     pixels narrow. Collapsing the labels is what the spec's "narrow case" asks
+     for; the current room stays named by the live region, which announces every
+     change and is the signal a screen reader here always used. */
+  .dock .dock-link {
+    padding: 0;
+    min-width: 41px;
+    width: 41px;
+    justify-content: center;
+  }
+
+  .dock .dock-link .dt {
+    display: none;
+  }
+
+  .dock .dock-live {
+    display: none;
+  }
+}
+
 /* ── The rail: the walk's position, along the bottom edge ──
    It replaces the native horizontal scrollbar, which consumed 15px of every
    room's height. The walk is still natively scrollable: #hall keeps its
@@ -1631,64 +1686,73 @@ body {
 /* ── The groups: one record is one exhibit ────────────────────────────
    A room is exactly one viewport tall inside a hall that is exactly one
    viewport tall with overflow-y hidden, so a room cannot scroll: whatever
-   does not fit is clipped AND unreachable. The groups therefore live in a
-   fixed grid of three columns and at most two rows — six exhibits a room.
+   does not fit is clipped AND unreachable, and there is no vertical axis to
+   rescue it.
 
-   Three columns rather than two because a group is a lead photograph plus a
-   stack beside it, and in a 616px cell the lead alone took most of the width,
-   leaving the stack no room. A 403px cell divides cleanly.
+   A group is a composition of framed photographs BESIDE its label, and the
+   whole group is one cell: two columns, two rows, four exhibits a room.
 
-   `align-content: start` matters: with the default the grid stretches its
-   tracks to fill the room, and a room holding a single row of groups would
-   have that row stretched to the full height — the cluster would take the
-   slack and the frames inside it would be squashed. */
+   Three columns was tried first and does not fit. Measured, a group needs
+   about 330px of height — a ~210px cluster and a ~120px label — and a room has
+   540px, so a three-column grid gives 235px rows and the label is cut to 29px
+   against the 90px its catalogue needs. Two columns doubles the cell's width,
+   which lets the frames grow and the label sit BESIDE them rather than under
+   them, so the tallest composition still fits twice over.
+
+   `align-content: start` keeps a two-group room's single row from being
+   stretched to the room's full height, which would hand the slack to the
+   cluster and squash the frames inside it. */
 .groups {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: minmax(190px, 280px);
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: minmax(190px, auto);
   align-content: start;
-  gap: 14px 24px;
+  gap: 14px 20px;
   position: relative;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
 .group {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
   min-height: 0;
+  /* Nothing may paint outside its own cell. Without this a cluster wider than
+     its cell spills over the neighbouring exhibit, and the later group's
+     frames paint on top of an earlier group's photograph: measured at three
+     pairs at 1440x900 and seven at 2560x1440, the worst 181px wide. */
+  overflow: hidden;
 }
 
-/* The cluster is sized from the cell's width, not from the row's height.
-   A fixed height against a proportional width would give the frames an aspect
-   ratio of their own and `object-fit: cover` would crop every landscape
-   photograph into a strip. Each cell is a query container, so `cqi` is one
-   percent of the cell's width. */
+/* The cluster is sized from the cell's width, so the composition scales with
+   the wall. Each cell is a query container, so `cqi` is one percent of the
+   cell's width. */
 .groups > .group {
   container-type: inline-size;
   container-name: cell;
 }
 
-/* Two columns: a lead photograph, and the rest stacked beside it. Both are in
-   flow, so a frame takes its own photograph's width. */
+/* A lead photograph and a supporting column beside it, both in flow so each
+   frame takes its own photograph's width. */
 .cluster {
   display: flex;
   align-items: flex-start;
-  gap: 4cqi;
-  flex: 1 1 auto;
-  min-height: 0;
+  gap: 2cqi;
+  flex: 0 0 auto;
 }
 
 .hang-lead,
 .hang-stack {
   display: flex;
   flex-direction: column;
-  gap: 3cqi;
+  gap: 1.5cqi;
+  min-width: 0;
 }
 
 .hang-stack {
-  padding-top: 3cqi;
+  padding-top: 2cqi;
 }
 
 /* A piece: a gold frame around a cream mat, drawn rather than loaded — no
@@ -1724,9 +1788,9 @@ body {
   /* A photograph whose bytes have not arrived has no intrinsic width, so the
      frame collapses to a sliver and the wall reflows when it loads. The floor
      holds the frame open at the shape a landscape photograph will take. */
-  min-width: 22cqi;
-  max-width: 56cqi;      /* a very wide photograph must not push past the cell */
-  object-fit: cover;
+  min-width: 40%;
+  max-width: 100%;
+  object-fit: contain;
   border: 6px solid #ece3d2;
   box-sizing: border-box;
 }
@@ -1741,20 +1805,25 @@ body {
    It is the row's remaining height after the cluster and the gap — 280px less
    ~216px of cluster at 1440x900 — so the type is sized to be read in about
    eighty pixels and to survive the 190px row floor. */
+/* The label sits under the frames and is sized by its own content, not by a
+   share of the row. The catalogue is the deepest part of it: one compact entry
+   per photograph, each two short lines at most, so a four-photograph group's
+   label is about 120px and two rows still fit one viewport. */
 .label {
   flex: 1 1 auto;
-  min-height: 0;
+  min-width: 0;
   display: flex;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 8px;
   border-top: 1px solid var(--edge);
   padding-top: 6px;
-  overflow: hidden;
 }
 
 /* The plan is a picture of the hang, built from the same piece count the
-   cluster uses, so it cannot disagree with the wall. */
+   cluster uses, so it cannot disagree with the wall. It is a fixed gutter, not
+   a column that grows. */
 .plan {
-  flex: 0 0 40px;
+  flex: 0 0 30px;
   display: flex;
   align-items: flex-start;
   gap: 3px;
@@ -1765,50 +1834,77 @@ body {
   border: 1px solid var(--text-quiet);
 }
 
-.plan .pi-lead { width: 18px; height: 12px; }
+.plan .pi-lead { width: 14px; height: 10px; }
 .plan .pi-stack { display: flex; flex-direction: column; gap: 2px; }
-.plan .pi { width: 12px; height: 8px; }
+.plan .pi { width: 9px; height: 6px; }
 
-.narr { flex: 0 1 40%; min-width: 0; }
+/* The narrative: the group's own name, its venue or year, and one paragraph.
+   Every line is capped, because this sits above the catalogue and would
+   otherwise push the catalogue's last entries out of the row — where there is
+   no vertical axis to scroll to them. */
+.narr { flex: 0 0 27%; min-width: 0; }
 
 .narr-title {
   font-family: var(--font-heading);
-  font-size: 0.78rem;
-  line-height: 1.2;
+  font-size: 0.72rem;
+  line-height: 1.15;
   color: var(--text-strong);
   margin: 0;
-}
-
-.narr-meta {
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 2px 0 0;
-}
-
-.narr-text {
-  font-size: 0.62rem;
-  line-height: 1.3;
-  color: var(--text);
-  margin: 2px 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.cat { flex: 1 1 auto; min-width: 0; }
+.narr-meta {
+  font-family: var(--font-mono);
+  font-size: 0.46rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 1px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-.cat-entry { margin-bottom: 3px; }
+.narr-text {
+  font-size: 0.58rem;
+  line-height: 1.22;
+  color: var(--text);
+  margin: 1px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The catalogue: one entry per photograph, each a single row of two short
+   lines. Two columns, never wrapping: with `wrap` the entries reflowed into a
+   narrower column and each grew to three lines, which doubled the label's
+   depth and pushed the last entries out of the group. */
+.cat {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px 9px;
+}
+
+.cat-entry {
+  flex: 1 1 50%;
+  min-width: 0;
+}
 
 .ce-title {
   font-family: var(--font-heading);
-  font-size: 0.68rem;
-  line-height: 1.2;
+  font-size: 0.66rem;
+  line-height: 1.15;
   color: var(--text-strong);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ce-key {

@@ -35,10 +35,11 @@ await send('Page.navigate', { url: BASE }, sessionId);
 await sleep(3400);
 
 const expr = `
-(() => {
+(async () => {
   const dock = document.querySelector('.dock');
-  const b = dock.getBoundingClientRect();
-  const links = [...dock.querySelectorAll('.dock-link')].map(x => {
+  const box = () => { const b = dock.getBoundingClientRect();
+    return [Math.round(b.left), Math.round(b.right), Math.round(b.width), Math.round(b.height)]; };
+  const links = () => [...dock.querySelectorAll('.dock-link')].map(x => {
     const q = x.getBoundingClientRect();
     return {
       goto: x.getAttribute('data-goto'),
@@ -47,18 +48,41 @@ const expr = `
       label: (x.getAttribute('aria-label') || '').slice(0, 40)
     };
   });
-  return JSON.stringify({
-    viewport: innerWidth + 'x' + innerHeight,
-    dock: [Math.round(b.left), Math.round(b.right), Math.round(b.width), Math.round(b.height)],
-    dockScrollW: dock.scrollWidth, dockClientW: dock.clientWidth,
-    overflowX: getComputedStyle(dock).overflowX,
-    unnamed: links.filter(l => !l.label).length,
-    tooShort: links.filter(l => l.h < 44).map(l => l.goto + ' ' + l.h),
-    offscreen: links.filter(l => l.right < 0 || l.left > innerWidth).map(l => l.goto),
-    links: links.map(l => l.goto + ' ' + l.w + 'x' + l.h)
-  }, null, 1);
+  const live = () => {
+    const el = document.getElementById('dockCurrent');
+    return el ? { text: el.textContent, w: Math.round(el.getBoundingClientRect().width) } : null;
+  };
+  const state = () => ({
+    dock: box(), dockScrollW: dock.scrollWidth, dockClientW: dock.clientWidth,
+    live: live(),
+    current: [...dock.querySelectorAll('.dock-link[aria-current="true"]')].map(x => x.getAttribute('data-goto')),
+    currentOnScreen: [...dock.querySelectorAll('.dock-link[aria-current="true"]')]
+      .every(x => { const q = x.getBoundingClientRect(); return q.left >= 0 && q.right <= innerWidth; })
+  });
+
+  const first = Object.assign({ viewport: innerWidth + 'x' + innerHeight }, state(),
+    { links: links(), unnamed: links().filter(l => !l.label).length,
+      tooShort: links().filter(l => l.h < 44).map(l => l.goto + ' ' + l.h),
+      offscreen: links().filter(l => l.right < 0 || l.left > innerWidth).map(l => l.goto) });
+
+  /* Walk the whole strip and confirm each room names itself on the way. */
+  const hall = document.getElementById('hall');
+  const seen = [];
+  const order = [...document.querySelectorAll('#strip .room')].map(r => r.getAttribute('data-room'));
+  for (const name of order) {
+    const room = document.querySelector('#strip .room[data-room="' + name + '"]');
+    hall.scrollLeft = room.offsetLeft + 10;
+    await new Promise(r => setTimeout(r, 350));
+    const s = state();
+    seen.push({ room: name, live: s.live ? s.live.text : null,
+      current: s.current.join(','), onScreen: s.currentOnScreen });
+  }
+  first.walk = seen;
+  hall.scrollLeft = 0;
+  return JSON.stringify(first, null, 1);
 })()`;
-const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true }, sessionId);
+const r = await send('Runtime.evaluate',
+  { expression: expr, returnByValue: true, awaitPromise: true }, sessionId);
 if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description);
 console.log(r.result.value);
 await send('Target.closeTarget', { targetId });

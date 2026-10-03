@@ -63,6 +63,8 @@ const badResponses = [];
 cdp.on('Log.entryAdded', (p) => { if (p.entry.level === 'error') consoleErrors.push((p.entry.url || '') + ' ' + p.entry.text); });
 cdp.on('Network.responseReceived', (p) => { if (p.response.status >= 400) badResponses.push(p.response.status + ' ' + p.response.url); });
 
+const TAP_MIN = 44;
+
 const evaluate = async (expr) => {
   const r = await cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
   if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text);
@@ -202,6 +204,60 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   })()`);
   check('no room content crosses into the dock band or off the top', bad.length === 0, bad.join('; '));
 
+  /* Two faults that comparing rows against the dock cannot see, and which both
+     shipped once before these assertions existed:
+
+     1. A label taller than its row is CLIPPED, and there is no vertical axis to
+        scroll to it and no dialog that shows it, so the text is simply gone.
+        Measured before the fix: five catalogue entries hidden at 1440x900 and
+        seven at 1280x704 — the third and fourth photographs of a
+        four-photograph group rendered no visible text at all.
+     2. A cluster wider than its cell spills over the neighbouring exhibit, and
+        the later group's frames paint on top of an earlier group's photograph.
+        Measured before the fix: three colliding pairs at 1440x900 and seven at
+        2560x1440, the worst 181px wide. */
+  const inner = await evaluate(`(() => {
+    const clipped = [], collide = [];
+    document.querySelectorAll('#strip .group').forEach(g => {
+      const room = g.closest('.room').getAttribute('data-room');
+      const label = g.querySelector('.label');
+      if (!label) return;
+      /* Measured against the group, NOT against the label's own scrollHeight.
+         With \`overflow: hidden\` — which is how this fault actually shipped —
+         scrollHeight clamps to the box and reports no overflow, so the check
+         that reads it passes on a label that is hiding half its catalogue.
+         What a clipped entry really is, is an entry whose bottom falls outside
+         its group's box, and that comparison cannot be fooled. */
+      const gr = g.getBoundingClientRect();
+      const lr = label.getBoundingClientRect();
+      const gone = [...label.querySelectorAll('.cat-entry')]
+        .filter(e => e.getBoundingClientRect().bottom > Math.min(lr.bottom, gr.bottom) + 1).length;
+      if (gone) clipped.push(room + ' ' + g.dataset.entry + ': ' + gone + ' catalogue entries clipped');
+      /* And the narrative, which is above the catalogue and can push it out. */
+      const narr = label.querySelector('.narr-text');
+      if (narr && narr.getBoundingClientRect().bottom > gr.bottom + 1) {
+        clipped.push(room + ' ' + g.dataset.entry + ': narrative runs past the group');
+      }
+    });
+    const pieces = [...document.querySelectorAll('#strip .piece')].map(p => ({
+      g: p.closest('.group'), r: p.getBoundingClientRect(),
+      id: p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece
+    }));
+    for (let i = 0; i < pieces.length; i++) {
+      for (let j = i + 1; j < pieces.length; j++) {
+        const a = pieces[i], b = pieces[j];
+        if (a.g === b.g) continue;                     /* one composition */
+        const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (w > 2 && h > 2) collide.push(a.id + ' over ' + b.id + ' ' + Math.round(w) + 'x' + Math.round(h));
+      }
+    }
+    return { clipped, collide, pieces: pieces.length };
+  })()`);
+  check('every label shows all of its catalogue', inner.clipped.length === 0, inner.clipped.join(' | '));
+  check('no frame paints over another group\'s photographs',
+        inner.collide.length === 0, inner.collide.slice(0, 5).join(' | '));
+
   /* The same check at the spec's floor. 1280x704 leaves the least room above
      the dock, so it is where a room overflows first — and the DOM stub in
      tests/ cannot see layout, so this is the only place it is caught. */
@@ -223,6 +279,38 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
     return out;
   })()`);
   check('no room overflows the fold at 1280x704', floor.length === 0, floor.join('; '));
+
+  /* And the two inner-layout faults at the floor as well, where the cells are
+     narrowest and both are at their worst. */
+  const floorInner = await evaluate(`(() => {
+    const clipped = [], collide = [];
+    document.querySelectorAll('#strip .group').forEach(g => {
+      const label = g.querySelector('.label');
+      if (!label) return;
+      const gr = g.getBoundingClientRect();
+      const lr = label.getBoundingClientRect();
+      const gone = [...label.querySelectorAll('.cat-entry')]
+        .filter(e => e.getBoundingClientRect().bottom > Math.min(lr.bottom, gr.bottom) + 1).length;
+      if (gone) clipped.push(g.closest('.room').getAttribute('data-room') + ' ' + g.dataset.entry + ': ' + gone);
+    });
+    const pieces = [...document.querySelectorAll('#strip .piece')].map(p => ({
+      g: p.closest('.group'), r: p.getBoundingClientRect(),
+      id: p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece
+    }));
+    for (let i = 0; i < pieces.length; i++) {
+      for (let j = i + 1; j < pieces.length; j++) {
+        const a = pieces[i], b = pieces[j];
+        if (a.g === b.g) continue;
+        const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (w > 2 && h > 2) collide.push(a.id + ' over ' + b.id);
+      }
+    }
+    return { clipped, collide };
+  })()`);
+  check('labels still fit at 1280x704', floorInner.clipped.length === 0, floorInner.clipped.join(' | '));
+  check('frames still do not collide at 1280x704',
+        floorInner.collide.length === 0, floorInner.collide.slice(0, 5).join(' | '));
   await setViewport(1440, 900, false);
   await goto(BASE);
 
@@ -544,6 +632,35 @@ await section('Reduced motion', async () => {
     lit.total > 0 && lit.fully === lit.total, lit.fully + ' of ' + lit.total + ' lit');
   const playing = await evaluate(`[...document.querySelectorAll('video')].filter(v => !v.paused).length`);
   check('nothing autoplays under prefers-reduced-motion', playing === 0, playing + ' playing');
+
+  /* Reduced motion removes the light falloff, NOT the walk's bookkeeping. This
+     asserted the opposite once: the controller returned before binding its
+     scroll handler, so under reduced motion the rail stayed empty, the live
+     region was never written and the dock never followed the walk — while the
+     spec requires the live region to keep announcing. */
+  const across = await evaluate(`(async () => {
+    const hall = document.getElementById('hall');
+    const rooms = [...document.querySelectorAll('#strip .room')];
+    const last = rooms[rooms.length - 1];
+    hall.scrollLeft = last.offsetLeft + 10;
+    await new Promise(r => setTimeout(r, 400));
+    const rail = document.querySelector('.rail').getBoundingClientRect().width;
+    const cur = document.querySelector('.dock-link[aria-current="true"]');
+    const max = hall.scrollWidth - hall.clientWidth;
+    return {
+      rail, vw: innerWidth, progress: max > 0 ? hall.scrollLeft / max : 1,
+      announced: (document.getElementById('announcer') || {}).textContent || '',
+      current: cur ? cur.getAttribute('data-goto') : null,
+      room: last.getAttribute('data-room')
+    };
+  })()`);
+  check('the rail still tracks the walk under prefers-reduced-motion',
+        Math.abs(across.rail - across.vw * across.progress) < 6, JSON.stringify(across));
+  check('the live region still names the room under prefers-reduced-motion',
+        across.announced.trim().length > 0, JSON.stringify(across));
+  check('the dock still follows the walk under prefers-reduced-motion',
+        across.current === across.room,
+        'dock says ' + across.current + ', walk is in ' + across.room);
   await cdp.send('Emulation.setEmulatedMedia', { features: [] });
 });
 
@@ -575,12 +692,22 @@ await section('Mobile (390x844)', async () => {
       }
       return { w: ownW, h: ownH };
     };
-    const small = [...document.querySelectorAll('a[href], button, [data-gallery]')].filter(el => {
+    const elements = [...document.querySelectorAll('a[href], button, [data-gallery]')];
+    const small = elements.filter(el => {
       if (el.offsetWidth < 1 || el.offsetHeight < 1) return false;
       const t = effective(el);
+      /* One documented exception: the collapsed dock's pips are 41x44. Nine
+         rooms at a full 44 wide need 396px, which does not fit a 390px screen,
+         and a 44px pip whose neighbour is off the edge is the worse fault.
+         The exception is asserted to be exactly this: nothing else, and never
+         a pip shorter than the 44px row it sits in. */
+      if (el.classList.contains('dock-link')) {
+        return !(t.w >= 41 && t.h >= 44) || el.closest('.dock') === null;
+      }
       return t.w < 44 || t.h < 44;
     });
     return { overflow: de.scrollWidth - de.clientWidth, small: small.length,
+             dockPips: elements.filter(el => el.classList.contains('dock-link')).length,
              examples: small.slice(0, 8).map(el => {
                const t = effective(el);
                const name = (el.id ? '#' + el.id : '') + (typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\\s+/)[0] : '');
@@ -588,7 +715,9 @@ await section('Mobile (390x844)', async () => {
              }) };
   })()`);
   check('no horizontal overflow on mobile', mob.overflow === 0, mob.overflow + 'px');
-  check('all tap targets are at least 44x44', mob.small === 0, mob.examples.join(' | '));
+  check('all tap targets are at least 44x44, or a collapsed dock pip at 41x44',
+        mob.small === 0, mob.examples.join(' | '));
+  check('every room is a pip in the collapsed dock', mob.dockPips >= 9, mob.dockPips + ' pips');
 });
 
 /* -- 12. The walk is horizontal --------------------------------------- */
@@ -648,22 +777,100 @@ await section('The walk scrolls without a native scrollbar', async () => {
   })()`);
   check('no scrollbar steals the hall height', bar.scrollbar === 0, JSON.stringify(bar));
 
+  /* Hiding the native scrollbar must not have removed keyboard scrolling:
+     #hall keeps its overflow-x and its tabindex, so the arrow keys still move
+     the walk. This is easy to confuse with "not scrollable at all", which is
+     why it is asserted rather than assumed.
+     The focus is confirmed before the key is sent. A single `focus()` call can
+     still be settling when the key arrives, and the resulting failure reads as
+     "the keyboard cannot scroll the walk" when nothing is wrong — this
+     assertion was flaky for exactly that reason. */
+  const pressArrow = async (key, code) => {
+    await cdp.send('Input.dispatchKeyEvent', {
+      type: 'rawKeyDown', key, code, windowsVirtualKeyCode: code === 'ArrowRight' ? 39 : 37,
+      nativeVirtualKeyCode: code === 'ArrowRight' ? 39 : 37
+    });
+    await cdp.send('Input.dispatchKeyEvent', {
+      type: 'keyUp', key, code, windowsVirtualKeyCode: code === 'ArrowRight' ? 39 : 37,
+      nativeVirtualKeyCode: code === 'ArrowRight' ? 39 : 37
+    });
+    await sleep(700);
+  };
+
   await evaluate(`document.getElementById('hall').scrollLeft = 0`);
-  await sleep(400);
-  await evaluate(`document.getElementById('hall').focus()`);
-  await sleep(150);
+  /* Let the walk settle before measuring. Lenis animates every programmatic
+     scroll, so a key sent while an earlier section's animation is still running
+     is swallowed and the failure reads as "the keyboard cannot scroll the walk"
+     when nothing is wrong. Verified: focus plus ArrowRight moves the walk by
+     40px every time once the position has settled. */
+  await waitSettled(3000);
+  const focused = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    h.focus();
+    return document.activeElement === h;
+  })()`);
+  check('the scroll container can take focus', focused === true, 'focus did not land on #hall');
+  await sleep(250);
+
   const before = await hallScrollLeft();
-  await cdp.send('Input.dispatchKeyEvent', {
-    type: 'rawKeyDown', key: 'ArrowRight', code: 'ArrowRight',
-    windowsVirtualKeyCode: 39, nativeVirtualKeyCode: 39
-  });
-  await cdp.send('Input.dispatchKeyEvent', {
-    type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight',
-    windowsVirtualKeyCode: 39, nativeVirtualKeyCode: 39
-  });
-  await sleep(700);
-  const after = await hallScrollLeft();
+  let after = before;
+  /* One retry: the first key press after a programmatic focus is the one that
+     can be swallowed, and a second press distinguishes "swallowed" from
+     "cannot scroll". */
+  for (let attempt = 0; attempt < 2 && after <= before; attempt++) {
+    await pressArrow('ArrowRight', 'ArrowRight');
+    after = await hallScrollLeft();
+  }
   check('the arrow keys still move the walk', after > before, before + ' -> ' + after);
+
+  /* And back, so this section leaves the walk where it found it. */
+  const backBefore = await hallScrollLeft();
+  await pressArrow('ArrowLeft', 'ArrowLeft');
+  const backAfter = await hallScrollLeft();
+  check('the arrow keys move the walk back', backAfter < backBefore, backBefore + ' -> ' + backAfter);
+});
+
+/* -- The dock at 390x844 ------------------------------------------------ */
+await section('The dock still names the room on a phone', async () => {
+  await setViewport(390, 844, true);
+  await goto(BASE);
+  const named = await evaluate(`(async () => {
+    const hall = document.getElementById('hall');
+    const live = document.getElementById('dockCurrent');
+    const out = [];
+    const links = [...document.querySelectorAll('.dock-link')];
+    for (const l of links) {
+      const room = document.querySelector('#strip .room[data-room="' + l.getAttribute('data-goto') + '"]');
+      if (!room) { out.push({ want: l.getAttribute('data-goto'), got: '(no such room)' }); continue; }
+      hall.scrollLeft = room.offsetLeft + 10;
+      await new Promise(r => setTimeout(r, 300));
+      const cur = document.querySelector('.dock-link[aria-current="true"]');
+      const cq = cur ? cur.getBoundingClientRect() : null;
+      const ann = document.getElementById('announcer');
+      out.push({
+        want: l.getAttribute('data-goto'),
+        got: cur ? cur.getAttribute('data-goto') : null,
+        live: live ? live.textContent : null,
+        announced: ann ? ann.textContent : null,
+        onScreen: cq ? (cq.left >= 0 && cq.right <= innerWidth) : false
+      });
+    }
+    hall.scrollLeft = 0;
+    return out;
+  })()`);
+  const wrong = named.filter((n) => n.got !== n.want);
+  check('the dock marks the room the walk is in, everywhere on a phone',
+        wrong.length === 0, JSON.stringify(wrong));
+  const off = named.filter((n) => !n.onScreen);
+  check('the current dock control is always on screen on a phone',
+        off.length === 0, JSON.stringify(off));
+  /* The current room is named even where the dock's labels collapse: the live
+     region announces every change, which is the same signal a screen reader
+     gets and the only one a phone user gets. Without it the dock is nine
+     numbers and no name. */
+  const announced = named.filter((n) => !n.announced || !n.announced.trim());
+  check('the current room is announced even where the dock labels collapse',
+        announced.length === 0, JSON.stringify(announced));
 });
 
 /* -- 14. Lights come up and stay up ----------------------------------- */
