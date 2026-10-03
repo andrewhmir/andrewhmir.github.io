@@ -43,8 +43,11 @@
        ════════════════════════════════════════════════════════════ -->
   <div class="content-layer">
 
-    <!-- The directory: every room, one click away -->
-    <nav class="directory" id="directory" aria-label="Rooms"></nav>
+    <!-- The only chrome: the walk's directory, gathered at its foot. The rail
+         along the bottom edge carries the walk's position, replacing the
+         native scrollbar — which ate 15px of every room's height. -->
+    <nav class="dock" id="directory" aria-label="Rooms"></nav>
+    <div class="rail" id="rail" aria-hidden="true"></div>
 
     <!-- The walk. Six rooms sit side by side in one strip; Lenis smooths the
          journey and lenis/snap settles it. Rooms are rendered by JS from

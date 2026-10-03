@@ -925,11 +925,19 @@
     strip.innerHTML = html;
   }
 
-  function renderDirectory() {
-    var dir = document.getElementById('directory');
-    if (!dir) return;
+  /* ── The dock: the walk's directory, at its foot ────────────────────
+     The dock shows a short name; the room heading keeps the full title, and
+     the full title plus its count is the control's accessible name, so the
+     shortened label is never what a screen reader reads. */
+  var ROOM_SHORT = {
+    About: 'About', Robotics: 'Robotics', Applications: 'Applications',
+    Leadership: 'Leadership', 'Honours — Recent': 'Honours',
+    'Honours — Earlier': 'Earlier', Contact: 'Contact'
+  };
+
+  function dockItems() {
     var rooms = Site.deriveRooms(PORTFOLIO.projects);
-    var items = [{ key: 'About', title: 'About', note: 'bio & contact' }]
+    return [{ key: 'About', title: 'About', note: 'bio & contact' }]
       .concat(rooms.map(function (r) {
         return { key: r.key, title: r.title, note: r.projects.length + ' works' };
       }))
@@ -938,12 +946,42 @@
         { key: 'Honours', title: 'Honours', note: PORTFOLIO.honors.length + ' honours' },
         { key: 'Contact', title: 'Contact', note: '—' }
       ]);
-    dir.innerHTML = '<span class="dh">Rooms</span><ol>'
+  }
+
+  /* Pure: given the dock's room keys and the room the walk is in, which entry
+     is current. Separated from the DOM write so a test can pin the marking
+     without a layout engine. */
+  function currentRoomMarkup(keys, current) {
+    return (keys || []).map(function (key) {
+      return { key: key, current: !!current && key === current };
+    });
+  }
+  Site.currentRoomMarkup = currentRoomMarkup;
+
+  function markCurrentRoom(key) {
+    Site.currentRoom = key || null;
+    var keys = [];
+    var links = document.querySelectorAll('#directory .dock-link');
+    for (var i = 0; i < links.length; i++) keys.push(links[i].getAttribute('data-goto'));
+    var marked = currentRoomMarkup(keys, Site.currentRoom);
+    for (var j = 0; j < links.length; j++) {
+      links[j].setAttribute('aria-current', marked[j].current ? 'true' : 'false');
+    }
+  }
+  Site.markCurrentRoom = markCurrentRoom;
+
+  function renderDock() {
+    var dir = document.getElementById('directory');
+    if (!dir) return;
+    var items = dockItems();
+    dir.innerHTML = '<ol>'
       + items.map(function (it, i) {
-          return '<li><button type="button" class="room-link" data-goto="' + esc(it.key) + '">'
-            + '<span class="rn">' + (it.key === 'Contact' ? '&mdash;' : 'Room ' + (i + 1)) + '</span>'
-            + '<span class="rt">' + esc(it.title) + '</span>'
-            + '<span class="rd">' + esc(it.note) + '</span></button></li>';
+          var acc = (it.key === 'Contact') ? '&mdash;' : String(i + 1);
+          var name = 'Room ' + (i + 1) + ' — ' + it.title + ', ' + it.note;
+          return '<li><button type="button" class="dock-link" data-goto="' + esc(it.key) + '"'
+            + ' aria-label="' + esc(name) + '">'
+            + '<span class="dn">' + acc + '</span>'
+            + '<span class="dt">' + esc(ROOM_SHORT[it.key] || it.title) + '</span></button></li>';
         }).join('')
       + '</ol>';
   }
@@ -1057,12 +1095,16 @@
        data; the directory is the same list. */
     Site.walk = initWalk();
 
-    renderDirectory();
+    renderDock();
     renderRooms();
 
     /* After the walk and the rooms, so the first update() sees real geometry:
        Lenis has measured the strip and every work has an offsetLeft. */
     initLights();
+
+    /* The walk has not scrolled yet, so the first room is the current one. */
+    var firstRoom = document.querySelector('#strip .room');
+    if (firstRoom) markCurrentRoom(firstRoom.getAttribute('data-room'));
 
     renderHero();
     renderNews();

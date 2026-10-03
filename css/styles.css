@@ -1492,70 +1492,97 @@ body {
   scroll-behavior: auto;   /* Lenis owns the scrolling; CSS smoothing would fight it */
 }
 
-/* ── The directory: the room list, printed at the top of the walk ──
-   Task 2 of the edge-dock plan moves this to the foot of the walk; the
-   literal offset below stands in for the nav bar it used to sit under. */
-.directory {
+/* ── The dock: the walk's directory, gathered at its foot ──
+   The 94px band this replaces sat at the top of the walk and covered the
+   room title; 84 of its pixels were empty gradient. At the foot it spends
+   only wall no room was using, and the top edge belongs to the room. */
+.dock {
   position: fixed;
-  top: 68px;
-  left: 0;
-  right: 0;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
   z-index: 900;
-  padding: 10px var(--space-xl) 14px;
-  background: linear-gradient(to bottom, var(--night) 0%, rgba(13, 12, 11, 0) 100%);
-  pointer-events: none;    /* the list itself is interactive; the band is not */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100vw - 40px);
+  padding: 6px 10px;
+  background: rgba(13, 12, 11, .94);
+  border: 1px solid var(--edge);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .6);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.directory .dh {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-quiet);
-  margin-bottom: 6px;
+.dock::-webkit-scrollbar {
+  display: none;
 }
 
-.directory ol {
+.dock ol {
   list-style: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: 2px 6px;
+  align-items: center;
+  gap: 4px;
 }
 
-.directory .room-link {
-  pointer-events: auto;
+.dock .dock-link {
   display: inline-flex;
-  align-items: baseline;
-  gap: 7px;
-  min-height: 44px;        /* tap target, at every width */
-  padding: 6px 10px;
-  border: 1px solid transparent;
+  align-items: center;
+  gap: 8px;
+  height: 44px;             /* tap target, at every width */
+  min-width: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
   background: none;
   cursor: pointer;
-  font-family: var(--font-heading);
-  font-size: 0.94rem;
-  color: var(--text);
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+  transition: color var(--transition-fast);
 }
 
-.directory .room-link .rn {
+.dock .dn {
   font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: var(--text-quiet);
+}
+
+.dock .dt {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  color: var(--text-quiet);
+}
+
+.dock .dock-link:hover .dt,
+.dock .dock-link:focus-visible .dt {
+  color: var(--text);
+}
+
+.dock .dock-link[aria-current="true"] {
+  border-bottom-color: var(--accent);
+}
+
+.dock .dock-link[aria-current="true"] .dt {
+  color: var(--text-strong);
+}
+
+.dock .dock-link[aria-current="true"] .dn {
   color: var(--accent);
 }
 
-.directory .room-link .rd {
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  color: var(--text-quiet);
-}
-
-.directory .room-link:hover,
-.directory .room-link:focus-visible {
-  color: var(--text-strong);
-  border-color: var(--edge);
+/* ── The rail: the walk's position, along the bottom edge ──
+   It replaces the native horizontal scrollbar, which consumed 15px of every
+   room's height. The walk is still natively scrollable: #hall keeps its
+   overflow-x and tabindex, so the keyboard and the dock still move it. */
+.rail {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 901;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, transparent, var(--accent));
+  pointer-events: none;
 }
 
 /* ── Room furniture: the sign, the title, the hang ── */

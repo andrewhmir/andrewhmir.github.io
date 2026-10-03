@@ -4,6 +4,7 @@
    tasks and tools/ux-check.mjs consume: the elements, their counts, and that no
    work is hung without an image — the check that catches an empty frame. */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { check, run } from './harness.mjs';
 
 /* ── A DOM just real enough to load the script ───────────────────────── */
@@ -34,7 +35,7 @@ const els = new Map();
 const el = (id) => { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); };
 /* Current markup: the renderer's output targets, plus the walk's two anchors.
    #hall must exist or initWalk returns null by design. */
-for (const id of ['strip', 'directory', 'hall']) el(id);
+for (const id of ['strip', 'directory', 'rail', 'hall']) el(id);
 
 globalThis.document = {
   readyState: 'complete',
@@ -77,6 +78,8 @@ await import('../js/data.js');
 await import('../js/main.js');
 
 const PORTFOLIO = globalThis.PORTFOLIO;
+const Site = globalThis.Site;
+const currentRoomMarkup = Site.currentRoomMarkup;
 const strip = el('strip').innerHTML;
 const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
@@ -205,20 +208,54 @@ check('every honours gallery row opens its own honour', () => {
   assert.equal(new Set(rows).size, rows.length, 'two rows share one index');
 });
 
-/* ── The directory ───────────────────────────────────────────────────── */
-check('directory lists every room and nothing else', () => {
-  const goto = [...directory.matchAll(/data-goto="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(goto, ['About', 'Robotics', 'Applications', 'Leadership', 'Honours', 'Contact']);
+/* ── The dock ────────────────────────────────────────────────────────────
+   The dock is the walk's only navigation: the navigation bar held one
+   wordmark and two 0x0 lists, and the directory band that replaced it sat
+   on top of the room title. It now lives at the foot of the walk. */
+check('the dock lists every room, once each, in walk order', () => {
+  const goto = [...directory.matchAll(/class="dock-link" data-goto="([^"]+)"/g)].map((m) => m[1]);
+  const rooms = [...strip.matchAll(/data-room="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(goto, rooms, 'dock and walk disagree');
+  assert.equal(new Set(goto).size, goto.length, 'a room appears twice in the dock');
 });
 
-check('every directory entry is a real button', () => {
-  assert.ok(/<button type="button" class="room-link"/.test(directory), 'not a button');
+check('every dock entry is a real, named button', () => {
+  const marks = [...directory.matchAll(
+    /<button type="button" class="dock-link" data-goto="([^"]+)" aria-label="([^"]*)"/g)];
+  assert.equal(marks.length, [...directory.matchAll(/data-goto="/g)].length,
+    'a dock entry is not a labelled button');
+  marks.forEach(([, key, label]) => {
+    assert.ok(label.trim().length > 0, key + ' has an empty accessible name');
+  });
 });
 
-check('directory targets all exist as rooms', () => {
-  const goto = [...directory.matchAll(/data-goto="([^"]+)"/g)].map((m) => m[1]);
-  const missing = goto.filter((k) => !strip.includes('data-room="' + k + '"'));
-  assert.deepEqual(missing, [], 'no room for: ' + missing.join(', '));
+check('dock entries carry an accession and a short name', () => {
+  assert.ok(/class="dock-link"/.test(directory), 'the directory is not a dock');
+  const shorts = [...directory.matchAll(/<span class="dt">([^<]*)<\/span>/g)].map((m) => m[1]);
+  const accs = [...directory.matchAll(/<span class="dn">([^<]*)<\/span>/g)].map((m) => m[1]);
+  assert.equal(shorts.length, accs.length, 'a dock entry is missing a name or an accession');
+  assert.ok(shorts.length > 0 && shorts.every((s) => s.trim().length > 0), 'an empty short name');
+});
+
+check('the dock marks exactly one current room', () => {
+  const marked = currentRoomMarkup(
+    [...directory.matchAll(/data-goto="([^"]+)"/g)].map((m) => m[1]), 'About');
+  assert.deepEqual(marked.filter((m) => m.current), [{ key: 'About', current: true }],
+    'the dock does not mark the room the walk is in');
+});
+
+check('the dock marks none when the walk names no room', () => {
+  const marked = currentRoomMarkup(['About', 'Contact'], null);
+  assert.equal(marked.filter((m) => m.current).length, 0, 'a stale room stays marked');
+});
+
+check('the rail is in the shell and hidden from assistive tech', () => {
+  /* The DOM stub fabricates elements named in its id list, so it cannot tell
+     whether the shell actually has a rail. Read the markup. */
+  const shell = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(shell, /<div class="rail"[^>]*aria-hidden="true"/,
+    'the shell has no aria-hidden rail');
+  assert.ok(!/class="directory"/.test(shell), 'the top directory band is still in the shell');
 });
 
 /* ── The global the renderer needs ───────────────────────────────────── */

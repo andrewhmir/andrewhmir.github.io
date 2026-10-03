@@ -501,6 +501,60 @@ await section('Snap settles on a work', async () => {
   check('the walk comes to rest', Math.abs(a - b) < 2, `still moving: ${a} -> ${b}`);
 });
 
+/* -- The dock and the rail -------------------------------------------- */
+await section('The dock sits at the foot of the walk', async () => {
+  const geo = await evaluate(`(() => {
+    const d = document.querySelector('.dock');
+    const rail = document.querySelector('.rail');
+    if (!d || !rail) return null;
+    const dr = d.getBoundingClientRect(), rr = rail.getBoundingClientRect();
+    const current = d.querySelectorAll('.dock-link[aria-current="true"]').length;
+    const links = d.querySelectorAll('.dock-link').length;
+    const rooms = document.querySelectorAll('#strip [data-room]').length;
+    return { top: dr.top, bottom: dr.bottom, height: dr.height, left: dr.left, right: dr.right,
+             railTop: rr.top, railBottom: rr.bottom, railH: rr.height,
+             links, current, rooms };
+  })()`);
+  check('the dock and the rail are both in the shell', geo !== null, 'missing from the page');
+  if (!geo) return;
+  check('the dock sits at the foot of the walk', geo.top > 780 && geo.bottom <= 900,
+        JSON.stringify(geo));
+  check('the rail is pinned to the bottom edge, 2px tall',
+        geo.railBottom === 900 && geo.railH === 2, JSON.stringify(geo));
+  check('the dock carries every room, exactly once',
+        geo.links === geo.rooms, geo.links + ' dock entries for ' + geo.rooms + ' rooms');
+  check('exactly one dock entry is current', geo.current === 1, geo.current + ' current');
+  check('the dock fits the viewport', geo.left >= 0 && geo.right <= 1440,
+        geo.left + '..' + geo.right);
+});
+
+/* -- The walk is still reachable from the keyboard with no scrollbar --- */
+await section('The walk scrolls without a native scrollbar', async () => {
+  const bar = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    return { clientH: h.clientHeight, offsetH: h.offsetHeight,
+             scrollbar: h.offsetHeight - h.clientHeight };
+  })()`);
+  check('no scrollbar steals the hall height', bar.scrollbar === 0, JSON.stringify(bar));
+
+  await evaluate(`document.getElementById('hall').scrollLeft = 0`);
+  await sleep(400);
+  await evaluate(`document.getElementById('hall').focus()`);
+  await sleep(150);
+  const before = await hallScrollLeft();
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'rawKeyDown', key: 'ArrowRight', code: 'ArrowRight',
+    windowsVirtualKeyCode: 39, nativeVirtualKeyCode: 39
+  });
+  await cdp.send('Input.dispatchKeyEvent', {
+    type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight',
+    windowsVirtualKeyCode: 39, nativeVirtualKeyCode: 39
+  });
+  await sleep(700);
+  const after = await hallScrollLeft();
+  check('the arrow keys still move the walk', after > before, before + ' -> ' + after);
+});
+
 /* -- 14. Lights come up and stay up ----------------------------------- */
 await section('Lights come up and stay up', async () => {
   /* A work carries its own --lit, written on the work element. The first
