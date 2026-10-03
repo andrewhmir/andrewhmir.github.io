@@ -112,4 +112,31 @@ check('the walk is reachable from the keyboard', () => {
     'the scroll container is not focusable, so the keyboard cannot reach the walk');
 });
 
+check('tabbing to a work brings it into the walk', () => {
+  /* Every room takes programmatic focus. When a work inside a room is focused,
+     the browser scrolls its scrollable ancestor — #hall — so the focused element
+     enters view; that is what makes the walk follow the keyboard. In this stub
+     there is no layout engine, so what is asserted is the precondition: each room
+     is focusable and the works live inside one of them, under #hall. */
+  /* Five literal room tags are emitted plus the derived work rooms, whose key is
+     interpolated at run time — so count the tags and the derivation. */
+  const renderer = readFileSync('js/main.js', 'utf8');
+  const rooms = [...renderer.matchAll(/<section class="room" data-room=[^>]*>/g)].map((m) => m[0]);
+  assert.ok(rooms.length >= 5, 'fewer than five literal rooms are emitted: ' + rooms.length);
+  assert.match(renderer, /<section class="room" data-room="' \+ esc\(room\.key\)/,
+    'the derived work rooms are not emitted with a focusable section');
+  const notFocusable = rooms.filter((r) => !/tabindex="-1"/.test(r));
+  assert.deepEqual(notFocusable, [],
+    'rooms that cannot take focus, so focusing a work cannot scroll the room into view');
+
+  /* And the structural precondition: work -> room -> strip -> hall. */
+  const work = scene.workEls[0];
+  let sawRoom = false;
+  for (let n = work; n; n = n.parentNode) {
+    if (n.getAttribute && n.getAttribute('data-room')) sawRoom = true;
+    if (n === scene.hall) break;
+  }
+  assert.ok(sawRoom, 'the work is not inside a room that is inside the hall');
+});
+
 run();

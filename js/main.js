@@ -984,7 +984,7 @@
     var html = '';
 
     /* Room 1 — About */
-    html += '<section class="room" data-room="About" data-snap>'
+    html += '<section class="room" data-room="About" data-snap tabindex="-1">'
       + '<div class="sign"><span class="no">ROOM 1</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">About</span>'
       + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
@@ -1004,7 +1004,7 @@
 
     /* Rooms 2..N — one per derived category */
     rooms.forEach(function (room, ri) {
-      html += '<section class="room" data-room="' + esc(room.key) + '">'
+      html += '<section class="room" data-room="' + esc(room.key) + '" tabindex="-1">'
         + '<div class="sign"><span class="no">ROOM ' + (ri + 2) + '</span><span class="rule"></span></div>'
         + '<h2 class="room-title"><span class="t">' + esc(room.title) + '</span>'
         + '<span class="sub">' + room.projects.length + ' works'
@@ -1015,7 +1015,7 @@
     });
 
     /* Leadership */
-    html += '<section class="room" data-room="Leadership">'
+    html += '<section class="room" data-room="Leadership" tabindex="-1">'
       + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 2) + '</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Leadership</span>'
       + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length + ' POSTS</span></span></h2>'
@@ -1055,7 +1055,7 @@
         + '<p class="by">' + esc(h.year) + '</p></div></article>';
     });
 
-    html += '<section class="room" data-room="Honours">'
+    html += '<section class="room" data-room="Honours" tabindex="-1">'
       + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 3) + '</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Honours</span>'
       + '<span class="sub">Competitions, conferences and citations'
@@ -1065,7 +1065,7 @@
       + '</section>';
 
     /* Contact */
-    html += '<section class="room" data-room="Contact" data-snap>'
+    html += '<section class="room" data-room="Contact" data-snap tabindex="-1">'
       + '<div class="sign"><span class="no">&mdash;</span><span class="rule"></span></div>'
       + '<h2 class="room-title"><span class="t">Contact</span>'
       + '<span class="sub">Thanks for walking the collection</span></h2>'
