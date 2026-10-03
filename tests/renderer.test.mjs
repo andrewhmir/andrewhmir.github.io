@@ -158,6 +158,18 @@ check('honours split into plates and works with none dropped', () => {
   assert.equal(works, withPhoto, works + ' works, expected ' + withPhoto);
 });
 
+check('a work whose photo is missing falls back to the placeholder', () => {
+  /* Three honours have a first photo that is still pending on disk. On a
+     near-black wall an empty frame is a conspicuous hole, so a work whose image
+     404s swaps in the labelled placeholder rather than showing nothing. */
+  const honours = strip.split('data-room="Honours"')[1] || '';
+  const works = honours.split('<article class="work"').slice(1);
+  assert.ok(works.length > 0, 'no honours works rendered');
+  works.forEach((w) => {
+    assert.match(w, /onerror="[^"]*files\/PlaceHolder\.png/, 'a work has no image fallback');
+  });
+});
+
 check('no photo-less honour is a gallery trigger', () => {
   /* A row with no photos must have no handle to open anything: it cannot open a
      neighbour's photographs if there is nothing to click. */

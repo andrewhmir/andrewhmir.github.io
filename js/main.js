@@ -1012,7 +1012,13 @@
             + '<div class="pool"></div>'
             + '<button type="button" class="project-hit canvas" data-gallery="honors"'
             + ' data-entry="' + i + '" aria-label="View photos: ' + esc(h.description) + '">'
-            + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy">'
+            /* Some honours still await their photos (see tools/ux-check.mjs
+               PENDING_PHOTOS). A work whose first photo 404s falls back to the
+               labelled placeholder for the same reason the gallery rows do:
+               on a near-black wall a broken frame is a conspicuous hole. */
+            + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy"'
+            + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';'
+            + 'this.closest(\'.work\').classList.add(\'is-placeholder\');">'
             + '</button>'
             + '<div class="lbl"><span class="no">DIST. ' + String(i + 1).padStart(2, '0')
             + '</span><p class="lt">' + esc(h.description) + '</p>'
