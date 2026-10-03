@@ -226,25 +226,39 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   await setViewport(1440, 900, false);
   await goto(BASE);
 
-  /* The rail is the position cue that replaced the native scrollbar. */
+  /* The rail is the position cue that replaced the native scrollbar. Its
+     width is a fraction of the EDGE, driven by the walk's progress — not a
+     fraction of the viewport compared against itself, which is what this
+     assertion first read and which passed for the wrong reason while the
+     strip happened to be a whole number of screens wide. */
   const railAt = async (left) => {
     await evaluate(`document.getElementById('hall').scrollLeft = ${left}`);
     await sleep(280);
-    return evaluate(`document.querySelector('.rail').getBoundingClientRect().width`);
+    return evaluate(`(() => {
+      const h = document.getElementById('hall');
+      const rail = document.querySelector('.rail').getBoundingClientRect().width;
+      const max = h.scrollWidth - h.clientWidth;
+      return { rail, progress: max > 0 ? h.scrollLeft / max : 0, vw: innerWidth };
+    })()`);
   };
   const r0 = await railAt(0);
   const rMid = await railAt(3000);
   await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
   await sleep(400);
-  const full = await evaluate(`(() => {
+  const full = await railAt(0);
+  await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
+  await sleep(400);
+  const end = await evaluate(`(() => {
     const h = document.getElementById('hall');
     const rail = document.querySelector('.rail').getBoundingClientRect().width;
-    return { rail, scrollLeft: h.scrollLeft, max: h.scrollWidth - h.clientWidth, vw: innerWidth };
+    return { rail, progress: h.scrollLeft / (h.scrollWidth - h.clientWidth), vw: innerWidth };
   })()`);
-  check('the rail starts empty', r0 === 0, 'width was ' + r0);
-  check('the rail grows as the walk moves', rMid > r0, r0 + ' -> ' + rMid);
+  check('the rail starts empty', r0.rail === 0, JSON.stringify(r0));
+  check('the rail grows as the walk moves', rMid.rail > r0.rail, JSON.stringify([r0, rMid]));
+  check('the rail tracks the walk proportionally',
+        Math.abs(rMid.rail / rMid.vw - rMid.progress) < 0.02, JSON.stringify(rMid));
   check('the rail fills the edge at the end of the walk',
-        Math.abs(full.rail - full.vw) <= 2, JSON.stringify(full));
+        Math.abs(end.rail - end.vw) <= 2, JSON.stringify(end));
   await evaluate(`document.getElementById('hall').scrollLeft = 0`);
   await sleep(400);
 });

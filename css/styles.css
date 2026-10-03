@@ -60,15 +60,11 @@
      scrolls further, which the walk is built for; a smaller target is not
      recoverable. */
   --room-w:       max(92vw, 860px);
-  --work-lg:      62%;
-  --work-md:      45%;
-  --work-sm:      31%;
-  --plate-w:      30%;
 
-  /* The height budget for a hung work's image. A room is one viewport tall
+  /* The height budget for a hung photograph. A room is one viewport tall
      inside a hall that is one viewport tall with no vertical axis, so the wall
      must close above the fold; this shrinks with the viewport, which a fixed px
-     cap would not. See the note on .hang .canvas img. */
+     cap would not. Read by the About room's portrait. */
   --img-max-h:    22vh;
 
   --lit:          0;
@@ -1478,32 +1474,6 @@ button.record-item {
 /* Everything a room holds paints above the wall nap. */
 .room > * { position: relative; }
 
-/* ── A work: no frame. Light is the frame. ── */
-.work {
-  position: relative;
-}
-
-.work .pool {
-  position: absolute; left: 50%; top: -44px; transform: translateX(-50%);
-  width: 136%; height: 150%; pointer-events: none;
-  background: radial-gradient(closest-side,
-    rgba(255,240,214,.14), rgba(255,240,214,.04) 52%, transparent 76%);
-  opacity: calc(.22 + .78 * var(--lit));
-  transition: opacity .55s var(--ease-lit);
-}
-
-.work .canvas {
-  position: relative; background: #000; padding: 2px;
-  box-shadow:
-    0 0 0 1px rgba(255,240,214, calc(.17 * var(--lit)));
-  filter: brightness(calc(.6 + .4 * var(--lit)));
-  transition: filter .55s var(--ease-lit);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .work .pool, .work .canvas { transition: none; opacity: 1; filter: none; }
-}
-
 /* ── The walk fills the viewport, so the horizontal axis is the only one.
       No vertical page axis exists: the hall is the document's one scroll
       container.
@@ -1624,31 +1594,9 @@ body {
   pointer-events: none;
 }
 
-/* ── Room furniture: the sign, the title, the hang ── */
-.sign {
-  position: absolute;
-  top: 26px;
-  left: 34px;
-  right: 34px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sign .no {
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.2em;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.sign .rule {
-  flex: 1;
-  height: 1px;
-  background: var(--edge);
-}
-
+/* ── Room furniture: the title ──
+   The sign row that used to sit above it is gone: the dock names the room
+   now, and the sign was the element the old navigation bar covered. */
 .room-title {
   /* No top margin: the 34px it carried was the gap under the room's sign row,
      which is gone — the dock names the room now. The bottom margin is 14px,
@@ -1884,43 +1832,15 @@ body {
   margin: 1px 0 0;
 }
 
-/* About's portrait is presentation, not a hung piece: the height cap scales
-   it down, so it sizes to the image instead of claiming a third of the wall
-   and leaving a gap between the portrait and the bio beside it. */
-.room[data-room="About"] .work {
-  flex: 0 1 auto;
-  width: fit-content;
-  max-width: 31%;
-}
-
-/* .pool hangs outside the work (top -44px, height 150%) so it can spill as
-   light. It must never take part in the flex row's sizing. */
-.hang > .work > .pool {
-  position: absolute;
-  flex: 0 0 auto;
-  width: 136%;
-}
-
-.hang .canvas {
-  display: block;
-  width: 100%;
-  border: 0;
-  background: #000;
-  padding: 2px;
-  cursor: pointer;
-}
-
-.hang .canvas img {
-  width: 100%;
+/* About's portrait is presentation, not a hung piece. The `.work` selector it
+   used to carry is no longer emitted — the About room's markup never had a
+   `.work` class after the group rewrite — so the height cap is set on the
+   image itself, which is what actually stops the portrait claiming a third of
+   the wall. */
+.room[data-room="About"] .hang img {
+  width: auto;
   height: auto;
-  /* The height budget. A room is one viewport tall inside a hall that is one
-     viewport tall with overflow-y hidden, so the wall has to close above the
-     fold or the rest is unreachable. From a 900px viewport: 64px top padding +
-     ~110px title + 34px bottom = ~208px of furniture, leaving ~690px. Two rows
-     of works (the widest room holds three at 33%, so four fit a row) plus a
-     label each is ~260px a row, and the plate rooms add two rows of ~76px. 26vh
-     keeps all of that above 900px and shrinks as the viewport shortens, which a
-     fixed px cap would not. */
+  max-width: 100%;
   max-height: var(--img-max-h, 22vh);
   object-fit: contain;
 }
@@ -1956,116 +1876,4 @@ body {
   color: var(--text-strong);
   border-color: var(--text-quiet);
 }
-
-/* ── A plate: a text-only record, hung flat on the wall ──
-   One line each. A room that holds works AND plates has to close above the
-   fold, so the works take the wall and the plates take a compact list beneath
-   them rather than competing for the same wrapping row. */
-.plate {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  min-height: 44px;
-  text-align: left;
-  padding: 7px 14px;
-  border: 0;
-  border-top: 1px solid var(--edge);
-  background: none;
-  font: inherit;
-  color: var(--text);
-}
-
-button.plate { cursor: pointer; }
-
-button.plate:hover, button.plate:focus-visible {
-  border-top-color: var(--accent);
-  color: var(--text-strong);
-}
-
-.plate .pt { font-family: var(--font-heading); font-size: 0.95rem; line-height: 1.3; }
-
-.plate .py {
-  flex: 0 0 auto;
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  color: var(--text-quiet);
-}
-
-/* ── The wall label under a work ── */
-.lbl { padding-top: 12px; max-width: 46ch; }
-
-.lbl .no {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.16em;
-  color: var(--accent);
-}
-
-.lbl .lt {
-  margin-top: 7px;
-  font-family: var(--font-heading);
-  font-size: 1.12rem;
-  line-height: 1.35;
-  color: var(--text-strong);
-}
-
-.lbl .by { margin-top: 5px; font-size: 0.86rem; color: var(--text); }
-
-/* The medium line is the only unbounded text in a work: it is a whole
-   paragraph, and in a nowrap row of works it is what decides the row's
-   height. A room is exactly one viewport tall, so an unbounded line here
-   pushed the densest room past the fold at 1280x704 — where the label ran
-   under the dock, unreachable, because there is no vertical axis. Three
-   lines is the entire story the label needs to tell; the dialog carries the
-   rest. */
-.lbl .med {
-  margin-top: 7px;
-  font-size: 0.86rem;
-  color: var(--text-quiet);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.lbl .pro {
-  margin-top: 7px;
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-  color: var(--text-quiet);
-}
-
-/* ── A work's frame went empty (its image 404'd): leave no conspicuous gap ── */
-.work.is-empty .canvas { min-height: 180px; }
-
-/* ── The Honours wall ──────────────────────────────────────────────────
-   Thirteen honours is the densest room by far, and it holds photo galleries
-   AND text plates. A room is one viewport tall, so the photo works hang as a
-   row of small works — a gallery wall of contact prints — and their captions
-   stay to the accession number and the name. The photographs themselves open
-   full size in the dialog, which is where they are actually looked at.
-
-   Measured with these rules: at 1440x900 the nine works are 124px wide with
-   69px images and an 82px caption, the six plates wrap three to a row, and the
-   whole wall is 509px of the 900px available. It fits from 1280x700 up to
-   2560x1440. Below ~600px wide the row cannot compress nine works any further;
-   the row is left non-wrapping so nothing is clipped and unreachable, which
-   makes the works very narrow on a phone rather than hiding any. ── */
-.room[data-room="Honours"] .hang--works { gap: 30px 18px; }
-
-.room[data-room="Honours"] .work .lbl { padding-top: 9px; }
-
-.room[data-room="Honours"] .work .lbl .lt {
-  margin-top: 4px;
-  font-size: 0.82rem;
-  line-height: 1.3;
-}
-
-.room[data-room="Honours"] .work .lbl .by { margin-top: 3px; font-size: 0.72rem; }
-
-/* The medium and provenance lines are per-work detail the dialog carries. */
-.room[data-room="Honours"] .work .lbl .med,
-.room[data-room="Honours"] .work .lbl .pro { display: none; }
 

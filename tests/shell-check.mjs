@@ -132,8 +132,8 @@ const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, '');
 ok('rejected third tier #6d6559 absent', !cssCode.includes('6d6559'), 'used in code');
 ok('no color-mix tier', !cssCode.includes('color-mix'), 'used in code');
 ok('native scroll-snap is off', /scroll-snap-type:\s*none/.test(css));
-ok('reduced motion leaves works lit',
-  /prefers-reduced-motion: reduce[\s\S]{0,200}\.work \.canvas \{ transition: none; opacity: 1; filter: none/.test(css));
+ok('reduced motion leaves pieces lit',
+  /prefers-reduced-motion: reduce[\s\S]{0,200}\.piece \{ transition: none; filter: none/.test(css));
 ok('no non-zero border radius token', /--radius-sm:\s*0;/.test(css) && /--radius-md:\s*0;/.test(css));
 
 /* Hard constraint: radius is zero EVERYWHERE, not just in the tokens. The token
