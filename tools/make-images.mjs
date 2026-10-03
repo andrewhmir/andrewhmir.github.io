@@ -87,7 +87,70 @@ for (const file of videos) {
   }
 }
 
-/* ── 2. 1200x630 OG share card ── */
+/* ── 2. Stills for projects whose media is a video and whose still is missing
+      or a placeholder. Same decode path as the posters above; writing a real
+      still is what stops a work hanging an empty frame in the gallery.
+
+      `out` is where the file lands; `dataPath` is the field in js/data.js that
+      has to point at it afterwards. This script writes the images and reports
+      the wiring — it does not edit js/data.js, so nothing in the data file ever
+      references a file that is not on disk yet. ── */
+const STILLS = [
+  { id: 'project2', out: 'files/HiveMind_Team.jpg', at: 0.40,
+    dataPath: 'team.image', why: 'team photo is files/PlaceHolder.png' },
+  { id: 'project5', out: 'files/SATLearn_Team.jpg', at: 0.40,
+    dataPath: 'team.image', why: 'team photo is files/PlaceHolder.png' },
+];
+
+if (STILLS.length) {
+  const data = await evaluate(`(() => {
+    const out = {};
+    PORTFOLIO.projects.forEach((p) => { out[p.id] = p.video; });
+    return out;
+  })()`);
+
+  console.log('\nstills for video-only or placeholder projects:');
+  let stillsMade = 0;
+  for (const still of STILLS) {
+    const video = data[still.id];
+    if (!video) { console.log('  SKIP    ' + still.id + '  (no such project)'); continue; }
+    const url = BASE + video;
+    try {
+      const dataUrl = await evaluate(`(async () => {
+        const v = document.createElement('video');
+        v.muted = true; v.playsInline = true; v.preload = 'auto';
+        v.src = ${JSON.stringify(url)};
+        await new Promise((res, rej) => {
+          v.addEventListener('loadeddata', res, { once: true });
+          v.addEventListener('error', () => rej(new Error('decode failed')), { once: true });
+          setTimeout(() => rej(new Error('timed out waiting for metadata')), 30000);
+        });
+        /* ~40% in: past any title card, before any end card. */
+        v.currentTime = Math.max(0, (v.duration || 0) * ${still.at});
+        await new Promise((res) => v.addEventListener('seeked', res, { once: true }));
+        const LONG = 1600;
+        const scale = LONG / Math.max(v.videoWidth, v.videoHeight);
+        const c = document.createElement('canvas');
+        c.width = Math.round(v.videoWidth * scale);
+        c.height = Math.round(v.videoHeight * scale);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        return c.toDataURL('image/jpeg', 0.82);
+      })()`);
+      const outPath = join(SITE, still.out);
+      writeFileSync(outPath, Buffer.from(dataUrl.split(',')[1], 'base64'));
+      stillsMade++;
+      const kb = Math.round(Buffer.from(dataUrl.split(',')[1], 'base64').length / 1024);
+      console.log('  still   ' + still.out + '  (' + kb + ' KB)  from ' + video);
+      console.log('          wire js/data.js: ' + still.id + ' ' + still.dataPath +
+        ' = "' + still.out + '"   [' + still.why + ']');
+    } catch (e) {
+      console.log('  SKIP    ' + still.out + '  (' + (e && e.message) + ')');
+    }
+  }
+  console.log('stills written: ' + stillsMade + '/' + STILLS.length);
+}
+
+/* ── 3. 1200x630 OG share card ── */
 try {
   const ogDataUrl = await evaluate(`(async () => {
     const img = new Image();
