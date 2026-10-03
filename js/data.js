@@ -279,4 +279,18 @@ const PORTFOLIO = {
   globalThis.Site.deriveRooms = deriveRooms;
   globalThis.Site.ROOM_TITLES = ROOM_TITLES;
   globalThis.Site.ROOM_ORDER = ROOM_ORDER;
+
+  /* Index of the work whose centre is nearest the viewport centre.
+     Pure: takes precomputed centres so it needs no DOM. */
+  function visibleWork(scrollLeft, viewportW, workCentres) {
+    if (!workCentres || !workCentres.length) return -1;
+    var mid = scrollLeft + viewportW / 2;
+    var best = 0, bestD = Infinity;
+    for (var i = 0; i < workCentres.length; i++) {
+      var d = Math.abs(workCentres[i] - mid);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+  globalThis.Site.visibleWork = visibleWork;
 })();

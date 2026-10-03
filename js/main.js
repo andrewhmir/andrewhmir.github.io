@@ -568,6 +568,11 @@
   bindGalleryList($newsTimeline);
 
   /* ── Event Delegation: Copy-to-clipboard buttons ──────────────── */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-goto]');
+    if (go && Site.walk) { Site.walk.goToRoom(go.dataset.goto); }
+  });
+
   if ($heroLinks) {
     $heroLinks.addEventListener('click', function (e) {
       const btn = e.target.closest('[data-action="copy"]');
@@ -887,15 +892,182 @@
   }
 
   /* ════════════════════════════════════════════════════════════════════
+     THE ROOMS — every string on a wall is sourced from PORTFOLIO
+     ════════════════════════════════════════════════════════════════════ */
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderLabel(entry, index) {
+    return '<div class="lbl">'
+      + '<span class="no">CAT. ' + String(index + 1).padStart(2, '0') + ' &mdash; ' + esc(entry.venue) + '</span>'
+      + '<p class="lt">' + esc(entry.tagline || entry.title) + '</p>'
+      + '<p class="by">' + entry.authors + '</p>'
+      + (entry.overview && entry.overview.text
+          ? '<p class="med">' + esc(entry.overview.text.split('\n\n')[0]) + '</p>' : '')
+      + '<p class="pro">' + esc(entry.source === 'open' ? 'Open source' : 'Closed source')
+      + (entry.awards && entry.awards.length ? ' &middot; ' + entry.awards.length + ' awards' : '')
+      + '</p></div>';
+  }
+
+  /* A work needs an image. Projects with video also have a poster frame, which
+     make-images.mjs generates — use it so no frame is ever empty. */
+  function workImage(p) {
+    if (isImage(p.video)) return p.video;
+    if (p.overview && p.overview.image) return p.overview.image;
+    return p.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg');
+  }
+
+  function renderWork(p, index) {
+    var img = workImage(p);
+    return '<article class="work" data-work data-snap data-project="' + esc(p.id) + '">'
+      + '<div class="pool"></div>'
+      + '<button type="button" class="project-hit canvas" data-action="modal"'
+      + ' data-project="' + esc(p.id) + '" data-tab="overview"'
+      + ' aria-label="Open ' + esc(p.title) + '">'
+      + '<img class="project-thumb" src="' + esc(img) + '" alt="' + esc(p.title) + '" loading="lazy"'
+      + ' onerror="this.closest(\'.work\').classList.add(\'is-empty\');this.remove();">'
+      + '</button>'
+      + '<div class="project-cue" aria-hidden="true"><span>View project</span></div>'
+      + renderLabel(p, index)
+      + '</article>';
+  }
+
+  function renderPlate(entry) {
+    return '<div class="plate">'
+      + '<p class="pt">' + esc(entry.description) + '</p>'
+      + '<span class="py">' + esc(entry.year) + '</span></div>';
+  }
+
+  function renderRooms() {
+    var strip = document.getElementById('strip');
+    if (!strip) return;
+    var rooms = Site.deriveRooms(PORTFOLIO.projects);
+    var html = '';
+
+    /* Room 1 — About */
+    html += '<section class="room" data-room="About" data-snap>'
+      + '<div class="sign"><span class="no">ROOM 1</span><span class="rule"></span></div>'
+      + '<h2 class="room-title"><span class="t">About</span>'
+      + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
+      + '<div class="hang"><div class="work" style="width:31%">'
+      + '<div class="pool"></div>'
+      + '<div class="canvas"><img src="' + esc(PORTFOLIO.profileImage) + '" alt="' + esc(PORTFOLIO.name) + '"></div>'
+      + '</div><div class="about-copy">'
+      + PORTFOLIO.bio.map(function (p) { return '<p class="note">' + esc(p) + '</p>'; }).join('')
+      + '<div class="about-links">'
+      + PORTFOLIO.social.map(function (s) {
+          return '<a class="plate-link" href="' + esc(s.url) + '" target="_blank" rel="noopener">'
+            + esc(s.label) + '</a>';
+        }).join('')
+      + '<button type="button" class="plate-link lit" data-action="copy" data-copy="'
+      + esc(PORTFOLIO.email) + '">' + esc(PORTFOLIO.email) + '</button>'
+      + '</div></div></div></section>';
+
+    /* Rooms 2..N — one per derived category */
+    rooms.forEach(function (room, ri) {
+      html += '<section class="room" data-room="' + esc(room.key) + '">'
+        + '<div class="sign"><span class="no">ROOM ' + (ri + 2) + '</span><span class="rule"></span></div>'
+        + '<h2 class="room-title"><span class="t">' + esc(room.title) + '</span>'
+        + '<span class="sub">' + room.projects.length + ' works'
+        + '<span class="count">' + esc(room.key.toUpperCase()) + '</span></span></h2>'
+        + '<div class="hang">'
+        + room.projects.map(function (p, i) { return renderWork(p, i); }).join('')
+        + '</div></section>';
+    });
+
+    /* Leadership */
+    html += '<section class="room" data-room="Leadership">'
+      + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 2) + '</span><span class="rule"></span></div>'
+      + '<h2 class="room-title"><span class="t">Leadership</span>'
+      + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length + ' POSTS</span></span></h2>'
+      + '<div class="hang">'
+      + PORTFOLIO.leadership.map(function (l, i) {
+          var hasGallery = Array.isArray(l.images) && l.images.length > 0;
+          var inner = '<p class="pt">' + esc(l.description) + '</p><span class="py">' + esc(l.year) + '</span>';
+          return hasGallery
+            ? '<button type="button" class="plate" data-gallery="leadership" data-entry="' + i + '">' + inner + '</button>'
+            : '<div class="plate">' + inner + '</div>';
+        }).join('')
+      + '</div></section>';
+
+    /* Honours */
+    html += '<section class="room" data-room="Honours">'
+      + '<div class="sign"><span class="no">ROOM ' + (rooms.length + 3) + '</span><span class="rule"></span></div>'
+      + '<h2 class="room-title"><span class="t">Honours</span>'
+      + '<span class="sub">Competitions, conferences and citations'
+      + '<span class="count">' + PORTFOLIO.honors.length + ' HONOURS</span></span></h2>'
+      + '<div class="hang">'
+      + PORTFOLIO.honors.map(function (h, i) {
+          var hasGallery = Array.isArray(h.images) && h.images.length > 0;
+          if (!hasGallery) return renderPlate(h);
+          return '<article class="work" data-work data-snap>'
+            + '<div class="pool"></div>'
+            + '<button type="button" class="project-hit canvas" data-gallery="honors"'
+            + ' data-entry="' + i + '" aria-label="View photos: ' + esc(h.description) + '">'
+            + '<img class="project-thumb" src="' + esc(h.images[0]) + '" alt="" loading="lazy">'
+            + '</button>'
+            + '<div class="lbl"><span class="no">DIST. ' + String(i + 1).padStart(2, '0')
+            + '</span><p class="lt">' + esc(h.description) + '</p>'
+            + '<p class="by">' + esc(h.year) + '</p></div></article>';
+        }).join('')
+      + '</div></section>';
+
+    /* Contact */
+    html += '<section class="room" data-room="Contact" data-snap>'
+      + '<div class="sign"><span class="no">&mdash;</span><span class="rule"></span></div>'
+      + '<h2 class="room-title"><span class="t">Contact</span>'
+      + '<span class="sub">Thanks for walking the collection</span></h2>'
+      + '<p class="note">Let&rsquo;s build something together.</p>'
+      + '<button type="button" class="plate-link lit" data-action="copy" data-copy="'
+      + esc(PORTFOLIO.email) + '">' + esc(PORTFOLIO.email) + '</button></section>';
+
+    strip.innerHTML = html;
+  }
+
+  function renderDirectory() {
+    var dir = document.getElementById('directory');
+    if (!dir) return;
+    var rooms = Site.deriveRooms(PORTFOLIO.projects);
+    var items = [{ key: 'About', title: 'About', note: 'bio & contact' }]
+      .concat(rooms.map(function (r) {
+        return { key: r.key, title: r.title, note: r.projects.length + ' works' };
+      }))
+      .concat([
+        { key: 'Leadership', title: 'Leadership', note: PORTFOLIO.leadership.length + ' posts' },
+        { key: 'Honours', title: 'Honours', note: PORTFOLIO.honors.length + ' honours' },
+        { key: 'Contact', title: 'Contact', note: '—' }
+      ]);
+    dir.innerHTML = '<span class="dh">Rooms</span><ol>'
+      + items.map(function (it, i) {
+          return '<li><button type="button" class="room-link" data-goto="' + esc(it.key) + '">'
+            + '<span class="rn">' + (it.key === 'Contact' ? '&mdash;' : 'Room ' + (i + 1)) + '</span>'
+            + '<span class="rt">' + esc(it.title) + '</span>'
+            + '<span class="rd">' + esc(it.note) + '</span></button></li>';
+        }).join('')
+      + '</ol>';
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════════════════════════ */
 
   function init() {
     /* The walk first: the renderer below fills #strip, and the MutationObserver
-       in initWalk registers the snap targets as the rooms appear. */
+       in initWalk registers the snap targets as the rooms appear.
+       The rooms are built from PORTFOLIO, so the gallery cannot drift from the
+       data; the directory is the same list, printed at the top of the walk. */
     Site.walk = initWalk();
 
-    renderNav();
+    renderDirectory();
+    renderRooms();
+
+    /* renderNav() is deliberately not called: the nav it filled listed #News,
+       #Projects and #Records, none of which exist in the walk any more. The
+       directory above is the room navigation now. */
     renderHero();
     renderNews();
     renderProjects();
