@@ -730,6 +730,23 @@ Reshape `renderCatalogue` to take pieces, not sources:
 
 `techLine(src)` keeps its string argument and its `PlaceHolder` branch: a real photograph whose file is named `PlaceHolder.png` is no longer reachable here, because `awaited` now catches it first, but the branch costs nothing and guards a hand-authored record.
 
+**The caller must move in the same step.** `renderGroupLabel` currently maps the pieces down to their `src` before handing them to `renderLabel`, so a `renderCatalogue` that reads `piece.awaited` would receive strings and treat every frame as real. Change `renderGroupLabel` to forward `pieces` unchanged:
+
+```js
+  function renderGroupLabel(record, kind, index, pieces) {
+    return renderLabel(record, kind, index, pieces.length, pieces);
+  }
+```
+
+and change `renderLabel`'s last parameter from `sources` to `pieces`, passing it straight to `renderCatalogue`. The parameter count and order are unchanged in this task, so `renderGroup` needs no edit; Task 5 drops the wrapper and reshapes the signature.
+
+The five direct calls to `Site.renderLabel` in `tests/renderer.test.mjs` (lines 280, 287, 294, 301-306) pass arrays of paths as their last argument; they must pass `Site.groupPieces(...)` output instead, or they will exercise a shape the renderer no longer accepts:
+
+```js
+  const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
+  const html = renderLabelFor(record, 'record', 0, 2, Site.groupPieces(record, 'record'));
+```
+
 - [ ] **Step 5: Run the tests**
 
 Run: `npm test`
@@ -784,7 +801,7 @@ check('the plan draws the arrangement the wall hangs', () => {
 });
 ```
 
-Update the five direct calls to `Site.renderLabel` (lines 280, 287, 294, 301-306) to the new signature — for example:
+Update the five direct calls to `Site.renderLabel` (lines 280, 287, 294, 301-306) to the new signature. Task 4 already gave their last argument `Site.groupPieces(...)` output; here they gain the arrangement:
 
 ```js
   const html = renderLabelFor(stripped, Site.groupPieces(stripped, 'record'), Site.hangLayout('x', 3));
