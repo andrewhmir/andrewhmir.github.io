@@ -349,6 +349,70 @@ const PORTFOLIO = {
   globalThis.Site.MIN_PIECES = MIN_PIECES;
   globalThis.Site.MAX_PIECES = MAX_PIECES;
 
+  /* ── The arrangements ───────────────────────────────────────────────────
+     A group is hung as a composition, not as a row: its photographs are
+     partitioned into columns, one of them is the lead, and each column is
+     dropped a little so a stack never reads as one tall frame.
+
+     Several arrangements per count, so neighbouring groups differ and the wall
+     reads as a hang rather than as a repeated cell. The deepest arrangement any
+     of these produces is a single column of five, which is the case the frame
+     heights in css/styles.css are sized to keep inside a room's band. */
+  var HANG_LAYOUTS = {
+    3: [
+      { name: 'lead-two',     columns: [[0], [1, 2]],         lead: 0, drop: [0, 14] },
+      { name: 'two-lead',     columns: [[1, 2], [0]],         lead: 0, drop: [14, 0] },
+      { name: 'column-three', columns: [[0, 1, 2]],           lead: 0, drop: [0] },
+    ],
+    4: [
+      { name: 'lead-three',   columns: [[0], [1, 2, 3]],      lead: 0, drop: [0, 14] },
+      { name: 'three-lead',   columns: [[1, 2, 3], [0]],      lead: 0, drop: [14, 0] },
+      { name: 'two-two',      columns: [[0, 1], [2, 3]],      lead: 0, drop: [0, 14] },
+      { name: 'column-four',  columns: [[0, 1, 2, 3]],        lead: 0, drop: [0] },
+    ],
+    5: [
+      { name: 'lead-four',    columns: [[0], [1, 2, 3, 4]],   lead: 0, drop: [0, 14] },
+      { name: 'lead-two-two', columns: [[0], [1, 2], [3, 4]], lead: 0, drop: [0, 14, 0] },
+      { name: 'two-three',    columns: [[0, 1], [2, 3, 4]],   lead: 0, drop: [0, 14] },
+    ],
+    6: [
+      { name: 'three-three',  columns: [[0, 1, 2], [3, 4, 5]], lead: 0, drop: [0, 14] },
+      { name: 'lead-five',    columns: [[0], [1, 2, 3, 4, 5]], lead: 0, drop: [0, 14] },
+      { name: 'two-two-two',  columns: [[0, 1], [2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
+    ]
+  };
+
+  /* FNV-1a, 32-bit. A stable string hash, because the same group must be dealt
+     the same arrangement on every load: a wall that reshuffles under a visitor
+     who reloads is not a hang, it is a slot machine. */
+  function layoutHash(str) {
+    var h = 2166136261;
+    var s = String(str == null ? '' : str);
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  /* Total by construction: an unknown count falls back to a single column of
+     every piece, so a group can never fail to render for want of a layout. */
+  function hangLayout(key, count) {
+    var n = Math.max(0, Math.floor(Number(count) || 0));
+    var set = HANG_LAYOUTS[n];
+    if (set && set.length) return set[layoutHash(key) % set.length];
+    var columns = [];
+    for (var i = 0; i < n; i++) columns.push([i]);
+    return {
+      name: 'column-' + n,
+      columns: columns,
+      lead: 0,
+      drop: columns.map(function () { return 0; })
+    };
+  }
+  globalThis.Site.HANG_LAYOUTS = HANG_LAYOUTS;
+  globalThis.Site.hangLayout = hangLayout;
+
   /* ── The honours split ──────────────────────────────────────────────────
      A room is exactly one viewport tall with no vertical axis, and its groups
      live in a grid of 2 columns x 2 rows — four exhibits, which is what a room
