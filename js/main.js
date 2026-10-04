@@ -816,88 +816,51 @@
      `contain` instead would leave black bars inside the mat. Neither is a
      photograph hung on a wall, so the frame takes the photograph's shape.
 
-     The composition is two columns — a lead photograph and a supporting
-     stack — laid out in flow rather than at hand-placed coordinates, because
-     the widths are not known until the images have loaded. `--h` is the frame
-     height and `--shift` is the vertical offset that keeps a column from
-     reading as one tall frame. Both are `cqi`, one percent of the cell's
-     width, so the whole composition scales with the wall.
+     WHICH columns hang, and which piece is the lead, comes from an
+     arrangement — Site.hangLayout, dealt from the group's own key so
+     neighbouring groups differ and a reload never reshuffles the wall. The
+     heights themselves are `--lead-h` and `--sup-h` in css/styles.css. They
+     cannot live here as `cqi` any more: a gallery is now as wide as its
+     contents, so sizing a group from its own width is circular. The binding
+     constraint on a single row is the room's height, which is what the
+     stylesheet's clamps are cut from.
 
-     Every frame clears 44x44 at every supported width: the room carries a
-     width floor in css/styles.css, and the smallest frame is 22cqi x 40cqi. */
-  /* ── The cluster's frame heights ────────────────────────────────────────
-     A group is one exhibit: its photographs hang together as one composition
-     rather than as N unrelated works.
-
-     Each height is a percentage of the CELL's width (`cqi`), so the whole
-     composition scales with the wall and the cluster's own height is bounded
-     by its width rather than by its content. That bound is what makes a room
-     fit: measured with the supporting column sized by its frames, a
-     four-photograph group stood 329px tall against a 232px row and spilled
-     under the neighbouring exhibit.
-
-     The numbers come from the two ends of the supported range. At 1280x704 a
-     cell is 359px, so the lead frame is 79px and a support 59px — both past
-     the 44px tap floor — and the cluster spans 275px of the 359px cell. At
-     1440x900 a cell is 403px and the same proportions give a larger wall. */
-  /* A proportion of the cell, capped in pixels. The proportion scales the wall
-     with the room; the cap is what bounds a GROUP's height, because a room is
-     exactly one viewport tall with no vertical axis to scroll and its rows
-     have to fit. Measured without the cap, a four-photograph group in a wide
-     two-column cell stood 299px tall against the 270px a room can afford for
-     one of its two rows, and that room's title was pushed off the top of the
-     screen. The floors keep a frame a legal 44x44 tap target at the narrowest
-     cell. */
-  var PIECE_HEIGHTS = ['min(14cqi, 62px)', 'min(14cqi, 62px)', 'min(14cqi, 62px)', 'min(14cqi, 62px)'];
-  var LEAD_HEIGHT = 'min(20cqi, 96px)';
-  var PIECE_MIN = '46px';
-  var LEAD_MIN = '54px';
+     Every frame clears 44x44 at every supported width, because those clamps'
+     own pixel floors are above it. */
 
   /* A piece is a real focusable control: the whole frame opens the group's
-     dialog, and its accessible name says which photograph it is. The lead
-     photograph takes the first column; the rest stack beside it, each shifted
-     a little out of line so a stack reads as several frames rather than one. */
-  function renderCluster(pieces, record, kind, entryIndex) {
+     dialog, and its accessible name says which photograph it is. A piece whose
+     photograph has not arrived is not a control at all — see the awaited
+     branch below. */
+  function renderCluster(pieces, layout, record, kind, entryIndex) {
     var title = record.title || record.description || '';
-    var lead = pieces.length > 1 ? 1 : 0;
-    var stack = pieces.slice(lead);
-    var piece = function (p, i, isLead) {
+    var piece = function (p, i) {
       var open = groupOpener(kind, record, entryIndex);
-      var h = isLead ? LEAD_HEIGHT : (PIECE_HEIGHTS[Math.min(i, PIECE_HEIGHTS.length - 1)]);
-      var floorH = isLead ? LEAD_MIN : PIECE_MIN;
-      var shift = isLead ? '0' : (i % 2 === 0 ? '0' : '4cqi');
+      var lead = i === layout.lead;
       var label = open.name || (title + ' — photograph ' + pieceLetter(i));
-      var style = '--h:max(' + h + ',' + floorH + ');--shift:' + shift + '"';
       /* A photograph still waiting for its file has nothing to open, so it is
          not a button: a focusable control that does nothing when activated is
          worse than a frame that plainly is not one. */
       if (open.inert) {
-        return '<span class="piece piece--pending" data-piece="' + i + '"'
-          + ' style="' + style
-          + ' role="img" aria-label="' + esc(label + ' — photograph awaited') + '">'
-          + '<img src="' + esc(p.src) + '" alt="" loading="lazy"'
-          + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
-          + '</span>';
+        return '<span class="piece piece--pending' + (lead ? ' piece--lead' : '') + '"'
+          + ' data-piece="' + i + '"'
+          + ' role="img" aria-label="' + esc(label + ' — photograph awaited') + '"></span>';
       }
-      return '<button type="button" class="piece' + (isLead ? ' piece--lead' : '') + '"'
+      return '<button type="button" class="piece' + (lead ? ' piece--lead' : '') + '"'
         + ' data-piece="' + i + '"' + open.attrs
-        + ' style="' + style
         + ' aria-label="' + esc(label) + '"'
         + '><img src="' + esc(p.src) + '" alt="" loading="lazy"'
-        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';">'
-        + '</button>';
+        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';"></button>';
     };
-    /* A lone photograph is the lead: it is the whole composition, and the lead
-       height is what makes a single-photograph group read as a hung work
-       rather than as a small frame with an empty column beside it. */
-    if (pieces.length === 1) {
-      return '<div class="cluster">' + piece(pieces[0], 0, true) + '</div>';
-    }
-    return '<div class="cluster">'
-      + '<div class="hang-lead">' + piece(pieces[0], 0, true) + '</div>'
-      + '<div class="hang-stack">'
-      + stack.map(function (p, i) { return piece(p, i + 1, false); }).join('')
-      + '</div></div>';
+    /* An index the arrangement names but the pieces array does not hold is not
+       hung as `undefined`: a malformed arrangement hangs fewer frames rather
+       than a broken one. */
+    var cols = layout.columns.map(function (indices, ci) {
+      var hung = indices.filter(function (i) { return pieces[i]; })
+        .map(function (i) { return piece(pieces[i], i); }).join('');
+      return '<div class="col" style="padding-top:' + (layout.drop[ci] || 0) + 'px">' + hung + '</div>';
+    });
+    return '<div class="cluster" data-hang="' + esc(layout.name) + '">' + cols.join('') + '</div>';
   }
 
   /* What a piece does when activated. A project piece opens that project's
@@ -929,9 +892,12 @@
     var entryKey = kind === 'project'
       ? roomKey + ':' + index
       : kind + ':' + index;
+    /* The arrangement is dealt from the entry key, so two neighbouring groups
+       almost never hang the same way and neither of them changes on reload. */
+    var layout = Site.hangLayout(entryKey, pieces.length);
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
       + ' data-entry="' + esc(entryKey) + '">'
-      + renderCluster(pieces, record, kind, entryKey)
+      + renderCluster(pieces, layout, record, kind, entryKey)
       + renderGroupLabel(record, kind, index, pieces.length, pieces)
       + '</div>';
   }
@@ -1054,7 +1020,7 @@
     html += '<section class="room" data-room="About" data-snap tabindex="-1">'
       + '<h2 class="room-title"><span class="t">About</span>'
       + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
-      + '<div class="hang"><figure class="piece piece--portrait" style="--h:min(22cqi, 190px)">'
+      + '<div class="hang"><figure class="piece piece--portrait">'
       + '<img src="' + esc(PORTFOLIO.profileImage) + '" alt="' + esc(PORTFOLIO.name) + '">'
       + '</figure><div class="about-copy">'
       + PORTFOLIO.bio.map(function (p) { return '<p class="note">' + esc(p) + '</p>'; }).join('')

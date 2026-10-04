@@ -54,12 +54,26 @@
   --font-body:    Georgia, 'Times New Roman', serif;
   --font-mono:    'Courier Prime', 'Courier New', monospace;
 
-  /* A room is 92vw wide, but never narrower than 860px: below that a
-     two-column group grid gives each cluster so little width that a piece in
-     the narrowest slot falls under the 44px tap-target floor. A wider room
-     scrolls further, which the walk is built for; a smaller target is not
-     recoverable. */
-  --room-w:       max(92vw, 860px);
+  /* ── The hang ─────────────────────────────────────────────────────
+     A gallery is now as wide as its contents, so a group can no longer be
+     sized from the width of the cell it sits in — that would be circular.
+     The binding constraint on a single row is the room's HEIGHT, so every
+     frame height is a share of the viewport's, clamped at the two ends of
+     the supported range. At 1440x900 the lead frame is 162px and a support
+     99px; at the spec's 1280x704 floor, 127px and 77px. Both leave the
+     deepest arrangement — one column of five — inside the room's band.
+     The floors are pixel values because a frame is a tap target: they keep
+     every frame above 44x44 without a width floor on the room. */
+  --lead-h:      clamp(120px, 18vh, 165px);
+  --sup-h:       clamp( 76px, 11vh, 102px);
+  --col-gap:     clamp(  6px, 1.1vh,  10px);
+  --cluster-gap: 12px;
+  /* The label is beside the cluster and stacks downward. A fixed basis is what
+     stops a wide cluster — and these photographs are wide — from squeezing the
+     text to nothing: the cluster varies, so a wide cluster widens the GROUP
+     rather than narrowing the label. */
+  --label-w:     clamp(220px, 20vw, 300px);
+  --group-gap:   20px;
 
   /* The height budget for a hung photograph. A room is one viewport tall
      inside a hall that is one viewport tall with no vertical axis, so the wall
@@ -1432,10 +1446,15 @@ button.record-item {
 .room {
   position: relative;
   flex: 0 0 auto;
-  /* --room-w is 92vw with a floor of 860px, so a two-column grid of 408px
-     cells still lets the narrowest slot (24% of a cluster) clear 44px: every
-     piece is a real control and must stay tappable at every width. */
-  width: var(--room-w);
+  /* The gallery is as wide as its own contents: padding, every group's natural
+     width, and the gaps between them. The floor is one screen, so a short
+     gallery is never narrower than the window — a visitor is always standing
+     inside one named gallery rather than looking at two at once — and above
+     that the width simply follows the hang. The 860px floor this replaces
+     existed only so a two-column grid of 408px cells kept every frame above
+     the 44px tap floor; frames are 76-165px tall now, whatever the width. */
+  width: max-content;
+  min-width: 100vw;
   /* No min-height. The hall already sizes the room; a second `100vh`
      constraint made the box 704 + 70 = 774px tall inside a 704px hall at the
      spec's floor, which pushed the densest rooms past the fold. */
@@ -1592,7 +1611,7 @@ body {
 }
 
 /* ── The narrow dock ──
-   Eight rooms and their names do not fit a phone, and before this the dock
+   Six rooms and their names still do not fit a phone, and before this the dock
    simply overflowed: it held 836px of controls in a 348px box with the
    scrollbar hidden, so six of the eight rooms were off-screen with nothing to
    say so, and the aria-current control was outside the box from the fourth room
@@ -1611,17 +1630,17 @@ body {
     gap: 0;
   }
 
-  /* Nine rooms as pips: 9 x 41 + 8 = 377px, inside a 390px screen. A pip is
-     41x44, one step under the 44x44 floor and the smallest that fits nine rooms
-     on the narrowest supported phone — the alternative is 44px pips whose last
-     two rooms are off the edge of the screen, which is worse than a target two
-     pixels narrow. Collapsing the labels is what the spec's "narrow case" asks
-     for; the current room stays named by the live region, which announces every
-     change and is the signal a screen reader here always used. */
+  /* Six rooms as pips: 6 x 44 = 264px, comfortably inside a 390px screen. The
+     pip used to be 41px wide — one step under the 44x44 floor — because nine
+     rooms at a full 44 came to 396px and would not fit. One Honours gallery
+     instead of four is what buys the floor back. Collapsing the labels is what
+     the spec's "narrow case" asks for; the current room stays named by the live
+     region, which announces every change and is the signal a screen reader here
+     always used. */
   .dock .dock-link {
     padding: 0;
-    min-width: 41px;
-    width: 41px;
+    min-width: 44px;
+    width: 44px;
     justify-content: center;
   }
 
@@ -1689,25 +1708,18 @@ body {
    does not fit is clipped AND unreachable, and there is no vertical axis to
    rescue it.
 
-   A group is a composition of framed photographs BESIDE its label, and the
-   whole group is one cell: two columns, two rows, four exhibits a room.
+   A gallery runs as far sideways as its own hang needs, so its groups are one
+   ROW rather than a grid of two columns by two rows. That grid was what fixed
+   a gallery at four exhibits, and it is the whole reason thirteen honours were
+   cut into four galleries all called Honours. A row has no such limit.
 
-   Three columns was tried first and does not fit. Measured, a group needs
-   about 330px of height — a ~210px cluster and a ~120px label — and a room has
-   540px, so a three-column grid gives 235px rows and the label is cut to 29px
-   against the 90px its catalogue needs. Two columns doubles the cell's width,
-   which lets the frames grow and the label sit BESIDE them rather than under
-   them, so the tallest composition still fits twice over.
-
-   `align-content: start` keeps a two-group room's single row from being
-   stretched to the room's full height, which would hand the slack to the
-   cluster and squash the frames inside it. */
+   A group is a composition of framed photographs BESIDE its label. The
+   photographs are partitioned into columns by the group's arrangement, and the
+   label holds a fixed width whatever the cluster does — see --label-w. */
 .groups {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: minmax(190px, auto);
-  align-content: start;
-  gap: 14px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--group-gap);
   position: relative;
   flex: 0 0 auto;
   min-height: 0;
@@ -1717,63 +1729,56 @@ body {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--cluster-gap);
   min-height: 0;
-  /* Nothing may paint outside its own cell. Without this a cluster wider than
-     its cell spills over the neighbouring exhibit, and the later group's
+  /* Nothing may paint outside its own group. Without this a cluster wider than
+     its share spills over the neighbouring exhibit, and the later group's
      frames paint on top of an earlier group's photograph: measured at three
-     pairs at 1440x900 and seven at 2560x1440, the worst 181px wide. */
+     pairs at 1440x900 and seven at 2560x1440, the worst 181px wide, back when
+     the width was a grid track. The label's fixed basis is what keeps that
+     from happening now; this stays as the backstop. */
   overflow: hidden;
 }
 
-/* The cluster is sized from the cell's width, so the composition scales with
-   the wall. Each cell is a query container, so `cqi` is one percent of the
-   cell's width. */
-.groups > .group {
-  container-type: inline-size;
-  container-name: cell;
-}
-
-/* A lead photograph and a supporting column beside it, both in flow so each
-   frame takes its own photograph's width. */
+/* The columns of the hang, in flow, so each frame takes its own photograph's
+   width. How many columns there are, and which pieces sit in each, is the
+   arrangement's business; the drop that keeps a stack from reading as one tall
+   frame is written inline per column. */
 .cluster {
   display: flex;
   align-items: flex-start;
-  gap: 2cqi;
+  gap: var(--cluster-gap);
   flex: 0 0 auto;
 }
 
-.hang-lead,
-.hang-stack {
+.col {
   display: flex;
   flex-direction: column;
-  gap: 1.5cqi;
+  gap: var(--col-gap);
   min-width: 0;
-}
-
-.hang-stack {
-  padding-top: 2cqi;
 }
 
 /* A piece: a gold frame around a cream mat, drawn rather than loaded — no
    image request, no asset. The frame is given a height and its width follows
    the photograph inside it, so every frame has its photograph's proportions
-   and nothing is ever cropped or barred. */
+   and nothing is ever cropped or barred. A supporting frame takes --sup-h; the
+   lead takes --lead-h, and which piece is the lead is the arrangement's. */
 .piece {
   display: block;
-  height: var(--h, 30cqi);
+  height: var(--sup-h);
   padding: 0;
   border: 3px solid transparent;
   border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
   background: #000;
   cursor: pointer;
-  margin-top: var(--shift, 0);
   box-shadow: 0 5px 14px rgba(0, 0, 0, .66);
   /* Its own light, exactly as a work carried one. Registered
      `inherits: false`, so writing it touches one element, not a room. */
   filter: brightness(calc(.6 + .4 * var(--lit)));
   transition: filter .55s var(--ease-lit);
 }
+
+.piece--lead { height: var(--lead-h); }
 
 /* A frame is given a height; its width follows its photograph, so the frame
    has the photograph's own proportions and nothing is cropped or barred.
@@ -1930,9 +1935,12 @@ body {
 
 /* About's portrait is presentation, not a hung piece: the same frame as
    everything else on the walk, but a figure rather than a control, sized to the
-   image inside it rather than to the space beside the bio. */
+   image inside it rather than to the space beside the bio. Its height comes
+   from the same viewport share as every other frame, capped so a portrait
+   photograph cannot dominate a room that is only ever one screen wide. */
 .piece--portrait {
   flex: 0 0 auto;
+  height: clamp(120px, 18vh, 190px);
   width: fit-content;
   max-width: 32%;
   cursor: default;
@@ -1941,6 +1949,14 @@ body {
 .piece--portrait img {
   width: auto;
   max-width: 100%;
+}
+
+/* About and Contact are single compositions, not runs of groups. Every other
+   gallery is as wide as its own hang; these two are exactly one screen. */
+.room[data-room="About"],
+.room[data-room="Contact"] {
+  width: 100vw;
+  min-width: 100vw;
 }
 
 /* The About room's row: the portrait, then the bio and the links. */

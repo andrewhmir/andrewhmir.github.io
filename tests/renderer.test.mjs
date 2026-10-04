@@ -150,18 +150,85 @@ check('every group hangs between three and six frames', () => {
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
+check('the lead frame takes the lead height', () => {
+  /* Every group hangs at least three frames, so every group has a lead. The
+     height itself now comes from the stylesheet, not from inline markup: a
+     cqi-based height cannot survive a content-driven width, because a group
+     sized from its own width is circular. */
+  const groups = strip.split('<div class="group"').slice(1);
+  assert.ok(groups.length > 0, 'no groups rendered');
+  const bad = [];
+  groups.forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    /* An awaited lead frame carries the lead class too, so the composition
+       keeps its shape whether or not the photograph has arrived. */
+    if (!/class="piece[^"]*piece--lead/.test(body)) bad.push('group ' + i + ' has no lead frame');
+    if (/--h:/.test(body)) bad.push('group ' + i + ' still sizes its frames inline');
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('a group is hung as the columns its arrangement names', () => {
+  const named = new Map();
+  Object.values(Site.HANG_LAYOUTS).flat().forEach((l) => named.set(l.name, l));
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const hang = body.match(/data-hang="([^"]+)"/);
+    if (!hang) { bad.push('group ' + i + ': names no arrangement'); return; }
+    const layout = named.get(hang[1]);
+    if (!layout) { bad.push('group ' + i + ': unknown arrangement ' + hang[1]); return; }
+    const cols = (body.match(/<div class="col"/g) || []).length;
+    if (cols !== layout.columns.length) {
+      bad.push('group ' + i + ': ' + cols + ' columns hung, ' + layout.columns.length + ' in ' + layout.name);
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the wall hangs exactly the frames its arrangement names', () => {
+  /* The partition property, read off the wall rather than off the table: every
+     index the arrangement names is hung once, and no other frame is. Scoped to
+     frames on purpose — a catalogue entry carries data-piece too, and it is
+     text, not a frame. */
+  const named = new Map();
+  Object.values(Site.HANG_LAYOUTS).flat().forEach((l) => named.set(l.name, l));
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const layout = named.get((body.match(/data-hang="([^"]+)"/) || [])[1]);
+    if (!layout) { bad.push('group ' + i + ': names no arrangement'); return; }
+    const frames = [...body.matchAll(/class="piece[^"]*"[^>]*data-piece="(\d+)"/g)]
+      .map((m) => Number(m[1])).sort((a, b) => a - b);
+    const want = layout.columns.flat().slice().sort((a, b) => a - b);
+    if (JSON.stringify(frames) !== JSON.stringify(want)) {
+      bad.push('group ' + i + ': hung [' + frames + '], arrangement names [' + want + ']');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
 check('no photograph is dropped or duplicated by grouping', () => {
   /* Grouping must be a partition of the photographs, not a filter: the check
-     that catches a grouping bug silently hiding an image. */
-  const rendered = [...strip.matchAll(/<img src="([^"]+)"[^>]*loading="lazy"/g)].map((m) => m[1]);
+     that catches a grouping bug silently hiding an image.
+     Scoped to the photographs that exist. An awaited frame draws no picture at
+     all as of Task 4; until then a record WITH photographs still hangs the
+     placeholder for its padding while a record without any does not, and that
+     difference is not what this check is about. */
+  const isPlaceholder = (s) => /PlaceHolder\.png$/.test(s);
+  const rendered = [...strip.matchAll(/<img src="([^"]+)"[^>]*loading="lazy"/g)]
+    .map((m) => m[1]).filter((s) => !isPlaceholder(s));
   const expected = [];
-  PORTFOLIO.honors.forEach((h) => Site.groupPieces(h, 'record').forEach((p) => expected.push(p.src)));
-  PORTFOLIO.leadership.forEach((l) => Site.groupPieces(l, 'record').forEach((p) => expected.push(p.src)));
-  PORTFOLIO.projects.forEach((p) => Site.groupPieces(p, 'project').forEach((x) => expected.push(x.src)));
+  const wanted = (rec, kind) => Site.groupPieces(rec, kind)
+    .filter((p) => !p.awaited).forEach((p) => expected.push(p.src));
+  PORTFOLIO.honors.forEach((h) => wanted(h, 'record'));
+  PORTFOLIO.leadership.forEach((l) => wanted(l, 'record'));
+  PORTFOLIO.projects.forEach((p) => wanted(p, 'project'));
   const count = (arr, v) => arr.filter((x) => x === v).length;
   [...new Set(expected)].forEach((src) => {
     assert.equal(count(rendered, src), count(expected, src), 'piece count differs for ' + src);
   });
+  assert.ok(expected.length > 0, 'no real photograph was expected at all');
 });
 
 check('the first frame of a group is hung as its lead', () => {
@@ -185,7 +252,7 @@ check('a photograph that is still awaited is not a dead control', () => {
      and it hangs a full composition of them, not one.
      Padding inside a record that DOES have photographs is not yet drawn this
      way: that is Task 4's change, and this count tightens with it. */
-  const pending = [...strip.matchAll(/<span class="piece piece--pending"[^>]*>/g)].map((m) => m[0]);
+  const pending = [...strip.matchAll(/<span class="piece piece--pending[^"]*"[^>]*>/g)].map((m) => m[0]);
   const noPhoto = [...PORTFOLIO.leadership, ...PORTFOLIO.honors]
     .filter((r) => !Array.isArray(r.images) || !r.images.length).length;
   assert.equal(pending.length, noPhoto * Site.MIN_PIECES,
@@ -377,10 +444,12 @@ check('every honours record hangs as a group', () => {
 
 check('a piece whose photo is missing falls back to the placeholder', () => {
   /* Every honour that declares no photographs at all hangs a full composition
-     of awaited frames rather than a single thin one. The count is the data's
-     own, read back off the wall. */
+     of awaited frames rather than a single thin one. Those frames draw no
+     picture at all as of Task 4; until then only the padding inside a record
+     that HAS photographs does, which is what this count covers. */
   const placeholders = (honoursStrip.match(/src="files\/PlaceHolder\.png"/g) || []).length;
   const awaited = PORTFOLIO.honors
+    .filter((h) => Array.isArray(h.images) && h.images.length)
     .reduce((n, h) => n + Site.groupPieces(h, 'record').filter((p) => p.awaited).length, 0);
   assert.equal(placeholders, awaited, placeholders + ' placeholders, expected ' + awaited);
 });
