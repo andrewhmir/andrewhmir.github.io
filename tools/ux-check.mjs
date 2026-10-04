@@ -268,15 +268,21 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
     const perKind = {};
     groups.forEach(g => {
       const k = g.dataset.kind;
-      perKind[k] = perKind[k] || { groups: 0, pieces: 0, labels: 0, entries: 0 };
+      perKind[k] = perKind[k] || { groups: 0, pieces: 0, awaited: 0, notes: 0, awaitedGroups: 0, labels: 0, entries: 0 };
       perKind[k].groups++;
       perKind[k].pieces += g.querySelectorAll('.piece').length;
+      const awaited = g.querySelectorAll('.piece--pending').length;
+      perKind[k].awaited += awaited;
+      if (awaited) perKind[k].awaitedGroups++;
+      perKind[k].notes += g.querySelectorAll('.ca-note').length;
       if (g.querySelector('.label')) perKind[k].labels++;
       perKind[k].entries += g.querySelectorAll('.cat-entry').length;
     });
     /* Grouped pieces only. The About portrait is also a .piece — it hangs in
        the same frame — but it is presentation rather than a record's
-       photograph, and the data declares it separately. */
+       photograph, and the data declares it separately.
+       An awaited frame draws no picture, so it contributes no src: there is
+       nothing to compare and nothing to fetch. */
     const srcs = [...document.querySelectorAll('#strip .group .piece img')]
       .map(i => i.getAttribute('src'));
     const portrait = document.querySelector('#strip .room[data-room="About"] .piece img');
@@ -287,25 +293,36 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   const expected = await evaluate(`(() => {
     const P = globalThis.PORTFOLIO, S = globalThis.Site;
     const want = { project: 0, honors: 0, leadership: 0 };
-    P.projects.forEach(p => { want.project += S.groupPieces(p, 'project').length; });
-    P.honors.forEach(h => { want.honors += S.groupPieces(h, 'record').length; });
-    P.leadership.forEach(l => { want.leadership += S.groupPieces(l, 'record').length; });
+    const awaited = { project: 0, honors: 0, leadership: 0 };
     const all = [];
-    P.projects.forEach(p => S.groupPieces(p, 'project').forEach(x => all.push(x.src)));
-    P.honors.forEach(h => S.groupPieces(h, 'record').forEach(x => all.push(x.src)));
-    P.leadership.forEach(l => S.groupPieces(l, 'record').forEach(x => all.push(x.src)));
-    return { want, all, groups: P.projects.length + P.honors.length + P.leadership.length };
+    const note = (kind, pieces) => {
+      want[kind] += pieces.length;
+      pieces.forEach(x => { if (x.awaited) awaited[kind]++; else all.push(x.src); });
+    };
+    P.projects.forEach(p => note('project', S.groupPieces(p, 'project')));
+    P.honors.forEach(h => note('honors', S.groupPieces(h, 'record')));
+    P.leadership.forEach(l => note('leadership', S.groupPieces(l, 'record')));
+    return { want, awaited, all, groups: P.projects.length + P.honors.length + P.leadership.length };
   })()`);
 
   const counts = Object.entries(expected.want).map(([kind, n]) => {
-    const got = inventory.perKind[kind] || { pieces: 0, labels: 0, entries: 0, groups: 0 };
-    return { kind, want: n, got: got.pieces, labels: got.labels, entries: got.entries, groups: got.groups };
+    const got = inventory.perKind[kind] ||
+      { pieces: 0, awaited: 0, notes: 0, awaitedGroups: 0, labels: 0, entries: 0, groups: 0 };
+    return { kind, want: n, got: got.pieces, awaitedWant: expected.awaited[kind],
+             awaited: got.awaited, notes: got.notes, awaitedGroups: got.awaitedGroups,
+             labels: got.labels, entries: got.entries, groups: got.groups };
   });
   const short = counts.filter((c) => c.got !== c.want);
   check('every photograph the data declares is hung exactly once',
         short.length === 0, JSON.stringify(short));
-  check('every group carries one label with one catalogue entry per photograph',
-        counts.every((c) => c.labels === c.groups && c.entries === c.got),
+  /* One note per GROUP that is missing something, not one per frame and not one
+     per kind: a group of three awaited frames says so once. */
+  check('every awaited frame is drawn as an awaited frame, and its label says so once',
+        counts.every((c) => c.awaited === c.awaitedWant && c.notes === c.awaitedGroups),
+        JSON.stringify(counts.map((c) => ({ kind: c.kind, awaited: c.awaited, want: c.awaitedWant,
+          notes: c.notes, awaitedGroups: c.awaitedGroups }))));
+  check('every group carries one label, one entry per photograph, and no entry for a frame with none',
+        counts.every((c) => c.labels === c.groups && c.entries === c.got - c.awaited),
         JSON.stringify(counts));
   /* Multiset equality: a photograph hung twice is as wrong as one hung never. */
   const tally = (arr) => arr.reduce((m, v) => (m[v] = (m[v] || 0) + 1, m), {});
@@ -413,6 +430,87 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
         Math.abs(end.rail - end.vw) <= 2, JSON.stringify(end));
   await evaluate(`document.getElementById('hall').scrollLeft = 0`);
   await sleep(400);
+});
+
+/* -- The gallery is as wide as its own hang ---------------------------- */
+await section('A gallery is as wide as its contents', async () => {
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+  const geo = await evaluate(`(() => {
+    const rooms = [...document.querySelectorAll('#strip .room')];
+    return rooms.map(r => ({
+      key: r.getAttribute('data-room'),
+      w: r.getBoundingClientRect().width,
+      vw: innerWidth,
+      groups: r.querySelectorAll('.group').length,
+      labels: [...r.querySelectorAll('.label')].map(l => l.getBoundingClientRect().width),
+    }));
+  })()`);
+  const honoursRooms = geo.filter((r) => r.key && r.key.indexOf('Honours') === 0);
+  const honours = honoursRooms[0];
+  check('honours is one gallery, not four',
+        honoursRooms.length === 1, honoursRooms.map((r) => r.key).join(', '));
+  check('a gallery with more hang than one screen is wider than the viewport',
+        !!honours && honours.w > honours.vw,
+        honours ? Math.round(honours.w) + 'px in a ' + honours.vw + 'px viewport' : 'no honours gallery');
+  /* The floor, and the whole reason a gallery is never narrower than a screen:
+     a visitor is always standing inside one named gallery, not looking at two. */
+  check('every gallery is at least one screen wide',
+        geo.every((r) => r.w >= r.vw - 1),
+        geo.filter((r) => r.w < r.vw - 1).map((r) => r.key + ' ' + Math.round(r.w)).join(', '));
+  check('the honours gallery holds every honour',
+        !!honours && honours.groups === (await evaluate(`globalThis.PORTFOLIO.honors.length`)),
+        honours ? honours.groups + ' groups' : 'no honours gallery');
+  /* A fixed basis is what stops a wide cluster squeezing the label: every
+     label on the wall is the same width, whatever its own photographs do. */
+  const widths = geo.flatMap((r) => r.labels);
+  check('every label is the same width',
+        widths.length > 0 && Math.max(...widths) - Math.min(...widths) <= 1,
+        widths.length ? Math.round(Math.min(...widths)) + '..' + Math.round(Math.max(...widths)) : 'no labels');
+});
+
+/* -- The deepest hang still fits the band ------------------------------ */
+await section('The deepest hang stays inside the room', async () => {
+  /* Five frames in one column is the deepest arrangement the table produces,
+     and it is the case the frame-height clamps are cut for. Only a layout
+     engine can measure it, which is why it is checked here and not in
+     tests/. */
+  for (const [w, h] of [[1440, 900], [1280, 704]]) {
+    await setViewport(w, h, false);
+    await goto(BASE);
+    const worst = await evaluate(`(() => {
+      let worst = null;
+      document.querySelectorAll('#strip .group').forEach(g => {
+        const room = g.closest('.room').getBoundingClientRect();
+        const gr = g.getBoundingClientRect();
+        const deepest = Math.max(...[...g.querySelectorAll('.col')]
+          .map(c => c.getBoundingClientRect().height));
+        const slack = Math.round(room.bottom - gr.bottom);
+        if (!worst || slack < worst.slack) {
+          worst = { slack, deepest: Math.round(deepest), entry: g.dataset.entry,
+                    hang: g.querySelector('.cluster').dataset.hang };
+        }
+      });
+      return worst;
+    })()`);
+    check('the deepest hang clears the dock band at ' + w + 'x' + h,
+          !!worst && worst.slack > 0, JSON.stringify(worst));
+    const frames = await evaluate(`(() => {
+      const out = { minW: Infinity, minH: Infinity };
+      document.querySelectorAll('#strip .group .piece').forEach(p => {
+        const r = p.getBoundingClientRect();
+        if (r.height === 0) return;
+        out.minW = Math.min(out.minW, r.width);
+        out.minH = Math.min(out.minH, r.height);
+      });
+      return out;
+    })()`);
+    check('every frame clears 44x44 at ' + w + 'x' + h,
+          frames.minW >= 44 && frames.minH >= 44,
+          Math.round(frames.minW) + 'x' + Math.round(frames.minH));
+  }
+  await setViewport(1440, 900, false);
+  await goto(BASE);
 });
 
 /* -- 1. The whole piece is a click target ----------------------------- */
@@ -757,21 +855,19 @@ await section('Mobile (390x844)', async () => {
       return { w: ownW, h: ownH };
     };
     const elements = [...document.querySelectorAll('a[href], button, [data-gallery]')];
+    const pips = elements.filter(el => el.classList.contains('dock-link'));
     const small = elements.filter(el => {
       if (el.offsetWidth < 1 || el.offsetHeight < 1) return false;
       const t = effective(el);
-      /* One documented exception: the collapsed dock's pips are 41x44. Nine
-         rooms at a full 44 wide need 396px, which does not fit a 390px screen,
-         and a 44px pip whose neighbour is off the edge is the worse fault.
-         The exception is asserted to be exactly this: nothing else, and never
-         a pip shorter than the 44px row it sits in. */
-      if (el.classList.contains('dock-link')) {
-        return !(t.w >= 41 && t.h >= 44) || el.closest('.dock') === null;
-      }
+      /* The collapsed dock's pips are a full 44x44. They used to be 41px wide
+         because nine rooms at 44 need 396px, which does not fit a 390px screen;
+         one Honours gallery instead of four is what bought the floor back, so
+         the exception is gone and every control is asserted at 44. */
       return t.w < 44 || t.h < 44;
     });
     return { overflow: de.scrollWidth - de.clientWidth, small: small.length,
-             dockPips: elements.filter(el => el.classList.contains('dock-link')).length,
+             dockPips: pips.length,
+             pipWidth: pips.length ? Math.min(...pips.map(el => el.offsetWidth)) : 0,
              examples: small.slice(0, 8).map(el => {
                const t = effective(el);
                const name = (el.id ? '#' + el.id : '') + (typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\\s+/)[0] : '');
@@ -779,9 +875,11 @@ await section('Mobile (390x844)', async () => {
              }) };
   })()`);
   check('no horizontal overflow on mobile', mob.overflow === 0, mob.overflow + 'px');
-  check('all tap targets are at least 44x44, or a collapsed dock pip at 41x44',
+  check('every tap target is at least 44x44, with no exception',
         mob.small === 0, mob.examples.join(' | '));
-  check('every room is a pip in the collapsed dock', mob.dockPips >= 9, mob.dockPips + ' pips');
+  check('every room is a pip in the collapsed dock',
+        mob.dockPips >= 6, mob.dockPips + ' pips');
+  check('a collapsed pip is a full 44px wide', mob.pipWidth >= 44, mob.pipWidth + 'px');
 });
 
 /* -- 12. The walk is horizontal --------------------------------------- */
@@ -906,8 +1004,12 @@ await section('The dock still names the room on a phone', async () => {
     for (const l of links) {
       const room = document.querySelector('#strip .room[data-room="' + l.getAttribute('data-goto') + '"]');
       if (!room) { out.push({ want: l.getAttribute('data-goto'), got: '(no such room)' }); continue; }
+      /* Setting scrollLeft directly leaves Lenis to interpolate towards it, and
+         the dock is only re-marked when a scroll event fires. The jump across
+         the honours gallery is thousands of pixels, so a short wait reads the
+         position mid-flight and names the room the walk just left. */
       hall.scrollLeft = room.offsetLeft + 10;
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 900));
       const cur = document.querySelector('.dock-link[aria-current="true"]');
       const cq = cur ? cur.getBoundingClientRect() : null;
       const ann = document.getElementById('announcer');
@@ -960,10 +1062,16 @@ await section('Lights come up and stay up', async () => {
 await section('No piece hangs empty', async () => {
   /* A group whose photographs are all missing still hangs a labelled
      placeholder, so a frame is never a conspicuous hole on a near-black
-     wall. */
+     wall. An awaited frame is not empty for want of a picture — it is a
+     reserved place, and it is drawn as one — so only frames that can hold a
+     photograph are counted here. */
   const empty = await evaluate(
-    `[...document.querySelectorAll('.piece')].filter(w => !w.querySelector('img')).length`);
-  check('every piece has an image', empty === 0, empty + ' empty frames');
+    `[...document.querySelectorAll('.piece')]
+       .filter(w => !w.classList.contains('piece--pending') && !w.querySelector('img')).length`);
+  check('every frame that has a photograph renders it', empty === 0, empty + ' empty frames');
+  const awaited = await evaluate(
+    `[...document.querySelectorAll('.piece--pending')].filter(w => w.querySelector('img')).length`);
+  check('no awaited frame loads a picture', awaited === 0, awaited + ' awaited frames draw an image');
   const broken = await evaluate(
     `[...document.querySelectorAll('.piece img')].filter(i => i.complete && i.naturalWidth === 0).length`);
   check('every piece image decoded', broken === 0, broken + ' broken images');

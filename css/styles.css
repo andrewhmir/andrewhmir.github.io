@@ -1778,7 +1778,20 @@ body {
   transition: filter .55s var(--ease-lit);
 }
 
-.piece--lead { height: var(--lead-h); }
+/* A photograph is fetched when the walk reaches it, so a frame can be on screen
+   before its bytes are. With the width following the photograph, an unloaded
+   frame collapsed to the frame and the mat alone — measured at 18x152 on a
+   phone, far under the 44px tap floor, and then it popped open when the
+   photograph arrived. The floor holds it at a landscape shape until then.
+
+   6/5 is deliberately narrower than every photograph in the collection (the
+   narrowest is 1.33:1, the widest 2.01:1), so once a frame is loaded this rule
+   never binds and no photograph is ever barred inside its own frame. It is on
+   .piece and not on the image because the image's own percentage floor resolves
+   against an indefinite width and does nothing. */
+.piece { min-width: calc(var(--sup-h) * 6 / 5); }
+
+.piece--lead { height: var(--lead-h); min-width: calc(var(--lead-h) * 6 / 5); }
 
 /* An awaited photograph is a reserved place on the wall: the frame and its mat,
    and no picture. It needs a width of its own, because unlike every other frame

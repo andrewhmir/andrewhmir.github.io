@@ -60,10 +60,11 @@ const expr = `
         pieces: g.querySelectorAll('.piece').length,
         cell: [w(g), h(g)],
         cluster: box(g.querySelector('.cluster')),
-        lead: box(g.querySelector('.hang-lead')),
-        stack: box(g.querySelector('.hang-stack')),
+        /* The columns of the hang, in the order the arrangement names them. */
+        hang: g.querySelector('.cluster') ? g.querySelector('.cluster').dataset.hang : null,
+        cols: [...g.querySelectorAll('.col')].map((c) => box(c)),
         frames: [...g.querySelectorAll('.piece')].map((p) =>
-          p.dataset.piece + ' h' + h(p) + ' ' + (getComputedStyle(p).getPropertyValue('--h') || '').trim()),
+          p.dataset.piece + ' h' + h(p) + ' ' + getComputedStyle(p).height),
         label: box(label),
         labelScroll: label.scrollHeight,
         plan: box(label.querySelector('.plan')),

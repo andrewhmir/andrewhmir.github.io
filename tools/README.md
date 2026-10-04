@@ -19,6 +19,13 @@ piece as a click target, a piece being framed and named, gallery rows, modal
 focus containment, that the walk moves and settles, that lights come up and
 stay up per piece, that no piece hangs empty, and tap targets at 390×844.
 
+It is also the only place the gallery's own geometry can be checked, because the
+DOM stub in `tests/` models no CSS: that a gallery with more hang than one
+screen is wider than the viewport, that no gallery is narrower than one screen,
+that every label is the same width, that the deepest arrangement stays inside
+the room's band at both reference viewports, and that every frame clears 44×44
+there.
+
 No npm dependencies; uses Node's built-in `WebSocket` (Node 22+).
 
 ```powershell
@@ -58,10 +65,13 @@ fetched, so an un-forced probe measures the loading floor rather than the wall.
 
 | Tool | Prints |
 |---|---|
-| `rooms.mjs [w] [h]` | Per room: group count, row height, title top, last group's bottom, dock top. Every row says `ok` or `FAIL` against the fold. |
-| `pieces.mjs [room]` | Per frame in one room: box, the image's box, its natural size, and whether it loaded. |
-| `widths.mjs [w] [h] [room]` | The room's width, the grid's tracks, and a sample of frame boxes. |
+| `rooms.mjs [w] [h]` | Per room: group count, the gallery's width against one screen, the deepest column of each hang, title top, last group's bottom, dock top. Every row says `ok` or `FAIL` against the fold. |
+| `pieces.mjs [room]` | Per frame in one room: its box, whether it is a lead or awaited, the image's box, its natural size, whether it loaded, and the resolved `--lead-h` / `--sup-h`. |
+| `widths.mjs [w] [h] [room]` | The gallery's width against one screen, then per group: its arrangement, its width, its cluster's width and its label's. |
 | `dock-check.mjs [w] [h]` | Every dock control's size and position, and which are outside the viewport. |
+
+There are no grid tracks to print any more: a gallery is one row as wide as its
+own hang, and each group's width follows its arrangement and its photographs.
 
 `shot.mjs` and `shot-room.mjs` capture a screenshot of the walk or of one named
 room; `shot-url.mjs` captures any URL, which is how the design mockups under

@@ -53,16 +53,22 @@ const expr = [
   '  const out = [];',
   '  document.querySelectorAll("#strip .room").forEach(room => {',
   '    const gs = [...room.querySelectorAll(".group")];',
-  '    const grid = room.querySelector(".groups");',
+  '    const row = room.querySelector(".groups");',
   '    const title = room.querySelector(".room-title");',
+  '    /* There are no grid tracks any more: a gallery is one row as wide as its',
+  '       own hang, so what matters is the deepest COLUMN of each group and',
+  '       whether the widest one still clears the dock band. */',
+  '    const deepest = gs.length ? Math.max(...gs.map(g => Math.max(0,',
+  '      ...[...g.querySelectorAll(".col")].map(c => c.getBoundingClientRect().height)))) : null;',
   '    out.push({',
   '      room: room.getAttribute("data-room"),',
   '      groups: gs.length,',
-  '      rows: grid ? getComputedStyle(grid).gridTemplateRows : null,',
+  '      roomW: Math.round(room.getBoundingClientRect().width),',
+  '      rowW: row ? Math.round(row.getBoundingClientRect().width) : null,',
+  '      deepest: deepest === null ? null : Math.round(deepest),',
   '      groupH: gs.length ? Math.round(gs[0].getBoundingClientRect().height) : null,',
-  '      gridH: grid ? Math.round(grid.getBoundingClientRect().height) : null,',
   '      titleTop: title ? Math.round(title.getBoundingClientRect().top) : null,',
-  '      lastBottom: gs.length ? Math.round(gs[gs.length - 1].getBoundingClientRect().bottom) : null,',
+  '      lastBottom: gs.length ? Math.round(Math.max(...gs.map(g => g.getBoundingClientRect().bottom))) : null,',
   '      dockTop: Math.round(dockTop)',
   '    });',
   '  });',
@@ -77,8 +83,9 @@ console.log(`── ${W}x${H}`);
 for (const row of rows) {
   const ok = row.lastBottom === null || (row.lastBottom <= row.dockTop && row.titleTop >= 24);
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${String(row.room).padEnd(16)} groups=${String(row.groups).padEnd(3)}` +
-    ` groupH=${String(row.groupH).padEnd(5)} rows=${String(row.rows).padEnd(18)}` +
-    ` titleTop=${String(row.titleTop).padEnd(5)} lastBottom=${String(row.lastBottom).padEnd(6)} dockTop=${row.dockTop}`);
+    ` roomW=${String(row.roomW).padEnd(6)} rowW=${String(row.rowW).padEnd(6)}` +
+    ` deepest=${String(row.deepest).padEnd(5)} titleTop=${String(row.titleTop).padEnd(5)}` +
+    ` lastBottom=${String(row.lastBottom).padEnd(6)} dockTop=${row.dockTop}`);
 }
 await send('Target.closeTarget', { targetId });
 process.exit(0);
