@@ -40,29 +40,31 @@ check('an uncategorised project is kept, not dropped', () => {
    order. Every branch below is a real shape in js/data.js, not a hypothetical:
    four honours declare no images at all, and two projects point their team
    photograph at the placeholder. */
-const { groupPieces } = globalThis.Site;
+const { groupPieces, PLACEHOLDER, MIN_PIECES, MAX_PIECES } = globalThis.Site;
 
-check('a record with no images still yields one placeholder piece', () => {
+check('a record with no images still hangs a full composition', () => {
   const pieces = groupPieces({ description: 'x', year: '2026' }, 'record');
-  assert.equal(pieces.length, 1);
-  assert.equal(pieces[0].src, 'files/PlaceHolder.png');
+  assert.equal(pieces.length, MIN_PIECES);
+  assert.ok(pieces.every(p => p.src === PLACEHOLDER && p.awaited), 'an awaited frame is not marked');
 });
 
 check('a record with three images yields three pieces in order', () => {
   const pieces = groupPieces({ images: ['a.jpg', 'b.jpg', 'c.jpg'] }, 'record');
   assert.deepEqual(pieces.map(p => p.src), ['a.jpg', 'b.jpg', 'c.jpg']);
+  assert.ok(pieces.every(p => !p.awaited), 'a real photograph is marked awaited');
 });
 
 check('blank entries in an images array are not hung as pieces', () => {
   const pieces = groupPieces({ images: ['a.jpg', '', null, 'b.jpg'] }, 'record');
-  assert.deepEqual(pieces.map(p => p.src), ['a.jpg', 'b.jpg']);
+  assert.deepEqual(pieces.map(p => p.src), ['a.jpg', 'b.jpg', PLACEHOLDER]);
 });
 
 check('a project yields its overview and its team image', () => {
   const pieces = groupPieces({
     video: 'files/x.mp4', overview: { image: 'files/o.jpg' }, team: { image: 'files/t.jpg' }
   }, 'project');
-  assert.deepEqual(pieces.map(p => p.src), ['files/o.jpg', 'files/t.jpg']);
+  assert.deepEqual(pieces.map(p => p.src), ['files/o.jpg', 'files/t.jpg', PLACEHOLDER]);
+  assert.deepEqual(pieces.map(p => p.awaited), [false, false, true]);
 });
 
 check('a project with no still at all falls back to its poster frame', () => {
@@ -70,21 +72,23 @@ check('a project with no still at all falls back to its poster frame', () => {
      missing must still hang something: make-images.mjs generates a poster for
      every video, so that is the still of last resort before the placeholder. */
   const pieces = groupPieces({ video: 'files/Thing.mp4' }, 'project');
-  assert.deepEqual(pieces.map(p => p.src), ['files/posters/Thing.jpg']);
+  assert.deepEqual(pieces.map(p => p.src), ['files/posters/Thing.jpg', PLACEHOLDER, PLACEHOLDER]);
+  assert.deepEqual(pieces.map(p => p.awaited), [false, true, true]);
 });
 
 check('a project with neither image nor video hangs the placeholder', () => {
   const pieces = groupPieces({ id: 'empty' }, 'project');
-  assert.deepEqual(pieces.map(p => p.src), ['files/PlaceHolder.png']);
+  assert.deepEqual(pieces.map(p => p.src), [PLACEHOLDER, PLACEHOLDER, PLACEHOLDER]);
 });
 
-check('every real record yields at least one piece', () => {
+check('every real record hangs within the budget', () => {
   const P = globalThis.PORTFOLIO;
   [...P.projects.map(p => [p, 'project']),
    ...P.leadership.map(l => [l, 'record']),
    ...P.honors.map(h => [h, 'record'])].forEach(([rec, kind]) => {
     const pieces = groupPieces(rec, kind);
-    assert.ok(pieces.length >= 1, 'no piece for ' + (rec.title || rec.description));
+    assert.ok(pieces.length >= MIN_PIECES && pieces.length <= MAX_PIECES,
+      (rec.title || rec.description) + ' hangs ' + pieces.length);
     pieces.forEach(p => assert.ok(p.src, 'a piece has no src'));
   });
 });

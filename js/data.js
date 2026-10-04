@@ -300,32 +300,54 @@ const PORTFOLIO = {
 
   /* ── The pieces of a group ──────────────────────────────────────────────
      One record is one group; a group's pieces are its photographs, in the
-     order it declares them. A record with no photographs still yields one
-     placeholder: on a near-black wall a bare frame is a conspicuous hole, so
-     the placeholder is hung and labelled instead of nothing. */
+     order it declares them. A record with no photographs still hangs a full
+     composition: on a near-black wall a bare frame is a conspicuous hole, so
+     an awaited photograph is hung and labelled instead of nothing.
+
+     A piece carries whether its photograph has arrived. Resolving that here,
+     once, is what stops every call site from re-deriving it by matching the
+     placeholder path — and it is what lets the renderer draw an awaited frame
+     as a reserved place on the wall rather than as a grey picture. */
   var PLACEHOLDER = 'files/PlaceHolder.png';
 
+  /* The budget. Three frames is the floor because a two-frame hang reads as an
+     accident on a wall this wide; six is the ceiling because a seventh stack
+     is taller than the band a room can give it. */
+  var MIN_PIECES = 3;
+  var MAX_PIECES = 6;
+
+  function asPiece(src) { return { src: src, awaited: src === PLACEHOLDER }; }
+
+  /* Padding is appended rather than interleaved, so a group's lead frame is a
+     real photograph whenever the record has one. */
+  function fitPieces(srcs) {
+    var out = srcs.slice(0, MAX_PIECES).map(asPiece);
+    while (out.length < MIN_PIECES) out.push(asPiece(PLACEHOLDER));
+    return out;
+  }
+
   function groupPieces(record, kind) {
+    /* A record that does not exist hangs nothing — there is no group. */
     if (!record) return [];
     if (kind === 'project') {
       var out = [];
-      if (record.overview && record.overview.image) out.push({ src: record.overview.image });
-      if (record.team && record.team.image) out.push({ src: record.team.image });
-      if (out.length) return out;
+      if (record.overview && record.overview.image) out.push(record.overview.image);
+      if (record.team && record.team.image) out.push(record.team.image);
+      if (out.length) return fitPieces(out);
       /* A project with no still falls back to the poster frame
          tools/make-images.mjs generates for its video. */
       if (typeof record.video === 'string' && record.video) {
-        return [{ src: record.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg') }];
+        return fitPieces([record.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg')]);
       }
-      return [{ src: PLACEHOLDER }];
+      return fitPieces([PLACEHOLDER]);
     }
     var imgs = (Array.isArray(record.images) ? record.images : []).filter(Boolean);
-    return imgs.length
-      ? imgs.map(function (src) { return { src: src }; })
-      : [{ src: PLACEHOLDER }];
+    return fitPieces(imgs.length ? imgs : [PLACEHOLDER]);
   }
   globalThis.Site.groupPieces = groupPieces;
   globalThis.Site.PLACEHOLDER = PLACEHOLDER;
+  globalThis.Site.MIN_PIECES = MIN_PIECES;
+  globalThis.Site.MAX_PIECES = MAX_PIECES;
 
   /* ── The honours split ──────────────────────────────────────────────────
      A room is exactly one viewport tall with no vertical axis, and its groups

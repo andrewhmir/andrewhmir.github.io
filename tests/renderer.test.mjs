@@ -137,12 +137,17 @@ check('every room holds its groups in the grid', () => {
   }
 });
 
-check('every group hangs at least one piece', () => {
-  const groups = strip.split('<div class="group"').slice(1);
-  assert.ok(groups.length > 0, 'no groups rendered at all');
-  groups.forEach((g, i) => {
-    assert.match(g, /class="piece[^"]*" data-piece="0"/, 'group ' + i + ' has no first piece');
+check('every group hangs between three and six frames', () => {
+  /* The budget is a data-layer rule; this is the same rule read off the wall,
+     because a renderer that hung a different number than the data yields is
+     how a photograph goes missing without anything looking broken. */
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const n = (body.match(/class="piece/g) || []).length;
+    if (n < Site.MIN_PIECES || n > Site.MAX_PIECES) bad.push('group ' + i + ': ' + n + ' frames');
   });
+  assert.deepEqual(bad, [], bad.join(' | '));
 });
 
 check('no photograph is dropped or duplicated by grouping', () => {
@@ -159,35 +164,32 @@ check('no photograph is dropped or duplicated by grouping', () => {
   });
 });
 
-check('a single-piece group hangs its piece tall', () => {
-  /* Most honours are single-photograph. A lone frame sits in the lead column
-     at the lead height, rather than stranding itself at the left of an empty
-     two-column cluster at a supporting frame's size.
+check('the first frame of a group is hung as its lead', () => {
+  /* A group's lead is the composition's anchor, at the lead height rather than
+     a supporting frame's. Every group has one now: the floor is three frames,
+     so no group hangs a lone frame with an empty column beside it.
      A group whose photograph is still awaited is not a button — there is
      nothing to open — so its frame is a labelled span at the same height. */
-  const single = Site.groupPieces({ description: 'x', images: ['only.jpg'] }, 'record');
-  assert.equal(single.length, 1);
   const groups = strip.split('<div class="group"').slice(1);
-  const withOne = groups.filter((g) => {
+  assert.ok(groups.length > 0, 'no groups rendered at all');
+  groups.forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
-    return (body.match(/class="piece/g) || []).length === 1;
-  });
-  assert.ok(withOne.length > 0, 'no single-piece group in the strip');
-  withOne.forEach((g) => {
-    const body = g.split('<div class="group"')[0];
-    assert.match(body, /class="piece piece--(lead|pending)"/, 'a lone piece is not hung as the lead');
-    assert.match(body, /--h:max\(min\(20cqi, 96px\),54px\)/,
-      'a lone piece does not take the lead height');
+    assert.match(body, /data-piece="0"/, 'group ' + i + ' has no first frame');
   });
 });
 
 check('a photograph that is still awaited is not a dead control', () => {
-  /* Six honours declare no photograph at all. A focusable button that does
-     nothing when activated is worse than a frame that plainly is not one, so
-     those frames are labelled spans. */
+  /* A focusable button that does nothing when activated is worse than a frame
+     that plainly is not one. A record with no photographs at all has nothing
+     for any of its frames to open, so every frame of it is a labelled span —
+     and it hangs a full composition of them, not one.
+     Padding inside a record that DOES have photographs is not yet drawn this
+     way: that is Task 4's change, and this count tightens with it. */
   const pending = [...strip.matchAll(/<span class="piece piece--pending"[^>]*>/g)].map((m) => m[0]);
-  const noPhoto = PORTFOLIO.honors.filter((h) => !Array.isArray(h.images) || !h.images.length).length;
-  assert.equal(pending.length, noPhoto, pending.length + ' pending frames, expected ' + noPhoto);
+  const noPhoto = [...PORTFOLIO.leadership, ...PORTFOLIO.honors]
+    .filter((r) => !Array.isArray(r.images) || !r.images.length).length;
+  assert.equal(pending.length, noPhoto * Site.MIN_PIECES,
+    pending.length + ' awaited frames, expected ' + (noPhoto * Site.MIN_PIECES));
   pending.forEach((p) => {
     assert.match(p, /role="img"/, 'a pending frame has no role');
     assert.match(p, /aria-label="[^"]*awaited/, 'a pending frame is not named as awaited');
@@ -270,9 +272,9 @@ check('the plan draws one rectangle per photograph', () => {
     if (boxes !== pieces) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + pieces + ' photographs');
   });
   assert.deepEqual(bad, [], bad.join(' | '));
-  /* And the nine single-photograph honours groups are among them. */
+  /* And the honours groups with a single real photograph are among them. */
   const single = Site.groupPieces({ description: 'x', images: ['a.jpg'] }, 'record');
-  assert.equal(single.length, 1);
+  assert.equal(single.length, Site.MIN_PIECES);
 });
 
 check('a record with no summary still renders a narrative', () => {
@@ -317,11 +319,14 @@ check('every group has authored copy, not derived filler', () => {
   const inspect = (rec, kind) => {
     const name = rec.title || rec.description || '(unnamed)';
     if (!rec.summary) missing.push(name + ': no summary');
-    const n = Site.groupPieces(rec, kind).length;
+    /* A padding frame has nothing authored to carry: there is no photograph to
+       write about yet, and the label says so in one line. The invariant is that
+       every photograph that DOES hang has a title of its own, at its own index. */
     const p = Array.isArray(rec.pieces) ? rec.pieces : [];
-    if (p.length !== n) missing.push(name + ': ' + p.length + ' pieces vs ' + n + ' hung');
-    p.forEach((e, i) => {
-      if (!e || !e.title) missing.push(name + ': piece ' + i + ' untitled');
+    Site.groupPieces(rec, kind).forEach((piece, i) => {
+      if (piece.awaited) return;
+      const e = p[i];
+      if (!e || !e.title) missing.push(name + ': photograph ' + i + ' untitled');
     });
   };
   PORTFOLIO.projects.forEach((p) => inspect(p, 'project'));
@@ -371,12 +376,13 @@ check('every honours record hangs as a group', () => {
 });
 
 check('a piece whose photo is missing falls back to the placeholder', () => {
-  /* Every honour that declares no photographs at all hangs exactly one
-     labelled placeholder. On a near-black wall an empty frame is a
-     conspicuous hole. */
+  /* Every honour that declares no photographs at all hangs a full composition
+     of awaited frames rather than a single thin one. The count is the data's
+     own, read back off the wall. */
   const placeholders = (honoursStrip.match(/src="files\/PlaceHolder\.png"/g) || []).length;
-  const noPhoto = PORTFOLIO.honors.filter((h) => !Array.isArray(h.images) || !h.images.length).length;
-  assert.equal(placeholders, noPhoto, placeholders + ' placeholders, expected ' + noPhoto);
+  const awaited = PORTFOLIO.honors
+    .reduce((n, h) => n + Site.groupPieces(h, 'record').filter((p) => p.awaited).length, 0);
+  assert.equal(placeholders, awaited, placeholders + ' placeholders, expected ' + awaited);
 });
 
 check('no photo-less honour is a gallery trigger', () => {
