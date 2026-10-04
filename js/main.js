@@ -1071,14 +1071,16 @@
       + '</div></section>';
 
     /* Honours — one award or event is one group, with its photographs hung
-       together. A record still waiting for its photographs hangs a labelled
-       placeholder rather than a plate: on a near-black wall a bare frame is a
-       conspicuous hole, and a plate would read as a different kind of thing
-       from every other exhibit on the wall.
+       together. A record still waiting for its photographs hangs its frames as
+       reserved places rather than as plates: on a near-black wall a bare frame
+       is a conspicuous hole only if it is not part of a composition, and a
+       plate would read as a different kind of thing from every other exhibit
+       on the wall.
 
-       Thirteen groups will not fit one room's grid of six, so the array is
-       split in three. Each room keeps the true indices into PORTFOLIO.honors,
-       because Site.galleryFor resolves against that unfiltered array. */
+       One gallery now, because a gallery is as wide as its own hang, so all
+       thirteen fit on one wall. Whatever honoursRooms() yields, each group
+       keeps its true index into PORTFOLIO.honors — `hr.offset + i` — because
+       Site.galleryFor resolves against that unfiltered array. */
     honoursRooms().forEach(function (hr) {
       html += '<section class="room" data-room="' + esc(hr.key) + '" tabindex="-1">'
         + '<h2 class="room-title"><span class="t">' + esc(hr.label) + '</span>'
