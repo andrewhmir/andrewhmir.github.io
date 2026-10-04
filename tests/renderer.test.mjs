@@ -356,18 +356,42 @@ check('the plan is hidden from assistive tech', () => {
   plans.forEach((p) => assert.match(p, /aria-hidden="true"/, 'a plan is not aria-hidden'));
 });
 
-check('the plan draws one rectangle per photograph', () => {
-  /* The plan is a picture of the hang, so its box count has to match the
-     wall's. It emitted two rectangles for every single-photograph group once,
-     because the lead index was computed from `pieceCount > 1`. */
+check('the label reads plan, narrative, catalogue — in that order', () => {
+  /* The label is a column now, not a strip: it stacks downward beside the
+     cluster. The order is what makes it a museum label rather than a caption,
+     and it is the only part of that the DOM alone can pin — the direction
+     itself is CSS. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
-    const pieces = (body.match(/class="piece/g) || []).length;
+    const order = ['class="plan"', 'class="narr"', 'class="cat"'].map((needle) => body.indexOf(needle));
+    if (order.some((n) => n < 0)) { bad.push('group ' + i + ': a label part is missing'); return; }
+    if (JSON.stringify(order) !== JSON.stringify(order.slice().sort((a, b) => a - b))) {
+      bad.push('group ' + i + ': the label does not read plan, narrative, catalogue');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the plan draws the arrangement the wall hangs', () => {
+  /* The plan is a picture of the hang, so its box count has to match the
+     wall's AND its columns have to be the same columns. Drawn from a piece
+     count it could only ever be a picture of something else. */
+  const named = new Map();
+  Object.values(Site.HANG_LAYOUTS).flat().forEach((l) => named.set(l.name, l));
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
     const plan = body.match(/<div class="plan"[\s\S]*?<\/div>/);
     if (!plan) { bad.push('group ' + i + ': no plan'); return; }
     const boxes = (plan[0].match(/<i class=/g) || []).length;
-    if (boxes !== pieces) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + pieces + ' photographs');
+    const frames = (body.match(/class="piece/g) || []).length;
+    if (boxes !== frames) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + frames + ' frames');
+    const layout = named.get((body.match(/data-hang="([^"]+)"/) || [])[1]);
+    const cols = (plan[0].match(/<span class="pcol"/g) || []).length;
+    if (layout && cols !== layout.columns.length) {
+      bad.push('group ' + i + ': plan has ' + cols + ' columns, wall has ' + layout.columns.length);
+    }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
   /* And the honours groups with a single real photograph are among them. */
@@ -378,7 +402,7 @@ check('the plan draws one rectangle per photograph', () => {
 check('a record with no summary still renders a narrative', () => {
   const stripped = { description: 'Some Award – Champion', year: '2026' };
   const pieces = Site.groupPieces(stripped, 'record');
-  const html = renderLabelFor(stripped, 'record', 0, pieces.length, pieces);
+  const html = renderLabelFor(stripped, pieces, Site.hangLayout('test', pieces.length));
   assert.match(html, /Some Award/, 'fell through to nothing');
   assert.match(html, /class="narr-text">[^<]*Some Award/, 'the narrative is empty');
 });
@@ -386,7 +410,7 @@ check('a record with no summary still renders a narrative', () => {
 check('a pieces array shorter than images falls back per entry', () => {
   const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
   const pieces = Site.groupPieces(record, 'record');
-  const html = renderLabelFor(record, 'record', 0, pieces.length, pieces);
+  const html = renderLabelFor(record, pieces, Site.hangLayout('test', pieces.length));
   assert.match(html, /Only one/, 'the first entry lost its title');
   assert.match(html, /Photograph B/, 'the missing tail did not fall back');
 });
@@ -394,8 +418,9 @@ check('a pieces array shorter than images falls back per entry', () => {
 check('a pieces array longer than images is ignored, not thrown', () => {
   const record = { description: 'X', images: ['a.jpg'], pieces: [{ title: 'A' }, { title: 'B' }] };
   const pieces = Site.groupPieces(record, 'record');
-  assert.doesNotThrow(() => renderLabelFor(record, 'record', 0, pieces.length, pieces));
-  const html = renderLabelFor(record, 'record', 0, pieces.length, pieces);
+  const layout = Site.hangLayout('test', pieces.length);
+  assert.doesNotThrow(() => renderLabelFor(record, pieces, layout));
+  const html = renderLabelFor(record, pieces, layout);
   assert.equal((html.match(/class="cat-entry"/g) || []).length, 1,
     'an extra pieces entry was hung as a photograph that does not exist');
   /* The other two frames are padding, and the label says so in one line rather
@@ -407,12 +432,14 @@ check('a pieces array longer than images is ignored, not thrown', () => {
 check('a project label names the venue, a record label names the year', () => {
   const projectRecord = { title: 'Project X', venue: 'August 2025', overview: { text: 'why' } };
   const projectPieces = Site.groupPieces(projectRecord, 'project');
-  const project = renderLabelFor(projectRecord, 'project', 0, projectPieces.length, projectPieces);
+  const project = renderLabelFor(projectRecord, projectPieces,
+    Site.hangLayout('test', projectPieces.length));
   assert.match(project, /Project X/);
   assert.match(project, /August 2025/);
   const recordRecord = { description: 'Some Honour', year: 'April 2026' };
   const recordPieces = Site.groupPieces(recordRecord, 'record');
-  const record = renderLabelFor(recordRecord, 'record', 0, recordPieces.length, recordPieces);
+  const record = renderLabelFor(recordRecord, recordPieces,
+    Site.hangLayout('test', recordPieces.length));
   assert.match(record, /Some Honour/);
   assert.match(record, /April 2026/);
 });

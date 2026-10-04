@@ -903,7 +903,7 @@
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
       + ' data-entry="' + esc(entryKey) + '">'
       + renderCluster(pieces, layout, record, kind, entryKey)
-      + renderGroupLabel(record, kind, index, pieces.length, pieces)
+      + renderLabel(record, pieces, layout)
       + '</div>';
   }
 
@@ -934,20 +934,17 @@
   }
 
   /* The plan: the same composition the cluster hangs, drawn small. It is built
-     from the piece count rather than from coordinates, so it cannot disagree
-     with what is on the wall — a first version emitted a stack box AND a lead
-     box for a one-photograph group, drawing two frames for a wall that hangs
-     one. */
-  function renderPlan(pieceCount) {
-    if (pieceCount < 1) return '<div class="plan" aria-hidden="true"></div>';
-    var stack = pieceCount - 1;
+     from the ARRANGEMENT rather than from a piece count, so it cannot disagree
+     with what is on the wall — not in its box count and not in its columns. A
+     piece count could only ever draw one shape, and the wall hangs several. */
+  function renderPlan(layout) {
+    var cols = (layout && layout.columns) ? layout.columns : [];
     return '<div class="plan" aria-hidden="true">'
-      + '<i class="pi pi-lead"></i>'
-      + (stack > 0
-          ? '<span class="pi-stack">'
-            + Array.apply(null, Array(stack)).map(function () { return '<i class="pi"></i>'; }).join('')
-            + '</span>'
-          : '')
+      + cols.map(function (indices) {
+          return '<span class="pcol">' + indices.map(function (i) {
+            return '<i class="pi' + (i === layout.lead ? ' pi-lead' : '') + '"></i>';
+          }).join('') + '</span>';
+        }).join('')
       + '</div>';
   }
 
@@ -1000,27 +997,26 @@
     return out + (awaited ? awaitedNote(awaited) : '');
   }
 
-  function renderLabel(record, kind, index, pieceCount, pieces) {
+  /* One label per group, and it is a COLUMN beside the cluster rather than a
+     strip across it: the plan of the hang, the narrative that frames the group,
+     then a catalogue entry beneath another. `kind` and `index` used to be
+     parameters here and neither was ever read. */
+  function renderLabel(record, pieces, layout) {
+    var list = Array.isArray(pieces) ? pieces : [];
     var title = labelTitle(record);
     var meta = labelMeta(record);
     return '<div class="label">'
-      + renderPlan(pieceCount)
+      + renderPlan(layout)
       + '<div class="narr">'
       + '<p class="narr-title">' + esc(title) + '</p>'
       + (meta ? '<p class="narr-meta">' + esc(meta)
-          + (pieceCount > 1 ? ' · ' + pieceCount + ' photographs' : '') + '</p>' : '')
+          + (list.length > 1 ? ' · ' + list.length + ' photographs' : '') + '</p>' : '')
       + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
       + '</div>'
-      + '<div class="cat">' + renderCatalogue(record, pieces) + '</div>'
+      + '<div class="cat">' + renderCatalogue(record, list) + '</div>'
       + '</div>';
   }
   Site.renderLabel = renderLabel;
-
-  /* Every group's label is built by renderLabel above. The pieces travel whole,
-     not as a list of paths: the label has to know which of them has arrived. */
-  function renderGroupLabel(record, kind, index, pieceCount, pieces) {
-    return renderLabel(record, kind, index, pieceCount, pieces);
-  }
 
   function renderRooms() {
     var strip = document.getElementById('strip');

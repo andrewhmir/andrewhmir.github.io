@@ -1824,24 +1824,39 @@ body {
    share of the row. The catalogue is the deepest part of it: one compact entry
    per photograph, each two short lines at most, so a four-photograph group's
    label is about 120px and two rows still fit one viewport. */
+/* The label stands beside the cluster and stacks downward: the plan of the
+   hang, the title and its year, the narrative, then a catalogue entry beneath
+   another. It used to be a horizontal strip of plan | narrative | catalogue,
+   which is what crushed the catalogue into two columns of about ninety pixels
+   — a shape it only had because two rows of groups had to fit one screen.
+
+   Its width is fixed (--label-w) rather than a share of what the cluster
+   leaves. That is load-bearing in two directions: a wide cluster widens the
+   GROUP instead of squeezing the text, and every label on a long wall is the
+   same width, which is what makes them read as a set. */
 .label {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  width: var(--label-w);
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  flex-direction: column;
+  gap: 7px;
   border-top: 1px solid var(--edge);
-  padding-top: 6px;
+  padding-top: 7px;
 }
 
-/* The plan is a picture of the hang, built from the same piece count the
-   cluster uses, so it cannot disagree with the wall. It is a fixed gutter, not
-   a column that grows. */
+/* The plan is a picture of the hang, built from the same arrangement the
+   cluster hangs, so it cannot disagree with the wall — not in its box count and
+   not in its columns. It is a fixed gutter, not a column that grows. */
 .plan {
-  flex: 0 0 30px;
   display: flex;
   align-items: flex-start;
   gap: 3px;
+}
+
+.pcol {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .plan i {
@@ -1850,14 +1865,14 @@ body {
 }
 
 .plan .pi-lead { width: 14px; height: 10px; }
-.plan .pi-stack { display: flex; flex-direction: column; gap: 2px; }
 .plan .pi { width: 9px; height: 6px; }
 
 /* The narrative: the group's own name, its venue or year, and one paragraph.
-   Every line is capped, because this sits above the catalogue and would
-   otherwise push the catalogue's last entries out of the row — where there is
-   no vertical axis to scroll to them. */
-.narr { flex: 0 0 27%; min-width: 0; }
+   The paragraph is capped at three lines — one more than the strip allowed,
+   because there is room for it now — so a long summary cannot push the
+   catalogue's last entries past the foot of the wall, where there is no
+   vertical axis to scroll to them. */
+.narr { flex: 0 0 auto; min-width: 0; }
 
 .narr-title {
   font-family: var(--font-heading);
@@ -1889,26 +1904,38 @@ body {
   color: var(--text);
   margin: 1px 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* The catalogue: one entry per photograph, each a single row of two short
-   lines. Two columns, never wrapping: with `wrap` the entries reflowed into a
-   narrower column and each grew to three lines, which doubled the label's
-   depth and pushed the last entries out of the group. */
+/* The catalogue: one entry per photograph that exists, stacked. It was two
+   columns of a strip ninety pixels wide, which is where every entry's title
+   ended in an ellipsis. Stacked in a column of its own each entry gets a line
+   it can finish. */
 .cat {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
   display: flex;
-  flex-wrap: nowrap;
-  gap: 2px 9px;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .cat-entry {
-  flex: 1 1 50%;
+  flex: 0 0 auto;
   min-width: 0;
+}
+
+/* However many photographs a group is still waiting for, said once. A group
+   with no photographs at all would otherwise print "Photograph awaited" as many
+   times as it hangs frames. */
+.ca-note {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+  margin: 0;
 }
 
 .ce-title {
