@@ -1743,7 +1743,14 @@ body {
 /* The columns of the hang, in flow, so each frame takes its own photograph's
    width. How many columns there are, and which pieces sit in each, is the
    arrangement's business; the drop that keeps a stack from reading as one tall
-   frame is written inline per column. */
+   frame is written inline per column.
+
+   `align-items: flex-start` is load-bearing, not cosmetic. A flex column
+   stretches its children to the widest one by default, which draws the widest
+   frame's width around every other photograph in that column and leaves the
+   piece's black ground showing beside the narrow ones — measured at 135px of
+   ground on the honours wall, and invisible to every other check because the
+   frame still collides with nothing and still clears the tap floor. */
 .cluster {
   display: flex;
   align-items: flex-start;
@@ -1754,6 +1761,7 @@ body {
 .col {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--col-gap);
   min-width: 0;
 }
@@ -1782,25 +1790,36 @@ body {
    before its bytes are. With the width following the photograph, an unloaded
    frame collapsed to the frame and the mat alone — measured at 18x152 on a
    phone, far under the 44px tap floor, and then it popped open when the
-   photograph arrived. The floor holds it at a landscape shape until then.
+   photograph arrived. The floor holds it open until then.
 
-   6/5 is deliberately narrower than every photograph in the collection (the
-   narrowest is 1.33:1, the widest 2.01:1), so once a frame is loaded this rule
-   never binds and no photograph is ever barred inside its own frame. It is on
-   .piece and not on the image because the image's own percentage floor resolves
-   against an indefinite width and does nothing. */
-.piece { min-width: calc(var(--sup-h) * 6 / 5); }
+   2/3 is deliberately narrower than every photograph in the collection: the
+   narrowest is 0.75 (three 3:4 portraits) and the widest is 2.251. So once a
+   frame is loaded this rule never binds and no photograph is ever barred
+   inside its own frame — which is what would happen at any floor above 0.75,
+   and did at the 6/5 this replaces. 2/3 of the shortest frame height is still
+   51x77 at the 1280x704 floor, above the 44x44 tap target.
 
-.piece--lead { height: var(--lead-h); min-width: calc(var(--lead-h) * 6 / 5); }
+   It is on .piece and not on the image because the image's own percentage
+   floor resolves against an indefinite width and does nothing. */
+.piece { min-width: calc(var(--sup-h) * 2 / 3); }
 
-/* An awaited photograph is a reserved place on the wall: the frame and its mat,
-   and no picture. It needs a width of its own, because unlike every other frame
-   it has no photograph to take its proportions from. It still takes --sup-h or
-   --lead-h, so the composition keeps its shape whether or not the photograph
-   has arrived. */
+.piece--lead { height: var(--lead-h); min-width: calc(var(--lead-h) * 2 / 3); }
+
+/* An awaited photograph is a reserved place on the wall: the gilt frame and its
+   mat, and no picture. It needs a width of its own, because unlike every other
+   frame it has no photograph to take its proportions from, so it is held at the
+   3:2 of the frame that will hang there. It still takes --sup-h or --lead-h, so
+   the composition keeps its shape whether or not the photograph has arrived.
+
+   The mat is drawn as an inset shadow because a hung frame gets its mat from
+   the image's own 6px border and this frame has no image. Without it the
+   interior is the piece's black ground inside a gilt edge — on a near-black
+   wall that is a hole, not a reserved place. The drop shadow is repeated here
+   because box-shadow does not add across rules. */
 .piece--pending {
   aspect-ratio: 3 / 2;
   cursor: default;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .66), inset 0 0 0 6px #ece3d2;
 }
 
 /* A frame is given a height; its width follows its photograph, so the frame

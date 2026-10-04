@@ -1003,6 +1003,11 @@
      parameters here and neither was ever read. */
   function renderLabel(record, pieces, layout) {
     var list = Array.isArray(pieces) ? pieces : [];
+    /* A frame is not a photograph. The count is the photographs that exist, not
+       the frames hung: padding fills a group up to the floor, so a record with
+       none at all used to read "3 photographs" three lines above "Three
+       photographs awaited". */
+    var photographs = list.filter(function (p) { return !p.awaited; }).length;
     var title = labelTitle(record);
     var meta = labelMeta(record);
     return '<div class="label">'
@@ -1010,7 +1015,9 @@
       + '<div class="narr">'
       + '<p class="narr-title">' + esc(title) + '</p>'
       + (meta ? '<p class="narr-meta">' + esc(meta)
-          + (list.length > 1 ? ' · ' + list.length + ' photographs' : '') + '</p>' : '')
+          + (photographs
+              ? ' · ' + photographs + ' photograph' + (photographs === 1 ? '' : 's')
+              : '') + '</p>' : '')
       + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
       + '</div>'
       + '<div class="cat">' + renderCatalogue(record, list) + '</div>'

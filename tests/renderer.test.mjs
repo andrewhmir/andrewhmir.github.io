@@ -404,6 +404,41 @@ check('the plan draws the arrangement the wall hangs', () => {
   assert.equal(single.length, Site.MIN_PIECES);
 });
 
+check('the label counts photographs, not frames', () => {
+  /* The meta line names the group's date and how many photographs it holds.
+     It counted hung frames, which includes the padding that fills a group to
+     the floor — so a record with no photographs at all read "3 photographs"
+     three lines above "Three photographs awaited". A frame is not a
+     photograph. */
+  const strip_ = strip;
+  const bad = [];
+  strip_.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const meta = body.match(/<p class="narr-meta">([^<]*)<\/p>/);
+    if (!meta) return;                       /* a record with no year has none */
+    const claimed = Number((meta[1].match(/·\s*(\d+)\s+photograph/) || [])[1]);
+    const frames = (body.match(/class="piece/g) || []).length;
+    const awaited = (body.match(/class="piece piece--pending/g) || []).length;
+    if (!Number.isNaN(claimed) && claimed !== frames - awaited) {
+      bad.push('group ' + i + ': claims ' + claimed + ' of ' + (frames - awaited) + ' photographs');
+    }
+    if (Number.isNaN(claimed) && frames - awaited > 0) {
+      bad.push('group ' + i + ': has ' + (frames - awaited) + ' photographs and names none');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+  /* And the shipped case that made it visible: an honour whose record declares
+     no photographs must not claim any. */
+  const none = PORTFOLIO.honors.filter((h) => !Array.isArray(h.images) || !h.images.length);
+  assert.ok(none.length > 0, 'fixture needs an honour with no photographs');
+  none.forEach((h) => {
+    const pieces = Site.groupPieces(h, 'record');
+    const html = renderLabelFor(h, pieces, Site.hangLayout('test', pieces.length));
+    assert.ok(!/photographs?<\/p>/.test(html.split('class="narr-text"')[0]),
+      'a photograph-less group still claims photographs: ' + h.description);
+  });
+});
+
 check('a record with no summary still renders a narrative', () => {
   const stripped = { description: 'Some Award – Champion', year: '2026' };
   const pieces = Site.groupPieces(stripped, 'record');

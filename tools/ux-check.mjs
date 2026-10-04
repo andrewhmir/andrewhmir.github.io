@@ -72,7 +72,21 @@ const evaluate = async (expr) => {
 };
 const setViewport = (width, height, mobile = false) =>
   cdp.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
-const goto = async (url) => { const d = cdp.waitFor('Page.loadEventFired'); await cdp.send('Page.navigate', { url }); await d; await sleep(1500); };
+/* Navigate and wait for the load event, with a bound on the wait. Without one
+   a slow or busy browser hangs the whole suite in silence — `Page.loadEventFired`
+   simply never arrives, the process never exits, and nothing says why. Observed
+   once under the load of forcing every photograph on the wall to load, which the
+   geometry section now does at both reference viewports. Fails loudly instead. */
+const LOAD_TIMEOUT_MS = 30000;
+const goto = async (url) => {
+  const d = Promise.race([
+    cdp.waitFor('Page.loadEventFired'),
+    sleep(LOAD_TIMEOUT_MS).then(() => { throw new Error('timed out after ' + LOAD_TIMEOUT_MS + 'ms waiting for ' + url + ' to load'); }),
+  ]);
+  await cdp.send('Page.navigate', { url });
+  await d;
+  await sleep(1500);
+};
 
 /* ── The walk is horizontal ──────────────────────────────────────────────
    Bringing a work into view means scrolling #hall along its one axis, not the
@@ -478,6 +492,18 @@ await section('The deepest hang stays inside the room', async () => {
   for (const [w, h] of [[1440, 900], [1280, 704]]) {
     await setViewport(w, h, false);
     await goto(BASE);
+    /* Every photograph on the wall, not just the ones the walk has reached. A
+       frame whose photograph has not been FETCHED has no width of its own, so
+       measuring it measures the loading floor rather than the hang. */
+    await evaluate(`(async () => {
+      const imgs = [...document.querySelectorAll('#strip img')];
+      imgs.forEach(i => { i.loading = 'eager'; });
+      const deadline = Date.now() + 30000;
+      while (Date.now() < deadline && imgs.some(i => !i.complete)) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      await new Promise(r => setTimeout(r, 600));
+    })()`);
     const worst = await evaluate(`(() => {
       let worst = null;
       document.querySelectorAll('#strip .group').forEach(g => {
@@ -508,6 +534,66 @@ await section('The deepest hang stays inside the room', async () => {
     check('every frame clears 44x44 at ' + w + 'x' + h,
           frames.minW >= 44 && frames.minH >= 44,
           Math.round(frames.minW) + 'x' + Math.round(frames.minH));
+
+    /* The invariant spec 6.1 actually states: a frame takes its photograph's
+       shape. The height is given, the width follows, and the frame is the
+       photograph plus its mat and nothing else. A column is a flex box, and a
+       flex box stretches its children by default — which draws the widest
+       frame's width around every photograph in that column and leaves the
+       piece's black ground showing beside the narrow ones. It is invisible to
+       every other check here, because the frame still does not collide with
+       anything and still clears the tap floor. */
+    const stretched = await evaluate(`(() => {
+      const out = [];
+      const name = (p) => p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
+      document.querySelectorAll('#strip .group .piece').forEach(p => {
+        const r = p.getBoundingClientRect();
+        if (r.height === 0) return;
+        if (p.classList.contains('piece--pending')) {
+          /* An awaited frame has no photograph to take a shape from, so it is
+             held at the 3:2 of the frame that will hang there. */
+          const want = r.height * 1.5;
+          if (Math.abs(r.width - want) > 14) {
+            out.push(name(p) + ' awaited frame ' + Math.round(r.width) + ' wide, not ' + Math.round(want));
+          }
+          return;
+        }
+        const img = p.querySelector('img');
+        if (!img || !img.complete || !img.naturalWidth) return;
+        const slack = Math.round(r.width - img.getBoundingClientRect().width);
+        /* The frame's own 3px gilt edge either side, and nothing more. */
+        if (slack > 12) {
+          out.push(name(p) + ' frame ' + Math.round(r.width) + ' around a ' +
+            Math.round(img.getBoundingClientRect().width) + 'px photograph: ' + slack + 'px of ground');
+        }
+      });
+      return out;
+    })()`);
+    check('a frame is as wide as its photograph at ' + w + 'x' + h,
+          stretched.length === 0,
+          stretched.length + ' stretched: ' + stretched.slice(0, 6).join(' | '));
+
+    /* An awaited frame is a reserved place on the wall, not a hole in it. A
+       hung photograph gets its cream mat from the image's own 6px border; a
+       frame with no image gets nothing, so its interior is the piece's black
+       ground inside a gilt edge — measured on the honours wall as three solid
+       black rectangles where a record declares no photographs at all, which is
+       the conspicuous hole the empty-frame treatment exists to avoid. The mat
+       colour is read off a hung frame rather than hard-coded, so the two cannot
+       drift apart. */
+    const matted = await evaluate(`(() => {
+      const img = document.querySelector('#strip .group .piece img');
+      const mat = img ? getComputedStyle(img).borderTopColor : null;
+      const awaited = [...document.querySelectorAll('#strip .piece--pending')];
+      if (!mat || !awaited.length) return { ok: false, why: 'nothing to compare', mat, awaited: awaited.length };
+      const bare = awaited.filter(p => {
+        const cs = getComputedStyle(p);
+        return (cs.boxShadow || '').indexOf(mat) === -1 && (cs.borderTopColor || '') !== mat;
+      }).length;
+      return { ok: bare === 0, mat, awaited: awaited.length, bare };
+    })()`);
+    check('an awaited frame is matted like a hung photograph at ' + w + 'x' + h,
+          matted.ok, JSON.stringify(matted));
   }
   await setViewport(1440, 900, false);
   await goto(BASE);
