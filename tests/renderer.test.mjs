@@ -247,22 +247,22 @@ check('the first frame of a group is hung as its lead', () => {
 
 check('a photograph that is still awaited is not a dead control', () => {
   /* A focusable button that does nothing when activated is worse than a frame
-     that plainly is not one. A record with no photographs at all has nothing
-     for any of its frames to open, so every frame of it is a labelled span —
-     and it hangs a full composition of them, not one.
-     Padding inside a record that DOES have photographs is not yet drawn this
-     way: that is Task 4's change, and this count tightens with it. */
+     that plainly is not one. Every frame without a photograph behind it — the
+     padding that fills a group to the floor, and every frame of a record that
+     declares none at all — is a labelled span. */
   const pending = [...strip.matchAll(/<span class="piece piece--pending[^"]*"[^>]*>/g)].map((m) => m[0]);
-  const noPhoto = [...PORTFOLIO.leadership, ...PORTFOLIO.honors]
-    .filter((r) => !Array.isArray(r.images) || !r.images.length).length;
-  assert.equal(pending.length, noPhoto * Site.MIN_PIECES,
-    pending.length + ' awaited frames, expected ' + (noPhoto * Site.MIN_PIECES));
+  const awaited = [...PORTFOLIO.projects.map((p) => [p, 'project']),
+    ...PORTFOLIO.leadership.map((l) => [l, 'record']),
+    ...PORTFOLIO.honors.map((h) => [h, 'record'])]
+    .reduce((n, [rec, kind]) => n + Site.groupPieces(rec, kind).filter((p) => p.awaited).length, 0);
+  assert.equal(pending.length, awaited, pending.length + ' awaited frames, expected ' + awaited);
   pending.forEach((p) => {
     assert.match(p, /role="img"/, 'a pending frame has no role');
     assert.match(p, /aria-label="[^"]*awaited/, 'a pending frame is not named as awaited');
     assert.ok(!/data-gallery|data-action/.test(p), 'a pending frame carries a handler it cannot honour');
   });
-  assert.match(strip, /Photograph awaited/, 'the placeholder is still named after its file');
+  assert.match(strip, /aria-label="[^"]*photograph awaited/,
+    'awaited frames are not named as awaited');
 });
 
 check('every piece falls back to the placeholder when its image fails', () => {
@@ -299,22 +299,53 @@ check('every group carries a plan, a narrative and a catalogue', () => {
     if (!title || !title[1].trim()) bad.push('group ' + i + ': no narrative title');
     const text = g.match(/<p class="narr-text">([^<]*)<\/p>/);
     if (!text || !text[1].trim()) bad.push('group ' + i + ': empty narrative');
-    if (!/class="cat-entry"/.test(g)) bad.push('group ' + i + ': no catalogue entry');
+    if (!/class="cat-entry"/.test(g) && !/class="ca-note"/.test(g)) {
+      bad.push('group ' + i + ': neither a catalogue entry nor an awaited note');
+    }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
-check('the catalogue has one entry per piece', () => {
+check('the catalogue has one entry per photograph, and names the awaited ones once', () => {
+  /* A group whose photographs are all awaited gets no catalogue entry at all,
+     only the note: three entries reading "Photograph awaited" is not a
+     catalogue, it is a stutter. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     /* Bound the group at the next group, so the count cannot pick up a
        neighbouring group's catalogue. */
     const body = g.split('<div class="group"')[0];
-    const pieces = (body.match(/class="piece/g) || []).length;
+    const frames  = (body.match(/class="piece/g) || []).length;
+    const awaited = (body.match(/class="piece piece--pending/g) || []).length;
     const entries = (body.match(/class="cat-entry"/g) || []).length;
-    if (entries !== pieces) bad.push('group ' + i + ': ' + entries + ' entries for ' + pieces + ' pieces');
+    const notes   = (body.match(/class="ca-note"/g) || []).length;
+    if (entries !== frames - awaited) {
+      bad.push('group ' + i + ': ' + entries + ' entries for ' + (frames - awaited) + ' photographs');
+    }
+    if (notes !== (awaited > 0 ? 1 : 0)) {
+      bad.push('group ' + i + ': ' + notes + ' awaited notes for ' + awaited + ' awaited frames');
+    }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('an awaited frame is an empty frame, not a grey picture', () => {
+  /* 34 of the 71 frames on this wall are waiting for a photograph. Drawing the
+     same 405x260 placeholder in every one of them is not a reserved place on
+     the wall, it is a broken image repeated. */
+  const pending = [...strip.matchAll(/<span class="piece piece--pending[^"]*"[^>]*><\/span>/g)].map((m) => m[0]);
+  assert.ok(pending.length > 0, 'no awaited frames rendered');
+  pending.forEach((p) => {
+    assert.ok(!/<img/.test(p), 'an awaited frame still loads a picture: ' + p.slice(0, 90));
+    assert.match(p, /role="img"/, 'an awaited frame has no role');
+    assert.match(p, /aria-label="[^"]*awaited/, 'an awaited frame is not named as awaited');
+    assert.ok(!/data-gallery|data-action/.test(p), 'an awaited frame carries a handler it cannot honour');
+  });
+  /* Keyed on `src="`, not on the path: every real frame keeps its onerror
+     fallback to the placeholder, which is a safety net for a photograph whose
+     file is missing and not a picture anyone is meant to see. */
+  assert.ok(!/src="files\/PlaceHolder\.png"/.test(strip),
+    'a frame still draws the placeholder picture');
 });
 
 check('the plan is hidden from assistive tech', () => {
@@ -346,33 +377,42 @@ check('the plan draws one rectangle per photograph', () => {
 
 check('a record with no summary still renders a narrative', () => {
   const stripped = { description: 'Some Award – Champion', year: '2026' };
-  const html = renderLabelFor(stripped, 'record', 0, 1, ['files/x.jpg']);
+  const pieces = Site.groupPieces(stripped, 'record');
+  const html = renderLabelFor(stripped, 'record', 0, pieces.length, pieces);
   assert.match(html, /Some Award/, 'fell through to nothing');
   assert.match(html, /class="narr-text">[^<]*Some Award/, 'the narrative is empty');
 });
 
 check('a pieces array shorter than images falls back per entry', () => {
   const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
-  const html = renderLabelFor(record, 'record', 0, 2, record.images);
+  const pieces = Site.groupPieces(record, 'record');
+  const html = renderLabelFor(record, 'record', 0, pieces.length, pieces);
   assert.match(html, /Only one/, 'the first entry lost its title');
   assert.match(html, /Photograph B/, 'the missing tail did not fall back');
 });
 
 check('a pieces array longer than images is ignored, not thrown', () => {
   const record = { description: 'X', images: ['a.jpg'], pieces: [{ title: 'A' }, { title: 'B' }] };
-  assert.doesNotThrow(() => renderLabelFor(record, 'record', 0, 1, record.images));
-  const html = renderLabelFor(record, 'record', 0, 1, record.images);
+  const pieces = Site.groupPieces(record, 'record');
+  assert.doesNotThrow(() => renderLabelFor(record, 'record', 0, pieces.length, pieces));
+  const html = renderLabelFor(record, 'record', 0, pieces.length, pieces);
   assert.equal((html.match(/class="cat-entry"/g) || []).length, 1,
     'an extra pieces entry was hung as a photograph that does not exist');
+  /* The other two frames are padding, and the label says so in one line rather
+     than inventing a photograph for each. */
+  assert.equal((html.match(/class="ca-note"/g) || []).length, 1,
+    'the padding was not named as awaited');
 });
 
 check('a project label names the venue, a record label names the year', () => {
-  const project = renderLabelFor(
-    { title: 'Project X', venue: 'August 2025', overview: { text: 'why' } },
-    'project', 0, 2, ['files/o.jpg', 'files/t.jpg']);
+  const projectRecord = { title: 'Project X', venue: 'August 2025', overview: { text: 'why' } };
+  const projectPieces = Site.groupPieces(projectRecord, 'project');
+  const project = renderLabelFor(projectRecord, 'project', 0, projectPieces.length, projectPieces);
   assert.match(project, /Project X/);
   assert.match(project, /August 2025/);
-  const record = renderLabelFor({ description: 'Some Honour', year: 'April 2026' }, 'record', 0, 1, ['files/a.jpg']);
+  const recordRecord = { description: 'Some Honour', year: 'April 2026' };
+  const recordPieces = Site.groupPieces(recordRecord, 'record');
+  const record = renderLabelFor(recordRecord, 'record', 0, recordPieces.length, recordPieces);
   assert.match(record, /Some Honour/);
   assert.match(record, /April 2026/);
 });
@@ -442,16 +482,14 @@ check('every honours record hangs as a group', () => {
     groups + ' honours groups, expected ' + PORTFOLIO.honors.length);
 });
 
-check('a piece whose photo is missing falls back to the placeholder', () => {
-  /* Every honour that declares no photographs at all hangs a full composition
-     of awaited frames rather than a single thin one. Those frames draw no
-     picture at all as of Task 4; until then only the padding inside a record
-     that HAS photographs does, which is what this count covers. */
-  const placeholders = (honoursStrip.match(/src="files\/PlaceHolder\.png"/g) || []).length;
-  const awaited = PORTFOLIO.honors
-    .filter((h) => Array.isArray(h.images) && h.images.length)
-    .reduce((n, h) => n + Site.groupPieces(h, 'record').filter((p) => p.awaited).length, 0);
-  assert.equal(placeholders, awaited, placeholders + ' placeholders, expected ' + awaited);
+check('no honour hangs the placeholder picture', () => {
+  /* Six honours declare no photographs at all, and every group carries padding
+     up to the floor. All of it draws an empty frame now, not the same grey
+     picture over and over. */
+  assert.ok(!/src="files\/PlaceHolder\.png"/.test(honoursStrip),
+    'an honour still draws the placeholder picture');
+  const awaited = (honoursStrip.match(/class="piece piece--pending/g) || []).length;
+  assert.ok(awaited > 0, 'no awaited frame on the honours wall');
 });
 
 check('no photo-less honour is a gallery trigger', () => {

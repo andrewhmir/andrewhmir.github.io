@@ -835,7 +835,7 @@
   function renderCluster(pieces, layout, record, kind, entryIndex) {
     var title = record.title || record.description || '';
     var piece = function (p, i) {
-      var open = groupOpener(kind, record, entryIndex);
+      var open = groupOpener(kind, record, entryIndex, p);
       var lead = i === layout.lead;
       var label = open.name || (title + ' — photograph ' + pieceLetter(i));
       /* A photograph still waiting for its file has nothing to open, so it is
@@ -867,8 +867,13 @@
      dialog; a record piece opens the record's photographs. The gallery index
      is the record's own position in its array, so a record with no
      photographs can never open a neighbour's gallery — it has no handler at
-     all, because there is nothing for it to open. */
-  function groupOpener(kind, record, entryIndex) {
+     all, because there is nothing for it to open.
+
+     The question is asked of the PIECE, not the record: a record with some
+     photographs and some padding has real frames to open and empty ones that
+     have nothing behind them, and both hang on the same wall. */
+  function groupOpener(kind, record, entryIndex, piece) {
+    if (piece && piece.awaited) return { attrs: '', name: '', inert: true };
     if (kind === 'project') {
       return {
         attrs: ' data-action="modal" data-project="' + esc(record.id) + '" data-tab="overview"',
@@ -964,24 +969,38 @@
       .trim();
   }
 
-  function renderCatalogue(record, kind, pieceCount, sources) {
-    var pieces = Array.isArray(record.pieces) ? record.pieces : [];
+  /* One entry per photograph that exists, then a single line for however many
+     are still awaited. A group whose photographs are all awaited would
+     otherwise print "Photograph awaited" three times over, which is not a
+     catalogue, it is a stutter. */
+  var AWAITED_WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
+
+  function awaitedNote(n) {
+    return '<p class="ca-note">' + (AWAITED_WORDS[n] || String(n))
+      + ' photograph' + (n === 1 ? '' : 's') + ' awaited</p>';
+  }
+
+  function renderCatalogue(record, pieces) {
+    var authored = Array.isArray(record.pieces) ? record.pieces : [];
+    var list = Array.isArray(pieces) ? pieces : [];
     var out = '';
-    for (var i = 0; i < pieceCount; i++) {
-      var p = pieces[i] || {};
+    var awaited = 0;
+    list.forEach(function (piece, i) {
+      if (piece.awaited) { awaited++; return; }
+      var p = authored[i] || {};
       var letter = pieceLetter(i);
       out += '<div class="cat-entry" data-piece="' + i + '">'
         + '<p class="ce-title">'
-        + (pieceCount > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
+        + (list.length > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
         + esc(p.title || ('Photograph ' + letter)) + '</p>'
         + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')
-        + '<p class="ce-tech">' + esc(techLine((sources || [])[i])) + '</p>'
+        + '<p class="ce-tech">' + esc(techLine(piece.src)) + '</p>'
         + '</div>';
-    }
-    return out;
+    });
+    return out + (awaited ? awaitedNote(awaited) : '');
   }
 
-  function renderLabel(record, kind, index, pieceCount, sources) {
+  function renderLabel(record, kind, index, pieceCount, pieces) {
     var title = labelTitle(record);
     var meta = labelMeta(record);
     return '<div class="label">'
@@ -992,16 +1011,15 @@
           + (pieceCount > 1 ? ' · ' + pieceCount + ' photographs' : '') + '</p>' : '')
       + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
       + '</div>'
-      + '<div class="cat">' + renderCatalogue(record, kind, pieceCount, sources) + '</div>'
+      + '<div class="cat">' + renderCatalogue(record, pieces) + '</div>'
       + '</div>';
   }
   Site.renderLabel = renderLabel;
 
-  /* Every group's label is built by renderLabel above; the group carries the
-     pieces' sources so the label's technical line can name each file. */
+  /* Every group's label is built by renderLabel above. The pieces travel whole,
+     not as a list of paths: the label has to know which of them has arrived. */
   function renderGroupLabel(record, kind, index, pieceCount, pieces) {
-    var sources = (pieces || []).map(function (p) { return p.src; });
-    return renderLabel(record, kind, index, pieceCount, sources);
+    return renderLabel(record, kind, index, pieceCount, pieces);
   }
 
   function renderRooms() {

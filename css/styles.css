@@ -1780,6 +1780,16 @@ body {
 
 .piece--lead { height: var(--lead-h); }
 
+/* An awaited photograph is a reserved place on the wall: the frame and its mat,
+   and no picture. It needs a width of its own, because unlike every other frame
+   it has no photograph to take its proportions from. It still takes --sup-h or
+   --lead-h, so the composition keeps its shape whether or not the photograph
+   has arrived. */
+.piece--pending {
+  aspect-ratio: 3 / 2;
+  cursor: default;
+}
+
 /* A frame is given a height; its width follows its photograph, so the frame
    has the photograph's own proportions and nothing is cropped or barred.
    `aspect-ratio: auto` on the image is what lets the height rule while the
