@@ -86,20 +86,24 @@ const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
 
 /* ── The DOM contract ────────────────────────────────────────────────── */
-check('the walk carries the rooms in order, honours split four ways', () => {
+check('the walk carries six rooms in order, and honours is one of them', () => {
+  /* A gallery is as wide as its contents now, so there is no four-exhibit
+     ceiling to force thirteen honours into four galleries all called Honours.
+     It also restores the room list the original spec pinned. */
   const roomKeys = [...strip.matchAll(/data-room="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(roomKeys, ['About', 'Robotics', 'Applications', 'Leadership',
-    'Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV', 'Contact']);
+    'Honours', 'Contact']);
+  assert.equal(new Set(roomKeys).size, roomKeys.length, 'two rooms share a name');
 });
 
 check('room titles name every room', () => {
   assert.deepEqual(titles, ['About', 'Works in Robotics', 'Works in Applications', 'Leadership',
-    'Honours · I', 'Honours · II', 'Honours · III', 'Honours · IV', 'Contact']);
+    'Honours', 'Contact']);
 });
 
-/* The honours rooms, in walk order, each bounded at its own closing tag so
-   one room's markup cannot leak into the next. */
-const HONOURS_KEYS = ['Honours — I', 'Honours — II', 'Honours — III', 'Honours — IV'];
+/* The honours gallery, bounded at its own closing tag so its markup cannot
+   leak into the next room. */
+const HONOURS_KEYS = ['Honours'];
 const honoursStrip = HONOURS_KEYS
   .map((k) => (strip.split('data-room="' + k + '"')[1] || '').split('</section>')[0])
   .join('');
@@ -128,12 +132,13 @@ check('work rooms are not snap targets', () => {
     'a work room carries data-snap, which would fight its groups');
 });
 
-check('every room holds its groups in the grid', () => {
-  /* A room is one viewport tall with no vertical axis, so its groups live in
-     a fixed grid of known rows rather than a wrapping flow. */
+check('every room that hangs groups holds them in one row', () => {
+  /* A room is one viewport tall with no vertical axis, so its groups run
+     sideways rather than wrapping: the row is what lets a gallery be as wide
+     as its own hang. */
   for (const room of ['Robotics', 'Applications', 'Leadership', ...HONOURS_KEYS]) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
-    assert.match(section, /<div class="groups">/, room + ' has no group grid');
+    assert.match(section, /<div class="groups">/, room + ' has no group row');
   }
 });
 

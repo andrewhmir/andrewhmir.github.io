@@ -1106,13 +1106,9 @@
      The dock shows a short name; the room heading keeps the full title, and
      the full title plus its count is the control's accessible name, so the
      shortened label is never what a screen reader reads. The short name comes
-     from walkRooms(), which also names the rooms, so the two cannot drift. */
-  var ROOM_SHORT = {
-    About: 'About', Robotics: 'Robotics', Applications: 'Applications',
-    Leadership: 'Leadership', 'Honours — I': 'Honours',
-    'Honours — II': 'Honours II', 'Honours — III': 'Honours III',
-    'Honours — IV': 'Honours IV', Contact: 'Contact'
-  };
+     from walkRooms() — the same source that names the rooms, so the two cannot
+     drift. It used to come from a ROOM_SHORT table beside this comment, which
+     is exactly the second source the comment claimed did not exist. */
 
   /* The rooms the walk carries, in walk order — one source, so the dock and
      the walk cannot drift apart. */
@@ -1127,17 +1123,22 @@
     return rooms;
   }
 
-  /* The honours rooms, in walk order. Three of them, because a room holds six
-     exhibits and there are thirteen honours. */
+  /* The honours rooms, in walk order. One of them: a gallery is as wide as its
+     contents, so all thirteen honours hang on one wall. The numerals are still
+     computed, from the number of parts that actually carry records, so raising
+     Site.HONOURS_ROOMS splits the wall again and names the rooms — without the
+     renderer having to be told how many there are. A part with nothing in it is
+     dropped here rather than hung as an empty wall. */
   function honoursRooms() {
     var parts = Site.honoursSplit(PORTFOLIO.honors).parts;
     var numerals = ['I', 'II', 'III', 'IV'];
+    var many = parts.filter(function (p) { return p.length; }).length > 1;
     return parts.map(function (records, i) {
       return {
-        key: 'Honours — ' + numerals[i],
-        label: 'Honours · ' + numerals[i],
-        short: i === 0 ? 'Honours' : 'Honours ' + numerals[i],
-        note: records.length + ' groups',
+        key:   many ? 'Honours — ' + numerals[i] : 'Honours',
+        label: many ? 'Honours · ' + numerals[i] : 'Honours',
+        short: (many && i) ? 'Honours ' + numerals[i] : 'Honours',
+        note:  records.length + ' groups',
         records: records,
         offset: parts.slice(0, i).reduce(function (n, p) { return n + p.length; }, 0)
       };
@@ -1186,7 +1187,7 @@
     dir.innerHTML = '<ol>'
       + items.map(function (it, i) {
           var acc = (it.key === 'Contact') ? '&mdash;' : String(i + 1);
-          var short = ROOM_SHORT[it.key] || it.key;
+          var short = it.short || it.key;
           var name = 'Room ' + (i + 1) + ' — ' + it.key + ', ' + it.note;
           return '<li><button type="button" class="dock-link" data-goto="' + esc(it.key) + '"'
             + ' aria-label="' + esc(name) + '">'
