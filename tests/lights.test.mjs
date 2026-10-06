@@ -141,4 +141,35 @@ check('reduced motion lights every piece, with no transition', () => {
   setReducedMotion(false);
 });
 
+check('progress is the fraction of the scrollable walk consumed', () => {
+  const { progressFraction } = globalThis.Site;
+  assert.equal(progressFraction(0, 5000, 1000), 0);
+  assert.equal(progressFraction(4000, 5000, 1000), 1);
+  assert.equal(progressFraction(2000, 5000, 1000), 0.5);
+});
+
+check('progress is total when the walk cannot scroll', () => {
+  const { progressFraction } = globalThis.Site;
+  assert.equal(progressFraction(0, 1000, 1000), 0);
+  assert.equal(progressFraction(0, 0, 0), 0);
+  assert.equal(progressFraction(50, 900, 1000), 0);
+});
+
+check('the room at an offset is the one holding the viewport centre', () => {
+  const { roomAtOffset } = globalThis.Site;
+  const boxes = [{ key: 'About', left: 0, width: 1440 },
+                 { key: 'Robotics', left: 1440, width: 1440 }];
+  assert.equal(roomAtOffset(0, 1440, boxes).key, 'About');
+  assert.equal(roomAtOffset(720, 1440, boxes).key, 'Robotics',
+    'the viewport centre at 1440 is at the boundary and belongs to the next room');
+  assert.equal(roomAtOffset(1440, 1440, boxes).key, 'Robotics');
+});
+
+check('the room lookup is total', () => {
+  const { roomAtOffset } = globalThis.Site;
+  assert.equal(roomAtOffset(0, 1440, []), null);
+  assert.equal(roomAtOffset(0, 1440, undefined), null);
+  assert.equal(roomAtOffset(99999, 1440, [{ key: 'A', left: 0, width: 100 }]), null);
+});
+
 run();

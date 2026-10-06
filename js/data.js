@@ -518,6 +518,33 @@ const PORTFOLIO = {
   }
   globalThis.Site.visibleWork = visibleWork;
 
+  /* How far along the walk the viewport is, 0..1. Total: a walk that cannot
+     scroll (or a nonsense measurement) reads 0 rather than dividing by zero. */
+  function progressFraction(scrollLeft, scrollWidth, clientWidth) {
+    var max = (Number(scrollWidth) || 0) - (Number(clientWidth) || 0);
+    if (!(max > 0)) return 0;
+    var at = Number(scrollLeft) || 0;
+    return Math.min(1, Math.max(0, at / max));
+  }
+  globalThis.Site.progressFraction = progressFraction;
+
+  /* The box the viewport's centre is standing in. Takes boxes rather than
+     elements so it needs no DOM: the caller measures, this decides. The
+     comparison is half-open (`left <= mid < left + width`), so a boundary
+     belongs to the room on its right — the same rule the walk's own
+     roomAt() has always used. */
+  function roomAtOffset(scrollLeft, viewportW, boxes) {
+    if (!boxes || !boxes.length) return null;
+    var mid = (Number(scrollLeft) || 0) + (Number(viewportW) || 0) / 2;
+    for (var i = 0; i < boxes.length; i++) {
+      var b = boxes[i];
+      if (!b) continue;
+      if (mid >= b.left && mid < b.left + b.width) return b;
+    }
+    return null;
+  }
+  globalThis.Site.roomAtOffset = roomAtOffset;
+
   var GALLERY_LISTS = {
     news: function () { return PORTFOLIO.news; },
     leadership: function () { return PORTFOLIO.leadership; },
@@ -543,4 +570,35 @@ const PORTFOLIO = {
     };
   }
   globalThis.Site.galleryFor = galleryFor;
+
+  /* ── A project's award photographs ──────────────────────────────────────
+     An honour carrying `from: 'projectN'` is that project's award, and six of
+     those honours hang real photographs. They are excluded from the Honours
+     room by the `from` partition, so their only route to a visitor is through
+     the project that won them.
+
+     Matched on PROJECT plus YEAR, not on the description. The wall and the
+     honour name one win in two wordings — the card says "11th Philippine
+     Robothon – Innovative Open Category, Overall Champion" where the honour
+     says "11th Philippine Robothon – Overall Champion" — so no predicate over
+     those strings can be trusted. Project plus year is exact for all eight
+     awards in the shipped data. A year that matches is exact; a year that is
+     absent or matches nothing yields [] rather than a guess at another
+     award's photographs.
+
+     Total by construction: every path returns an array. */
+  function awardPhotos(projectId, honors) {
+    var list = Array.isArray(honors) ? honors : [];
+    if (!projectId) return [];
+    var out = [];
+    list.forEach(function (h) {
+      if (!h || h.from !== projectId) return;
+      var images = Array.isArray(h.images) ? h.images.filter(Boolean) : [];
+      for (var i = 0; i < images.length; i++) {
+        if (out.indexOf(images[i]) === -1) out.push(images[i]);
+      }
+    });
+    return out;
+  }
+  globalThis.Site.awardPhotos = awardPhotos;
 })();
