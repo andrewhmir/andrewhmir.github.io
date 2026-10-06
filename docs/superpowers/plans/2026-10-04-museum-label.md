@@ -23,6 +23,13 @@
 - `Site.roomAtOffset(scrollLeft, viewportW, boxes)` — find the box whose span contains the viewport centre. Boxes are objects with `left` and `width`; the return value is the box itself or `null`.
 - `Site.awardPhotos(projectId, honors)` — the award photographs for one project. Returns an array, always.
 
+### Task 1: The pure functions, and the walk's progress inside the dock
+
+**Files:**
+- Modify: `js/data.js` — add three functions inside the existing IIFE: `progressFraction` and `roomAtOffset` after `visibleWork` (~line 519), `awardPhotos` after `galleryFor` (~line 545)
+- Create: `tests/award-photos.test.mjs`
+- Test: `tests/lights.test.mjs` (add four checks)
+
 **Interfaces:**
 
 - Consumes: `Site.galleryFor`, `Site.honoursTiles`, `PORTFOLIO` from `js/data.js`.
