@@ -424,16 +424,31 @@ In `announceRoom()`, inside the `if (name && name !== lastRoom)` branch, after `
 
 In `trackScroll()`, replace `updateRail();` with `updateProgress();`.
 
-**`renderDock()` must not wipe the progress bar.** Move `#dockProgress` out of `#directory` in `index.html` and make the dock a positioned container instead: put `#dockProgress` as a sibling *inside* `.dock` but *after* `#directory`, so `renderDock()`'s `dir.innerHTML` write cannot reach it. The final shell shape is:
+**`renderDock()` must not wipe the progress bar — and Task 2 already solved this in the shell.**
+`renderDock()` writes `#directory.innerHTML`, which destroys every child node it has, so
+`#dockProgress` must be `#directory`'s SIBLING, not its child. Task 2 committed that shell:
 
 ```html
+    <header class="room-rail" id="roomRail" aria-hidden="true">
+      <span class="rr-title"></span>
+      <span class="rr-meta"></span>
+    </header>
+
     <nav class="dock" aria-label="Rooms">
-      <span class="dock-links" id="directory"></span>
-      <span class="dock-track" id="dockProgress" aria-hidden="true"></span>
+      <div class="dock-links" id="directory"></div>
+      <div class="dock-track" id="dockProgress" aria-hidden="true"></div>
     </nav>
 ```
 
-This changes `#directory` from the `<nav>` to a `<span>` inside it. `renderDock()` and `markCurrentRoom()` both key on `#directory`, so neither needs a code change — but `tests/renderer.test.mjs`'s dock checks read `directory.innerHTML`, which still works, and `tests/dom-harness.mjs` needs `dockProgress` added to its id list (Task 8).
+**Task 3 therefore makes NO `index.html` edit at all.** `#directory` is a `<div>`, not a `<span>`:
+it holds an `<ol>` of buttons, which a span may not contain, and it is a sibling of
+`#dockProgress` rather than the nav's only child. Do not "move" anything — it is already moved.
+
+`renderDock()` and `markCurrentRoom()` both key on `#directory`, so neither needs a code change:
+`#directory` is still the element whose `innerHTML` carries the dock's controls.
+`tests/renderer.test.mjs`'s dock checks read `directory.innerHTML`, which still works.
+`tests/dom-harness.mjs`'s id list is Task 3's to update (see its brief), because `initLights()`
+reads both new ids and the renderer suite runs under that harness.
 
 - [ ] **Step 4: Run test to verify it passes**
 
