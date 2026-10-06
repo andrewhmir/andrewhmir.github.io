@@ -157,8 +157,9 @@ check('progress is the fraction of the scrollable walk consumed', () => {
 check('progress is clamped at both ends, not merely scaled', () => {
   /* A rubber-band overscroll on the bar Task 3 builds puts scrollLeft past the
      end, and a fractional offset before the start puts it below zero; neither
-     may escape 0..1. The upper case is the one that pins the clamp: unclamped,
-     9999 / 4000 is 2.4999999999999996, not 1. */
+     may escape 0..1. The upper case is the one that pins the clamp: with
+     scrollWidth 5000 and clientWidth 1000 the scrollable span is 4000, so
+     unclamped 9999 / 4000 is 2.49975, not 1. */
   const { progressFraction } = globalThis.Site;
   assert.equal(progressFraction(9999, 5000, 1000), 1,
     'an overscrolled walk must read 1, not past it');

@@ -21,7 +21,7 @@
 - **No `-webkit-line-clamp` anywhere in the label.** Spec §6.3 and §10.3.
 - **Reduced motion is honoured.** `update = () => { scrollLeft, scrollWidth, clientWidth }`. Returns 0 when nothing can scroll.
 - `Site.roomAtOffset(scrollLeft, viewportW, boxes)` — find the box whose span contains the viewport centre. Boxes are objects with `left` and `width`; the return value is the box itself or `null`.
-- `Site.awardPhotos(projectId, honors)` — the award photographs for one project. Returns an array, always.
+- `Site.awardPhotos(projectId, honors, awardOrYear)` — resolves **one award** to its photographs. Returns an array, always; `[]` for an award that has none. Consumed by Tasks 4 and 6.
 
 ### Task 1: The pure functions, and the walk's progress inside the dock
 
@@ -46,36 +46,74 @@ import '../js/data.js';
 
 const { awardPhotos } = globalThis.Site;
 const H = globalThis.PORTFOLIO.honors;
+const P1 = globalThis.PORTFOLIO.projects.find((p) => p.id === 'project1');
+const P3 = globalThis.PORTFOLIO.projects.find((p) => p.id === 'project3');
 
-check('a project award with photographs resolves to them', () => {
-  const h = H.find((x) => x.from === 'project3'
-    && Array.isArray(x.images) && x.images.length);
-  assert.ok(h, 'fixture needs a project3 award that has photographs');
-  assert.deepEqual(awardPhotos('project3', H).slice().sort(), H
-    .filter((x) => x.from === 'project3' && Array.isArray(x.images) && x.images.length)
-    .flatMap((x) => x.images).sort());
+/* The award record exactly as renderAwards sees it, so the preferred call
+   shape — the object that carries `year` — is what these checks exercise. */
+const awardOf = (project, year) => project.awards.find((a) => a.year === year);
+
+check('an award with photographs resolves to its own photographs', () => {
+  const h = H.find((x) => x.from === 'project3' && x.year === 'March 2025');
+  assert.ok(h && h.images.length, 'fixture needs the March 2025 award to hang photographs');
+  assert.deepEqual(awardPhotos('project3', H, awardOf(P3, 'March 2025')).slice().sort(),
+    h.images.slice().sort());
+});
+
+check('two awards of one project resolve differently', () => {
+  /* The check the union fails. Both are C.E.N.T.H.R.O. awards, so a return at
+     the level of the PROJECT hands the March win's three photographs to the May
+     win as well — a control that opens a different win's gallery. */
+  assert.equal(awardPhotos('project3', H, awardOf(P3, 'March 2025')).length, 3,
+    'the March 2025 award hangs three photographs');
+  assert.deepEqual(awardPhotos('project3', H, awardOf(P3, 'May 2025')), [],
+    'the May 2025 award hangs none and must not inherit March\u2019s');
+});
+
+check('an award with no photographs of its own is not a control', () => {
+  /* PALAD's December and November honours hang nothing; only February does. */
+  assert.deepEqual(awardPhotos('project1', H, awardOf(P1, 'December 2025')), []);
+  assert.deepEqual(awardPhotos('project1', H, awardOf(P1, 'November 2025')), []);
+  assert.equal(awardPhotos('project1', H, awardOf(P1, 'February 2026')).length, 1);
+});
+
+check('a bare year string resolves the same award as its record', () => {
+  assert.deepEqual(awardPhotos('project3', H, 'March 2025'),
+    awardPhotos('project3', H, awardOf(P3, 'March 2025')));
 });
 
 check('a project with no linked honours returns an empty list', () => {
-  assert.deepEqual(awardPhotos('project5', H), []);
+  assert.deepEqual(awardPhotos('project5', H, 'March 2026'), []);
 });
 
 check('an unknown project returns an empty list', () => {
-  assert.deepEqual(awardPhotos('nope', H), []);
+  assert.deepEqual(awardPhotos('nope', H, 'March 2025'), []);
+});
+
+check('an absent or unrecognised year yields nothing rather than a guess', () => {
+  assert.deepEqual(awardPhotos('project3', H, undefined), []);
+  assert.deepEqual(awardPhotos('project3', H, ''), []);
+  assert.deepEqual(awardPhotos('project3', H, {}), []);
+  assert.deepEqual(awardPhotos('project3', H, 'March 1999'), []);
 });
 
 check('a total absence of input does not throw', () => {
-  assert.deepEqual(awardPhotos('project1', undefined), []);
-  assert.deepEqual(awardPhotos(undefined, H), []);
+  assert.deepEqual(awardPhotos('project1', undefined, 'February 2026'), []);
+  assert.deepEqual(awardPhotos(undefined, H, 'March 2025'), []);
 });
 
-check('no project inherits another project\'s photographs', () => {
-  const one = awardPhotos('project1', H);
-  const three = awardPhotos('project3', H);
-  assert.ok(one.length && three.length, 'fixture needs two projects with award photos');
-  const shared = one.filter((f) => three.includes(f));
-  assert.deepEqual(shared, [], 'an award photograph is claimed by two projects');
+check('no award inherits another award\'s photographs', () => {
+  const march = awardPhotos('project3', H, awardOf(P3, 'March 2025'));
+  const nov = awardPhotos('project3', H, awardOf(P3, 'November 2024'));
+  const one = awardPhotos('project1', H, awardOf(P1, 'February 2026'));
+  assert.equal(march.length, 3, 'the March 2025 award hangs three photographs');
+  assert.equal(nov.length, 2, 'the November 2024 award hangs two photographs');
+  assert.equal(one.length, 1, 'the February 2026 award hangs one photograph');
+  const shared = march.filter((f) => nov.includes(f) || one.includes(f));
+  assert.deepEqual(shared, [], 'an award photograph is claimed by two awards');
 });
+
+run();
 ```
 
 Add to `tests/lights.test.mjs`, before the final `run()`:
@@ -174,13 +212,28 @@ In `js/data.js`, inside the same IIFE, after `galleryFor`:
      absent or matches nothing yields [] rather than a guess at another
      award's photographs.
 
-     Total by construction: every path returns an array. */
-  function awardPhotos(projectId, honors) {
+     Total by construction: every path returns an array.
+
+     THE THIRD PARAMETER IS THE WHOLE POINT, and an earlier draft of this plan
+     had only two. This is asked PER AWARD, not per project: the requirement is
+     that an award WHICH HAS photographs is a control and one without is not. A
+     project-level answer cannot express that — it gives every one of a project's
+     awards the project's whole photograph set, so the five awards that have none
+     become controls opening a DIFFERENT win's photographs. Measured: per-award
+     matching gives 3 controls and 5 plain-text awards with all 6 photographs
+     still reachable; a project-level union gives 8 controls, 5 of them wrong. */
+  function awardPhotos(projectId, honors, awardOrYear) {
     var list = Array.isArray(honors) ? honors : [];
     if (!projectId) return [];
+    var year = awardOrYear && typeof awardOrYear === 'object'
+      ? awardOrYear.year
+      : awardOrYear;
+    if (year === undefined || year === null || year === '') return [];
+    var wanted = String(year);
     var out = [];
     list.forEach(function (h) {
       if (!h || h.from !== projectId) return;
+      if (String(h.year) !== wanted) return;
       var images = Array.isArray(h.images) ? h.images.filter(Boolean) : [];
       for (var i = 0; i < images.length; i++) {
         if (out.indexOf(images[i]) === -1) out.push(images[i]);
@@ -474,12 +527,14 @@ check('an award with photographs is a control, and one without is not', () => {
   assert.ok(withPhotos.length > 0,
     'no award with photographs is a control — six photographs are unreachable');
   assert.ok(without.length > 0, 'every award is a control, including the photo-less ones');
-  /* And the count is right: exactly the awards that Site.awardPhotos resolves. */
+  /* And the count is right: exactly the awards that Site.awardPhotos resolves,
+     asked PER AWARD — that is what makes 3 controls and 5 plain text correct
+     rather than 8 controls and 0. */
   let expected = 0, total = 0;
   PORTFOLIO.projects.forEach((p) => {
-    (p.awards || []).forEach(() => {
+    (p.awards || []).forEach((a) => {
       total++;
-      if (Site.awardPhotos(p.id, PORTFOLIO.honors).length) expected++;
+      if (Site.awardPhotos(p.id, PORTFOLIO.honors, a).length) expected++;
     });
   });
   assert.equal(awards.length, total, 'the wall does not carry every award');
@@ -575,14 +630,22 @@ Replace `renderAwardsControl(record)` with `renderAwards(record)`:
      it. An award that has photographs is a real control opening them in the
      photograph dialog — those honours are excluded from the Honours room, so
      without this their six photographs would be unreachable. One without is
-     plain text, as a photo-less honours tile already is. */
+     plain text, as a photo-less honours tile already is.
+
+     `Site.awardPhotos` is asked PER AWARD, inside the loop, and the award is
+     passed as its third argument. Asking it once for the whole project hands
+     every award the project's entire photograph set, which makes the five
+     photo-less awards into controls opening a DIFFERENT win's photographs —
+     the "focusable control that opens nothing" failure this comment's rule
+     exists to prevent. Correct split: 3 controls, 5 plain text. */
   function renderAwards(record) {
     if (!record || !Array.isArray(record.awards) || !record.awards.length) return '';
-    var photos = (typeof Site.awardPhotos === 'function')
-      ? Site.awardPhotos(record.id, PORTFOLIO.honors) : [];
     var items = record.awards.map(function (a) {
+      var photos = (typeof Site.awardPhotos === 'function')
+        ? Site.awardPhotos(record.id, PORTFOLIO.honors, a) : [];
       var open = photos.length
         ? ' data-open-award-photos="' + esc(record.id) + '"'
+          + ' data-open-award-year="' + esc(a.year || '') + '"'
           + ' role="button" tabindex="0"'
         : '';
       var year = a.year ? '<span class="award-year">' + esc(a.year) + '</span>' : '';
@@ -1030,7 +1093,8 @@ In `js/main.js`:
     var awardBtn = t.closest('[data-open-award-photos]');
     if (awardBtn) {
       var projectId = awardBtn.getAttribute('data-open-award-photos');
-      var photos = Site.awardPhotos(projectId, PORTFOLIO.honors);
+      var year = awardBtn.getAttribute('data-open-award-year');
+      var photos = Site.awardPhotos(projectId, PORTFOLIO.honors, year);
       if (photos.length) openGalleryImages(photos, projectAwardTitle(projectId));
       return;
     }
@@ -1051,7 +1115,8 @@ In `js/main.js`:
     if (!awardBtn) return;
     e.preventDefault();
     var projectId = awardBtn.getAttribute('data-open-award-photos');
-    var photos = Site.awardPhotos(projectId, PORTFOLIO.honors);
+    var year = awardBtn.getAttribute('data-open-award-year');
+    var photos = Site.awardPhotos(projectId, PORTFOLIO.honors, year);
     if (photos.length) openGalleryImages(photos, projectAwardTitle(projectId));
   });
 ```
@@ -1115,7 +1180,12 @@ not in scope as a reliable reference during the IIFE's own execution:
       var imgs = groupPieces(proj, 'project')
         .filter(function (p) { return !p.awaited; })
         .map(function (p) { return p.src; })
-        .concat(awardPhotos(proj.id, PORTFOLIO.honors));
+        /* A PROJECT's gallery, not one award's: iterate the project's awards and
+           take each one's photographs. Passing no third argument would also work
+           but reads as if the function were project-level, which it is not. */
+        .concat((proj.awards || []).reduce(function (acc, a) {
+          return acc.concat(awardPhotos(proj.id, PORTFOLIO.honors, a));
+        }, []));
       /* Deduplicated: a project's overview image and one of its award
          photographs are different files today, but nothing in the data
          guarantees that, and a repeated slide would read as a defect. */

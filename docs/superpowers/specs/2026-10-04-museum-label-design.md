@@ -272,10 +272,18 @@ Resolution needs a lookup the data does not have today: given a project and one 
 award strings, find the `from`-tagged honour that is the same win. The two name it in
 different wordings — the card says *"11th Philippine Robothon – Innovative Open Category,
 Overall Champion"* where the honour says *"11th Philippine Robothon – Overall Champion"* —
-so a string match will not do. A new pure function, `Site.awardPhotos(projectId, honors)`,
-matches on **project plus year**, which is exact for all eight awards in the shipped data,
-and returns `[]` rather than guessing when a year is ambiguous or absent. It is total, in
-the shape of `Site.galleryFor`.
+so a string match will not do. A new pure function, `Site.awardPhotos(projectId, honors,
+awardOrYear)`, matches on **project plus that award's year**, which is exact for all eight
+awards in the shipped data, and returns `[]` rather than guessing when a year is absent or
+matches nothing. It is total, in the shape of `Site.galleryFor`.
+
+**The third parameter is the whole of it, and an earlier draft of this spec got it wrong.**
+This is asked **per award**, not per project: §7's requirement is that an award *which has*
+photographs is a control and one without is not. A project-level answer cannot express that —
+it would give every one of a project's awards the project's whole photograph set, turning the
+five awards that have none into controls that open a **different win's** photographs. Measured
+on the shipped data: per-award matching yields **3 controls and 5 plain-text awards, with all 6
+photographs still reachable**; a project-level union yields 8 controls, 5 of them wrong.
 
 ---
 
@@ -381,7 +389,7 @@ Three guards:
 | A project with no `overview` | The account falls back to `summary`; both absent, the block is omitted. |
 | A project with no `awards` | The awards block is omitted. Hivemind and SATLearn ship this way. |
 | A project with no `team` | The team block is omitted. |
-| An award with no `from`-tagged honour | Plain text, no control. Six of eight ship this way. |
+| An award with no `from`-tagged honour, or whose year matches none | Plain text, no control. **Five of the eight** shipped awards are plain text this way. |
 | `Site.awardPhotos` cannot resolve a year | Returns `[]` — plain text, never a guess at another award's photographs. |
 | A record whose photographs are all awaited | The frame is a reserved place, not a control, as today. |
 | A viewport narrower than the 1280px floor | `--stand-w`, `--frame-h` and `--label-measure` all clamp down; the label stays above the fold. Measured by `tools/label-fit.mjs`. |
@@ -405,11 +413,12 @@ no unit check can stand in for it.
 
 **Added:**
 
-- `Site.awardPhotos(projectId, honors)` — resolves a project's award to its photographs;
-  returns `[]` for an award with none, and for an unknown project; matches on project plus
-  year so the two wordings of one win cannot disagree. A **new suite**,
+- `Site.awardPhotos(projectId, honors, awardOrYear)` — resolves **one award** to its
+  photographs; returns `[]` for an award with none, for an unknown project, and for an absent or
+  unmatched year; matches on project plus year so the two wordings of one win cannot disagree.
+  `awardOrYear` may be the award record or a bare year string. A **new suite**,
   `tests/award-photos.test.mjs`, in the shape of the existing
-  `tests/gallery-index.test.mjs`.
+  `tests/gallery-index.test.mjs`, pinning the 3-control / 5-plain-text split.
 - The room-at-offset lookup and the progress fraction, as pure functions in the shape of
   `Site.visibleWork` — `Site.roomAtOffset(scrollLeft, width, rooms)` and
   `Site.progressFraction(scrollLeft, scrollWidth, clientWidth)` — so both are unit-testable
