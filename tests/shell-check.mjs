@@ -71,6 +71,21 @@ ok('the dock progress is inside the dock',
   /<nav class="dock"[\s\S]*id="dockProgress"[\s\S]*<\/nav>/.test(html),
   'the progress bar is not inside .dock');
 
+/* The check above cannot tell a SIBLING from a CHILD: because #directory is
+   itself inside <nav class="dock">, `…id="dockProgress"…</nav>` matches just as
+   happily when the track is nested inside #directory — the one shape that must
+   never ship. Ordering does not separate them either: the nested track still
+   appears after the directory's opening tag. Only capturing #directory's own
+   content does, so assert on that. On the real shell the capture is empty
+   (length 0) because renderDock() is what fills it. */
+ok('the dock progress is a sibling of the directory, not inside it',
+  (() => {
+    const m = html.match(/<div class="dock-links" id="directory">([\s\S]*?)<\/div>/);
+    if (!m) return false;
+    return !/dockProgress/.test(m[1]);
+  })(),
+  '#dockProgress is inside #directory, so renderDock() wipes it on every render');
+
 /* The old fixed painting-and-grain layer must be gone: it sat at z-index 0 over
    a .content-layer that deliberately has no z-index, so it painted over every
    room — and the spec rules out film grain (it lifts near-blacks). */
