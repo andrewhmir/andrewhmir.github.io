@@ -818,15 +818,19 @@
 
      WHICH columns hang, and which piece is the lead, comes from an
      arrangement — Site.hangLayout, dealt from the group's own key so
-     neighbouring groups differ and a reload never reshuffles the wall. The
-     heights themselves are `--lead-h` and `--sup-h` in css/styles.css. They
-     cannot live here as `cqi` any more: a gallery is now as wide as its
-     contents, so sizing a group from its own width is circular. The binding
-     constraint on a single row is the room's height, which is what the
-     stylesheet's clamps are cut from.
+     neighbouring groups differ and a reload never reshuffles the wall.
 
-     Every frame clears 44x44 at every supported width, because those clamps'
-     own pixel floors are above it. */
+     The heights themselves are `--band-h` and `--max-panel-h` in
+     css/styles.css, resolved per column into `--panel-h`. They cannot live
+     here as `cqi`: a gallery is as wide as its contents, so sizing a stand
+     from its own width is circular, and the binding constraint on a single row
+     is the room's height. Nor can a single height serve every arrangement —
+     a column of three must divide the band three ways — which is why
+     renderCluster writes each column's depth and the stylesheet does the
+     division.
+
+     Every frame clears 44x44 at every supported width, because the panel
+     height carries its own floor and the collection's photographs are wide. */
 
   /* A piece is a real focusable control: the whole frame opens the group's
      dialog, and its accessible name says which photograph it is. A piece whose
@@ -838,29 +842,51 @@
       var open = groupOpener(kind, record, entryIndex, p);
       var lead = i === layout.lead;
       var label = open.name || (title + ' — photograph ' + pieceLetter(i));
+      /* The frame is the whole of a piece on the wall. A letter used to hang on
+         it — the plan's index brought to the picture, in a box over the frame's
+         bottom-left corner — and it is gone: a mark in the corner of a work
+         reads as part of the work. The letters are read in the label, where the
+         plan draws this same hang and the catalogue names each photograph, so
+         nothing on the wall is unaccounted for by taking them off. */
+      var frame;
       /* A photograph still waiting for its file has nothing to open, so it is
          not a button: a focusable control that does nothing when activated is
          worse than a frame that plainly is not one. */
       if (open.inert) {
-        return '<span class="piece piece--pending' + (lead ? ' piece--lead' : '') + '"'
+        frame = '<span class="piece piece--pending' + (lead ? ' piece--lead' : '') + '"'
           + ' data-piece="' + i + '"'
           + ' role="img" aria-label="' + esc(label + ' — photograph awaited') + '"></span>';
+      } else {
+        frame = '<button type="button" class="piece' + (lead ? ' piece--lead' : '') + '"'
+          + ' data-piece="' + i + '"' + open.attrs
+          + ' aria-label="' + esc(label) + '"><img src="' + esc(p.src) + '" alt="" loading="lazy"'
+          + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';"></button>';
       }
-      return '<button type="button" class="piece' + (lead ? ' piece--lead' : '') + '"'
-        + ' data-piece="' + i + '"' + open.attrs
-        + ' aria-label="' + esc(label) + '"'
-        + '><img src="' + esc(p.src) + '" alt="" loading="lazy"'
-        + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';"></button>';
+      return frame;
     };
     /* An index the arrangement names but the pieces array does not hold is not
        hung as `undefined`: a malformed arrangement hangs fewer frames rather
-       than a broken one. */
+       than a broken one.
+
+       `--col-rows` is the column's DEPTH, and the stylesheet divides the
+       room's band by it to get the height of this column's frames. Writing it
+       here rather than in the stylesheet is what lets a stand of two frames
+       hang them tall and a stand of three hang them smaller, without the
+       stylesheet having to know every arrangement that exists.
+
+       The drop is a margin, not padding: padding belongs to the column's own
+       box, so a padded column would report itself taller than its frames and
+       the band budget would be spent twice. */
     var cols = layout.columns.map(function (indices, ci) {
       var hung = indices.filter(function (i) { return pieces[i]; })
         .map(function (i) { return piece(pieces[i], i); }).join('');
-      return '<div class="col" style="padding-top:' + (layout.drop[ci] || 0) + 'px">' + hung + '</div>';
+      var rows = indices.filter(function (i) { return pieces[i]; }).length;
+      var drop = layout.drop[ci] || 0;
+      return '<div class="col" style="--col-rows:' + rows + ';margin-top:' + drop + 'px">'
+        + hung + '</div>';
     });
-    return '<div class="cluster" data-hang="' + esc(layout.name) + '">' + cols.join('') + '</div>';
+    return '<div class="cluster" data-hang="' + esc(layout.name) + '"'
+      + ' style="--col-count:' + layout.columns.length + '">' + cols.join('') + '</div>';
   }
 
   /* What a piece does when activated. A project piece opens that project's
@@ -942,28 +968,25 @@
     return '<div class="plan" aria-hidden="true">'
       + cols.map(function (indices) {
           return '<span class="pcol">' + indices.map(function (i) {
-            return '<i class="pi' + (i === layout.lead ? ' pi-lead' : '') + '"></i>';
+            return '<i class="pi' + (i === layout.lead ? ' pi-lead' : '') + '">'
+              + pieceLetter(i) + '</i>';
           }).join('') + '</span>';
         }).join('')
       + '</div>';
   }
 
-  /* The technical line is derived, never authored, and is short: the file's own
-     name, dashed stems turned into words. A full path or a warehouse word like
-     "Event photograph" costs a line the label does not have — the row is 226px
-     at the spec's floor and the label gets 60 of them.
+  /* The technical line is derived, never authored, and it names the FILE the
+     photograph came from. It is deliberately the file's own name rather than
+     words made out of it: "Palad Team" reads like a description of the
+     photograph and is not one, so a visitor takes it for the only explanation
+     on offer. A filename says plainly that this is provenance and not a
+     caption — and it is true, where a prettified stem can be nonsense.
      The placeholder is not a photograph a visitor can go and look at, so it is
      named for what it is rather than for its file. */
   function techLine(src) {
     var file = String(src || '').replace(/^.*\//, '');
     if (/^PlaceHolder\./i.test(file)) return 'Photograph awaited';
-    return file
-      .replace(/\.[a-z0-9]+$/i, '')
-      /* A date-like run reads as a date, not as two words. */
-      .replace(/-(\d{4})-/, ' $1 ')
-      .replace(/[-_]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    return 'File · ' + file;
   }
 
   /* One entry per photograph that exists, then a single line for however many
@@ -986,15 +1009,41 @@
       if (piece.awaited) { awaited++; return; }
       var p = authored[i] || {};
       var letter = pieceLetter(i);
+      /* The entry is a two-column grid: the letter in the first column, and
+         everything said about the photograph in the second. The text has to be
+         its OWN element for that to work — a bare text node beside the letter
+         is not a grid item, so the column gap never applied and the title ran
+         into its own letter ("AThe palm scanner"). */
       out += '<div class="cat-entry" data-piece="' + i + '">'
-        + '<p class="ce-title">'
         + (list.length > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
-        + esc(p.title || ('Photograph ' + letter)) + '</p>'
+        + '<div class="ce-body">'
+        + '<p class="ce-title">' + esc(p.title || ('Photograph ' + letter)) + '</p>'
         + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')
         + '<p class="ce-tech">' + esc(techLine(piece.src)) + '</p>'
-        + '</div>';
+        + '</div></div>';
     });
     return out + (awaited ? awaitedNote(awaited) : '');
+  }
+
+  /* A project's AWARDS live in the shared dialog, because that is the only
+     place they can be read: eight honours were moved off the walls of this walk
+     and into these dialogs, so a project whose awards are in the data and have
+     no control here has silently lost them.
+
+     The walk hangs groups and has no cards, so the control lives on the group's
+     LABEL — the one element that already carries the project's own text — and
+     it reuses the same data-action/data-tab pair the old card's pill carried.
+     The document-level delegation has always handled that pair; what was
+     missing was any element that carried it. */
+  function renderAwardsControl(record) {
+    if (!record || !Array.isArray(record.awards) || !record.awards.length) return '';
+    var n = record.awards.length;
+    return '<button type="button" class="label-awards"'
+      + ' data-action="modal" data-project="' + esc(record.id) + '" data-tab="awards"'
+      + ' aria-label="' + esc('Read ' + (record.title || 'this project') + '’s '
+          + n + ' award' + (n === 1 ? '' : 's')) + '">'
+      + '<i class="fas fa-trophy" aria-hidden="true"></i> Awards · ' + n
+      + '</button>';
   }
 
   /* One label per group, and it is a COLUMN beside the cluster rather than a
@@ -1020,10 +1069,67 @@
               : '') + '</p>' : '')
       + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
       + '</div>'
+      + renderAwardsControl(record)
       + '<div class="cat">' + renderCatalogue(record, list) + '</div>'
       + '</div>';
   }
   Site.renderLabel = renderLabel;
+
+  /* ── The honours room: a list of tiles, not a hang ──────────────────────
+     An honour that IS a project's award hangs on that project's card, under
+     Awards, and not here: the card is where its project is explained, and the
+     award twice over is the duplication this room was rebuilt to end. What is
+     left is the honours that stand alone, and they are drawn as an accession
+     list in three columns rather than as paintings in gilt frames.
+
+     `Site.honoursTiles` is what decides which is which, and it hands back each
+     record's TRUE index into PORTFOLIO.honors — not its position in the
+     filtered list — because that is what Site.galleryFor resolves against. A
+     filtered position is the defect that once opened a neighbour's photographs
+     and it is not reintroduced here. */
+  function honoursSection() {
+    var split = Site.honoursTiles(PORTFOLIO.honors);
+    return { key: 'Honours', records: split.tiles };
+  }
+
+  function tileCount(record) {
+    var images = (record && Array.isArray(record.images)) ? record.images.filter(Boolean) : [];
+    return images.length;
+  }
+
+  /* A tile is the honour's accession card: what it is, when it was conferred,
+     and whether there are photographs behind it. A tile with photographs is a
+     real control and says what it opens, which also makes the tile visibly
+     different from the ones that have nothing to show yet — a list where one
+     row silently does nothing when pressed is worse than one that says so. */
+  function renderTile(entry) {
+    var h = entry.record;
+    var n = tileCount(h);
+    var cls = 'tile' + (n ? ' tile--open' : '');
+    var attrs = n
+      ? ' data-tile="' + entry.index + '" data-gallery="honors" data-entry="honors:' + entry.index + '"'
+        + ' aria-label="' + esc('Open ' + h.description + (h.year ? ', ' + h.year : '')
+            + ' — ' + n + ' photograph' + (n === 1 ? '' : 's')) + '"'
+      : ' data-tile="' + entry.index + '"';
+    return '<li><button type="button" class="' + cls + '"' + attrs + '>'
+      + '<span class="tile-year">' + esc(h.year || '') + '</span>'
+      + '<span class="tile-desc">' + esc(h.description || '') + '</span>'
+      + '<span class="' + (n ? 'tile-open' : 'tile-awaited') + '">'
+      + (n ? n + ' photograph' + (n === 1 ? '' : 's') : 'Photographs awaited')
+      + '</span>'
+      + '</button></li>';
+  }
+
+  function renderHonoursRoom() {
+    var section = honoursSection();
+    var list = section.records;
+    return '<section class="room" data-room="' + esc(section.key) + '" tabindex="-1">'
+      + '<h2 class="room-title"><span class="t">Honours</span>'
+      + '<span class="sub">Competitions, conferences and citations'
+      + '<span class="count">' + list.length + ' HONOUR'
+      + (list.length === 1 ? '' : 'S') + '</span></span></h2>'
+      + '<ul class="tiles">' + list.map(renderTile).join('') + '</ul></section>';
+  }
 
   function renderRooms() {
     var strip = document.getElementById('strip');
@@ -1077,28 +1183,7 @@
         }).join('')
       + '</div></section>';
 
-    /* Honours — one award or event is one group, with its photographs hung
-       together. A record still waiting for its photographs hangs its frames as
-       reserved places rather than as plates: on a near-black wall a bare frame
-       is a conspicuous hole only if it is not part of a composition, and a
-       plate would read as a different kind of thing from every other exhibit
-       on the wall.
-
-       One gallery now, because a gallery is as wide as its own hang, so all
-       thirteen fit on one wall. Whatever honoursRooms() yields, each group
-       keeps its true index into PORTFOLIO.honors — `hr.offset + i` — because
-       Site.galleryFor resolves against that unfiltered array. */
-    honoursRooms().forEach(function (hr) {
-      html += '<section class="room" data-room="' + esc(hr.key) + '" tabindex="-1">'
-        + '<h2 class="room-title"><span class="t">' + esc(hr.label) + '</span>'
-        + '<span class="sub">Competitions, conferences and citations'
-        + '<span class="count">' + hr.records.length + ' GROUPS</span></span></h2>'
-        + '<div class="groups">'
-        + hr.records.map(function (h, i) {
-            return renderGroup('honors', hr.offset + i, h, hr.key);
-          }).join('')
-        + '</div></section>';
-    });
+    html += renderHonoursRoom();
 
     /* Contact */
     html += '<section class="room" data-room="Contact" data-snap tabindex="-1">'
@@ -1120,38 +1205,22 @@
      is exactly the second source the comment claimed did not exist. */
 
   /* The rooms the walk carries, in walk order — one source, so the dock and
-     the walk cannot drift apart. */
+     the walk cannot drift apart. The honours count is the tiles' count, taken
+     from the same derivation the room renders from: counting PORTFOLIO.honors
+     would name eight awards the room does not hold. */
   function walkRooms() {
     var rooms = [{ key: 'About', note: 'bio & contact' }];
     Site.deriveRooms(PORTFOLIO.projects).forEach(function (r) {
       rooms.push({ key: r.key, note: r.projects.length + ' projects' });
     });
     rooms.push({ key: 'Leadership', note: PORTFOLIO.leadership.length + ' groups' });
-    honoursRooms().forEach(function (h) { rooms.push(h); });
+    var honours = honoursSection();
+    rooms.push({
+      key: honours.key,
+      note: honours.records.length + ' honour' + (honours.records.length === 1 ? '' : 's')
+    });
     rooms.push({ key: 'Contact', note: '—' });
     return rooms;
-  }
-
-  /* The honours rooms, in walk order. One of them: a gallery is as wide as its
-     contents, so all thirteen honours hang on one wall. The numerals are still
-     computed, from the number of parts that actually carry records, so raising
-     Site.HONOURS_ROOMS splits the wall again and names the rooms — without the
-     renderer having to be told how many there are. A part with nothing in it is
-     dropped here rather than hung as an empty wall. */
-  function honoursRooms() {
-    var parts = Site.honoursSplit(PORTFOLIO.honors).parts;
-    var numerals = ['I', 'II', 'III', 'IV'];
-    var many = parts.filter(function (p) { return p.length; }).length > 1;
-    return parts.map(function (records, i) {
-      return {
-        key:   many ? 'Honours — ' + numerals[i] : 'Honours',
-        label: many ? 'Honours · ' + numerals[i] : 'Honours',
-        short: (many && i) ? 'Honours ' + numerals[i] : 'Honours',
-        note:  records.length + ' groups',
-        records: records,
-        offset: parts.slice(0, i).reduce(function (n, p) { return n + p.length; }, 0)
-      };
-    }).filter(function (r) { return r.records.length > 0; });
   }
 
   function dockItems() {

@@ -82,6 +82,36 @@ check('every arrangement covers its pieces exactly once', () => {
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
+/* The depth bound is a layout contract, not a preference: the stylesheet
+   divides a room's band between a column's own frames, so a column of five
+   would hang five frames one-fifth of the band tall — measured at 96x54 on a
+   1536x864 screen before this bound existed. A fifth photograph is meant to
+   widen a stand, not to shrink every photograph on it. */
+const MAX_DEPTH = 3;
+
+check('no arrangement hangs a column deeper than the band can carry', () => {
+  const bad = [];
+  for (let n = MIN_PIECES; n <= MAX_PIECES; n++) {
+    HANG_LAYOUTS[n].forEach((l) => {
+      l.columns.forEach((c, ci) => {
+        if (c.length > MAX_DEPTH) bad.push(l.name + ' column ' + ci + ' is ' + c.length + ' deep');
+      });
+    });
+  }
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the chooser never returns a column deeper than the bound', () => {
+  const bad = [];
+  for (let n = 0; n <= 9; n++) {
+    for (const key of ['k', 'honors:3', 'Robotics:0', 'Leadership:2', 42]) {
+      const l = hangLayout(key, n);
+      l.columns.forEach((c) => { if (c.length > Math.max(MAX_DEPTH, 1)) bad.push(l.name + ' at ' + n); });
+    }
+  }
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
 check('an arrangement is stable for a given group', () => {
   assert.equal(hangLayout('honors:3', 4).name, hangLayout('honors:3', 4).name);
   assert.equal(hangLayout('Robotics:0', 3).name, hangLayout('Robotics:0', 3).name);

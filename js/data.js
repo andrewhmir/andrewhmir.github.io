@@ -145,11 +145,10 @@ const PORTFOLIO = {
         ]
       },
       awards: [
-        { description: "4th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025" },
+        { description: "5th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025" },
         { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion", year: "March 2025" },
         { description: "2024 International Robothon – Innovative Open Category, Champion", year: "November 2024" }
-      ],
-    },
+      ],    },
     {
       id: "project4",
         /* DRAFT COPY — review */
@@ -234,7 +233,6 @@ const PORTFOLIO = {
       ]
     }
   ],
-
   /* ── Leadership ─────────────────────────────────────────────────── */
   leadership: [
     { description: "AGHAM Research Club – Founder", year: "June 2025 - April 2026",      images: ["files/leadership-aghj-founder-1.jpg", "files/leadership-aghj-founder-2.jpg", "files/leadership-aghj-founder-3.jpg", "files/leadership-aghj-founder-4.jpg"], /* DRAFT COPY — review */ summary: "Founded the research club and led it through the 2025–2026 school year.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }, { title: "Third photograph" }, { title: "Fourth photograph" }] },
@@ -243,21 +241,34 @@ const PORTFOLIO = {
     { description: "Media and Coverages Committee – Head", year: "July 2023 - May 2025",        images: ["files/leadership-media-coverages-1.jpg", "files/leadership-media-coverages-2.jpg", "files/leadership-media-coverages-3.jpg"], /* DRAFT COPY — review */ summary: "Headed the committee that covered school events.", pieces: [{ title: "First photograph" }, { title: "Second photograph" }, { title: "Third photograph" }] },
   ],
 
-  /* ── Honors ─────────────────────────────────────────────────────── */
+  /* ── Honors ───────────────────────────────────────────────────────────
+     Two kinds of honour live in this one array, and the field that tells them
+     apart is `from`.
+
+     An honour that IS a project's award — the competition placings and paper
+     citations a project won — carries `from: 'projectN'`, and it hangs on that
+     project's card under Awards rather than on the Honours wall. The card's own
+     `awards` array is the readable copy; `from` is what keeps the two in step,
+     because the Honours room skips every record that carries it. Adding one
+     without the other fails the renderer suite rather than quietly duplicating.
+
+     An honour that stands alone — a commencement citation, a shortlisting, a
+     congress delegation — carries no `from`, and is drawn in the Honours room
+     as one tile in a three-column list. */
   honors: [
     { description: "Annual Commencement Exercises – High Honors", year: "April 2026", images: ["files/honors-commencement-1.jpg", "files/honors-commencement-2.jpg"], /* DRAFT COPY — review */ summary: "Graduating with high honours, and the ceremony that closed it.", pieces: [{ title: "Receiving the citation" }, { title: "After the ceremony" }] },
     { description: "Annual Commencement Exercises – Best in Work Immersion", year: "April 2026", images: ["files/honors-work-immersion-1.jpg"], /* DRAFT COPY — review */ summary: "The citation for work immersion, awarded at the same commencement.", pieces: [{ title: "The award" }] },
-    { description: "Developer Camp Manila – Finalist", year: "March 2026", /* DRAFT COPY — review */ summary: "BiyaHey! reached the finalist round at Developer Camp Manila.", pieces: [{ title: "Photograph awaited" }] },
-    { description: "11th Philippine Robothon – Innovative Open Category, Overall Champion", year: "February 2026", images: ["files/honors-robothon-2026-ph-1.jpg"], /* DRAFT COPY — review */ summary: "The second national title in the innovative open category, a year after the first.", pieces: [{ title: "The award" }] },
-    { description: "2025 Muntinlupa Robotics Fair – Champion", year: "December 2025", /* DRAFT COPY — review */ summary: "A home-city title, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
-    { description: "2025 International Robothon – Innovative Open Category, 1st Runner Up", year: "November 2025", /* DRAFT COPY — review */ summary: "The second international placing, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "Developer Camp Manila – Finalist", year: "March 2026", from: "project6", /* DRAFT COPY — review */ summary: "BiyaHey! reached the finalist round at Developer Camp Manila.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "11th Philippine Robothon – Overall Champion", year: "February 2026", from: "project1", images: ["files/honors-robothon-2026-ph-1.jpg"], /* DRAFT COPY — review */ summary: "The second national title in the innovative open category, a year after the first.", pieces: [{ title: "The award" }] },
+    { description: "Muntinlupa Robotics Fair – Champion", year: "December 2025", from: "project1", /* DRAFT COPY — review */ summary: "A home-city title, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "2025 International Robothon – 1st Runner Up", year: "November 2025", from: "project1", /* DRAFT COPY — review */ summary: "The second international placing, taken with Project PALAD.", pieces: [{ title: "Photograph awaited" }] },
     { description: "4th CERN-Solvay Student Camp – Shortlisted (Top 7% of 2500 Applicants)", year: "July 2025", /* DRAFT COPY — review */ summary: "Shortlisted for the 4th CERN-Solvay Student Camp, in the top 7% of 2,500 applicants.", pieces: [{ title: "Photograph awaited" }] },
-    { description: "5th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025", /* DRAFT COPY — review */ summary: "Best paper presentation at the 5th DLSU-D Research Conference, with C.E.N.T.H.R.O.", pieces: [{ title: "At the conference" }] },
+    { description: "5th DLSU-D Research Conference – Best Paper Presentation", year: "May 2025", from: "project3", /* DRAFT COPY — review */ summary: "Best paper presentation at the 5th DLSU-D Research Conference, with C.E.N.T.H.R.O.", pieces: [{ title: "At the conference" }] },
     { description: "21st National Youth Congress – Delegate", year: "March 2025", images: ["files/honors-nyc-2025-1.jpg", "files/honors-nyc-2025-2.jpg"], /* DRAFT COPY — review */ summary: "Selected as a delegate to the 21st National Youth Congress.", pieces: [{ title: "At the congress" }, { title: "With the delegation" }] },
-    { description: "10th Philippine Robothon – Innovative Open Category, Overall Champion", year: "March 2025", images: ["files/honors-robothon-2025-ph-1.jpg", "files/honors-robothon-2025-ph-2.jpg", "files/honors-robothon-2025-ph-3.jpg"], /* DRAFT COPY — review */ summary: "The first national title in the innovative open category, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "At the table" }, { title: "The run-through" }] },
-    { description: "2024 International Robothon – Innovative Open Category, Champion", year: "November 2024", images: ["files/honors-robothon-2024-intl-1.jpg", "files/honors-robothon-2024-intl-2.jpg"], /* DRAFT COPY — review */ summary: "The first international win, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "With the machine" }] },
+    { description: "10th Philippine Robothon – Overall Champion", year: "March 2025", from: "project3", images: ["files/honors-robothon-2025-ph-1.jpg", "files/honors-robothon-2025-ph-2.jpg", "files/honors-robothon-2025-ph-3.jpg"], /* DRAFT COPY — review */ summary: "The first national title in the innovative open category, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "At the table" }, { title: "The run-through" }] },
+    { description: "2024 International Robothon – Champion", year: "November 2024", from: "project3", images: ["files/honors-robothon-2024-intl-1.jpg", "files/honors-robothon-2024-intl-2.jpg"], /* DRAFT COPY — review */ summary: "The first international win, taken with C.E.N.T.H.R.O.", pieces: [{ title: "At the podium" }, { title: "With the machine" }] },
     { description: "20th National Youth Congress – Delegate", year: "November 2023", images: ["files/honors-nyc-2023-1.jpg"], /* DRAFT COPY — review */ summary: "Selected as a delegate to the 20th National Youth Congress.", pieces: [{ title: "At the congress" }] },
-    { description: "9th Philippine Robothon – Innovative Open Category, 3rd People's Choice Award", year: "February 2023", /* DRAFT COPY — review */ summary: "The team's first competition, and its first award.", pieces: [{ title: "Photograph awaited" }] },
+    { description: "9th Philippine Robothon – 3rd People's Choice Award", year: "February 2023", from: "project4", /* DRAFT COPY — review */ summary: "The team's first competition, and its first award.", pieces: [{ title: "Photograph awaited" }] },
   ]
 };
 
@@ -350,35 +361,41 @@ const PORTFOLIO = {
   globalThis.Site.MAX_PIECES = MAX_PIECES;
 
   /* ── The arrangements ───────────────────────────────────────────────────
-     A group is hung as a composition, not as a row: its photographs are
-     partitioned into columns, one of them is the lead, and each column is
+     A stand is hung as a composition, not as a row: its photographs are
+     partitioned into columns, one of them is the lead, and a column may be
      dropped a little so a stack never reads as one tall frame.
 
-     Several arrangements per count, so neighbouring groups differ and the wall
-     reads as a hang rather than as a repeated cell. The deepest arrangement any
-     of these produces is a single column of five, which is the case the frame
-     heights in css/styles.css are sized to keep inside a room's band. */
+     Every arrangement keeps its columns at most THREE deep. That is not a
+     constraint of taste: the stylesheet divides the room's band between a
+     column's own frames, so a column of five would have hung five frames
+     one-fifth of the band tall — measured at 96x54 on a 1536x864 screen, a row
+     of postage stamps under a wall of empty gilt. Depth is what decides how
+     large a photograph reads, so depth is what the arrangements are written
+     to bound. A fifth photograph therefore widens a stand rather than
+     deepening one, which is the trade this wall makes deliberately.
+
+     Several arrangements per count, so neighbouring stands differ and the wall
+     reads as a hang rather than as a repeated cell. */
   var HANG_LAYOUTS = {
     3: [
       { name: 'lead-two',     columns: [[0], [1, 2]],         lead: 0, drop: [0, 14] },
       { name: 'two-lead',     columns: [[1, 2], [0]],         lead: 0, drop: [14, 0] },
-      { name: 'column-three', columns: [[0, 1, 2]],           lead: 0, drop: [0] },
+      { name: 'three-across', columns: [[0], [1], [2]],       lead: 0, drop: [0, 14, 0] },
     ],
     4: [
-      { name: 'lead-three',   columns: [[0], [1, 2, 3]],      lead: 0, drop: [0, 14] },
-      { name: 'three-lead',   columns: [[1, 2, 3], [0]],      lead: 0, drop: [14, 0] },
       { name: 'two-two',      columns: [[0, 1], [2, 3]],      lead: 0, drop: [0, 14] },
-      { name: 'column-four',  columns: [[0, 1, 2, 3]],        lead: 0, drop: [0] },
+      { name: 'three-lead',   columns: [[1, 2, 3], [0]],      lead: 0, drop: [14, 0] },
+      { name: 'lead-three',   columns: [[0], [1, 2, 3]],      lead: 0, drop: [0, 14] },
     ],
     5: [
-      { name: 'lead-four',    columns: [[0], [1, 2, 3, 4]],   lead: 0, drop: [0, 14] },
       { name: 'lead-two-two', columns: [[0], [1, 2], [3, 4]], lead: 0, drop: [0, 14, 0] },
-      { name: 'two-three',    columns: [[0, 1], [2, 3, 4]],   lead: 0, drop: [0, 14] },
+      { name: 'three-two',    columns: [[0, 1, 2], [3, 4]],   lead: 0, drop: [0, 14] },
+      { name: 'two-three',    columns: [[0, 1], [2, 3, 4]],   lead: 0, drop: [14, 0] },
     ],
     6: [
       { name: 'three-three',  columns: [[0, 1, 2], [3, 4, 5]], lead: 0, drop: [0, 14] },
-      { name: 'lead-five',    columns: [[0], [1, 2, 3, 4, 5]], lead: 0, drop: [0, 14] },
       { name: 'two-two-two',  columns: [[0, 1], [2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
+      { name: 'six-three-two', columns: [[0], [1, 2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
     ]
   };
 
@@ -421,14 +438,14 @@ const PORTFOLIO = {
      called Honours was the visible cost of that grid.
 
      It is kept rather than deleted because the partition is still the right
-     shape for a split by MEANING — awards against activities — which is a
-     content decision for the owner and not this code's to make. Raising
-     HONOURS_ROOMS splits the array again, in order, with no other change: the
-     renderer numbers the rooms and the dock names them from the parts.
+     shape for a split by MEANING, and the meaning the room now splits on is
+     `from` — see honoursTiles below, which is what the renderer reads. This one
+     is the arithmetic alternative: an even cut into HONOURS_ROOMS parts, in
+     order, which is what a second Honours room would use. Nothing in main.js
+     calls it today; the derive-rooms suite keeps it honest.
 
      The array is authored newest-first, so the split takes it in order rather
-     than guessing at a kind from the description text. Empty parts are dropped
-     by the renderer rather than hung as an empty wall.
+     than guessing at a kind from the description text.
 
      This is a total partition: every record lands in exactly one part, in
      input order, and an empty list yields empty parts rather than throwing. */
@@ -456,6 +473,36 @@ const PORTFOLIO = {
   globalThis.Site.honoursSplit = honoursSplit;
   globalThis.Site.HONOURS_ROOMS = HONOURS_ROOMS;
   globalThis.Site.evenChunks = evenChunks;
+
+  /* ── The honours room, and the awards it gave up ────────────────────────
+     An honour that IS a project's award carries `from: 'projectN'` and hangs on
+     that project's card, not here. This splits the array on that one field.
+
+     It reads the field rather than matching the description against the
+     project's own award text. A text match would be a guess about copy that the
+     data already settles — "11th Philippine Robothon – Overall Champion" and
+     the card's "11th Philippine Robothon – Innovative Open Category, Overall
+     Champion" name one win in two wordings, and no predicate over those strings
+     can be trusted to leave a record on exactly one side of the wall. `from` is
+     the fact; the wording is not.
+
+     It is a total partition, in input order: every honour lands in exactly one
+     side, and an empty list yields two empty arrays rather than throwing.
+     `index` is the record's own position in the UNFILTERED array, because that
+     is what Site.galleryFor resolves against — a filtered position would open a
+     neighbour's photographs, which is the defect this walk already fixed once. */
+  function honoursTiles(honors) {
+    var list = Array.isArray(honors) ? honors : [];
+    var tiles = [];
+    var projectAwards = [];
+    list.forEach(function (record, i) {
+      if (!record) return;
+      var entry = { record: record, index: i };
+      (record.from ? projectAwards : tiles).push(entry);
+    });
+    return { tiles: tiles, projectAwards: projectAwards };
+  }
+  globalThis.Site.honoursTiles = honoursTiles;
 
   /* Index of the work whose centre is nearest the viewport centre.
      Pure: takes precomputed centres so it needs no DOM. */

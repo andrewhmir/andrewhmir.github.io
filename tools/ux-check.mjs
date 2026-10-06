@@ -314,9 +314,13 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
       pieces.forEach(x => { if (x.awaited) awaited[kind]++; else all.push(x.src); });
     };
     P.projects.forEach(p => note('project', S.groupPieces(p, 'project')));
-    P.honors.forEach(h => note('honors', S.groupPieces(h, 'record')));
+    /* Honours is a list of tiles, not a hang: a tile holds no frame, so it
+       contributes nothing to the wall's census. Its own contract is the
+       renderer suite's tile checks, plus the tile geometry measured below. */
     P.leadership.forEach(l => note('leadership', S.groupPieces(l, 'record')));
-    return { want, awaited, all, groups: P.projects.length + P.honors.length + P.leadership.length };
+    const tiles = S.honoursTiles(P.honors);
+    return { want, awaited, all, honours: { tiles: tiles.tiles.length, awards: tiles.projectAwards.length },
+             groups: P.projects.length + P.leadership.length };
   })()`);
 
   const counts = Object.entries(expected.want).map(([kind, n]) => {
@@ -462,19 +466,18 @@ await section('A gallery is as wide as its contents', async () => {
   })()`);
   const honoursRooms = geo.filter((r) => r.key && r.key.indexOf('Honours') === 0);
   const honours = honoursRooms[0];
-  check('honours is one gallery, not four',
+  check('honours is one room, not four',
         honoursRooms.length === 1, honoursRooms.map((r) => r.key).join(', '));
-  check('a gallery with more hang than one screen is wider than the viewport',
-        !!honours && honours.w > honours.vw,
-        honours ? Math.round(honours.w) + 'px in a ' + honours.vw + 'px viewport' : 'no honours gallery');
+  /* The honours room is a LIST of tiles now, so it is one screen wide rather
+     than as wide as a hang — a grid under `width: max-content` is circular. */
+  check('the honours room is exactly one screen wide',
+        !!honours && Math.abs(honours.w - honours.vw) <= 1,
+        honours ? Math.round(honours.w) + 'px in a ' + honours.vw + 'px viewport' : 'no honours room');
   /* The floor, and the whole reason a gallery is never narrower than a screen:
      a visitor is always standing inside one named gallery, not looking at two. */
   check('every gallery is at least one screen wide',
         geo.every((r) => r.w >= r.vw - 1),
         geo.filter((r) => r.w < r.vw - 1).map((r) => r.key + ' ' + Math.round(r.w)).join(', '));
-  check('the honours gallery holds every honour',
-        !!honours && honours.groups === (await evaluate(`globalThis.PORTFOLIO.honors.length`)),
-        honours ? honours.groups + ' groups' : 'no honours gallery');
   /* A fixed basis is what stops a wide cluster squeezing the label: every
      label on the wall is the same width, whatever its own photographs do. */
   const widths = geo.flatMap((r) => r.labels);
@@ -483,11 +486,84 @@ await section('A gallery is as wide as its contents', async () => {
         widths.length ? Math.round(Math.min(...widths)) + '..' + Math.round(Math.max(...widths)) : 'no labels');
 });
 
+/* -- The honours room is a three-column list of tiles ------------------ */
+await section('The honours room is a three-column list', async () => {
+  /* Three columns is a hard requirement, not a preference: the room is one
+     screen tall with no vertical axis, so a grid that wrapped into a fourth row
+     would be clipped with nowhere to scroll to. Only a layout engine can say
+     how many rows the tiles actually landed in. */
+  const tiles = await evaluate(`(() => {
+    const section = document.querySelector('#strip .room[data-room="Honours"]');
+    if (!section) return null;
+    const list = section.querySelector('.tiles');
+    const tiles = [...section.querySelectorAll('.tile')];
+    const cols = list ? getComputedStyle(list).gridTemplateColumns.split(' ').length : 0;
+    const tops = [...new Set(tiles.map(t => Math.round(t.getBoundingClientRect().top)))];
+    const dock = document.querySelector('.dock').getBoundingClientRect();
+    const room = section.getBoundingClientRect();
+    const rects = tiles.map(t => t.getBoundingClientRect());
+    return {
+      count: tiles.length, cols, rows: tops.length,
+      minH: rects.length ? Math.min(...rects.map(r => Math.round(r.height))) : 0,
+      minW: rects.length ? Math.min(...rects.map(r => Math.round(r.width))) : 0,
+      past: rects.filter(r => r.bottom > dock.top || r.top < 24).length,
+      /* The room's own box, and how far any tile reaches past it. This is the
+         measurement that catches the grid-overflow fault this section exists
+         for: the room resolved 1052px inside a 987px content box, so the third
+         column hung off the right edge while the list's own scrollWidth still
+         read as fitting. Every rect check against the dock passed. */
+      outOfRoom: rects.filter(r => r.right > room.right + 1 || r.left < room.left - 1).length,
+      roomW: Math.round(room.width), listW: Math.round(list.getBoundingClientRect().width),
+      listOverflow: list.scrollWidth - list.clientWidth,
+      roomH: Math.round(room.height),
+      listH: list ? Math.round(list.getBoundingClientRect().height) : 0,
+    };
+  })()`);
+  check('the honours room renders a tile list', !!tiles && tiles.count > 0, JSON.stringify(tiles));
+  check('the tiles sit in three columns', !!tiles && tiles.cols === 3,
+        tiles ? tiles.cols + ' columns' : 'no tile list');
+  check('no tile reaches outside its room',
+        !!tiles && tiles.outOfRoom === 0 && tiles.listOverflow === 0,
+        tiles ? JSON.stringify(tiles) : 'no tile list');
+  check('the tiles fit the room at 1440x900',
+        !!tiles && tiles.past === 0 && tiles.listH <= tiles.roomH,
+        tiles ? JSON.stringify(tiles) : 'no tile list');
+  check('every tile clears the 44px tap target',
+        !!tiles && tiles.minH >= 44 && tiles.minW >= 44,
+        tiles ? tiles.minW + 'x' + tiles.minH : 'no tiles');
+  check('the tile count is every honour that stands alone',
+        !!tiles && tiles.count === (await evaluate(
+          `globalThis.Site.honoursTiles(globalThis.PORTFOLIO.honors).tiles.length`)),
+        tiles ? tiles.count + ' tiles' : 'no tiles');
+
+  /* And again at the spec's floor, where the room has the least height and a
+     third row is most likely to be clipped. */
+  await setViewport(1280, 704, false);
+  await goto(BASE);
+  const floor = await evaluate(`(() => {
+    const section = document.querySelector('#strip .room[data-room="Honours"]');
+    const room = section.getBoundingClientRect();
+    const tiles = [...section.querySelectorAll('.tile')];
+    const tops = [...new Set(tiles.map(t => Math.round(t.getBoundingClientRect().top)))];
+    const dock = document.querySelector('.dock').getBoundingClientRect();
+    const rects = tiles.map(t => t.getBoundingClientRect());
+    return { rows: tops.length,
+             minH: rects.length ? Math.min(...rects.map(r => Math.round(r.height))) : 0,
+             past: rects.filter(r => r.bottom > dock.top || r.top < 24).length,
+             outOfRoom: rects.filter(r => r.right > room.right + 1 || r.left < room.left - 1).length };
+  })()`);
+  check('the tiles still fit two rows at 1280x704', floor.rows <= 2, JSON.stringify(floor));
+  check('every tile still clears the tap target at 1280x704', floor.minH >= 44, JSON.stringify(floor));
+  check('no tile crosses the fold or the room edge at 1280x704',
+        floor.past === 0 && floor.outOfRoom === 0, JSON.stringify(floor));
+  await setViewport(1440, 900, false);
+});
+
 /* -- The deepest hang still fits the band ------------------------------ */
 await section('The deepest hang stays inside the room', async () => {
-  /* Five frames in one column is the deepest arrangement the table produces,
-     and it is the case the frame-height clamps are cut for. Only a layout
-     engine can measure it, which is why it is checked here and not in
+  /* A column divides the room's band between its own frames, so the deepest
+     column of any arrangement is the case the band is really spent on. Only a
+     layout engine can measure it, which is why it is checked here and not in
      tests/. */
   for (const [w, h] of [[1440, 900], [1280, 704]]) {
     await setViewport(w, h, false);
@@ -549,15 +625,7 @@ await section('The deepest hang stays inside the room', async () => {
       document.querySelectorAll('#strip .group .piece').forEach(p => {
         const r = p.getBoundingClientRect();
         if (r.height === 0) return;
-        if (p.classList.contains('piece--pending')) {
-          /* An awaited frame has no photograph to take a shape from, so it is
-             held at the 3:2 of the frame that will hang there. */
-          const want = r.height * 1.5;
-          if (Math.abs(r.width - want) > 14) {
-            out.push(name(p) + ' awaited frame ' + Math.round(r.width) + ' wide, not ' + Math.round(want));
-          }
-          return;
-        }
+        if (p.classList.contains('piece--pending')) return;
         const img = p.querySelector('img');
         if (!img || !img.complete || !img.naturalWidth) return;
         const slack = Math.round(r.width - img.getBoundingClientRect().width);
@@ -572,6 +640,118 @@ await section('The deepest hang stays inside the room', async () => {
     check('a frame is as wide as its photograph at ' + w + 'x' + h,
           stretched.length === 0,
           stretched.length + ' stretched: ' + stretched.slice(0, 6).join(' | '));
+
+    /* A frame is capped on both axes and never exceeds either. This is the
+       property that keeps a stand on the screen it is being looked at on: the
+       width budget is the screen's, shared between the columns, and a
+       photograph wide enough to want more than its share is held to it.
+
+       The budget is read off the COLUMN's resolved max-width, because that is
+       where it is spent. It is not read off the custom property: a custom
+       property holding a `calc()` keeps its token stream as its computed
+       value, so reading it would compare a length against the text
+       `calc(...)`. The column's computed max-width is the budget after the
+       browser has resolved it. */
+    const budgeted = await evaluate(`(() => {
+      const out = [];
+      const name = (p) => p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
+      document.querySelectorAll('#strip .group .piece').forEach(p => {
+        const r = p.getBoundingClientRect();
+        if (r.height === 0) return;
+        const col = p.closest('.col');
+        const allowedW = parseFloat(getComputedStyle(col).maxWidth);
+        const allowedH = parseFloat(getComputedStyle(p).height);
+        if (!(allowedW > 0)) { out.push(name(p) + ' column has no width budget'); return; }
+        if (r.width > allowedW + 2) {
+          out.push(name(p) + ' ' + Math.round(r.width) + ' wide in a ' + Math.round(allowedW) + 'px column');
+        }
+        if (allowedH > 0 && r.height > allowedH + 2) {
+          out.push(name(p) + ' ' + Math.round(r.height) + ' tall in a ' + Math.round(allowedH) + 'px row');
+        }
+      });
+      return out;
+    })()`);
+    check('no frame exceeds its column budget at ' + w + 'x' + h,
+          budgeted.length === 0,
+          budgeted.length + ' over budget: ' + budgeted.slice(0, 6).join(' | '));
+
+    /* The letters belong to the label now, and a visitor reads them in the plan,
+       which draws the hang box by box. That a frame carries none is a DOM
+       contract, but a stray wrapper would be an inline-block with a height, so
+       the wall is checked here too. */
+    const walled = await evaluate(
+      `document.querySelectorAll('#strip .piece-key, #strip .piece-wrap').length`);
+    check('no letter hangs on a frame at ' + w + 'x' + h,
+          walled === 0, walled + ' letter badges still on the wall');
+
+    /* Two things about the plan's letters are geometry, and no unit test can see
+       either — the plan's markup is right whether the letters are centred or
+       not, and it is right whether the lead's box ends up larger or not.
+       The size is a cascade question: `.plan .pi` and `.plan .pi-lead` are two
+       classes deep each, so on the lead's own box — `<i class="pi pi-lead">`,
+       which matches both — the LATER rule wins. Written the other way round the
+       lead's size was silently overridden and every box came out the same size,
+       which is exactly the silent override a measurement catches. */
+    const plan = await evaluate(`(() => {
+      const out = [];
+      document.querySelectorAll('#strip .plan').forEach(plan => {
+        const room = plan.closest('.room').getAttribute('data-room');
+        const boxes = [...plan.querySelectorAll('i')];
+        const lead = plan.querySelector('.pi-lead');
+        boxes.forEach(box => {
+          const b = box.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(box);
+          const g = range.getBoundingClientRect();
+          /* A single line is centred in its line box and the line box is centred
+             in the box — but the RANGE rect is the FONT's inline box, which is
+             taller than a line-height:1 line box and whose extra height is not
+             split evenly (Courier Prime's ascent and descent are not equal). A
+             perfectly centred letter can therefore measure up to half that
+             difference off, so the slack is the font's own half-leading and not a
+             fudge: anything beyond it is a real shift — a left-aligned box, or
+             padding on one side. */
+          const cs = getComputedStyle(box);
+          const slack = Math.max(1, (g.height - parseFloat(cs.lineHeight)) / 2 + 1);
+          const left = g.left - b.left, right = b.right - g.right;
+          const top = g.top - b.top, bottom = b.bottom - g.bottom;
+          if (Math.abs(left - right) > slack || Math.abs(top - bottom) > slack) {
+            out.push(room + ': the letter ' + box.textContent + ' sits off centre in its box' +
+              ' (l/r ' + left.toFixed(1) + '/' + right.toFixed(1) +
+              ', t/b ' + top.toFixed(1) + '/' + bottom.toFixed(1) + ')');
+          }
+        });
+        if (lead) {
+          const l = lead.getBoundingClientRect();
+          const over = boxes.filter(b => b !== lead).some(b => {
+            const r = b.getBoundingClientRect();
+            return r.width >= l.width || r.height >= l.height;
+          });
+          if (over) {
+            out.push(room + ': the lead box is ' + Math.round(l.width) + 'x' + Math.round(l.height) +
+              ', no larger than the boxes beside it');
+          }
+        }
+      });
+      return out;
+    })()`);
+    check('the plan centres every letter in its box, and the lead box is the larger at ' + w + 'x' + h,
+          plan.length === 0, plan.slice(0, 6).join(' | '));
+
+    /* A stand wider than the screen is one a visitor cannot take in at a
+       glance, and it is the fault this budget exists to prevent: measured at
+       1651px on a 1536px screen before it. */
+    const tooWide = await evaluate(`(() => {
+      const out = [];
+      document.querySelectorAll('#strip .group').forEach(g => {
+        const r = g.getBoundingClientRect();
+        if (r.width > innerWidth) out.push(g.dataset.entry + ' ' + Math.round(r.width));
+      });
+      return out;
+    })()`);
+    check('no stand is wider than the screen at ' + w + 'x' + h,
+          tooWide.length === 0,
+          tooWide.length + ' too wide: ' + tooWide.slice(0, 6).join(' | '));
 
     /* An awaited frame is a reserved place on the wall, not a hole in it. A
        hung photograph gets its cream mat from the image's own 6px border; a
@@ -594,6 +774,83 @@ await section('The deepest hang stays inside the room', async () => {
     })()`);
     check('an awaited frame is matted like a hung photograph at ' + w + 'x' + h,
           matted.ok, JSON.stringify(matted));
+  }
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+});
+
+/* -- One stand per screen ------------------------------------------------
+   The property the wall is hung for: when the walk parks on a stand, no other
+   stand is in shot. lenis-snap aligns a stand's CENTRE with the viewport's
+   (see initWalk), so "what is beside it" is measured from the stand's centre
+   — not from its left edge, which is what a naive check would measure and
+   would pass on a stand that is mostly off screen. */
+await section('One stand per screen', async () => {
+  for (const [w, h] of [[1440, 900], [1536, 864], [1280, 704]]) {
+    await setViewport(w, h, false);
+    await goto(BASE);
+    await evaluate(`(async () => {
+      const imgs = [...document.querySelectorAll('#strip img')];
+      imgs.forEach(i => { i.loading = 'eager'; });
+      const deadline = Date.now() + 30000;
+      while (Date.now() < deadline && imgs.some(i => !i.complete)) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      await new Promise(r => setTimeout(r, 600));
+    })()`);
+    const shot = await evaluate(`(() => {
+      const out = [];
+      document.querySelectorAll('#strip .room').forEach(room => {
+        const gs = [...room.querySelectorAll('.group')];
+        if (!gs.length) return;
+        const boxes = gs.map(g => g.getBoundingClientRect());
+        let worst = null;
+        boxes.forEach((b, i) => {
+          const centre = b.left + b.width / 2;
+          const left = centre - innerWidth / 2, right = centre + innerWidth / 2;
+          const intruders = boxes.filter((o, j) => j !== i &&
+            Math.max(0, Math.min(o.right, right) - Math.max(o.left, left)) > 0);
+          const rec = { entry: gs[i].dataset.entry, standW: Math.round(b.width),
+            bare: Math.round((1 - b.width / innerWidth) * 100), intruders: intruders.length };
+          if (!worst || rec.intruders > worst.intruders ||
+              (rec.intruders === worst.intruders && rec.bare < worst.bare)) worst = rec;
+        });
+        out.push({ room: room.getAttribute('data-room'), stands: gs.length, worst });
+      });
+      return out;
+    })()`);
+    const intruding = shot.filter(r => r.worst.intruders > 0);
+    check('no other stand is in shot when the walk parks, at ' + w + 'x' + h,
+          intruding.length === 0,
+          intruding.map(r => r.room + ' ' + r.worst.entry + ' +' + r.worst.intruders).join(' | '));
+    /* Isolation is bought by the GAP, not by the stand being narrow. A stand is
+       parked with its centre on the screen's centre, so a stand wider than the
+       screen runs off BOTH edges and leaves margin - overhang of bare wall on
+       its right; the next stand begins one gap after it. One stand per screen
+       is therefore true exactly when the gap covers that margin — and that is
+       what this measures. A stand of six frames in three columns is a genuinely
+       wide composition: it may run past the screen, but never into its
+       neighbour's. */
+    const cover = await evaluate(`(() => {
+      let minGap = Infinity, worstNeed = 0, at = null;
+      document.querySelectorAll('#strip .room').forEach(room => {
+        const gs = [...room.querySelectorAll('.group')];
+        const boxes = gs.map(g => g.getBoundingClientRect());
+        boxes.forEach((b, i) => {
+          /* Bare wall visible on the right of a parked stand. */
+          const need = innerWidth / 2 - (b.width / 2 - 0);
+          if (need > worstNeed) { worstNeed = need; at = gs[i].dataset.entry; }
+        });
+        for (let i = 1; i < boxes.length; i++) {
+          minGap = Math.min(minGap, boxes[i].left - boxes[i - 1].right);
+        }
+      });
+      return { minGap: minGap === Infinity ? null : Math.round(minGap),
+               need: Math.round(worstNeed), at };
+    })()`);
+    check('the gap between stands covers the wall beside a parked stand, at ' + w + 'x' + h,
+          cover.minGap !== null && cover.minGap >= cover.need,
+          'gap ' + cover.minGap + 'px against the ' + cover.need + 'px of wall beside ' + cover.at);
   }
   await setViewport(1440, 900, false);
   await goto(BASE);
@@ -683,6 +940,9 @@ await section('Gallery rows', async () => {
   await evaluate(`document.querySelector('[data-gallery]').focus()`);
   await pressEnter();
   check('Enter on a gallery row opens it', await modalOpen(), 'modal did not open');
+  /* Deliberately left OPEN: the modal semantics section below asserts against
+     the dialog this opens. Anything scheduled between the two must not close
+     it. */
 });
 
 /* -- 5. Modal is a real dialog with contained focus ------------------- */
@@ -716,7 +976,72 @@ await section('Modal dialog semantics', async () => {
   check('background is no longer inert', await evaluate(`!document.querySelector('.content-layer > [inert]')`));
 });
 
-/* -- 6. Gallery photos resolve and render ----------------------------- */
+/* -- 6. A project's awards are reachable from the walk ---------------- */
+await section('A project\'s awards are reachable', async () => {
+  /* Eight honours were moved off the walls and into these dialogs, so this is
+     the only route to them. The walk hangs groups rather than cards, and the
+     old Awards pill was rendered by a builder whose host element no longer
+     exists — measured on the live page as zero controls with data-tab="awards",
+     which is content silently missing from a page that still rendered.
+     Scheduled AFTER the modal semantics section, which asserts against the
+     dialog the gallery-row section deliberately leaves open; this section opens
+     and closes its own. */
+  const want = await evaluate(`globalThis.PORTFOLIO.projects
+    .filter(p => Array.isArray(p.awards) && p.awards.length).map(p => p.id)`);
+  const got = await evaluate(`[...document.querySelectorAll('[data-tab="awards"]')]
+    .map(el => el.dataset.project)`);
+  check('every project with awards has a control in the walk',
+        want.length > 0 && want.every(id => got.includes(id)) && got.length === want.length,
+        'want ' + want.join(',') + ' got ' + got.join(','));
+  const named = await evaluate(`[...document.querySelectorAll('[data-tab="awards"]')]
+    .every(el => (el.getAttribute('aria-label') || el.innerText || '').trim().length > 0)`);
+  check('every awards control has an accessible name', named);
+
+  /* Press one and read the dialog back against the data it claims to show.
+     `focus()` first, because that is what a real press does and the dialog
+     restores focus to whatever was focused when it opened: a programmatic
+     click on an unfocused element would leave the focus contract untestable. */
+  const first = await evaluate(`(() => {
+    const el = document.querySelector('[data-tab="awards"]');
+    el.focus();
+    el.click();
+    return { id: el.dataset.project };
+  })()`);
+  await sleep(500);
+  check('pressing an awards control opens the dialog', await modalOpen(), 'modal did not open');
+  const shown = await evaluate(`({
+    title: (document.getElementById('modalTitle') || {}).textContent || '',
+    rows: document.querySelectorAll('#modalBody .record-item').length,
+    descs: [...document.querySelectorAll('#modalBody .record-desc')].map(e => e.textContent),
+  })`);
+  const project = await evaluate(`(() => {
+    const p = globalThis.PORTFOLIO.projects.find(x => x.id === ${JSON.stringify(first.id)});
+    return { title: p.title, awards: p.awards.map(a => a.description) };
+  })()`);
+  check('the dialog names the project and its awards',
+        shown.title.indexOf(project.title) === 0 && /Awards/.test(shown.title), shown.title);
+  check('the dialog lists every award the project declares',
+        shown.rows === project.awards.length && project.awards.every(d => shown.descs.includes(d)),
+        shown.rows + ' rows for ' + project.awards.length + ' awards');
+  /* Each of the eight moved honours must be readable here, on its own card. */
+  const moved = await evaluate(`globalThis.Site.honoursTiles(globalThis.PORTFOLIO.honors)
+    .projectAwards.map(e => ({ from: e.record.from, description: e.record.description }))`);
+  const missing = [];
+  for (const award of moved) {
+    const listed = await evaluate(`(() => {
+      const p = globalThis.PORTFOLIO.projects.find(x => x.id === ${JSON.stringify(award.from)});
+      return (p.awards || []).some(a => a.description.toLowerCase()
+        .includes(${JSON.stringify(award.description)}.split(/[\\u2013\\u2014(]/)[0].trim().toLowerCase()));
+    })()`);
+    if (!listed) missing.push(award.description + ' (' + award.from + ')');
+  }
+  check('every honour that left the wall is on its project\'s card',
+        missing.length === 0, missing.join(' | '));
+  await evaluate(`document.getElementById('modalClose').click()`);
+  await sleep(350);
+});
+
+/* -- 7. Gallery photos resolve and render ----------------------------- */
 /* The owner has not supplied photos for these rows yet, and chose to keep
    them clickable with a labelled placeholder. Those 404s are expected —
    every other photo must resolve, and no wired photo may fall back to the
@@ -743,7 +1068,11 @@ await section('Gallery photos', async () => {
   await goto(BASE);
 
   /* Read the paths out of the data module the page itself uses, so this check
-     tracks js/data.js instead of duplicating its contents. */
+     tracks js/data.js instead of duplicating its contents.
+     Honours is listed as its TILES, not as every record: an honour that is a
+     project's award has no tile to press — its photographs hang in the project's
+     dialog — so asking the walk for that row would report a missing control
+     where the design intends none. */
   const wired = await evaluate(`(() => {
     const out = [];
     const collect = (kind, list) => list.forEach((entry, index) => {
@@ -751,7 +1080,9 @@ await section('Gallery photos', async () => {
     });
     collect('news', PORTFOLIO.news);
     collect('leadership', PORTFOLIO.leadership);
-    collect('honors', PORTFOLIO.honors);
+    globalThis.Site.honoursTiles(PORTFOLIO.honors).tiles.forEach(({ record, index }) => {
+      (record.images || []).forEach((src) => out.push({ kind: 'honors', index, src }));
+    });
     return out;
   })()`);
 

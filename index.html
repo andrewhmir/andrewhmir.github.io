@@ -7,7 +7,7 @@
   <title>Andrew Alangcao</title>
 
   <meta name="description" content="Andrew Alangcao — Data Engineer and Computational Cognition Researcher. Robotics, biometrics, and applied AI projects, with awards from national and international competitions.">
-  <meta name="theme-color" content="#1a1614">
+  <meta name="theme-color" content="#080c0e">
   <link rel="canonical" href="https://andrewhmir.github.io/">
 
   <!-- Open Graph / social preview -->
@@ -52,6 +52,13 @@
     <!-- The walk. Nine rooms sit side by side in one strip; Lenis smooths the
          journey and lenis/snap settles it. Rooms are rendered by JS from
          PORTFOLIO + Site.deriveRooms + Site.honoursSplit.
+
+         The mural is this hall's own background, with
+         `background-attachment: local` so the browser carries it with the
+         scroll. It is NOT a layer element: an `inset: 0` layer resolves against
+         the hall's padding box, which is one viewport wide (987px) inside a
+         32227px scroll, so the mural stopped after the first screen. See the
+         note on #hall in the stylesheet.
 
          tabindex="0" makes the scroll container itself reachable by keyboard:
          it is the document's only scroller, so without it the arrow keys cannot

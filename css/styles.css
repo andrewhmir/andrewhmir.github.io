@@ -38,48 +38,140 @@
   /* Night Gallery palette. Two solid text tiers and an accent — there is no
      third tier. #6d6559 measured 3.17:1 and failed WCAG AA, and a tier built
      from opacity or color-mix() is not covered by the spec's measured ratios,
-     which hold for solid colours only. */
-  --night:        #0d0c0b;
-  --room:         #131211;
-  --room-warm:    #171513;
-  --text:         #e8dcc6;
-  --text-strong:  #f6efe0;
-  --text-quiet:   #8c8375;
-  --accent:       #c9a45c;
+     which hold for solid colours only.
 
-  --edge:         rgba(255, 240, 214, 0.16);
-  --edge-soft:    rgba(255, 240, 214, 0.07);
+     The walls are COOL because the mural is. The palette was warm brown
+     (#0d0c0b / #131211 / #171513); it is now a deep blue-slate taken from the
+     mouth of the mural's own range — which tools/wall-import.mjs prints, and
+     which measured a mean luminance of 54/255, or 21% of white. The wall is
+     therefore already darker than it reads, and needs no pre-darkened asset:
+     the scrim above it is what sets how loud it is, so retuning the mural is a
+     stylesheet change rather than a re-encode.
+
+     The two TEXT tiers and the accent stay warm on purpose. Warm light on cool
+     stone is the one contrast the page is built on; cooling the text too would
+     leave the accent nothing to play against. The text tiers are unchanged and
+     still carry their measured ratios — a cool ground only raises them, because
+     it is darker than the warm brown it replaces. Note the clean upside: the
+     halo is now warm against cold, so a piece's light separates from the wall
+     instead of blending into it.
+
+     ── Retuned once, by the brighten pass ("option C — brighten the room") ──
+     The page read as too dark in use, and the measurements said why: the wall
+     crown sat at 1.18% of white and --text-quiet at 4.54:1, which is AA by
+     0.04 — a tier that technically passes and is genuinely hard to read. So two
+     things moved together, because they are a single constraint:
+
+       token          was        now        role
+       --text         #e8dcc6    #ece2cf    labels, body
+       --text-strong  #f6efe0    #f9f4e8    room titles
+       --text-quiet   #8c8375    #9a9384    metadata, dates, provenance
+       --accent       #c9a45c    #d4b06a    accession numbers, active room
+
+     The three wall tokens are UNCHANGED. The wall is opened by its scrim alphas
+     instead (see --wall-scrim and .room), because the mural is a picture and a
+     picture dimmed by its veil keeps its own colour, where a picture dimmed by
+     repainting its ground does not. */
+  --night:        #080c0e;
+  --room:         #101519;
+  --room-warm:    #141b20;
+  --text:         #ece2cf;
+  --text-strong:  #f9f4e8;
+  --text-quiet:   #9a9384;
+  --accent:       #d4b06a;
+
+  /* ── The mural ────────────────────────────────────────────────────────
+     The mural is an element inside the walk (.wall), not a background on the
+     hall, because a background on a scroll container does not travel with the
+     scroll — see the note on .wall. Being content, it is carried at exactly the
+     scroll rate with no JS, no parallax maths and nothing that can desync.
+
+     ── Sizing: how big the loop is, and why it is a range ────────────────
+     Three things have to hold at once, and each pair of them fights:
+
+       1. The WHOLE picture must be on the wall. A tile is always narrower than
+          the infinite scroll, so this is not about width at all: it is the
+          `auto` that scales the image to the tile while keeping its 3.59:1
+          proportions, instead of stretching it to fit. A tile never crops; only
+          a fixed second value would distort.
+       2. The loop must be VISIBLE. If the tile is wider than the window you
+          only ever see one copy, and the mural reads as a single image cut
+          short instead of a wall that repeats.
+       3. It must still read as a MURAL, not wallpaper. Shrinking the tile to
+          guarantee (2) at every size turns the frieze into texture: at 50vw
+          there are four copies across and four down, and the dragons become
+          pattern.
+
+     So the tile is tied to the window but bounded, and the bound is what keeps
+     it a picture:
+
+       --wall-tile   tile at 1547px   copies across   copies down   scale
+       50vw          774px            2.0             4.0           0.48x
+       1200px        1200px           1.3             2.6           0.75x
+       clamp(...)    1021px           1.5             3.1           0.64x
+
+     `clamp(900px, 66vw, 1500px)` holds at least one full copy in shot from a
+     2300px monitor down to a phone, and stops the tile growing so large on a
+     wide screen that the repeat disappears. tools/wall-compare.mjs prints this
+     table for any candidate. */
+  --wall:         url('../files/wall-mushoku.webp');
+  --wall-tile:    clamp(900px, 66vw, 1500px) auto;
+  /* The scrim over the mural — the "very low opacity" dial. Low on purpose: the
+     mural is dark on average (and peak-targeted at import — see
+     tools/wall-import.mjs), so this layer is a veil for consistency rather than
+     the thing doing the dimming. The room scrims above it are what carry the
+     text contrast, and tests/shell-check.mjs derives the floor from the shipped
+     asset's peak.
+
+     The brighten pass took this from 0.42 to 0.32. It is the cleanest of the
+     available dials because a veil dims the mural and leaves its colour alone:
+     the wall keeps the mural's own slate, which is what "the wall is the
+     picture" means, whereas repainting --room lighter would have washed that
+     colour out. Opening it is only affordable because --text-quiet was raised
+     in the same pass — see the palette note above, and .room's crown, which is
+     the stop that actually bounds the text. */
+  --wall-scrim:   rgba(8, 12, 14, 0.32);
+
+  --edge:         rgba(214, 232, 240, 0.16);
+  --edge-soft:    rgba(214, 232, 240, 0.07);
 
   --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
   --font-body:    Georgia, 'Times New Roman', serif;
   --font-mono:    'Courier Prime', 'Courier New', monospace;
 
   /* ── The hang ─────────────────────────────────────────────────────
-     A gallery is now as wide as its contents, so a group can no longer be
-     sized from the width of the cell it sits in — that would be circular.
-     The binding constraint on a single row is the room's HEIGHT, so every
-     frame height is a share of the viewport's, clamped at the two ends of
-     the supported range. At 1440x900 the lead frame is 162px and a support
-     99px; at the spec's 1280x704 floor, 127px and 77px. Both leave the
-     deepest arrangement — one column of five — inside the room's band.
-     The floors are pixel values because a frame is a tap target: they keep
-     every frame above 44x44 without a width floor on the room. */
-  --lead-h:      clamp(120px, 18vh, 165px);
-  --sup-h:       clamp( 76px, 11vh, 102px);
-  --col-gap:     clamp(  6px, 1.1vh,  10px);
-  --cluster-gap: 12px;
-  /* The label is beside the cluster and stacks downward. A fixed basis is what
-     stops a wide cluster — and these photographs are wide — from squeezing the
-     text to nothing: the cluster varies, so a wide cluster widens the GROUP
-     rather than narrowing the label. */
-  --label-w:     clamp(220px, 20vw, 300px);
-  --group-gap:   20px;
+     A gallery is as wide as its contents and a room is exactly one screen
+     tall, but one STAND is one screen: it is sized so that when the walk
+     parks on it, nothing of its neighbours is in shot.
 
-  /* The height budget for a hung photograph. A room is one viewport tall
-     inside a hall that is one viewport tall with no vertical axis, so the wall
-     must close above the fold; this shrinks with the viewport, which a fixed px
-     cap would not. Read by the About room's portrait. */
-  --img-max-h:    22vh;
+     What has to FIT is the WIDTH, because a frame's width follows its own
+     photograph and cannot be dictated. So a column's width budget is the
+     screen left over beside the deck, shared between the columns of its
+     arrangement — and the band only CAPS that, because a photograph which
+     would stand taller than the band has to be narrower rather than taller.
+     Both terms are computed from the viewport, the deck and the column's own
+     depth, so a narrower screen gives smaller frames instead of a stand that
+     runs off it: measured at 1536x864 the widest stand is 1480px, and at
+     1280x704 it is 1224px.
+
+     `--col-count` and `--col-rows` are written by renderCluster — one per
+     cluster, one per column — and are unitless divisors. `--col-rows` matters
+     because a column divides the band between its own frames: a column of two
+     may stand tall, a column of three must split the same band three ways.
+
+     The pixel floor is a tap target, not decoration: it keeps every frame
+     above 44x44 at every supported width without a width floor on the room. */
+  --max-panel-h: 260px;
+  --band-h:      calc(100vh - 300px);
+  --col-gap:     clamp(  6px,  1.1vh,  10px);
+  --cluster-gap: 12px;
+  /* The label is the deck beside the stand, and it is also what keeps the
+     stand inside one screen: a stand is deck + cluster + gaps, so a wider deck
+     is a narrower stand. The gutter below is what makes one stand per screen
+     true rather than nearly true — the next stand must not be in shot at the
+     edge of this one. */
+  --label-w:     clamp(320px, 25vw, 380px);
+  --group-gap:   clamp(200px, 46vw, 760px);
 
   --lit:          0;
   --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
@@ -89,11 +181,11 @@
      names, as does index.html's <noscript>. They now resolve to the palette
      above; nothing new should use them. */
   --bg-root:       var(--night);
-  --surface-1:     rgba(255, 240, 214, 0.03);
-  --surface-2:     rgba(255, 240, 214, 0.06);
-  --surface-solid: #1e1b18;
-  --border-1:      rgba(255, 240, 214, 0.08);
-  --border-2:      rgba(255, 240, 214, 0.14);
+  --surface-1:     rgba(214, 232, 240, 0.03);
+  --surface-2:     rgba(214, 232, 240, 0.06);
+  --surface-solid: #141a1e;
+  --border-1:      rgba(214, 232, 240, 0.08);
+  --border-2:      rgba(214, 232, 240, 0.14);
   --text-bright:   var(--text-strong);
   --text-body:     var(--text);
   --text-muted:    var(--text-quiet);
@@ -1429,10 +1521,55 @@ button.record-item {
   overflow-y: hidden;
   scroll-snap-type: none;       /* Lenis forbids native snap; see the spec §5 */
   overscroll-behavior-x: contain;
-  background: var(--night);
+  /* `position: relative` keeps the hall the containing block for the rooms'
+     own layers, and `z-index: 0` makes it a stacking context so the rooms paint
+     above its background rather than under `body { background }`.
+     `overflow: auto` does NOT create a stacking context — that is the trap. */
+  position: relative;
+  z-index: 0;
+  background-color: var(--night);
+
+  /* ── The mural ──────────────────────────────────────────────────────────────
+     The mural is the HALL'S OWN BACKGROUND, with `background-attachment: local`
+     on both layers. That pair is the whole feature, and every other arrangement
+     fails in a way that a glance at the first screen will not catch.
+
+     WHY `local`. A background on a scroll container is painted on the
+     container's box and pinned to it by default, so the wall sits perfectly
+     still while the rooms slide past. `local` binds the painting to the SCROLLED
+     CONTENT instead, so the browser carries the mural across the walk at
+     exactly the scroll rate — no JS, no parallax maths, nothing to desync.
+     Measured frame-to-frame over nine 45px scroll steps: `local` 5.16, `scroll`
+     0.00, `fixed` 0.00. The pinned modes re-render byte-identical frames.
+
+     WHY NOT A `.wall` ELEMENT, which is what this used to be. An absolutely
+     positioned layer resolves `inset: 0` against the hall's padding box, and
+     that box is one VIEWPORT: #hall and #strip both measure 987px inside a
+     32227px scroll. A `.wall` layer was therefore 987px wide backing a 30601px
+     walk — a 29614px shortfall. The mural's fill area ended at x=987 and a
+     visitor who scrolled past the first screen landed on bare --night; at
+     scrollLeft 8000 the rendered band was perfectly flat (spread 0.0) where the
+     mural should be. Nothing inside this walk has a layout box that spans it:
+     the rooms overflow #strip, they do not widen it. Only the scroll container
+     can paint the scrollable area, which is why the mural moved here.
+
+     LAYER ORDER is the scrim first, then the image, because the first layer in
+     `background-image` paints on top. The scrim is `no-repeat`: it is a veil,
+     and a tiled vertical gradient would band once per viewport. The image
+     repeats on BOTH axes — across the collection, and down the wall, because
+     one frieze at 1080x301 leaves the wall bare below 301px. */
+  background-image:
+    linear-gradient(var(--wall-scrim), var(--wall-scrim)),
+    var(--wall);
+  background-repeat: no-repeat, repeat;
+  background-size: auto, var(--wall-tile);
+  background-position: 0 0, 0 0;
+  background-attachment: local, local;
 }
 
 #strip {
+  position: relative;
+  z-index: 1;                   /* the rooms hang ON the wall */
   display: flex;
   align-items: stretch;
   /* The strip is exactly the hall's height, so each room's `height: 100%`
@@ -1466,31 +1603,87 @@ button.record-item {
      reserve are measured against a box that does not match the fold: content
      centres too low and can slide under the dock. */
   height: 100%;
-  /* 124px at the foot reserves the dock (58px) plus breathing room. Content
-     is centred in what is left, so no room is top-heavy. */
-  padding: 36px 34px 124px;
+  /* 100px at the foot reserves the dock (58px) plus breathing room. Content is
+     centred in what is left, so no room is top-heavy. It was 124px; the 24
+     reclaimed are 24px of frame height on every wall, and 100 still clears the
+     dock's top edge by a measured 48px at the spec's 1280x704 floor. */
+  padding: 36px 34px 100px;
+  /* ── The room is a scrim over the mural, not a wall of its own ──────────
+     This was an OPAQUE gradient, and an opaque room hides the mural completely
+     — which is the whole job of these alphas. Each stop keeps its old role
+     (lightest at the head, near-black at the foot) and only gains transparency,
+     so the lit-wall look survives and the palette opens up to the mural behind
+     it.
+
+     The ramp is what makes the wall read as a wall. The crown is the clearest
+     point, which is where the room title and the top of the hang sit; it closes
+     toward the foot, which is the band under the pictures and behind the dock.
+     The base colour under the alphas is `transparent`, so the gradient adds
+     atmosphere instead of repainting the wall it is meant to reveal.
+
+     These alphas are the text-contrast floor, and they are not free: the crown
+     is the brightest ground any tier can meet. It shipped at 0.58, which is as
+     clear as the wall could be while --text-quiet still cleared WCAG AA over
+     the mural's brightest pixel — and it cleared it by 0.04, which is not a
+     margin, it is a coincidence. The brighten pass spent the two together: the
+     crown came down to 0.46 and --text-quiet went up to #9a9384, so the tier
+     now clears AA by 0.76 at the same time as the wall gets lighter. The model
+     in tests/shell-check.mjs re-derives the bound from the shipped asset, and
+     it also asserts a FLOOR on the crown's luminance, so the wall can be opened
+     further but cannot quietly be closed again.
+
+     The foot did not open this far on purpose. It is 0.90 in the shipped build
+     because the dock and the captions sit on it, and it is the one band where
+     near-black is doing a job: it is the shadow under the pictures. 0.78 keeps
+     that role — the band is still markedly darker than the crown — while taking
+     the black off the foot of every room. */
   background:
     radial-gradient(74% 42% at 50% -10%, rgba(255,240,214,.06), transparent 74%),
-    linear-gradient(180deg, var(--room-warm) 0%, var(--room) 58%, #080807 100%);
-  border-right: 1px solid var(--edge-soft);
+    linear-gradient(180deg,
+      rgba(16,21,25,.46)  0%,
+      rgba(13,17,21,.62) 58%,
+      rgba(10,14,18,.78) 100%);
+  /* ── The room's edge is a SHADOW in the wall, not a lit hairline ──────────
+     This was `1px solid var(--edge-soft)` — a cool white at 7%, which is a
+     light line. On a flat black wall that read as a soft division; over the
+     mural it reads as a drawn vertical line, because the eye finds a bright
+     hairline far more easily against texture than against a void. Measured at
+     scrollLeft 500 on the About/Robotics boundary: the bright border put a
+     +13.9/-7.0 luminance step on one column (21.49 across the three columns),
+     and removing it dropped that to 0.73 — the boundary was the 8th largest
+     deviation of 983 columns on the whole wall.
+
+     A dark recess is the same division with the opposite sign, and it is what
+     a joint in stone actually looks like: the rooms stay separate, and the
+     wall stops having a bright line drawn on it. */
+  border-right: 1px solid rgba(8, 12, 14, 0.55);
 }
 
-/* Wall nap — two offset dot grids at 2–3%, pure CSS, no image request.
-   Film grain is deliberately not used: on near-black it lifts the blacks and
-   reads as dirt.
-   `pointer-events: none` is load-bearing: this layer covers the whole room and
-   would otherwise swallow the click on every control inside it. Keyboard
-   access still worked, which is why the delegation suite never caught it. */
-.room::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    radial-gradient(rgba(255,240,214,.03) 0.5px, transparent 0.6px),
-    radial-gradient(rgba(255,240,214,.02) 0.5px, transparent 0.6px);
-  background-size: 4px 4px, 4px 4px;
-  background-position: 0 0, 2px 2px;
-}
+/* Wall nap — REMOVED. It was two offset dot grids on a 4px period, drawn at
+   0.5px and 0.6px, as a stand-in for wall texture. Three reasons it is gone:
 
-/* Everything a room holds paints above the wall nap. */
+   1. It drew vertical lines. A sub-pixel dot inside a `radial-gradient` is
+      antialiased against the pixel grid, and on a wide viewport at a non-integer
+      device pixel ratio that quantises into hard vertical columns running the
+      whole height of the room. Measured at 1917x1078 dpr 2, one column sat
+      darker than its neighbours on 97.4% of rows (mean -3.3); removing this
+      layer dropped that to 18.9%. It survived removing the border, the scrims
+      AND the mural — the wall nap was the only layer that explained it.
+   2. It has nothing left to do. It existed to give a flat, empty wall a
+      surface; the wall is now the mural, which has real texture of its own.
+   3. Film grain was already rejected for the same family of reason — on
+      near-black it lifts the blacks and reads as dirt — and the shell check
+      still forbids it.
+
+   `pointer-events: none` was load-bearing while this existed: the layer covered
+   the whole room and would otherwise have swallowed the click on every control
+   inside it. Keyboard access still worked, which is why the delegation suite
+   never caught it. With the layer gone there is nothing to swallow clicks, and
+   the delegation suite still covers the behaviour.
+
+   Do not reintroduce a sub-pixel dot grid here. If a surface is wanted, the
+   mural is the surface. */
+/* Everything a room holds paints above the wall. */
 .room > * { position: relative; }
 
 /* ── The walk fills the viewport, so the horizontal axis is the only one.
@@ -1535,7 +1728,14 @@ body {
   gap: 4px;
   max-width: calc(100vw - 40px);
   padding: 6px 10px;
-  background: rgba(13, 12, 11, .94);
+  /* The dock was rgba(13,12,11,.94) — the WARM brown-black of the palette this
+     build replaced, which had been left behind when the walls went to cool
+     slate. It read as the one warm-grey chip on a cool page and, on a wall that
+     has just been opened up, as a heavier band than it needs to be. It is now
+     the wall's own colour, so the dock belongs to the room behind it; the alpha
+     stays at .94 because the dock's job is to be readable over whatever it
+     crosses. */
+  background: rgba(16, 22, 27, .94);
   border: 1px solid var(--edge);
   box-shadow: 0 10px 40px rgba(0, 0, 0, .6);
   overflow-x: auto;
@@ -1702,7 +1902,7 @@ body {
   color: var(--accent);
 }
 
-/* ── The groups: one record is one exhibit ────────────────────────────
+/* ── The groups: one record is one stand, one stand is one screen ─────
    A room is exactly one viewport tall inside a hall that is exactly one
    viewport tall with overflow-y hidden, so a room cannot scroll: whatever
    does not fit is clipped AND unreachable, and there is no vertical axis to
@@ -1713,9 +1913,18 @@ body {
    a gallery at four exhibits, and it is the whole reason thirteen honours were
    cut into four galleries all called Honours. A row has no such limit.
 
-   A group is a composition of framed photographs BESIDE its label. The
-   photographs are partitioned into columns by the group's arrangement, and the
-   label holds a fixed width whatever the cluster does — see --label-w. */
+   The row's gap is what makes the first of those into a reading: a stand is
+   about one screen wide and the gap after it is about a third of one, so a
+   visitor standing at a stand sees that stand and bare wall, never the next
+   stand's frames crowding the edge of the screen. The gap is the frame around
+   the exhibit — which is the only frame in this hall that is not gilt.
+
+   A stand is a composition of framed photographs BESIDE its label. The
+   photographs are partitioned into columns by the stand's arrangement, and the
+   label holds a fixed width whatever the cluster does — see --label-w.
+
+   The Honours room is NOT one of these. It hangs no group and holds no row; it
+   is the three-column list of tiles further down this file. */
 .groups {
   display: flex;
   align-items: flex-start;
@@ -1758,22 +1967,64 @@ body {
   flex: 0 0 auto;
 }
 
+/* ── A column's two budgets ───────────────────────────────────────────
+   WIDTH is the budget that has to be met, because a frame's width follows its
+   own photograph and the photograph is not negotiable. The cluster may have
+   the screen less the deck and the gaps; a column's share of that is --col-w,
+   and a frame may never be wider than its share. That is what stops a stand
+   from running off the side of the screen — measured at 1651px for a
+   three-frame stand on a 1536px screen before this budget existed.
+
+   HEIGHT is the budget that only caps. A column divides the band between its
+   own frames, so a column of three must stand its frames a third of the band
+   each; that is --row-h. Both numbers come from the viewport, the deck and
+   the column's own depth, and neither reads the other, so there is no
+   circularity between a frame's width and its height.
+
+   The result is that a smaller screen gives smaller frames rather than a
+   wider stand: the whole hang is a function of the viewport, which is what
+   "adaptable to the screen size" has to mean when the frames are photographs
+   and keep their own proportions. */
 .col {
+  /* The default DEPTH, for the same reason the width fallback lives inside its
+     var(): renderCluster writes this per column, so it is only ever read by a
+     column that has not been given one. */
+  --col-rows:  1;
+  /* The fallback for --col-count belongs INSIDE the var(), not as a value on
+     this rule. A custom property declared on .col shadows the one the cluster
+     inherits down from, so `--col-count: 1` here silently made every column
+     believe it was the only one: measured at 1072px a column on a 1440px
+     screen, a three-column stand 3552px wide. A fallback is only consulted
+     when the property is not set at all, which is the case it is for. */
+  --cluster-w: calc(100vw - 68px - var(--label-w, 300px));
+  --col-w:     calc((var(--cluster-w) - var(--cluster-gap) * (var(--col-count, 1) - 1))
+                   / var(--col-count, 1));
+  --row-h:     min(
+                 var(--max-panel-h),
+                 calc((var(--band-h) - var(--col-gap) * (var(--col-rows) - 1)) / var(--col-rows))
+               );
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--col-gap);
   min-width: 0;
+  /* The width budget is spent HERE, on the column, and not on the frame. A
+     frame whose width is capped stops following its photograph: the image's
+     own `height: 100%` needs the frame to have a definite height to resolve
+     against, and a frame capped in width and height at once would bar the
+     photograph inside it. Capping the column keeps the frame free to take the
+     photograph's proportions, and the column is what has to fit. */
+  max-width: var(--col-w);
 }
 
 /* A piece: a gold frame around a cream mat, drawn rather than loaded — no
-   image request, no asset. The frame is given a height and its width follows
-   the photograph inside it, so every frame has its photograph's proportions
-   and nothing is ever cropped or barred. A supporting frame takes --sup-h; the
-   lead takes --lead-h, and which piece is the lead is the arrangement's. */
+   image request, no asset. The frame takes the photograph's own proportions:
+   its HEIGHT is the row budget its column can afford, and its width follows
+   the photograph — the column's max-width is what holds it to its share, so a
+   stand cannot run off the side of the screen. */
 .piece {
   display: block;
-  height: var(--sup-h);
+  height: var(--row-h);
   padding: 0;
   border: 3px solid transparent;
   border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
@@ -1781,8 +2032,18 @@ body {
   cursor: pointer;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .66);
   /* Its own light, exactly as a work carried one. Registered
-     `inherits: false`, so writing it touches one element, not a room. */
-  filter: brightness(calc(.6 + .4 * var(--lit)));
+     `inherits: false`, so writing it touches one element, not a room.
+
+     The RESTING value is 0.9, not the 0.6 it shipped with, and that is the
+     brighten pass's main change to how a work reads. At 0.6 a photograph was
+     held at 60% until the walk lit it, so a wall a visitor had NOT yet reached
+     was a wall of dark pictures — which is most of the wall most of the time,
+     and is exactly what "the site feels too dark" describes. The light still
+     does something: 0.9 -> 1.0 is the last tenth, and it arrives together with
+     the pool behind the work, so reaching a stand still reads as the light
+     coming up. It is a smaller gesture than the old 0.4 lift, deliberately:
+     the alternative was to make the whole effect a transition again. */
+  filter: brightness(calc(.9 + .1 * var(--lit)));
   transition: filter .55s var(--ease-lit);
 }
 
@@ -1796,20 +2057,28 @@ body {
    narrowest is 0.75 (three 3:4 portraits) and the widest is 2.251. So once a
    frame is loaded this rule never binds and no photograph is ever barred
    inside its own frame — which is what would happen at any floor above 0.75,
-   and did at the 6/5 this replaces. 2/3 of the shortest frame height is still
-   51x77 at the 1280x704 floor, above the 44x44 tap target.
+   and did at the 6/5 this replaces. 2/3 of the shortest row a column can
+   stand is still above the 44x44 tap target at the spec's 1280x704 floor —
+   and the unloaded case is a frame waiting on bytes, not one a visitor can
+   press.
 
    It is on .piece and not on the image because the image's own percentage
    floor resolves against an indefinite width and does nothing. */
-.piece { min-width: calc(var(--sup-h) * 2 / 3); }
+.piece { min-width: calc(var(--row-h) * 2 / 3); }
 
-.piece--lead { height: var(--lead-h); min-width: calc(var(--lead-h) * 2 / 3); }
+/* The lead is the stand's principal photograph: it keeps a column of its own,
+   which is why a three-frame stand shows one big frame beside two small ones.
+   It obeys the same two budgets as any other frame — the composition's variety
+   comes from the arrangement, not from a second set of numbers. */
+.piece--lead { max-width: var(--col-w); max-height: var(--row-h); }
 
 /* An awaited photograph is a reserved place on the wall: the gilt frame and its
-   mat, and no picture. It needs a width of its own, because unlike every other
-   frame it has no photograph to take its proportions from, so it is held at the
-   3:2 of the frame that will hang there. It still takes --sup-h or --lead-h, so
-   the composition keeps its shape whether or not the photograph has arrived.
+   mat, and no picture. Unlike every other frame it has no photograph to take
+   its proportions from, so it is held at the 3:2 of the frame that will hang
+   there — and it takes BOTH of its column's budgets, because there is no
+   photograph to shrink instead. A frame that only took the band would have
+   stood wider than its column: `aspect-ratio` resolves before `max-height`, so
+   a 3:2 frame capped at 173px of height still measured 259px across.
 
    The mat is drawn as an inset shadow because a hung frame gets its mat from
    the image's own 6px border and this frame has no image. Without it the
@@ -1817,16 +2086,16 @@ body {
    wall that is a hole, not a reserved place. The drop shadow is repeated here
    because box-shadow does not add across rules. */
 .piece--pending {
-  aspect-ratio: 3 / 2;
+  width: var(--col-w);
+  height: var(--row-h);
   cursor: default;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .66), inset 0 0 0 6px #ece3d2;
 }
 
-/* A frame is given a height; its width follows its photograph, so the frame
-   has the photograph's own proportions and nothing is cropped or barred.
-   `aspect-ratio: auto` on the image is what lets the height rule while the
-   width stays intrinsic — without it the `max-width` below would squash the
-   photograph out of proportion. */
+/* The photograph fills its frame's height and its width follows its own
+   proportions, so nothing is cropped and nothing is barred. `aspect-ratio:
+   auto` is what lets the height rule while the width stays intrinsic — without
+   it the `max-width` below would squash the photograph out of proportion. */
 .piece img {
   display: block;
   height: 100%;
@@ -1847,68 +2116,96 @@ body {
 }
 
 /* ── The exhibition label ─────────────────────────────────────────────
-   One per group: a plan of the hang, the narrative that frames the group, and
-   a catalogue entry per photograph. This is where a photograph gets its text.
-   It is the row's remaining height after the cluster and the gap — 280px less
-   ~216px of cluster at 1440x900 — so the type is sized to be read in about
-   eighty pixels and to survive the 190px row floor. */
-/* The label sits under the frames and is sized by its own content, not by a
-   share of the row. The catalogue is the deepest part of it: one compact entry
-   per photograph, each two short lines at most, so a four-photograph group's
-   label is about 120px and two rows still fit one viewport. */
-/* The label stands beside the cluster and stacks downward: the plan of the
-   hang, the title and its year, the narrative, then a catalogue entry beneath
-   another. It used to be a horizontal strip of plan | narrative | catalogue,
-   which is what crushed the catalogue into two columns of about ninety pixels
-   — a shape it only had because two rows of groups had to fit one screen.
+   One per stand: a plan of the hang, the narrative that frames it, and a
+   catalogue entry per photograph. This is where a photograph gets its text,
+   and it is the only place a visitor can find out what they are looking at.
 
-   Its width is fixed (--label-w) rather than a share of what the cluster
-   leaves. That is load-bearing in two directions: a wide cluster widens the
-   GROUP instead of squeezing the text, and every label on a long wall is the
-   same width, which is what makes them read as a set. */
+   Type scale. The sizes this replaces were 7.4-11.5px — measured, the meta
+   line was 7.4px and the narrative 9.3px, which is not small print but
+   illegible print. Every size here is a share of the VIEWPORT rather than a
+   fixed rem, so the label scales with the wall it is hung on: 15.6px for an
+   entry's title and 13px for the narrative at 1536x864, and no smaller than
+   13/11 at the 1280x704 floor.
+
+   The label sits beside the cluster and stacks downward: the plan of the
+   hang, the title and its year, the narrative, then a catalogue entry beneath
+   another. Its width is fixed (--label-w) rather than a share of what the
+   cluster leaves — that is load-bearing in two directions: a wider cluster
+   widens the STAND instead of squeezing the text, and every label on a long
+   wall is the same width, which is what makes them read as a set. */
 .label {
   flex: 0 0 auto;
   width: var(--label-w);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
   border-top: 1px solid var(--edge);
-  padding-top: 7px;
+  padding-top: 9px;
 }
 
 /* The plan is a picture of the hang, built from the same arrangement the
    cluster hangs, so it cannot disagree with the wall — not in its box count and
-   not in its columns. It is a fixed gutter, not a column that grows. */
+   not in its columns. It is a fixed gutter, not a column that grows, and its
+   boxes carry the same letters the catalogue entries do: the letter is what
+   says WHICH photograph an entry describes. */
 .plan {
   display: flex;
   align-items: flex-start;
-  gap: 3px;
+  gap: 5px;
 }
 
 .pcol {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .plan i {
   display: block;
   border: 1px solid var(--text-quiet);
+  font-style: normal;
 }
 
-.plan .pi-lead { width: 14px; height: 10px; }
-.plan .pi { width: 9px; height: 6px; }
+/* ── The letter: the one thing that ties an entry to a box in the plan ─
+   The catalogue names photographs A, B, C and the plan draws their boxes, and
+   both carry the letter. It is the LABEL's index: the frames on the wall hang
+   clean, so this is the only place a visitor can put a name to a picture.
+   Without it they have a list of names and a plan of boxes and no way to put
+   them together — which is exactly what "I don't understand it" means when the
+   label is the only text there is.
 
-/* The narrative: the group's own name, its venue or year, and one paragraph.
-   The paragraph is capped at three lines — one more than the strip allowed,
-   because there is room for it now — so a long summary cannot push the
-   catalogue's last entries past the foot of the wall, where there is no
-   vertical axis to scroll to them. */
+   The letter sits in the middle of its box on BOTH axes, which is what the flex
+   centring below is for: a box is a photograph's place in the hang, and a letter
+   tucked into a corner of it reads as a caption on that corner rather than as
+   the name of the box. */
+.plan .pi-lead,
+.plan .pi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: clamp(9px, 0.72vw, 11px);
+  line-height: 1;
+  color: var(--text-quiet);
+}
+
+/* ORDER IS LOAD-BEARING. Both rules are two classes deep, so on the lead's own
+   box — `<i class="pi pi-lead">`, which matches both — the LATER rule wins. It
+   has to be this one: written the other way round the lead's size was silently
+   overridden, and every box in every plan came out the same size, which is a
+   plan that cannot show a stand's principal photograph as the larger one. */
+.plan .pi { min-width: 17px; min-height: 15px; padding: 0 3px; }
+.plan .pi-lead { min-width: 20px; min-height: 18px; padding: 0 3px; }
+
+/* The narrative: the stand's own name, its venue or year, and one paragraph,
+   capped at four lines so a long summary cannot push the catalogue's last
+   entries past the foot of the wall, where there is no vertical axis to
+   scroll to them. */
 .narr { flex: 0 0 auto; min-width: 0; }
 
 .narr-title {
   font-family: var(--font-heading);
-  font-size: 0.72rem;
+  font-size: clamp(17px, 1.15vw, 21px);
   line-height: 1.15;
   color: var(--text-strong);
   margin: 0;
@@ -1920,50 +2217,99 @@ body {
 
 .narr-meta {
   font-family: var(--font-mono);
-  font-size: 0.46rem;
-  letter-spacing: 0.05em;
+  font-size: clamp(10px, 0.62vw, 11.5px);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
-  margin: 1px 0 0;
+  margin: 3px 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .narr-text {
-  font-size: 0.58rem;
-  line-height: 1.22;
+  font-size: clamp(12.5px, 0.85vw, 14.5px);
+  line-height: 1.34;
   color: var(--text);
-  margin: 1px 0 0;
+  margin: 4px 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* The catalogue: one entry per photograph that exists, stacked. It was two
-   columns of a strip ninety pixels wide, which is where every entry's title
-   ended in an ellipsis. Stacked in a column of its own each entry gets a line
-   it can finish. */
+/* ── The awards control on a project's label ──────────────────────────────
+   A project's awards are read in the dialog, so this is the only handle on
+   them. It sits between the narrative and the catalogue: after the paragraph
+   that says what the project is, before the list of its photographs. It is a
+   panel rather than a gilt frame, because it is furniture on the label and not
+   a work on the wall, and it clears the 44px tap floor. */
+.label-awards {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid var(--edge);
+  background: var(--surface-1);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.label-awards i { color: var(--accent); }
+
+.label-awards:hover,
+.label-awards:focus-visible {
+  color: var(--text-strong);
+  border-color: var(--accent);
+}
+
+/* The catalogue: one entry per photograph that exists, stacked, each with its
+   letter. It was two columns of a strip ninety pixels wide, which is where
+   every entry's title ended in an ellipsis. */
 .cat {
   flex: 0 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 11px;
 }
 
 .cat-entry {
   flex: 0 0 auto;
   min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 9px;
 }
 
-/* However many photographs a group is still waiting for, said once. A group
+/* The entry's letter is its own column, so every title on the wall starts at
+   the same left edge and the letters read as one list down the label. */
+.ce-key {
+  font-family: var(--font-mono);
+  font-size: clamp(12px, 0.78vw, 13.5px);
+  line-height: 1.25;
+  color: var(--accent);
+}
+
+/* Everything said about one photograph, in the entry's second column: what it
+   shows, what the photograph is, and its file. */
+.ce-body { min-width: 0; }
+
+/* However many photographs a stand is still waiting for, said once. A stand
    with no photographs at all would otherwise print "Photograph awaited" as many
    times as it hangs frames. */
 .ca-note {
+  grid-column: 2;
   font-family: var(--font-mono);
-  font-size: 0.52rem;
+  font-size: clamp(10px, 0.62vw, 11.5px);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-quiet);
@@ -1972,20 +2318,28 @@ body {
 
 .ce-title {
   font-family: var(--font-heading);
-  font-size: 0.66rem;
-  line-height: 1.15;
+  font-size: clamp(14px, 0.92vw, 16px);
+  line-height: 1.2;
   color: var(--text-strong);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.ce-key {
+/* A caption is prose about the photograph, so it is the reading size and it
+   wraps: the ellipsis this replaces was on a single line in a 90px column. */
+.ce-cap {
+  font-size: clamp(11.5px, 0.78vw, 13px);
+  line-height: 1.3;
+  color: var(--text);
+  margin: 2px 0 0;
+}
+
+.ce-tech {
   font-family: var(--font-mono);
-  font-size: 0.54rem;
-  color: var(--accent);
-  margin-right: 4px;
+  font-size: clamp(9.5px, 0.6vw, 11px);
+  line-height: 1.2;
+  color: var(--text-quiet);
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .ce-cap {
@@ -1997,16 +2351,21 @@ body {
 
 .ce-tech {
   font-family: var(--font-mono);
-  font-size: 0.5rem;
+  font-size: clamp(9.5px, 0.6vw, 11px);
+  line-height: 1.2;
   color: var(--text-quiet);
-  margin: 1px 0 0;
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
 }
 
 /* About's portrait is presentation, not a hung piece: the same frame as
    everything else on the walk, but a figure rather than a control, sized to the
-   image inside it rather than to the space beside the bio. Its height comes
-   from the same viewport share as every other frame, capped so a portrait
-   photograph cannot dominate a room that is only ever one screen wide. */
+   image inside it rather than to the space beside the bio.
+
+   It takes no --panel-h, because it is not in a column and has no band to
+   divide. Its own clamp is therefore cut to the same band every other frame
+   is: 190px at 1080p, which still closes the About composition well above the
+   dock, and it cannot dominate a room that is only ever one screen wide. */
 .piece--portrait {
   flex: 0 0 auto;
   height: clamp(120px, 18vh, 190px);
@@ -2018,6 +2377,124 @@ body {
 .piece--portrait img {
   width: auto;
   max-width: 100%;
+}
+
+/* ── The honours room: a three-column list of tiles ───────────────────────
+   Not a hang. An honour that IS a project's award now lives on that project's
+   card, so what is left here is the honours that stand alone, and they are
+   read rather than looked at: one tile per honour, three across.
+
+   The room is still exactly one screen tall and the hall has no vertical axis,
+   so the grid must fit the band. Three columns is what makes that possible —
+   five honours is two rows at any supported width, where a two-column grid
+   would already be three rows at the 1280x704 floor and the third row would be
+   clipped with nowhere to scroll to. `grid-auto-rows: 1fr` splits whatever
+   height the room has left between the rows, so the list grows into the band
+   instead of being sized by its contents.
+
+   A tile is a panel, not a frame: no gilt, no mat, no photograph. The one
+   accent is the left edge on a tile that opens photographs, and it is the only
+   thing telling a visitor that one tile is pressable and the next is not. */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 14px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  /* The room is a flex column; without this the grid only takes its content
+     height and the rows collapse to it. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--edge);
+  /* The lit edge, and the only cue that a tile opens something. A 2px accent on
+     the left is also how the record lists in the dialog mark themselves. */
+  border-left: 2px solid var(--edge);
+  background: var(--surface-1);
+  text-align: left;
+  cursor: default;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+/* Only a tile with photographs is a control, and the renderer emits it as a
+   button with a gallery handle. A tile with nothing behind it stays a panel:
+   a focusable control that opens nothing is worse than a row that plainly is
+   not one, which is the rule the frames already follow. */
+.tile--open {
+  cursor: pointer;
+  border-left-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.tile--open:hover,
+.tile--open:focus-visible {
+  border-color: var(--text-quiet);
+  border-left-color: var(--accent);
+  background: rgba(214, 232, 240, 0.09);
+}
+
+.tile-year {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tile-desc {
+  font-family: var(--font-heading);
+  font-size: clamp(0.95rem, 1.15vw, 1.15rem);
+  line-height: 1.3;
+  color: var(--text-strong);
+}
+
+/* Pushed to the foot of its panel, so the three lines of every tile line up
+   with their neighbours however long a description runs. */
+.tile-open,
+.tile-awaited {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.tile-awaited { color: var(--text-quiet); }
+
+.tile--open .tile-open { color: var(--accent); }
+
+/* The honours room IS one screen wide, unlike every other work room: its tiles
+   are a grid, and a grid cannot be shrink-to-fit. `.room` is `width:
+   max-content` (content-box), which for a flex row means "as wide as my
+   contents need"; a grid track asks its container how wide it is and the
+   container asks the track, so the room resolved 1052px against a 987px
+   content box and the third column was pushed off the right edge — measured on
+   the rendered page at 1440x900.
+
+   So the box model is the fix, not the track size: `border-box` makes `100vw`
+   mean one screen ALL IN, and the padding then takes the 34px the other rooms
+   take per side. Measured after: the room is 1440px in a 1440px viewport, the
+   grid 1372px inside it, and three 448px tracks that all fit. Do NOT widen the
+   grid back out with a negative margin to line the tiles up with the frames on
+   the other walls — that made the grid 1439px inside a 1372px box and clipped
+   the third column again, which is the fault this rule exists to fix. */
+.room[data-room="Honours"] {
+  box-sizing: border-box;
+  width: 100vw;
+  min-width: 100vw;
+  max-width: 100vw;
 }
 
 /* About and Contact are single compositions, not runs of groups. Every other

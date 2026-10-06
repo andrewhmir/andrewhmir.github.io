@@ -86,6 +86,12 @@ const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
 
 /* ── The DOM contract ────────────────────────────────────────────────── */
+/* The honours ROOM holds only the honours that stand alone. The ones that ARE a
+   project's award live on that project's card, and the room must not hang them
+   as well — that duplication is the whole reason this contract exists. */
+const honoursSplit = () => Site.honoursTiles(PORTFOLIO.honors);
+const HONOURS_TILES = honoursSplit().tiles;
+
 check('the walk carries six rooms in order, and honours is one of them', () => {
   /* A gallery is as wide as its contents now, so there is no four-exhibit
      ceiling to force thirteen honours into four galleries all called Honours.
@@ -94,6 +100,8 @@ check('the walk carries six rooms in order, and honours is one of them', () => {
   assert.deepEqual(roomKeys, ['About', 'Robotics', 'Applications', 'Leadership',
     'Honours', 'Contact']);
   assert.equal(new Set(roomKeys).size, roomKeys.length, 'two rooms share a name');
+  assert.equal(honoursSplit().tiles.length + honoursSplit().projectAwards.length,
+    PORTFOLIO.honors.length, 'the honours split is not total');
 });
 
 check('room titles name every room', () => {
@@ -110,13 +118,15 @@ const honoursStrip = HONOURS_KEYS
 
 check('every record hangs as exactly one group', () => {
   /* The unit that hangs is the record, not the photograph. The entry key is
-     scoped by room, because project indices restart in every project room. */
+     scoped by room, because project indices restart in every project room.
+     An honour that is a project's own award is not hung twice: it hangs nowhere
+     as a painting, and lives in its project's awards dialog instead. */
   const groups = [...strip.matchAll(/data-group data-kind="([^"]+)" data-entry="([^"]+)"/g)];
   const projects = groups.filter((m) => m[1] === 'project').length;
   const honours = groups.filter((m) => m[1] === 'honors').length;
   const posts = groups.filter((m) => m[1] === 'leadership').length;
   assert.equal(projects, PORTFOLIO.projects.length, 'projects hang as ' + projects + ' groups');
-  assert.equal(honours, PORTFOLIO.honors.length, 'honours hang as ' + honours + ' groups');
+  assert.equal(honours, 0, 'a moved honour still hangs on the honours wall');
   assert.equal(posts, PORTFOLIO.leadership.length, 'posts hang as ' + posts + ' groups');
   assert.equal(new Set(groups.map((m) => m[2])).size, groups.length,
     'two groups share an entry key');
@@ -135,11 +145,13 @@ check('work rooms are not snap targets', () => {
 check('every room that hangs groups holds them in one row', () => {
   /* A room is one viewport tall with no vertical axis, so its groups run
      sideways rather than wrapping: the row is what lets a gallery be as wide
-     as its own hang. */
-  for (const room of ['Robotics', 'Applications', 'Leadership', ...HONOURS_KEYS]) {
+     as its own hang. Honours is not one of them any more — it hangs no groups
+     at all, it lists tiles — so it is asserted separately below. */
+  for (const room of ['Robotics', 'Applications', 'Leadership']) {
     const section = strip.split('data-room="' + room + '"')[1].split('</section>')[0];
     assert.match(section, /<div class="groups">/, room + ' has no group row');
   }
+  assert.match(honoursStrip, /<ul class="tiles">/, 'the honours room has no tile list');
 });
 
 check('every group hangs between three and six frames', () => {
@@ -149,7 +161,7 @@ check('every group hangs between three and six frames', () => {
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
-    const n = (body.match(/class="piece/g) || []).length;
+    const n = (body.match(/class="piece[" ]/g) || []).length;
     if (n < Site.MIN_PIECES || n > Site.MAX_PIECES) bad.push('group ' + i + ': ' + n + ' frames');
   });
   assert.deepEqual(bad, [], bad.join(' | '));
@@ -216,19 +228,25 @@ check('the wall hangs exactly the frames its arrangement names', () => {
 check('no photograph is dropped or duplicated by grouping', () => {
   /* Grouping must be a partition of the photographs, not a filter: the check
      that catches a grouping bug silently hiding an image.
-     Scoped to the photographs that exist. An awaited frame draws no picture at
-     all as of Task 4; until then a record WITH photographs still hangs the
-     placeholder for its padding while a record without any does not, and that
-     difference is not what this check is about. */
+     Scoped to the photographs that exist, and to the records that HANG as
+     groups. An honour is a tile now: its photographs are fetched only when the
+     tile is pressed, so they are not on this wall by design and the tile suite
+     — not this one — is what holds them to account. */
   const isPlaceholder = (s) => /PlaceHolder\.png$/.test(s);
   const rendered = [...strip.matchAll(/<img src="([^"]+)"[^>]*loading="lazy"/g)]
     .map((m) => m[1]).filter((s) => !isPlaceholder(s));
   const expected = [];
   const wanted = (rec, kind) => Site.groupPieces(rec, kind)
     .filter((p) => !p.awaited).forEach((p) => expected.push(p.src));
-  PORTFOLIO.honors.forEach((h) => wanted(h, 'record'));
   PORTFOLIO.leadership.forEach((l) => wanted(l, 'record'));
   PORTFOLIO.projects.forEach((p) => wanted(p, 'project'));
+  /* And no honour's photograph is hung: the wall draws text, not pictures. */
+  PORTFOLIO.honors.forEach((h) => {
+    (h.images || []).forEach((src) => {
+      assert.equal(rendered.filter((s) => s === src).length, 0,
+        'a tile fetched a photograph onto the wall: ' + src);
+    });
+  });
   const count = (arr, v) => arr.filter((x) => x === v).length;
   [...new Set(expected)].forEach((src) => {
     assert.equal(count(rendered, src), count(expected, src), 'piece count differs for ' + src);
@@ -254,11 +272,17 @@ check('a photograph that is still awaited is not a dead control', () => {
   /* A focusable button that does nothing when activated is worse than a frame
      that plainly is not one. Every frame without a photograph behind it — the
      padding that fills a group to the floor, and every frame of a record that
-     declares none at all — is a labelled span. */
+     declares none at all — is a labelled span.
+     Scoped to the records that HANG, and to FRAMES. An honour that is a
+     project's award hangs nowhere now, so counting every record's awaited
+     frames would expect frames the walk deliberately does not draw — and a
+     tile's "Photographs awaited" is a line of text on a panel, not a reserved
+     place on the wall, so it is counted by the tile suite instead. */
   const pending = [...strip.matchAll(/<span class="piece piece--pending[^"]*"[^>]*>/g)].map((m) => m[0]);
+  const tileText = [...honoursStrip.matchAll(/class="tile-awaited"/g)].length;
+  assert.ok(tileText > 0, 'no tile says its photographs are awaited');
   const awaited = [...PORTFOLIO.projects.map((p) => [p, 'project']),
-    ...PORTFOLIO.leadership.map((l) => [l, 'record']),
-    ...PORTFOLIO.honors.map((h) => [h, 'record'])]
+    ...PORTFOLIO.leadership.map((l) => [l, 'record'])]
     .reduce((n, [rec, kind]) => n + Site.groupPieces(rec, kind).filter((p) => p.awaited).length, 0);
   assert.equal(pending.length, awaited, pending.length + ' awaited frames, expected ' + awaited);
   pending.forEach((p) => {
@@ -320,7 +344,7 @@ check('the catalogue has one entry per photograph, and names the awaited ones on
     /* Bound the group at the next group, so the count cannot pick up a
        neighbouring group's catalogue. */
     const body = g.split('<div class="group"')[0];
-    const frames  = (body.match(/class="piece/g) || []).length;
+    const frames  = (body.match(/class="piece[" ]/g) || []).length;
     const awaited = (body.match(/class="piece piece--pending/g) || []).length;
     const entries = (body.match(/class="cat-entry"/g) || []).length;
     const notes   = (body.match(/class="ca-note"/g) || []).length;
@@ -332,6 +356,62 @@ check('the catalogue has one entry per photograph, and names the awaited ones on
     }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('no frame on the wall carries a letter', () => {
+  /* The letter began as a badge on the frame, so a visitor reading entry C could
+     find C on the photograph. On the wall it is a mark on the picture — a dark
+     box in the corner of a work — and the letters are read in the label anyway:
+     the plan draws the same hang, and the catalogue beneath it names each
+     photograph. So the frame hangs clean and the label carries the letters. */
+  const walled = [...strip.matchAll(/<span class="piece-(?:key|wrap)\b[^>]*>/g)].map((m) => m[0]);
+  assert.deepEqual(walled, [], walled.length + ' letters still on the wall');
+});
+
+check('the plan and the catalogue carry the letters, and cover every frame', () => {
+  /* Two places a letter appears, both keyed on the PIECE index: the plan's box
+     and the catalogue entry. They cannot disagree about which photograph is
+     which, and between them they account for every hung frame — a letter no box
+     draws is a photograph nobody can find. Awaited frames are lettered too:
+     they are hung frames and the plan draws them.
+
+     The letters are the piece indices, so they are NOT in document order: a lead
+     hangs in a column of its own, and in a "two-lead" arrangement that column is
+     the second one — the frame a visitor reads first is photograph A. What has
+     to hold is that the boxes cover every frame, and cover nothing twice. */
+  const bad = [];
+  const range = (n) => Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i));
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const frames = (body.match(/class="piece[" ]/g) || []).length;
+    const keys = [...body.matchAll(/<span class="ce-key">([A-Z])<\/span>/g)].map((m) => m[1]);
+    const plan = (body.match(/<div class="plan"[\s\S]*?<\/div>\s*<div class="narr"/) || [''])[0];
+    const boxes = [...plan.matchAll(/<i class="pi[^"]*">([A-Z])<\/i>/g)].map((m) => m[1]);
+    const sorted = (a) => a.slice().sort().join('');
+    if (frames > 1) {
+      if (sorted(boxes) !== range(frames).join('')) {
+        bad.push('group ' + i + ': the plan draws ' + boxes.join('') + ' for ' + frames + ' frames');
+      }
+      /* Every catalogue entry must have its box: an entry for a letter the plan
+         does not draw names a photograph nobody can find. */
+      const orphan = keys.filter((k) => !boxes.includes(k));
+      if (orphan.length) bad.push('group ' + i + ': entries ' + orphan.join('') + ' have no box in the plan');
+    } else if (keys.length || boxes.length) {
+      /* One photograph needs no letter: there is nothing to tell apart. */
+      bad.push('group ' + i + ': a single-photograph stand is lettered');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the catalogue names the file a photograph came from, not words made of it', () => {
+  /* "Palad Team" reads like a description of the photograph and is not one, so
+     a visitor takes it for the only explanation on offer. A filename says
+     plainly that the line is provenance. */
+  const tech = [...strip.matchAll(/<p class="ce-tech">([^<]*)<\/p>/g)].map((m) => m[1]);
+  assert.ok(tech.length > 0, 'no technical lines rendered');
+  const bad = tech.filter((t) => t !== 'Photograph awaited' && !/^File · \S+\.\w+$/.test(t));
+  assert.deepEqual(bad, [], 'lines that are not a file: ' + bad.slice(0, 5).join(' | '));
 });
 
 check('an awaited frame is an empty frame, not a grey picture', () => {
@@ -390,7 +470,7 @@ check('the plan draws the arrangement the wall hangs', () => {
     const plan = body.match(/<div class="plan"[\s\S]*?<\/div>/);
     if (!plan) { bad.push('group ' + i + ': no plan'); return; }
     const boxes = (plan[0].match(/<i class=/g) || []).length;
-    const frames = (body.match(/class="piece/g) || []).length;
+    const frames = (body.match(/class="piece[" ]/g) || []).length;
     if (boxes !== frames) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + frames + ' frames');
     const layout = named.get((body.match(/data-hang="([^"]+)"/) || [])[1]);
     const cols = (plan[0].match(/<span class="pcol"/g) || []).length;
@@ -417,7 +497,7 @@ check('the label counts photographs, not frames', () => {
     const meta = body.match(/<p class="narr-meta">([^<]*)<\/p>/);
     if (!meta) return;                       /* a record with no year has none */
     const claimed = Number((meta[1].match(/·\s*(\d+)\s+photograph/) || [])[1]);
-    const frames = (body.match(/class="piece/g) || []).length;
+    const frames = (body.match(/class="piece[" ]/g) || []).length;
     const awaited = (body.match(/class="piece piece--pending/g) || []).length;
     if (!Number.isNaN(claimed) && claimed !== frames - awaited) {
       bad.push('group ' + i + ': claims ' + claimed + ' of ' + (frames - awaited) + ' photographs');
@@ -539,60 +619,129 @@ check('gallery rows carry their real array index', () => {
   });
 });
 
-check('every honours record hangs as a group', () => {
-  /* The old build split the honours room into photo-bearing works and
-     photo-less plates. A record with no photographs is now a group with one
-     placeholder piece, so no honour is dropped — and the three-way split must
-     not lose one either. */
-  const groups = (honoursStrip.match(/data-group data-kind="honors"/g) || []).length;
-  assert.equal(groups, PORTFOLIO.honors.length,
-    groups + ' honours groups, expected ' + PORTFOLIO.honors.length);
-});
-
 check('no honour hangs the placeholder picture', () => {
-  /* Six honours declare no photographs at all, and every group carries padding
-     up to the floor. All of it draws an empty frame now, not the same grey
-     picture over and over. */
+  /* A tile is an accession, not a frame, so the room draws no picture at all —
+     and every tile that does open photographs names its own record. */
   assert.ok(!/src="files\/PlaceHolder\.png"/.test(honoursStrip),
     'an honour still draws the placeholder picture');
-  const awaited = (honoursStrip.match(/class="piece piece--pending/g) || []).length;
-  assert.ok(awaited > 0, 'no awaited frame on the honours wall');
-});
-
-check('no photo-less honour is a gallery trigger', () => {
-  /* A record with no photos must have no handle to open anything: it cannot
-     open a neighbour's photographs if there is nothing to click. The group's
-     placeholder piece carries no data-gallery at all. */
-  const leaked = PORTFOLIO.honors
-    .map((h, i) => ({ h, i }))
-    .filter(({ h }) => !Array.isArray(h.images) || !h.images.length)
-    .filter(({ i }) => new RegExp('data-gallery="honors"\\s+data-entry="honors:' + i + '"').test(strip))
-    .map(({ h }) => h.description);
-  assert.deepEqual(leaked, [], 'photo-less rows are clickable: ' + leaked.join(' | '));
-});
-
-check('every honours gallery row opens its own honour', () => {
-  /* The defect: the emitted index was the position within a filtered loop while
-     the lookup indexed the unfiltered array, so a photo-less row shifted every
-     later row's index and clicking one opened another's photographs. Each
-     emitted index must therefore name the very row that carries it. */
-  const rows = [...strip.matchAll(/data-group data-kind="honors" data-entry="honors:(\d+)"/g)]
+  const rows = [...honoursStrip.matchAll(/data-gallery="honors" data-entry="honors:(\d+)"/g)]
     .map((m) => Number(m[1]));
-  assert.ok(rows.length > 0, 'no honours groups rendered');
-  assert.equal(rows.length, PORTFOLIO.honors.length, 'not every honour is hung');
-  assert.equal(new Set(rows).size, rows.length, 'two honours groups share one index');
   rows.forEach((i) => {
-    const entry = PORTFOLIO.honors[i];
-    assert.ok(entry, 'data-entry honors:' + i + ' is not an honour');
-  });
-  /* And each photograph that can be opened belongs to a record that has some:
-     a photo-less record gets no handler at all. */
-  const clickable = [...strip.matchAll(/data-gallery="honors" data-entry="honors:(\d+)"/g)]
-    .map((m) => Number(m[1]));
-  clickable.forEach((i) => {
-    const entry = PORTFOLIO.honors[i];
-    assert.ok(Array.isArray(entry.images) && entry.images.length,
+    const record = PORTFOLIO.honors[i];
+    assert.ok(record, 'data-entry honors:' + i + ' is not an honour');
+    assert.ok(Array.isArray(record.images) && record.images.length,
       'data-entry honors:' + i + ' points at a photo-less honour');
+  });
+});
+
+/* ── The honours room is a tile list, not a hang ─────────────────────── */
+check('the honours room hangs no painting', () => {
+  /* The eight honours that are a project's own award used to hang here as
+     groups with labels and frames, and they hang nowhere now — they are in the
+     project's awards dialog. The five that remain are tiles. */
+  assert.ok(!/data-group data-kind="honors"/.test(honoursStrip),
+    'an honour still hangs as a framed group');
+  assert.ok(!/<div class="cluster"/.test(honoursStrip),
+    'a cluster is still drawn on the honours wall');
+  assert.ok(!/<div class="label"/.test(honoursStrip),
+    'a label is still drawn on the honours wall');
+});
+
+check('every honour that stands alone is one clickable tile', () => {
+  /* A tile is a real control, so the count of tile buttons must equal the count
+     of honours the data says stand alone — a tile dropped or hung twice is a
+     record lost or duplicated, and neither looks broken on the wall.
+     The class is matched loosely and the open tag is bounded at the `>` that
+     closes it: an aria-label legitimately contains a `>` — "Top 7% of 2500
+     Applicants" is followed by one — and a pattern that stops at the first `>`
+     truncates the tile it is reading. */
+  const tiles = [...honoursStrip.matchAll(
+    /<button type="button" class="(tile[^"]*)" data-tile="(\d+)"[^>]*>([\s\S]*?)<\/button>/g)];
+  assert.equal(tiles.length, HONOURS_TILES.length,
+    tiles.length + ' tiles for ' + HONOURS_TILES.length + ' standalone honours');
+  tiles.forEach(([, cls, i, body]) => {
+    const entry = PORTFOLIO.honors[Number(i)];
+    assert.ok(entry, 'a tile names honours:' + i + ', which does not exist');
+    assert.ok(!entry.from, 'a tile is hung for a project award: ' + entry.description);
+    assert.match(cls, /\btile\b/, 'a tile is not classed as one');
+    assert.ok(body.includes('class="tile-year"'), 'a tile carries no year');
+    assert.ok(body.includes('class="tile-desc"'), 'a tile carries no description');
+  });
+});
+
+check('a tile with no photographs is not a control that does nothing', () => {
+  /* The rule the frames already follow: a focusable control that opens nothing
+     is worse than a plain row. A tile with photographs carries the gallery
+     handle and names what it opens; one without carries neither, and says so
+     in its own text. */
+  const tiles = [...honoursStrip.matchAll(
+    /<button type="button" class="(tile[^"]*)" data-tile="(\d+)"([^>]*)>([\s\S]*?)<\/button>/g)];
+  assert.ok(tiles.length > 0, 'no tiles rendered');
+  tiles.forEach(([, cls, i, attrs, body]) => {
+    const record = PORTFOLIO.honors[Number(i)];
+    const hasPhotos = Array.isArray(record.images) && record.images.length > 0;
+    const wired = /data-gallery="honors" data-entry="honors:\d+"/.test(attrs);
+    assert.equal(wired, hasPhotos,
+      record.description + ': photographs ' + (hasPhotos ? 'present' : 'awaited')
+      + ' but wired=' + wired);
+    if (hasPhotos) {
+      assert.match(attrs, /aria-label="[^"]+"/, record.description + ' has no accessible name');
+      assert.match(cls, /\btile--open\b/, record.description + ' is not marked as openable');
+    }
+    if (!hasPhotos) {
+      assert.match(body, /class="tile-awaited"/, record.description + ' does not say so');
+    }
+  });
+});
+
+check('the project awards the honours room gave up are on their project cards', () => {
+  /* This is the whole point of the move: an award must not be dropped on the
+     way from the wall to its project. Every honour carrying a `from` link must
+     name a project that exists, and that project's `awards` must carry the same
+     achievement — compared on its leading words, because the card states the
+     placing parenthetically where the honour states it after a dash. */
+  const linked = PORTFOLIO.honors.filter((h) => h.from);
+  assert.ok(linked.length > 0, 'no honour is linked to a project');
+  linked.forEach((h) => {
+    const project = PORTFOLIO.projects.find((p) => p.id === h.from);
+    assert.ok(project, h.description + ' names project ' + h.from + ', which does not exist');
+    const lead = String(h.description).split(/[–—(]/)[0].trim().toLowerCase();
+    const listed = (project.awards || []).some(
+      (a) => String(a.description).toLowerCase().includes(lead));
+    assert.ok(listed, '"' + h.description + '" is not on ' + project.title + "'s awards");
+    assert.ok(honoursStrip.indexOf(h.description) === -1,
+      '"' + h.description + '" is still on the honours wall');
+  });
+});
+
+check('every project with awards has a control that opens them', () => {
+  /* The dialog is the ONLY place a project's awards can be read — eight honours
+     were moved off the wall into it — so a project whose awards are in the data
+     but have no control in the walk has silently lost them. The control is on
+     the group's label, because the walk hangs groups and has no cards. */
+  const withAwards = PORTFOLIO.projects.filter((p) => Array.isArray(p.awards) && p.awards.length);
+  assert.ok(withAwards.length > 0, 'fixture needs a project with awards');
+  withAwards.forEach((p) => {
+    assert.match(strip, new RegExp(
+      '<button[^>]*data-action="modal"[^>]*data-project="' + p.id + '"[^>]*data-tab="awards"'),
+      p.title + ' has awards in the data and no control in the walk');
+  });
+  const buttons = (strip.match(/data-tab="awards"/g) || []).length;
+  assert.equal(buttons, withAwards.length,
+    buttons + ' awards controls for ' + withAwards.length + ' projects with awards');
+});
+
+check('every award entry can be named in a dialog', () => {
+  /* The dialog is the only place a project's awards can be read, and it renders
+     each entry's description and year. An entry missing either would render a
+     blank row rather than throw, so the shape is pinned here. */
+  PORTFOLIO.projects.filter((p) => p.awards).forEach((p) => {
+    p.awards.forEach((a) => {
+      assert.equal(typeof a.description, 'string', p.title + ' has an unnamed award');
+      assert.ok(a.description.trim(), p.title + ' has an empty award description');
+      assert.equal(typeof a.year, 'string', p.title + ' award "' + a.description + '" has no year');
+      assert.ok(a.year.trim(), p.title + ' award "' + a.description + '" has an empty year');
+    });
   });
 });
 
