@@ -63,8 +63,12 @@ ok('the shell has a sticky room rail, hidden from assistive tech',
   /<header class="room-rail"[^>]*id="roomRail"[^>]*aria-hidden="true"/.test(html),
   'the shell has no aria-hidden #roomRail');
 
+ok('the rail carries both lines initLights() writes into',
+  /<span class="rr-title"><\/span>/.test(html) && /<span class="rr-meta"><\/span>/.test(html),
+  'the rail has no .rr-title / .rr-meta, so writeRail() would write nowhere');
+
 ok('the shell has no progress rail outside the dock',
-  !/class="rail"/.test(html),
+  !/class\s*=\s*["']rail["'\s]/.test(html),
   'the old #rail is still in the shell — the progress belongs inside the dock');
 
 ok('the dock progress is inside the dock',
@@ -75,16 +79,19 @@ ok('the dock progress is inside the dock',
    itself inside <nav class="dock">, `…id="dockProgress"…</nav>` matches just as
    happily when the track is nested inside #directory — the one shape that must
    never ship. Ordering does not separate them either: the nested track still
-   appears after the directory's opening tag. Only capturing #directory's own
-   content does, so assert on that. On the real shell the capture is empty
-   (length 0) because renderDock() is what fills it. */
+   appears after the directory's opening tag. */
 ok('the dock progress is a sibling of the directory, not inside it',
   (() => {
+    /* #directory ships EMPTY in the shell - renderDock() is what fills it. So
+       asserting its content is empty settles siblinghood completely: any child
+       at all, including a nested wrapper around the track, is a non-empty
+       capture. A lazy capture ending at the first </div> was NOT enough: one
+       nested element in front of the track defeated it. */
     const m = html.match(/<div class="dock-links" id="directory">([\s\S]*?)<\/div>/);
     if (!m) return false;
-    return !/dockProgress/.test(m[1]);
+    return m[1].trim() === '';
   })(),
-  '#dockProgress is inside #directory, so renderDock() wipes it on every render');
+  '#directory is not empty in the shell, so #dockProgress may sit inside it and be wiped by renderDock()');
 
 /* The old fixed painting-and-grain layer must be gone: it sat at z-index 0 over
    a .content-layer that deliberately has no z-index, so it painted over every
