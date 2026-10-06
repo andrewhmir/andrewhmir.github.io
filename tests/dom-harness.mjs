@@ -161,6 +161,7 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
      dialog elements openModal/openGallery bail out and every control looks dead
      for the wrong reason. */
   for (const id of ['strip', 'directory', 'hall', 'announcer',
+    'roomRail', 'dockProgress',
     'modalOverlay', 'modalCard', 'modalClose', 'modalHeader', 'modalImage', 'modalBody',
     'heroPhoto', 'heroBio', 'heroEmail', 'heroLinks',
     'newsTimeline', 'projectList', 'leadershipList', 'honorsList',
@@ -169,6 +170,21 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   el('modalCard').setAttribute('aria-modal', 'true');
   el('modalCard').setAttribute('aria-labelledby', 'modalTitle');
   el('modalOverlay').parentNode = null;
+
+  /* The rail's two lines, as the shell has them. initLights() looks them up
+     through the rail's own querySelector — the stub is per element, as it is
+     for a room's title below — so a rail with no .rr-title / .rr-meta leaves
+     writeRail() writing nowhere and the rail silently empty in every test. */
+  const railEl = el('roomRail');
+  const railLines = {};
+  for (const cls of ['rr-title', 'rr-meta']) {
+    const line = makeEl('span');
+    line.className = cls;
+    line.parentNode = railEl;
+    railEl.children.push(line);
+    railLines['.' + cls] = line;
+  }
+  railEl.querySelector = (sel) => railLines[sel] ?? null;
 
   const hall = el('hall');
   hall.scrollLeft = 0;

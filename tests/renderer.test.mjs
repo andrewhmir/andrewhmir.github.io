@@ -12,30 +12,90 @@ const listeners = new Map();
 const store = new Map();
 
 function makeEl(id) {
+  /* style keeps what it is given rather than swallowing it: the dock's
+     progress is written as a custom property and nothing else can read a
+     value back out of the stub. */
+  const styleValues = new Map();
   return {
     id,
     innerHTML: '',
     textContent: '',
     dataset: {},
-    style: { setProperty() {}, removeProperty() {} },
+    style: {
+      setProperty(name, value) { styleValues.set(name, String(value)); },
+      removeProperty(name) { styleValues.delete(name); },
+      get(name) { return styleValues.get(name); },
+    },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     attributes: {},
+    /* Listeners are kept, not swallowed, so a check can prove the scroll
+       handler that drives the rail and the bar was actually bound to #hall —
+       as opposed to the two functions working while nothing ever calls them. */
+    listeners: new Map(),
     offsetLeft: 0, offsetWidth: 1, offsetHeight: 1, offsetParent: null, tabIndex: -1,
     children: [],
     setAttribute(k, v) { this.attributes[k] = v; },
     getAttribute(k) { return this.attributes[k] ?? null; },
     removeAttribute(k) { delete this.attributes[k]; },
-    addEventListener() {}, removeEventListener() {}, appendChild(c) { this.children.push(c); return c; },
+    addEventListener(type, fn) {
+      if (!this.listeners.has(type)) this.listeners.set(type, []);
+      this.listeners.get(type).push(fn);
+    },
+    removeEventListener() {}, appendChild(c) { this.children.push(c); return c; },
     removeChild() {}, remove() {}, focus() {}, blur() {}, click() {}, closest: () => null,
     querySelector: () => null, querySelectorAll: () => [],
+    fire(type) { (this.listeners.get(type) || []).forEach((fn) => fn({ type, target: this })); },
   };
 }
 
 const els = new Map();
 const el = (id) => { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); };
-/* Current markup: the renderer's output targets, plus the walk's two anchors.
-   #hall must exist or initWalk returns null by design. */
-for (const id of ['strip', 'directory', 'rail', 'hall']) el(id);
+/* Current markup: the renderer's output targets, plus the walk's two anchors
+   and the two pieces of chrome initLights() drives. #hall must exist or
+   initWalk returns null by design; #roomRail and #dockProgress must exist or
+   writeRail() and updateProgress() both early-return and the rail and the bar
+   are silently dead in every check below. */
+for (const id of ['strip', 'directory', 'roomRail', 'dockProgress', 'hall']) el(id);
+
+/* ── The room the walk is standing in ─────────────────────────────────────
+   initLights() finds the current room through #strip's own querySelectorAll,
+   so a room has to be in that list or roomAt() returns null, announceRoom()
+   never fires, and writeRail() is never reached. The room carries the title
+   and the subtitle the real renderRooms() emits, one of each, and the
+   geometry a room has: a viewport wide, starting at the walk's origin. */
+const railRoom = makeEl('section');
+railRoom.setAttribute('data-room', 'About');
+railRoom.offsetLeft = 0;
+railRoom.offsetWidth = 1440;
+const railTitleEl = makeEl('span');
+railTitleEl.className = 't';
+railTitleEl.textContent = 'About the practice';
+const railSubEl = makeEl('span');
+railSubEl.className = 'sub';
+/* Deliberately not clean: two spaces and a newline beside it, as the renderer's
+   own template literals produce. What lands in the rail must be one line. */
+railSubEl.textContent = '  Design   and\n fabrication  ';
+/* One handler, as in the browser: the selector decides which span comes back. */
+railRoom.querySelector = (sel) => {
+  if (sel === '.room-title .t') return railTitleEl;
+  if (sel === '.room-title .sub') return railSubEl;
+  return null;
+};
+el('strip').querySelectorAll = (sel) => (sel === '[data-room]' ? [railRoom] : []);
+
+/* The rail's two lines, as the shell has them, and one handler that returns the
+   span matching its selector — the same arrangement roomEl.querySelector has in
+   tests/dom-harness.mjs. */
+const railEl = el('roomRail');
+const railSpans = {
+  '.rr-title': makeEl('span'),
+  '.rr-meta': makeEl('span'),
+};
+Object.entries(railSpans).forEach(([sel, node]) => {
+  node.className = sel.slice(1);
+  railEl.children.push(node);
+});
+railEl.querySelector = (sel) => railSpans[sel] ?? null;
 
 globalThis.document = {
   readyState: 'complete',
@@ -52,7 +112,16 @@ globalThis.document = {
 
 globalThis.window = {
   innerWidth: 1440, innerHeight: 900, scrollY: 0, isSecureContext: false,
-  addEventListener(type, fn) { listeners.set('window:' + type, fn); },
+  /* Listeners accumulate per event rather than overwriting each other: more
+     than one controller binds resize (the walk and the lighting/tracking path
+     both do), and keeping only the last one made the tracking flush
+     unreachable — and could have made a check pass or fail for the wrong
+     reason. */
+  addEventListener(type, fn) {
+    const key = 'window:' + type;
+    if (!listeners.has(key)) listeners.set(key, []);
+    listeners.get(key).push(fn);
+  },
   removeEventListener() {}, matchMedia: () => ({ matches: false }),
   requestAnimationFrame: () => 0, cancelAnimationFrame() {},
   getComputedStyle: () => ({ getPropertyValue: () => '0' }),
@@ -786,13 +855,88 @@ check('the dock marks none when the walk names no room', () => {
   assert.equal(marked.filter((m) => m.current).length, 0, 'a stale room stays marked');
 });
 
-check('the rail is in the shell and hidden from assistive tech', () => {
-  /* The DOM stub fabricates elements named in its id list, so it cannot tell
-     whether the shell actually has a rail. Read the markup. */
+/* ── The chrome that tracks the walk ─────────────────────────────────────
+   The sticky rail and the dock's progress bar are both driven from the scroll
+   position, and neither is reachable from the renderer's own readback, which is
+   static markup. The two checks below read the shell; the third drives the
+   controller and reads what it wrote. */
+check('the progress bar is the dock\'s own, and the old rail is gone', () => {
   const shell = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(shell, /<div class="rail"[^>]*aria-hidden="true"/,
-    'the shell has no aria-hidden rail');
+  assert.match(shell, /id="dockProgress"[\s\S]*<\/nav>/,
+    'the progress bar is not inside the dock');
+  assert.ok(!/class="rail"/.test(shell), 'the old edge rail is still in the shell');
   assert.ok(!/class="directory"/.test(shell), 'the top directory band is still in the shell');
+});
+
+check('the progress bar survives a dock render', () => {
+  /* renderDock() writes #directory.innerHTML, which destroys every child node
+     it has. The progress bar is #directory's SIBLING inside .dock for exactly
+     this reason, and this is the check that it stays that way. */
+  const shell = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const dock = shell.match(/<nav class="dock"[\s\S]*?<\/nav>/);
+  assert.ok(dock, 'no .dock in the shell');
+  const dirAt = dock[0].indexOf('id="directory"');
+  const progAt = dock[0].indexOf('id="dockProgress"');
+  assert.ok(dirAt >= 0 && progAt >= 0, 'the dock is missing #directory or #dockProgress');
+  assert.ok(progAt > dirAt, '#dockProgress is inside #directory and will be wiped by renderDock');
+});
+
+/* The two shell checks above are static: they read index.html and cannot see
+   the controller at all. This one runs the real initLights() — the module
+   import at the head of this file already called it against the seeded room —
+   and reads back what it wrote. Without it, both features could be missing from
+   js/main.js entirely and every check in this file would still pass. */
+check('the rail carries the room it is in, and the dock carries its progress', () => {
+  assert.ok(railSpans['.rr-title'].textContent, 'nothing named the room in the rail');
+  assert.equal(railSpans['.rr-title'].textContent, railTitleEl.textContent,
+    'the rail\'s name is not the room title it stands for');
+  assert.equal(railSpans['.rr-meta'].textContent, 'Design and fabrication',
+    'the rail\'s second line is not the room subtitle, collapsed to one line');
+
+  /* The bar is a percentage written on the track element, and the fraction is
+     Site.progressFraction's. 2700 of a 5040-wide walk inside a 1440 viewport is
+     2700/3600 = 75%. The three denominators this could plausibly get wrong give
+     three other numbers — over scrollWidth, 53.57%; over clientWidth, 187.5%; a
+     constant, 0% or 100% — which is why 75% is the value asserted. */
+  const hall = globalThis.document.getElementById('hall');
+  hall.scrollWidth = 5040;
+  hall.clientWidth = 1440;
+  hall.scrollLeft = 2700;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '75%',
+    'the dock progress is not the fraction of the walk the viewport has consumed');
+  hall.scrollLeft = 0;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
+    'the bar does not read zero at the walk\'s start');
+  hall.scrollLeft = hall.scrollWidth - hall.clientWidth;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '100%',
+    'the bar does not read full at the walk\'s end');
+  hall.scrollWidth = 1440;      /* the walk cannot scroll: the bar is total */
+  hall.scrollLeft = 0;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
+    'a walk that cannot scroll must not divide by zero');
+
+  /* And the walk itself has to drive it. Calling updateProgress() above proves
+     the maths; this proves the controller bound its tracking to the walk at
+     all, which is the difference between a bar that follows the walk and two
+     correct functions that nothing ever calls. The scroll handler is throttled
+     through requestAnimationFrame, and the stub's rAF never runs its callback,
+     so the event fired here is the `resize` the same flush is bound to — the
+     identical path, and the only one reachable without a frame clock. */
+  hall.scrollWidth = 5040;
+  hall.scrollLeft = 2700;
+  assert.ok((hall.listeners.get('scroll') || []).length > 0,
+    'nothing is listening for the walk to scroll, so the rail and the bar never follow it');
+  const flushes = listeners.get('window:resize') || [];
+  /* initLights() binds first (it runs before initWalk() in init()), and the
+     walk binds its own resize after it. The first is the tracking flush. */
+  assert.ok(flushes.length > 0, 'the tracking update is not bound to the walk at all');
+  flushes[0]();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '75%',
+    'the walk moving did not move the dock\'s progress bar');
 });
 
 /* ── The global the renderer needs ───────────────────────────────────── */

@@ -1293,25 +1293,47 @@
     var hall = document.getElementById('hall');
     if (!strip || !hall) return;
 
-    /* The live region that names the room the walk is in (spec §9). It is set up
-       before the lighting's early returns: announcing the room is independent of
-       whether any work is currently lit, so a room of plates still announces
-       itself. Only writes when the room changes, so scrolling does not spam a
-       screen reader with the same name dozens of times a second. */
+    /* The live region that names the room the walk is in (spec §9), the sticky
+       rail that repeats the name on screen, and the dock's progress track. All
+       three are set up before the lighting's early returns: naming the room and
+       drawing how far along the walk is are independent of whether any work is
+       currently lit, so a room of plates still names itself and still advances
+       the bar. The announcer and the rail are written only when the room
+       changes, so scrolling does not spam a screen reader — or the DOM — with
+       the same name dozens of times a second; the bar is one property write per
+       frame. */
     var announcer = document.getElementById('announcer');
-    var rail = document.getElementById('rail');
+    var roomRail = document.getElementById('roomRail');
+    var dockProgress = document.getElementById('dockProgress');
     var lastRoom = null;
 
-    /* Which room the middle of the viewport is standing in. */
+    /* Which room the middle of the viewport is standing in. The interval test
+       is not repeated here: Site.roomAtOffset owns it, so the rail, the
+       announcer and the dock cannot drift from the walk's own rule for where a
+       boundary falls. This measures the geometry; that decides. */
     function roomAt() {
-      var mid = hall.scrollLeft + hall.clientWidth / 2;
       var rooms = strip.querySelectorAll('[data-room]');
+      var boxes = [];
       for (var i = 0; i < rooms.length; i++) {
-        var r = rooms[i];
-        var left = pageX(r), right = left + r.offsetWidth;
-        if (mid >= left && mid < right) return r;
+        var b = { el: rooms[i], left: pageX(rooms[i]), width: rooms[i].offsetWidth };
+        boxes.push(b);
       }
-      return null;
+      var box = Site.roomAtOffset(hall.scrollLeft, hall.clientWidth, boxes);
+      return box ? box.el : null;
+    }
+
+    /* The rail's two lines, read from the room element so the rail cannot drift
+       from the heading it duplicates. Written on room CHANGE only — the same
+       condition the announcer uses — so this is two DOM writes per boundary
+       crossed, not per frame. */
+    function writeRail(roomEl) {
+      if (!roomRail || !roomEl) return;
+      var title = roomEl.querySelector('.room-title .t');
+      var sub = roomEl.querySelector('.room-title .sub');
+      var t = roomRail.querySelector('.rr-title');
+      var m = roomRail.querySelector('.rr-meta');
+      if (t) t.textContent = (title && title.textContent) || '';
+      if (m) m.textContent = (sub && sub.textContent.replace(/\s+/g, ' ').trim()) || '';
     }
 
     function announceRoom() {
@@ -1325,26 +1347,34 @@
         /* The dock follows the walk. Keyed on data-room, not the display
            title: the two differ where the dock shortens a name. */
         markCurrentRoom(r.getAttribute('data-room'));
+        /* The sticky rail names the same room. Written here, on the change,
+           for the same reason the announcer is: scrolling must not rewrite two
+           elements dozens of times a second. */
+        writeRail(r);
       }
       return name;
     }
     Site.announceRoom = announceRoom;
 
-    /* The rail is the walk's position, along the bottom edge. It replaced the
-       native scrollbar, which cost every room 15px of height. */
-    function updateRail() {
-      if (!rail) return;
-      var max = hall.scrollWidth - hall.clientWidth;
-      rail.style.width = (max > 0 ? (hall.scrollLeft / max) * 100 : 0) + '%';
+    /* The walk's progress, inside the dock. It replaced #rail, which drew the
+       same fraction as a line along the screen's own edge. The element is the
+       TRACK; its ::after is the filled part, so the fraction is written as a
+       custom property rather than sizing the element itself — sizing the track
+       would make the bar shrink out from under its own background. The partial
+       fill it paints is Task 5's CSS; here it is a value on an element. */
+    function updateProgress() {
+      if (!dockProgress) return;
+      var v = Site.progressFraction(hall.scrollLeft, hall.scrollWidth, hall.clientWidth);
+      dockProgress.style.setProperty('--walk-progress', (v * 100) + '%');
     }
-    Site.updateRail = updateRail;
+    Site.updateProgress = updateProgress;
 
     /* The rail and the live region are not motion: they still have to work
        under `prefers-reduced-motion`. This is what the early return below
        falls back to, and it is what the lighting path calls once per frame. */
     function trackScroll() {
       announceRoom();
-      updateRail();
+      updateProgress();
     }
 
     function bindTracking() {
