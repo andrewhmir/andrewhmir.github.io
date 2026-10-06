@@ -43,11 +43,27 @@
        ════════════════════════════════════════════════════════════ -->
   <div class="content-layer">
 
-    <!-- The only chrome: the walk's directory, gathered at its foot. The rail
-         along the bottom edge carries the walk's position, replacing the
-         native scrollbar — which ate 15px of every room's height. -->
-    <nav class="dock" id="directory" aria-label="Rooms"></nav>
-    <div class="rail" id="rail" aria-hidden="true"></div>
+    <!-- The sticky rail names the area the walk is standing in. Its text is
+         written by initLights() on the same room-change path that moves the
+         dock, so the two cannot disagree. aria-hidden: #announcer already
+         announces every room change, and a second announcement is a duplicate. -->
+    <header class="room-rail" id="roomRail" aria-hidden="true">
+      <span class="rr-title"></span>
+      <span class="rr-meta"></span>
+    </header>
+
+    <!-- The only navigation: the walk's directory at its foot, with the walk's
+         progress filling inside the dock box rather than along the screen edge.
+
+         #directory and #dockProgress are SIBLINGS inside the dock, and that is
+         load-bearing: renderDock() writes #directory.innerHTML, which destroys
+         every child node it has, so a progress bar placed inside #directory
+         would be wiped on every render. #directory is a plain div and not a
+         span — it holds an <ol> of buttons, which a span may not contain. -->
+    <nav class="dock" aria-label="Rooms">
+      <div class="dock-links" id="directory"></div>
+      <div class="dock-track" id="dockProgress" aria-hidden="true"></div>
+    </nav>
 
     <!-- The walk. Nine rooms sit side by side in one strip; Lenis smooths the
          journey and lenis/snap settles it. Rooms are rendered by JS from

@@ -36,6 +36,8 @@ ok('html tags balance', errors.length === 0 && stack.length === 0,
 /* ---- HTML: the DOM contract later tasks consume ---- */
 const required = [
   ['id="directory"', 'directory'],
+  ['id="roomRail"', 'roomRail'],
+  ['id="dockProgress"', 'dockProgress'],
   ['id="hall"', 'hall'],
   ['id="strip"', 'strip'],
   ['id="modalOverlay"', 'modalOverlay'],
@@ -50,6 +52,24 @@ const required = [
 for (const [needle, label] of required) {
   ok('shell has ' + label, html.includes(needle), 'missing ' + needle);
 }
+
+/* ---- HTML: the sticky rail and the in-dock progress ----
+   The rail names the area the walk is standing in, and the progress bar draws
+   the walk's position inside the dock's own box rather than along the screen
+   edge. #dockProgress is a SIBLING of #directory, not a child: renderDock()
+   writes #directory.innerHTML, which destroys every child node it has, so a bar
+   placed inside it would be wiped on every render. */
+ok('the shell has a sticky room rail, hidden from assistive tech',
+  /<header class="room-rail"[^>]*id="roomRail"[^>]*aria-hidden="true"/.test(html),
+  'the shell has no aria-hidden #roomRail');
+
+ok('the shell has no progress rail outside the dock',
+  !/class="rail"/.test(html),
+  'the old #rail is still in the shell — the progress belongs inside the dock');
+
+ok('the dock progress is inside the dock',
+  /<nav class="dock"[\s\S]*id="dockProgress"[\s\S]*<\/nav>/.test(html),
+  'the progress bar is not inside .dock');
 
 /* The old fixed painting-and-grain layer must be gone: it sat at z-index 0 over
    a .content-layer that deliberately has no z-index, so it painted over every
