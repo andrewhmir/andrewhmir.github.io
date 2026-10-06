@@ -44,7 +44,6 @@ function makeEl(id) {
     removeEventListener() {}, appendChild(c) { this.children.push(c); return c; },
     removeChild() {}, remove() {}, focus() {}, blur() {}, click() {}, closest: () => null,
     querySelector: () => null, querySelectorAll: () => [],
-    fire(type) { (this.listeners.get(type) || []).forEach((fn) => fn({ type, target: this })); },
   };
 }
 
@@ -57,45 +56,86 @@ const el = (id) => { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(i
    are silently dead in every check below. */
 for (const id of ['strip', 'directory', 'roomRail', 'dockProgress', 'hall']) el(id);
 
-/* ── The room the walk is standing in ─────────────────────────────────────
+/* The walk's geometry, seeded rather than left as the 0s and 1s makeEl defaults
+   to. Unseeded, roomAtOffset() coerces them and the first check passes for a
+   reason nobody chose; the brief's own inline version of it yields NaN. */
+const hall = el('hall');
+hall.scrollLeft = 0;
+hall.scrollWidth = 5040;
+hall.clientWidth = 1440;
+
+/* ── The rooms the walk is standing in ────────────────────────────────────
    initLights() finds the current room through #strip's own querySelectorAll,
-   so a room has to be in that list or roomAt() returns null, announceRoom()
-   never fires, and writeRail() is never reached. The room carries the title
-   and the subtitle the real renderRooms() emits, one of each, and the
-   geometry a room has: a viewport wide, starting at the walk's origin. */
-const railRoom = makeEl('section');
-railRoom.setAttribute('data-room', 'About');
-railRoom.offsetLeft = 0;
-railRoom.offsetWidth = 1440;
-const railTitleEl = makeEl('span');
-railTitleEl.className = 't';
-railTitleEl.textContent = 'About the practice';
-const railSubEl = makeEl('span');
-railSubEl.className = 'sub';
-/* Deliberately not clean: two spaces and a newline beside it, as the renderer's
-   own template literals produce. What lands in the rail must be one line. */
-railSubEl.textContent = '  Design   and\n fabrication  ';
-/* One handler, as in the browser: the selector decides which span comes back. */
-railRoom.querySelector = (sel) => {
-  if (sel === '.room-title .t') return railTitleEl;
-  if (sel === '.room-title .sub') return railSubEl;
-  return null;
-};
-el('strip').querySelectorAll = (sel) => (sel === '[data-room]' ? [railRoom] : []);
+   so rooms have to be in that list or roomAt() returns null, announceRoom()
+   never fires, and writeRail() is never reached. Two rooms, because the rail's
+   rule is "write on room CHANGE only" and one room cannot cross a boundary.
+   Each carries the title and the subtitle the real renderRooms() emits, and
+   the geometry a room has: a viewport wide, starting at the walk's origin. */
+function makeRoom(key, title, subRuns, offsetLeft) {
+  const room = makeEl('section');
+  room.setAttribute('data-room', key);
+  /* Rooms tile the walk, so this is what puts one at 0..1440 and the next at
+     1440..2880. pageX() reads it through the offsetParent chain, as a browser
+     resolves it, and the boundary between the two is what the rail's change
+     rule is exercised across. */
+  room.offsetLeft = offsetLeft;
+  room.offsetWidth = 1440;
+  const titleEl = makeEl('span');
+  titleEl.className = 't';
+  titleEl.textContent = title;
+  const subEl = makeEl('span');
+  subEl.className = 'sub';
+  /* Why the subtitle is built from runs rather than one string: Robotics,
+     Applications, Leadership and Honours all nest a `<span class="count">`
+     inside `.sub`, separated from the words only by a CSS margin-left. Model
+     that faithfully here or the gap the rail must bridge is invisible. */
+  subEl.childNodes = subRuns.map((run) => {
+    const node = makeEl('span');
+    node.textContent = run;
+    return node;
+  });
+  subEl.textContent = subRuns.join('');
+  /* One handler, as in the browser: the selector decides which span comes back. */
+  room.querySelector = (sel) => {
+    if (sel === '.room-title .t') return titleEl;
+    if (sel === '.room-title .sub') return subEl;
+    return null;
+  };
+  return { room, titleEl, subEl };
+}
+
+const ABOUT = makeRoom('About', 'About the practice',
+  ['  Design   and\n fabrication ', 'of eleven years'], 0);
+const ROBOTICS = makeRoom('Robotics', 'Works in Robotics', ['3 projects', 'ROBOTICS'], 1440);
+const railTitleEl = ABOUT.titleEl;
+el('strip').querySelectorAll = (sel) =>
+  (sel === '[data-room]' ? [ABOUT.room, ROBOTICS.room] : []);
 
 /* The rail's two lines, as the shell has them, and one handler that returns the
    span matching its selector — the same arrangement roomEl.querySelector has in
-   tests/dom-harness.mjs. */
-const railEl = el('roomRail');
-const railSpans = {
+   tests/dom-harness.mjs.
+
+   `.rr-title` counts the writes that land on it. The rail is written on room
+   CHANGE only — the rule that keeps this off the per-frame path — and a count
+   is the only way to observe that a repeat of the same room did not rewrite it. */
+let railTitleWrites = 0;
+const railNodes = {
   '.rr-title': makeEl('span'),
   '.rr-meta': makeEl('span'),
 };
-Object.entries(railSpans).forEach(([sel, node]) => {
-  node.className = sel.slice(1);
-  railEl.children.push(node);
+railNodes['.rr-title'].className = 'rr-title';
+railNodes['.rr-meta'].className = 'rr-meta';
+const railNode = railNodes['.rr-title'];
+railNodes['.rr-title'] = new Proxy(railNode, {
+  set(target, prop, value) {
+    if (prop === 'textContent') railTitleWrites++;
+    target[prop] = value;
+    return true;
+  },
 });
-railEl.querySelector = (sel) => railSpans[sel] ?? null;
+const railEl = el('roomRail');
+railEl.children.push(railNode, railNodes['.rr-meta']);
+railEl.querySelector = (sel) => railNodes[sel] ?? null;
 
 globalThis.document = {
   readyState: 'complete',
@@ -110,20 +150,36 @@ globalThis.document = {
   removeEventListener() {},
 };
 
+/* Flippable, because the reduced-motion branch of initLights() is the branch
+   the plan's Review Focus names as most likely to bite — a prior build's early
+   return left the rail empty and the dock unfollowed — and a fixed `false`
+   means no check here can ever reach it. main.js is module-cached, so the
+   branch is exercised by flipping this and re-running Site.initLights(), the
+   pattern tests/lights.test.mjs already uses for the same reason. */
+const motion = { reduced: false };
+
 globalThis.window = {
   innerWidth: 1440, innerHeight: 900, scrollY: 0, isSecureContext: false,
   /* Listeners accumulate per event rather than overwriting each other: more
-     than one controller binds resize (the walk and the lighting/tracking path
-     both do), and keeping only the last one made the tracking flush
-     unreachable — and could have made a check pass or fail for the wrong
-     reason. */
+     than one controller binds resize — initLights()'s tracking flush and
+     renderHero()'s onResize (js/main.js) — and keeping only the last one made
+     the tracking flush unreachable, which could have made a check pass or fail
+     for the wrong reason. */
   addEventListener(type, fn) {
     const key = 'window:' + type;
     if (!listeners.has(key)) listeners.set(key, []);
     listeners.get(key).push(fn);
   },
-  removeEventListener() {}, matchMedia: () => ({ matches: false }),
-  requestAnimationFrame: () => 0, cancelAnimationFrame() {},
+  removeEventListener() {}, matchMedia: () => ({ matches: motion.reduced }),
+  /* A frame that actually runs its callback, because one of the two branches
+     initLights() can take defers its whole update through here. With a no-op
+     rAF the focused branch is unreachable from a check — nothing it binds ever
+     does anything — so a check could only ever exercise whichever branch the
+     stub's own [data-piece] list happened to select, and would break the moment
+     that list grew. Runs inline: the walk is one-dimensional here and the
+     callback runs once, so there is no backlog to sequence. */
+  requestAnimationFrame: (fn) => { if (typeof fn === 'function') fn(0); return 0; },
+  cancelAnimationFrame() {},
   getComputedStyle: () => ({ getPropertyValue: () => '0' }),
   scrollTo() {}, localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v) },
 };
@@ -883,28 +939,46 @@ check('the progress bar survives a dock render', () => {
 
 /* The two shell checks above are static: they read index.html and cannot see
    the controller at all. This one runs the real initLights() — the module
-   import at the head of this file already called it against the seeded room —
+   import at the head of this file already called it against the seeded rooms —
    and reads back what it wrote. Without it, both features could be missing from
    js/main.js entirely and every check in this file would still pass. */
 check('the rail carries the room it is in, and the dock carries its progress', () => {
-  assert.ok(railSpans['.rr-title'].textContent, 'nothing named the room in the rail');
-  assert.equal(railSpans['.rr-title'].textContent, railTitleEl.textContent,
+  assert.ok(railNodes['.rr-title'].textContent, 'nothing named the room in the rail');
+  assert.equal(railNodes['.rr-title'].textContent, railTitleEl.textContent,
     'the rail\'s name is not the room title it stands for');
-  assert.equal(railSpans['.rr-meta'].textContent, 'Design and fabrication',
-    'the rail\'s second line is not the room subtitle, collapsed to one line');
+  assert.equal(railNodes['.rr-meta'].textContent, 'Design and fabrication · of eleven years',
+    'the rail\'s second line is not the room subtitle: its runs are not separated, '
+    + 'or its whitespace was not collapsed to one line');
 
   /* The bar is a percentage written on the track element, and the fraction is
      Site.progressFraction's. 2700 of a 5040-wide walk inside a 1440 viewport is
      2700/3600 = 75%. The three denominators this could plausibly get wrong give
      three other numbers — over scrollWidth, 53.57%; over clientWidth, 187.5%; a
      constant, 0% or 100% — which is why 75% is the value asserted. */
-  const hall = globalThis.document.getElementById('hall');
   hall.scrollWidth = 5040;
   hall.clientWidth = 1440;
   hall.scrollLeft = 2700;
   globalThis.Site.updateProgress();
   assert.equal(el('dockProgress').style.get('--walk-progress'), '75%',
     'the dock progress is not the fraction of the walk the viewport has consumed');
+
+  /* That this call site goes THROUGH Site.progressFraction, and does not
+     re-derive the fraction itself. Clamping alone cannot show it: a hand-rolled
+     `scrollLeft / (scrollWidth - clientWidth)` with the same two clamps is
+     indistinguishable by value. Task 1's helper is a runtime seam, so standing
+     in for it decides the point — a call site that computed its own fraction
+     would ignore the stand-in and still read 75%. */
+  const realFraction = globalThis.Site.progressFraction;
+  try {
+    globalThis.Site.progressFraction = () => 0.5;
+    globalThis.Site.updateProgress();
+    assert.equal(el('dockProgress').style.get('--walk-progress'), '50%',
+      'the dock progress ignores Site.progressFraction — the fraction is being recomputed here '
+      + 'instead of read from the one function the walk and the bar share');
+  } finally {
+    globalThis.Site.progressFraction = realFraction;
+  }
+
   hall.scrollLeft = 0;
   globalThis.Site.updateProgress();
   assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
@@ -913,30 +987,141 @@ check('the rail carries the room it is in, and the dock carries its progress', (
   globalThis.Site.updateProgress();
   assert.equal(el('dockProgress').style.get('--walk-progress'), '100%',
     'the bar does not read full at the walk\'s end');
+
+  /* A rubber-band overscroll puts scrollLeft past the end. Hand-rolling the
+     fraction here — even with the same denominator — reads 138.9% unless the
+     clamp is repeated too, so this is the assertion that fails if this call
+     site stops going through Site.progressFraction's clamp. */
+  hall.scrollLeft = 5000;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '100%',
+    'an overscrolled walk must read full, not past it — the fraction is not clamped');
+
+  hall.scrollLeft = -250;
+  globalThis.Site.updateProgress();
+  assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
+    'a negative offset must read empty, not below it');
   hall.scrollWidth = 1440;      /* the walk cannot scroll: the bar is total */
   hall.scrollLeft = 0;
   globalThis.Site.updateProgress();
   assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
     'a walk that cannot scroll must not divide by zero');
+});
 
-  /* And the walk itself has to drive it. Calling updateProgress() above proves
-     the maths; this proves the controller bound its tracking to the walk at
-     all, which is the difference between a bar that follows the walk and two
-     correct functions that nothing ever calls. The scroll handler is throttled
-     through requestAnimationFrame, and the stub's rAF never runs its callback,
-     so the event fired here is the `resize` the same flush is bound to — the
-     identical path, and the only one reachable without a frame clock. */
-  hall.scrollWidth = 5040;
-  hall.scrollLeft = 2700;
+/* The rail is written on room CHANGE only — the same condition the announcer
+   uses — so it is two DOM writes per boundary crossed, not per frame. Nothing
+   else in this file can see that: hoisting writeRail() above the
+   `name !== lastRoom` guard leaves every other check green. */
+check('the rail is rewritten when the room changes, and not when it has not', () => {
+  const before = railTitleWrites;
+  globalThis.Site.announceRoom();                    /* the same room again */
+  globalThis.Site.announceRoom();
+  assert.equal(railTitleWrites, before,
+    'the rail was rewritten ' + (railTitleWrites - before) + ' times for a room that had '
+    + 'not changed — it is on the per-frame path');
+
+  hall.scrollLeft = 1440;                            /* the boundary into Robotics */
+  globalThis.Site.announceRoom();
+  assert.equal(railNodes['.rr-title'].textContent, ROBOTICS.titleEl.textContent,
+    'crossing into Robotics did not rewrite the rail');
+  assert.equal(railNodes['.rr-meta'].textContent, '3 projects · ROBOTICS',
+    'the count beside the room subtitle is glued to it, or missing');
+  assert.equal(railTitleWrites, before + 1,
+    'a room change did not write exactly once');
+
+  hall.scrollLeft = 0;                               /* back into About */
+  globalThis.Site.announceRoom();
+  assert.equal(railNodes['.rr-title'].textContent, ABOUT.titleEl.textContent,
+    'coming back to About did not rewrite the rail');
+});
+
+/* Review Focus item 5, and the one regression the plan records from a prior
+   build: the reduced-motion branch of initLights() returns early, and before
+   that return calls bindTracking() the rail stayed empty and the dock never
+   followed the walk. Dropping bindTracking() from that branch leaves every
+   check in every suite green — lights.test.mjs reaches the branch but its scene
+   carries no room, so announceRoom() returns null and nothing is observable.
+   Here the branch is reached directly, by flipping the preference and re-running
+   the controller against the same rooms. */
+check('reduced motion still writes the rail and still follows the walk', () => {
+  motion.reduced = true;
+  /* Re-running initLights() binds a fresh tracking flush each time — it has no
+     teardown, and in the page it runs once — so the listeners from the earlier
+     runs are taken out of the way first. Otherwise every re-run leaves another
+     identical flush behind and this check's later proof ("exactly one handler
+     moves the bar") counts bindings that belong to no run. */
+  const before = (listeners.get('window:resize') || []).slice();
+  listeners.set('window:resize', []);
+  try {
+    /* Two things this must not be able to pass on: a value left over from the
+       focused path, and the identical value written by the import-time run. */
+    el('dockProgress').style.removeProperty('--walk-progress');
+    railNode.textContent = '';
+    railTitleWrites = 0;
+    hall.scrollLeft = 0;
+
+    globalThis.Site.initLights();
+
+    assert.ok(railNodes['.rr-title'].textContent,
+      'under reduced motion the rail stayed empty — bindTracking() is not being called '
+      + 'on the early-return branch');
+    assert.equal(railNodes['.rr-title'].textContent, ABOUT.titleEl.textContent,
+      'the rail named the wrong room under reduced motion');
+    assert.equal(railTitleWrites, 1,
+      'the rail was written ' + railTitleWrites + ' times on the reduced-motion path');
+    assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
+      'under reduced motion the dock did not follow the walk');
+  } finally {
+    motion.reduced = false;
+    railNode.textContent = '';
+    railTitleWrites = 0;
+    hall.scrollWidth = 5040;
+    hall.clientWidth = 1440;
+    hall.scrollLeft = 0;
+    /* Back to the focused path, and to the window's original set of listeners,
+       with the one flush the page would have. */
+    listeners.set('window:resize', []);
+    globalThis.Site.initLights();
+    before.forEach((fn) => listeners.get('window:resize').push(fn));
+  }
+});
+
+/* And the walk itself has to drive both of them. Everything above proves the
+   functions; this proves the controller bound its tracking to the walk at all,
+   which is the difference between a bar that follows the walk and two correct
+   functions that nothing ever calls. */
+check('the tracking flush is bound to the walk and drives the rail and the bar', () => {
   assert.ok((hall.listeners.get('scroll') || []).length > 0,
     'nothing is listening for the walk to scroll, so the rail and the bar never follow it');
-  const flushes = listeners.get('window:resize') || [];
-  /* initLights() binds first (it runs before initWalk() in init()), and the
-     walk binds its own resize after it. The first is the tracking flush. */
-  assert.ok(flushes.length > 0, 'the tracking update is not bound to the walk at all');
-  flushes[0]();
+
+  /* Identified by BEHAVIOUR, not by position in the listener list. The list is
+     ordered by whoever registered first, which depends on which branch
+     initLights() took — the stub's own [data-piece] list decides that — so an
+     index here made the check break the moment the stub grew more realistic.
+     The flush is now whichever resize handler moves the bar.
+
+     More than one handler legitimately does: renderHero()'s own onResize sits
+     on updateProgress()'s path too, because it re-reads the live dock name. So
+     this asserts that the tracking is bound and reachable, not that it is the
+     only thing on the path. Re-running the controller (the reduced-motion check
+     above does) binds the same flush again, so the handlers are compared by
+     identity: this is one flush, however many times it has been bound. */
+  hall.scrollWidth = 5040;
+  hall.clientWidth = 1440;
+  hall.scrollLeft = 2700;
+  const writers = [];
+  (listeners.get('window:resize') || []).forEach((fn) => {
+    if (writers.includes(fn)) return;
+    el('dockProgress').style.removeProperty('--walk-progress');
+    fn();
+    if (el('dockProgress').style.get('--walk-progress') !== undefined) writers.push(fn);
+  });
+  assert.ok(writers.length > 0,
+    'no resize handler moves the dock bar — the tracking flush is not bound to the walk');
+  el('dockProgress').style.removeProperty('--walk-progress');
+  writers[0]();
   assert.equal(el('dockProgress').style.get('--walk-progress'), '75%',
-    'the walk moving did not move the dock\'s progress bar');
+    'the flush bound to the walk did not move the dock\'s progress bar to the walk\'s position');
 });
 
 /* ── The global the renderer needs ───────────────────────────────────── */

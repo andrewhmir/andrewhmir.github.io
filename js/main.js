@@ -1322,18 +1322,37 @@
       return box ? box.el : null;
     }
 
+    /* A room heading's own text, with its child elements' text kept as separate
+       runs rather than glued on. `.room-title .sub` carries a nested
+       `<span class="count">` in four of the six rooms (Robotics and Applications
+       "3 projects" + "ROBOTICS", Leadership "Posts held" + "6 POSTS", Honours
+       "Competitions, conferences and citations" + "5 HONOURS"), and the two are
+       separated only by a CSS `margin-left` — which textContent knows nothing
+       about, so it reads "3 projectsROBOTICS". Joining the runs with a visible
+       separator is the fix, and it keeps the count, which is real content. */
+    var RUN_SEP = ' · ';
+    function textRuns(el) {
+      if (!el) return '';
+      var nodes = el.childNodes;
+      if (!nodes || !nodes.length) return String(el.textContent || '').replace(/\s+/g, ' ').trim();
+      var runs = [];
+      for (var i = 0; i < nodes.length; i++) {
+        var run = String(nodes[i].textContent || '').replace(/\s+/g, ' ').trim();
+        if (run) runs.push(run);
+      }
+      return runs.join(RUN_SEP);
+    }
+
     /* The rail's two lines, read from the room element so the rail cannot drift
        from the heading it duplicates. Written on room CHANGE only — the same
        condition the announcer uses — so this is two DOM writes per boundary
        crossed, not per frame. */
     function writeRail(roomEl) {
       if (!roomRail || !roomEl) return;
-      var title = roomEl.querySelector('.room-title .t');
-      var sub = roomEl.querySelector('.room-title .sub');
       var t = roomRail.querySelector('.rr-title');
       var m = roomRail.querySelector('.rr-meta');
-      if (t) t.textContent = (title && title.textContent) || '';
-      if (m) m.textContent = (sub && sub.textContent.replace(/\s+/g, ' ').trim()) || '';
+      if (t) t.textContent = textRuns(roomEl.querySelector('.room-title .t'));
+      if (m) m.textContent = textRuns(roomEl.querySelector('.room-title .sub'));
     }
 
     function announceRoom() {
