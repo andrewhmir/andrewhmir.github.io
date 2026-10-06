@@ -571,28 +571,48 @@ const PORTFOLIO = {
   }
   globalThis.Site.galleryFor = galleryFor;
 
-  /* ── A project's award photographs ──────────────────────────────────────
-     An honour carrying `from: 'projectN'` is that project's award, and six of
-     those honours hang real photographs. They are excluded from the Honours
-     room by the `from` partition, so their only route to a visitor is through
-     the project that won them.
+  /* ── One award's photographs ────────────────────────────────────────────
+     An honour carrying `from: 'projectN'` is that project's award, and three
+     of those honours between them carry six photographs. They are excluded
+     from the Honours room by the `from` partition, so their only route to a
+     visitor is through the project that won them.
 
-     Matched on PROJECT plus YEAR, not on the description. The wall and the
-     honour name one win in two wordings — the card says "11th Philippine
-     Robothon – Innovative Open Category, Overall Champion" where the honour
-     says "11th Philippine Robothon – Overall Champion" — so no predicate over
-     those strings can be trusted. Project plus year is exact for all eight
-     awards in the shipped data. A year that matches is exact; a year that is
-     absent or matches nothing yields [] rather than a guess at another
-     award's photographs.
+     It resolves ONE award, not one project's haul, because that is the
+     question its only consumer asks: renderAwards walks a project's `awards`
+     array and needs to know whether the award in front of it is a control. A
+     project-level answer cannot say no for a single award — it hands every
+     award the project's whole photo set, so an award that never had
+     photographs becomes a control opening a different win's gallery, and a
+     focusable control that opens nothing is worse than a row that plainly is
+     not one.
+
+     Matched on the PROJECT plus the award's own YEAR, never on the
+     description: the wall and the honour name one win in two wordings — the
+     card says "11th Philippine Robothon – Innovative Open Category, Overall
+     Champion" where the honour says "11th Philippine Robothon – Overall
+     Champion" — so no predicate over those strings can be trusted. Project
+     plus year does separate the awards, and it is exact for all eight in the
+     shipped data: C.E.N.T.H.R.O.'s March 2025 honour hangs three photographs
+     and its May 2025 honour hangs none, and each award must read that way.
+
+     The year arrives as the award record itself when the caller has one (it
+     carries `year`) or as a bare year string when it does not. A year that
+     matches is exact; an absent or unrecognised one yields [] rather than a
+     guess at a neighbouring award's photographs.
 
      Total by construction: every path returns an array. */
-  function awardPhotos(projectId, honors) {
+  function awardPhotos(projectId, honors, awardOrYear) {
     var list = Array.isArray(honors) ? honors : [];
     if (!projectId) return [];
+    var year = awardOrYear && typeof awardOrYear === 'object'
+      ? awardOrYear.year
+      : awardOrYear;
+    if (year == null || year === '') return [];
+    var wanted = String(year);
     var out = [];
     list.forEach(function (h) {
       if (!h || h.from !== projectId) return;
+      if (String(h.year) !== wanted) return;
       var images = Array.isArray(h.images) ? h.images.filter(Boolean) : [];
       for (var i = 0; i < images.length; i++) {
         if (out.indexOf(images[i]) === -1) out.push(images[i]);

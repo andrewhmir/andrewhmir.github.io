@@ -15,6 +15,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { check, run } from './harness.mjs';
 import { loadSite } from './dom-harness.mjs';
+/* The DOM-free checks at the foot of this file read Site.progressFraction and
+   Site.roomAtOffset. loadSite() imports data.js on its way past, but a file that
+   relies on another file's side effect breaks the moment the DOM scene is
+   dropped, so the dependency is declared here rather than inherited. */
+import '../js/data.js';
 
 const css = readFileSync('css/styles.css', 'utf8');
 
@@ -145,7 +150,21 @@ check('progress is the fraction of the scrollable walk consumed', () => {
   const { progressFraction } = globalThis.Site;
   assert.equal(progressFraction(0, 5000, 1000), 0);
   assert.equal(progressFraction(4000, 5000, 1000), 1);
+  /* The only assertion here that a stub returning a constant 0 cannot satisfy. */
   assert.equal(progressFraction(2000, 5000, 1000), 0.5);
+});
+
+check('progress is clamped at both ends, not merely scaled', () => {
+  /* A rubber-band overscroll on the bar Task 3 builds puts scrollLeft past the
+     end, and a fractional offset before the start puts it below zero; neither
+     may escape 0..1. The upper case is the one that pins the clamp: unclamped,
+     9999 / 4000 is 2.4999999999999996, not 1. */
+  const { progressFraction } = globalThis.Site;
+  assert.equal(progressFraction(9999, 5000, 1000), 1,
+    'an overscrolled walk must read 1, not past it');
+  assert.equal(progressFraction(5000, 5000, 1000), 1);
+  assert.equal(progressFraction(-250, 5000, 1000), 0,
+    'a negative offset must read 0, not below it');
 });
 
 check('progress is total when the walk cannot scroll', () => {
