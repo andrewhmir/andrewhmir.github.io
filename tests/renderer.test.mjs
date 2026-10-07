@@ -212,39 +212,62 @@ const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) =
 
 /* The body of the top-level group whose text carries `title`. Splitting on the
    group opening tag leaves the previous tag's attributes at the head of each
-   part, so drop up to the first '>' in every part but the first. */
+   part, so drop up to the first '>' in every part but the first.
+   The title is escaped before it is looked for: it is matched against RENDERED
+   markup, and one leadership description carries an `&`. */
 function groupHtmlFor(title) {
+  const want = '>' + escHtml(title) + '<';
   const parts = strip.split('<div class="group"').slice(1);
   for (let i = 0; i < parts.length; i++) {
     let body = parts[i];
     if (i > 0) body = body.slice(body.indexOf('>') + 1);
     const end = body.indexOf('<div class="group"');
     if (end !== -1) body = body.slice(0, end);
-    if (body.includes('>' + title + '<')) return body;
+    if (body.includes(want)) return body;
   }
   return '';
 }
 
-/* The project's awards block, bounded at its own closing tag. A check scoped to
-   the whole GROUP can be satisfied by a neighbour's copy or by the project's own
-   prose; the block is what has to carry the awards. The block holds one flat
-   list of `<li class="award">` rows, so its own end is the first `</div>` that
-   closes a tag opened after its head. */
+/* The project's awards block. A check scoped to the whole GROUP can be satisfied
+   by a neighbour's copy or by the project's own prose; the block is what has to
+   carry the awards. It is bounded by the two landmarks that surround it — its
+   own opening tag, and the catalogue that follows it — rather than by counting
+   `<div>` tags, which is what the obvious depth walk gets wrong: `<div` also
+   occurs inside emitted text. */
 function awardsBlockFor(title) {
   const group = groupHtmlFor(title);
   const at = group.indexOf('<div class="awards">');
   if (at === -1) return '';
-  const rest = group.slice(at);
-  let depth = 0;
-  for (let i = 0; i < rest.length; i++) {
-    if (rest.startsWith('<div', i)) { depth++; i += 3; continue; }
-    if (rest.startsWith('</div>', i)) {
-      depth--;
-      if (depth === 0) return rest.slice(0, i + 6);
-      i += 5;
-    }
-  }
-  return rest;
+  const after = group.slice(at);
+  const cat = after.indexOf('<div class="cat">');
+  return cat === -1 ? after : after.slice(0, cat);
+}
+
+/* The reverse of `esc()` in js/main.js, so a rendered paragraph can be compared
+   to the data it came from in full. Comparing the raw data against the rendered
+   text without this would fail on any record carrying an ampersand, and
+   comparing only a prefix is what let 90% of the copy go missing with every
+   check green. */
+function unesc(s) {
+  return String(s)
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+}
+
+/* The forward direction, for looking a record up by a string that is rendered:
+   groupHtmlFor() matches rendered markup, so a title carrying `&` has to be
+   escaped before it can be found. One leadership description carries one. */
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* The account's paragraphs as rendered in the group whose title is `title`,
+   unescaped so they can be compared to the data in full. */
+function accountParagraphsFor(title) {
+  const group = groupHtmlFor(title);
+  return [...group.matchAll(/<p class="acct-p">([\s\S]*?)<\/p>/g)].map((m) => unesc(m[1]));
 }
 
 /* ── The DOM contract ────────────────────────────────────────────────── */
@@ -492,32 +515,120 @@ check('every group carries a full account, not a one-line narrative', () => {
 });
 
 check('the account is the record\'s own overview, paragraph for paragraph', () => {
-  const p = PORTFOLIO.projects.find((x) => x.overview && x.overview.text.includes('\n\n'));
-  assert.ok(p, 'fixture needs a project whose overview has more than one paragraph');
-  const paras = p.overview.text.split('\n\n');
-  const group = groupHtmlFor(p.title);
-  const rendered = [...group.matchAll(/<p class="acct-p">([\s\S]*?)<\/p>/g)].map((m) => m[1]);
-  assert.equal(rendered.length, paras.length,
-    p.title + ' rendered ' + rendered.length + ' of ' + paras.length + ' paragraphs');
-  paras.forEach((t, i) => assert.ok(rendered[i].includes(t.slice(0, 40)),
-    p.title + ' paragraph ' + i + ' does not match the data'));
+  /* EVERY paragraph of EVERY project, compared in full. A prefix compared
+     instead lets the rest of the copy be truncated — the reviewer's probe cut
+     all 39 rendered paragraphs to 40 characters and the whole suite stayed
+     green, which is a check that cannot fail meaningfully. */
+  const bad = [];
+  let compared = 0;
+  PORTFOLIO.projects.forEach((p) => {
+    const want = p.overview && p.overview.text;
+    assert.ok(want, p.title + ' has no overview in the data — the fixture changed');
+    const paras = want.split('\n\n').map((t) => t.trim()).filter(Boolean);
+    const rendered = accountParagraphsFor(p.title);
+    if (rendered.length !== paras.length) {
+      bad.push(p.title + ' rendered ' + rendered.length + ' of ' + paras.length + ' paragraphs');
+      return;
+    }
+    paras.forEach((t, i) => {
+      compared++;
+      if (rendered[i] !== t) {
+        bad.push(p.title + ' paragraph ' + i + ' reads "' + rendered[i].slice(0, 60)
+          + '" (' + rendered[i].length + ' chars), the data says "'
+          + t.slice(0, 60) + '" (' + t.length + ' chars)');
+      }
+    });
+  });
+  assert.ok(compared > 20, 'too few paragraphs were compared to mean anything: ' + compared);
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the opening lead and the account never say the same sentence twice', () => {
+  /* CRITICAL: on the fallback path the account IS the summary, and rendering
+     the lead as well printed the record's one sentence twice, one line apart —
+     which is what every Leadership post and every stand-alone honour did. The
+     two blocks are mutually exclusive by SOURCE, not by comparing the strings:
+     a text predicate cannot tell a genuine repetition from a record whose two
+     fields happen to agree. */
+  const bad = [];
+  let checked = 0;
+  PORTFOLIO.leadership.forEach((r) => {
+    const group = groupHtmlFor(r.description);
+    assert.ok(group, r.description + ' has no group on the wall');
+    const leads = (group.match(/class="narr-lead"/g) || []).length;
+    const paras = accountParagraphsFor(r.description);
+    if (leads) bad.push(r.description + ': a lead is rendered on the fallback path');
+    if (paras.length !== 1 || paras[0] !== r.summary) {
+      bad.push(r.description + ': the account reads ' + JSON.stringify(paras)
+        + ', the summary is ' + JSON.stringify(r.summary));
+    }
+    /* And the summary appears exactly once across the label's own text. */
+    const body = group.split('class="label"')[1] || '';
+    const seen = body.split(r.summary).length - 1;
+    if (seen !== 1) bad.push(r.description + ': its summary appears ' + seen + ' times on the label');
+    checked++;
+  });
+  assert.ok(checked > 0, 'no leadership record was checked');
+  /* The projects are the other half of the contract: on the overview path the
+     lead is complementary to the account and BOTH must stay. */
+  const withLead = PORTFOLIO.projects.filter((p) => p.summary && p.overview && p.overview.text);
+  assert.ok(withLead.length > 0, 'fixture needs a project with both a summary and an overview');
+  withLead.forEach((p) => {
+    const group = groupHtmlFor(p.title);
+    if (!/class="narr-lead"/.test(group)) {
+      bad.push(p.title + ' has a summary and an overview and no lead line');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
 });
 
 check('the account is not line-clamped', () => {
   /* Spec §6.3 and §10.3: the four-line clamp is what hid the account, and a
      silent reintroduction would hide it again with every unit check green.
 
-     Comments are stripped before the rules are read. A comment naming the
-     property is prose about why it is gone, not the property — and matching it
-     would fail the check on the one line that explains the rule. */
+     Scoped by what can REACH the label, not by a list of prose selectors: a
+     clamp on `.label-copy` (the account's own ancestor) hides exactly the same
+     copy, and a check that only reads rules naming `.acct-p` cannot see it.
+     So every rule in the stylesheet is inspected, and the title's own two-line
+     clamp is the single, named exemption — see the check below for why.
+
+     Comments are stripped first: a comment naming the property is prose about
+     why it is gone, not the property. */
   const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
-  const prose = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]));
-  assert.ok(prose.length >= 3,
-    'the account rules are not in the stylesheet at all: found ' + prose.length);
-  const clamped = prose.filter((b) => /line-clamp/.test(b));
-  assert.deepEqual(clamped, [], 'the account is line-clamped again: ' + clamped.join(' | '));
+  const clamped = blocks.filter((b) => /-webkit-line-clamp|line-clamp/.test(b));
+  const selectors = clamped.map((b) => b.split('{')[0].trim()).sort();
+  assert.deepEqual(selectors, ['.narr-title'],
+    'line-clamp appears on rules other than the title: ' + selectors.join(' | '));
+  assert.ok(blocks.length > 100, 'the stylesheet did not parse: ' + blocks.length + ' rules');
+  /* And the account's rules are actually there, so the sweep above cannot pass
+     on a stylesheet that has lost them. */
+  const account = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]));
+  assert.ok(account.length >= 3, 'the account rules are missing: ' + account.length);
   assert.ok(!/\.narr-text/.test(css), '.narr-text still exists — the clamp was to live there');
+});
+
+check('the only clamp in the label is the title\'s, and it is bounded', () => {
+  /* The constraint is "no line-clamp anywhere in the label". The title keeps a
+     two-line clamp, and that is a deliberate, narrow exemption rather than an
+     oversight: the title is the record's own name, it is repeated verbatim in
+     the room heading and in the rail, and a long title is the one string in the
+     label whose truncation loses no reading — the ellipsis says the name
+     continues, and the same name is on the wall above it. The ACCOUNT has no
+     such second home, which is why its clamp was the defect.
+
+     Bounded on both sides: exactly one clamped rule, it is the title, and the
+     limit is 2. A third line, or a second clamped selector, fails here. */
+  const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
+  const clamped = blocks.filter((b) => /-webkit-line-clamp|line-clamp/.test(b));
+  assert.equal(clamped.length, 1, clamped.length + ' clamped rules in the stylesheet');
+  assert.match(clamped[0].split('{')[0], /\.narr-title\b/, 'the clamped rule is not the title');
+  assert.match(clamped[0], /line-clamp:\s*2\b/, 'the title is not clamped to two lines');
+  /* And the renderer cannot clamp inline either: an inline style is invisible
+     to the stylesheet sweep above and would hide the prose just as well. */
+  const renderer = readFileSync('js/main.js', 'utf8');
+  assert.ok(!/line-clamp/.test(renderer), 'js/main.js emits a line-clamp');
 });
 
 check('every project award is on the wall with its year', () => {
@@ -525,21 +636,37 @@ check('every project award is on the wall with its year', () => {
      string checked against the group would be satisfied by a neighbour's copy or
      by the project's own prose, and the year by any year anywhere in the label.
      The block is what has to carry both — and the wall is where they are read
-     now, so no award is behind a control any more. */
+     now, so no award is behind a control any more.
+
+     Each row is bounded at its OWN `</li>`. Splitting on the opening tag leaves
+     the last segment running to the end of the block, so a year printed in a
+     trailing lump after `</ul>` was accepted as "on its own award row" — the
+     failure message claimed something the check did not test. */
+  const rowsOf = (block) => block.split('<li class="award"').slice(1).map((it) => {
+    const end = it.indexOf('</li>');
+    return end === -1 ? it : it.slice(0, end);
+  });
   const withAwards = PORTFOLIO.projects.filter((p) => Array.isArray(p.awards) && p.awards.length);
   assert.ok(withAwards.length > 0, 'fixture needs a project with awards');
   const bad = [];
+  let rowsChecked = 0;
   withAwards.forEach((p) => {
     const block = awardsBlockFor(p.title);
     if (!block) { bad.push(p.title + ': no awards block'); return; }
+    const rows = rowsOf(block);
+    assert.equal(rows.length, p.awards.length,
+      p.title + ' renders ' + rows.length + ' award rows for ' + p.awards.length + ' awards');
     p.awards.forEach((a) => {
-      const item = block.split('<li class="award"').slice(1).find((it) => it.includes(a.description));
+      const item = rows.find((it) => it.includes(a.description));
       if (!item) { bad.push(p.title + ': "' + a.description + '" is not an award on the wall'); return; }
+      rowsChecked++;
       if (!item.includes(a.year)) {
         bad.push(p.title + ': award year ' + a.year + ' is not on its own award row');
       }
     });
   });
+  assert.equal(rowsChecked, PORTFOLIO.projects
+    .reduce((n, p) => n + (p.awards || []).length, 0), 'not every award row was checked');
   assert.deepEqual(bad, [], bad.join(' | '));
   assert.ok(!/data-tab="awards"/.test(strip), 'a project award still opens a dialog');
 });
@@ -548,14 +675,26 @@ check('an award with photographs is a control, and one without is not', () => {
   /* Six real photographs hang off `from`-tagged honours that the Honours room
      excludes, so an award that resolves to them MUST be a control. An award
      that resolves to nothing must NOT be — a focusable control that opens
-     nothing is worse than a row that plainly is not one. */
-  const awards = [...strip.matchAll(/<li class="award"([^>]*)>/g)].map((m) => m[1]);
-  assert.ok(awards.length > 0, 'no awards rendered on the wall');
-  const withPhotos = awards.filter((a) => /data-gallery=/.test(a));
-  const without = awards.filter((a) => !/data-gallery=/.test(a));
+     nothing is worse than a row that plainly is not one.
+     The row's whole markup is read, not just its opening tag: the control is a
+     real `<button>` INSIDE the `<li>`, because the walk's delegation is bound to
+     `click` alone and an `<li>` wearing role="button" cannot be activated. */
+  const rows = [...strip.matchAll(/<li class="award"[\s\S]*?<\/li>/g)].map((m) => m[0]);
+  assert.ok(rows.length > 0, 'no awards rendered on the wall');
+  const withPhotos = rows.filter((r) => /data-gallery=/.test(r));
+  const without = rows.filter((r) => !/data-gallery=/.test(r));
   assert.ok(withPhotos.length > 0,
     'no award with photographs is a control — six photographs are unreachable');
   assert.ok(without.length > 0, 'every award is a control, including the photo-less ones');
+  withPhotos.forEach((r) => {
+    assert.match(r, /<button type="button"/,
+      'an award control is not a real button: ' + r.slice(0, 80));
+    assert.ok(!/role="button"/.test(r),
+      'an award control still fakes a button with a role: ' + r.slice(0, 80));
+  });
+  without.forEach((r) => {
+    assert.ok(!/<button/.test(r), 'a photo-less award is a button: ' + r.slice(0, 80));
+  });
   /* And the count is right: exactly the awards that Site.awardPhotos resolves. */
   let expected = 0, total = 0;
   PORTFOLIO.projects.forEach((p) => {
@@ -564,7 +703,7 @@ check('an award with photographs is a control, and one without is not', () => {
       if (Site.awardPhotos(p.id, PORTFOLIO.honors, a).length) expected++;
     });
   });
-  assert.equal(awards.length, total, 'the wall does not carry every award');
+  assert.equal(rows.length, total, 'the wall does not carry every award');
   assert.equal(withPhotos.length, expected,
     withPhotos.length + ' award controls for ' + expected + ' awards that have photographs');
 });
@@ -599,17 +738,68 @@ check('every team caption is on the wall, one line each, inside its own block', 
 });
 
 check('every shipped project shows its full account on the wall', () => {
-  /* The whole point of this work: no project's story is behind a control. */
+  /* The whole point of this work: no project's story is behind a control.
+     Compared in FULL against the data, every paragraph — the prefix test this
+     replaces could not fail while the copy was being truncated. */
   const bad = [];
+  let compared = 0;
   PORTFOLIO.projects.forEach((p) => {
     const group = groupHtmlFor(p.title);
     if (!group) { bad.push(p.title + ': no group on the wall'); return; }
     const want = p.overview && p.overview.text;
     if (!want) { bad.push(p.title + ': no overview in the data'); return; }
-    if (!group.includes(want.split('\n\n')[0].slice(0, 40))) {
-      bad.push(p.title + ': the account is not rendered');
+    const paras = want.split('\n\n').map((t) => t.trim()).filter(Boolean);
+    const rendered = accountParagraphsFor(p.title);
+    if (rendered.length !== paras.length) {
+      bad.push(p.title + ': ' + rendered.length + ' paragraphs rendered, ' + paras.length + ' in the data');
+      return;
     }
+    paras.forEach((t, i) => {
+      compared++;
+      if (rendered[i] !== t) bad.push(p.title + ': paragraph ' + i + ' is not the data');
+    });
   });
+  assert.ok(compared > 20, 'too few paragraphs were compared: ' + compared);
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('the label reads title, account, awards, team, catalogue — in that order', () => {
+  /* The order is what makes it a museum label rather than a caption, and it is
+     the only part of that the DOM alone can pin — the direction itself is CSS.
+     The TEAM block is located, not merely presumed: a check named for the team
+     caption that never looks for it passes while the caption is emitted above
+     the title. */
+  const bad = [];
+  let withTeam = 0;
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = i === 0 ? g.split('<div class="group"')[0]
+      : g.slice(g.indexOf('>') + 1).split('<div class="group"')[0];
+    const at = (needle) => body.indexOf(needle);
+    const order = [
+      ['title', at('class="narr-title"')],
+      ['account', at('class="label-account"')],
+      ['awards', at('class="awards"')],
+      ['team', at('class="team"')],
+      ['catalogue', at('class="cat"')],
+    ];
+    const missing = order.filter(([, n]) => n < 0).map(([name]) => name);
+    /* Only the title, the account and the catalogue are on every label: a
+       record with no awards and no team caption legitimately has neither. */
+    const required = ['title', 'account', 'catalogue'];
+    const absent = missing.filter((name) => required.includes(name));
+    if (absent.length) { bad.push('group ' + i + ': missing ' + absent.join(', ')); return; }
+    const present = order.filter(([, n]) => n >= 0);
+    const sorted = present.slice().sort((a, b) => a[1] - b[1]).map(([name]) => name);
+    if (JSON.stringify(sorted) !== JSON.stringify(present.map(([name]) => name))) {
+      bad.push('group ' + i + ': reads ' + sorted.join(', ') + ', expected '
+        + present.map(([name]) => name).join(', '));
+    }
+    /* The team block is located, not merely presumed: a check named for the team
+       caption that never looks for it passes while the caption is emitted above
+       the title. */
+    if (!missing.includes('team')) withTeam++;
+  });
+  assert.ok(withTeam > 0, 'no group carries a team block, so its position was never checked');
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
@@ -670,6 +860,23 @@ check('the catalogue letters every photograph, once each, in piece order', () =>
     if (JSON.stringify(keys) !== JSON.stringify(want)) {
       bad.push('group ' + i + ': letters ' + keys.join('') + ', expected ' + want.join(''));
     }
+    /* The letters ARE the piece indices — that is what ties an entry to a
+       photograph now the plan is gone — so each entry's letter must match its
+       own `data-piece`. Without this, a running counter over permuted entries
+       passes: the letters would run A, B, C while naming pieces 2, 0, 1. */
+    const pairs = [...body.matchAll(
+      /<div class="cat-entry" data-piece="(\d+)">(?:<span class="ce-key">([A-Z])<\/span>)/g)];
+    if (pairs.length !== entries) {
+      bad.push('group ' + i + ': ' + pairs.length + ' entries carry both a piece index and a letter'
+        + ' of ' + entries);
+    }
+    pairs.forEach(([, piece, letter]) => {
+      const expected = String.fromCharCode(65 + Number(piece));
+      if (letter !== expected) {
+        bad.push('group ' + i + ': entry for piece ' + piece + ' is lettered ' + letter
+          + ', expected ' + expected);
+      }
+    });
     lettered += keys.length;
   });
   assert.ok(lettered > 0, 'no catalogue entry carries a letter — the check above proved nothing');
@@ -795,6 +1002,52 @@ check('a record with no summary still renders an account', () => {
   const html = renderLabelFor(stripped, pieces);
   assert.match(html, /Some Award/, 'fell through to nothing');
   assert.match(html, /class="acct-p">[^<]*Some Award/, 'the account is empty');
+});
+
+check('a record whose account falls back renders that one line exactly once', () => {
+  /* CRITICAL 1, pinned on the renderer rather than only on the wall: the
+     `summary` here is the account, so a label that also renders it as the lead
+     prints the record's own sentence twice, one line apart. Counted across the
+     WHOLE label, because scoping to one selector would miss the duplicate by
+     construction. */
+  const summary = 'A sentence that exists in exactly one place.';
+  const record = { id: 'fallback', description: 'Some Honour', summary: summary, year: '2026' };
+  const pieces = Site.groupPieces(record, 'record');
+  const html = renderLabelFor(record, pieces);
+  assert.equal(html.split(summary).length - 1, 1,
+    'the summary is rendered ' + (html.split(summary).length - 1) + ' times');
+  assert.ok(!/class="narr-lead"/.test(html),
+    'a lead line is rendered for an account that is already the summary');
+});
+
+check('a record with an overview keeps its summary as the opening lead', () => {
+  /* The other direction of the same contract, and the reason the two blocks are
+     decided by SOURCE and not by comparing the strings: for a project the lead
+     frames the account and both must stay. */
+  const record = {
+    id: 'lead', title: 'Project Y', summary: 'The line that frames it.',
+    overview: { text: 'First paragraph of the account.\n\nSecond paragraph.' },
+  };
+  const pieces = Site.groupPieces(record, 'project');
+  const html = renderLabelFor(record, pieces);
+  assert.match(html, /<p class="narr-lead">The line that frames it\.<\/p>/,
+    'the summary is not rendered as the opening lead');
+  assert.equal(html.split('The line that frames it.').length - 1, 1,
+    'the lead line is rendered more than once');
+  assert.match(html, /<p class="acct-p">First paragraph of the account\.<\/p>/,
+    'the account is missing its first paragraph');
+});
+
+check('a record with no words at all emits no empty account block', () => {
+  /* The label's own rule: every level falls back rather than rendering an empty
+     box. With no overview, no summary and no description there is nothing to
+     put in one, so the block must not be there at all. */
+  const bare = { id: 'y', title: 'OnlyTitle' };
+  const html = renderLabelFor(bare, []);
+  assert.ok(!/class="label-account"/.test(html),
+    'an empty account block is still emitted: ' + html.slice(0, 120));
+  assert.ok(!/class="acct-p"/.test(html), 'an empty paragraph is emitted');
+  assert.match(html, /<p class="narr-title">OnlyTitle<\/p>/, 'the record lost its name');
 });
 
 check('a record with no copy at all falls back to its own description, in one paragraph', () => {
@@ -1012,8 +1265,12 @@ check('every award control opens that award\'s own photographs', () => {
     /* The group is split at its award items rather than matched with one
        pattern: a full description in a pattern is a regex to escape, and a
        half-match against the wrong `<li>` is exactly the confusion this check
-       exists to prevent. Each item runs to the end of its own group. */
-    const items = group.split('<li class="award"').slice(1);
+       exists to prevent. Each item is bounded at its OWN `</li>`, so the last
+       one cannot borrow the end of the block. */
+    const items = group.split('<li class="award"').slice(1).map((it) => {
+      const end = it.indexOf('</li>');
+      return end === -1 ? it : it.slice(0, end);
+    });
     p.awards.forEach((a) => {
       const html = items.find((it) => it.includes(a.description));
       if (!html) { bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": no award on the wall'); return; }
@@ -1024,7 +1281,7 @@ check('every award control opens that award\'s own photographs', () => {
         /* The two directions of the same contract: a photo-less award must not
            be a control, and must not LOOK like one to a screen reader either. */
         if (ref || open) bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": a photo-less award opens ' + ref);
-        if (/role="button"/.test(html)) {
+        if (/role="button"/.test(html) || /<button/.test(html)) {
           bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": a photo-less award is a button');
         }
         return;
@@ -1034,10 +1291,15 @@ check('every award control opens that award\'s own photographs', () => {
         bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": no gallery handle (' + html.slice(0, 60) + ')');
         return;
       }
-      /* A control that is focusable but does nothing when activated is worse
-         than a row that plainly is not one — the rule the frames already obey. */
-      if (!/role="button"/.test(html) || !/tabindex="0"/.test(html)) {
-        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": the control is not reachable by keyboard');
+      /* A control that cannot be activated is worse than a row that plainly is
+         not one — the rule the frames already obey. It has to be a real
+         `<button>`, not an `<li>` wearing a role: the walk delegates `click`
+         alone, so role+tabindex is focusable and inert on Enter. */
+      if (!/<button type="button"/.test(html)) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": the control is not a real button');
+      }
+      if (/role="button"/.test(html)) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": the control fakes a button with a role');
       }
       /* The year rides along so a click can be re-resolved to THIS award: a
          bare entry index does not say which of the project's wins it is. */

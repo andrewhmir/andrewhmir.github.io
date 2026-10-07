@@ -820,13 +820,15 @@
      arrangement — Site.hangLayout, dealt from the group's own key so
      neighbouring groups differ and a reload never reshuffles the wall.
 
-     The height a frame is given is `--frame-h` in css/styles.css. It cannot
-     live here as `cqi`: a gallery is as wide as its contents, so sizing a stand
-     from its own width is circular, and the binding constraint on a single row
-     is the room's height. Nor can one height serve every arrangement — a
-     column of three hangs three frames in the band a column of two divides in
-     two — which is why renderCluster writes each column's depth and the
-     stylesheet does the division.
+     The height a frame is given is `--band-h` under a `--max-panel-h` cap in
+     css/styles.css, divided per column into `--row-h`. It cannot live here as
+     `cqi`: a gallery is as wide as its contents, so sizing a stand from its own
+     width is circular, and the binding constraint on a single row is the room's
+     height. Nor can one height serve every arrangement — a column of three
+     hangs three frames in the band a column of two divides in two — which is
+     why renderCluster writes each column's depth and the stylesheet does the
+     division. (`--frame-h` is declared beside them as the single height this is
+     to become; nothing reads it yet.)
 
      Every frame clears 44x44 at every supported width, because the panel
      height carries its own floor and the collection's photographs are wide. */
@@ -955,6 +957,21 @@
      one field with the real story, and until now nothing on the walk rendered
      it: labelNarrative() returned `summary` and stopped.
 
+     It reports WHICH source it read, because the caller has to know, and the
+     two branches are not interchangeable:
+
+       'overview' — the record's own story. `summary` is a separate line and is
+                    ALSO rendered, as the opening lead above the account.
+       'summary' / 'description' — a fallback, where the account IS that one
+                    line. The caller must NOT render it a second time as the
+                    lead: on every Leadership post and every stand-alone honour
+                    the label would print the same sentence twice, one line
+                    apart, which is what this return value exists to prevent.
+                    Decided by SOURCE, never by comparing the strings — a text
+                    predicate cannot tell a genuine repetition from a record
+                    whose two fields happen to agree, and this build has been
+                    bitten by string predicates before.
+
      The fallback is the record's own DESCRIPTION, not its title, and the
      difference is the whole safety net: a record added without copy must still
      say what it is, where its account would go. Reproduced by the title, it
@@ -963,11 +980,12 @@
   function labelAccount(record) {
     var text = record && record.overview && record.overview.text;
     if (typeof text === 'string' && text.trim()) {
-      return text.split('\n\n').map(function (t) { return t.trim(); }).filter(Boolean);
+      var paras = text.split('\n\n').map(function (t) { return t.trim(); }).filter(Boolean);
+      if (paras.length) return { paragraphs: paras, from: 'overview' };
     }
-    if (record && record.summary) return [record.summary];
-    if (record && record.description) return [record.description];
-    return [];
+    if (record && record.summary) return { paragraphs: [record.summary], from: 'summary' };
+    if (record && record.description) return { paragraphs: [record.description], from: 'description' };
+    return { paragraphs: [], from: 'none' };
   }
 
   /* The technical line is derived, never authored, and it names the FILE the
@@ -1040,7 +1058,13 @@
      would be a second path to keep working. `data-open-award-year` rides along
      because the pair alone does not say WHICH of the project's awards this row
      is, and a later reader (the dialog's own handlers) has to be able to
-     re-resolve the award from a click. */
+     re-resolve the award from a click.
+
+     The row is a real `<button>`, exactly as a hung frame is, and NOT an `<li>`
+     wearing `role="button" tabindex="0"`. The walk's delegation is bound to
+     `click` alone, so a role on an `<li>` is focusable and still does nothing
+     when Enter is pressed — a control that cannot be activated is the defect
+     this file already refuses to ship for the frames and the honours tiles. */
   function awardGalleryRef(projectId, award) {
     var honors = Array.isArray(PORTFOLIO.honors) ? PORTFOLIO.honors : [];
     var year = award && award.year;
@@ -1059,15 +1083,22 @@
       var photos = (typeof Site.awardPhotos === 'function')
         ? Site.awardPhotos(record.id, PORTFOLIO.honors, a) : [];
       var ref = photos.length ? awardGalleryRef(record.id, a) : '';
-      var open = ref
-        ? ' data-gallery="honors" data-entry="' + esc(ref) + '"'
-          + ' data-open-award-year="' + esc(a.year || '') + '"'
-          + ' role="button" tabindex="0"'
-        : '';
       var year = a.year ? '<span class="award-year">' + esc(a.year) + '</span>' : '';
-      return '<li class="award"' + open + '>'
-        + '<span class="award-desc">' + esc(a.description || '') + '</span>'
-        + year + '</li>';
+      var body = '<span class="award-desc">' + esc(a.description || '') + '</span>' + year;
+      var row;
+      if (ref) {
+        row = '<button type="button" class="award-open"'
+          + ' data-gallery="honors" data-entry="' + esc(ref) + '"'
+          + ' data-open-award-year="' + esc(a.year || '') + '"'
+          + ' aria-label="' + esc('Open the photographs of '
+              + (a.description || 'this award')) + '">' + body + '</button>';
+      } else {
+        /* Nothing to open, so it is not a control and does not look like one. */
+        row = '<span class="award-text">' + body + '</span>';
+      }
+      return '<li class="award"'
+        + (ref ? '' : ' data-open-award-year="' + esc(a.year || '') + '"') + '>'
+        + row + '</li>';
     }).join('');
     return '<div class="awards">'
       + '<p class="awards-head">Awards · ' + record.awards.length + '</p>'
@@ -1092,7 +1123,13 @@
      photograph. `kind` and `index` used to be parameters here and neither was
      ever read; `layout` joined them and went the same way, because the plan it
      drew is gone — the catalogue's letters are what tie an entry to a
-     photograph now. */
+     photograph now.
+
+     The account block is omitted entirely when there are no words for it, and
+     the opening lead is rendered ONLY when the account came from
+     `overview.text`. On the fallback path the account IS the summary, so
+     rendering the lead as well prints the record's one sentence twice — which
+     is what every Leadership post and every stand-alone honour would have done. */
   function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];
     /* A frame is not a photograph. The count is the photographs that exist, not
@@ -1103,6 +1140,8 @@
     var title = labelTitle(record);
     var meta = labelMeta(record);
     var account = labelAccount(record);
+    var lead = record.summary && account.from === 'overview'
+      ? '<p class="narr-lead">' + esc(record.summary) + '</p>' : '';
     return '<div class="label">'
       + '<div class="label-copy">'
       + '<div class="narr">'
@@ -1111,12 +1150,14 @@
           + (photographs
               ? ' · ' + photographs + ' photograph' + (photographs === 1 ? '' : 's')
               : '') + '</p>' : '')
-      + (record.summary ? '<p class="narr-lead">' + esc(record.summary) + '</p>' : '')
-      + '<div class="label-account">'
-      + account.map(function (t) {
-          return '<p class="acct-p">' + esc(t) + '</p>';
-        }).join('')
-      + '</div>'
+      + lead
+      + (account.paragraphs.length
+          ? '<div class="label-account">'
+            + account.paragraphs.map(function (t) {
+                return '<p class="acct-p">' + esc(t) + '</p>';
+              }).join('')
+            + '</div>'
+          : '')
       + '</div>'
       + renderAwards(record)
       + '</div>'

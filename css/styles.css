@@ -159,20 +159,22 @@
      because a column divides the band between its own frames: a column of two
      may stand tall, a column of three must split the same band three ways.
 
-     --frame-h is the height a frame is given, and its width follows its
-     photograph's own proportions from there. It cannot be a width: a frame
-     sized by width takes an aspect ratio of its own, and `object-fit` then
-     either crops a landscape photograph into a strip or bars it inside the
-     mat — neither of which is a photograph hung on a wall. Nor can it live
-     here as `cqi`: a gallery is as wide as its contents, so sizing a stand
-     from its own width is circular, and the binding constraint on one row is
-     the room's height.
+     The three tokens below are DEFINED AND NOT YET READ. They are the stand
+     layout's dials, declared here so that one place owns their values: the
+     label still sits in the narrow `--label-w` column beside the cluster and
+     frames are still sized from `--band-h`/`--max-panel-h` per column. Until
+     the stand's own layout migrates, nothing here changes what a frame or a
+     label measures — do not read a size out of them yet.
 
-     --stand-w and --label-measure are the horizontal pair. A stand is now a
+     When it does migrate: --frame-h is the height a frame is given, and its
+     width follows its photograph's own proportions from there. A height rather
+     than a width, because a frame sized by width takes an aspect ratio of its
+     own and `object-fit` then either crops a landscape photograph into a strip
+     or bars it inside the mat — neither of which is a photograph hung on a
+     wall. --stand-w and --label-measure are the horizontal pair: a stand is a
      picture band above a full-width label rather than a cluster beside a
-     narrow deck, so nothing holds the label to a fixed width any more; what
-     keeps its prose readable is --label-measure, a line length in characters
-     rather than a column width in pixels.
+     narrow deck, and what keeps that label's prose readable is a line length in
+     characters rather than a column width in pixels.
 
      The pixel floor is a tap target, not decoration: it keeps every frame
      above 44x44 at every supported width without a width floor on the room. */
@@ -189,9 +191,9 @@
   --col-gap:     clamp(  6px,  1.1vh,  10px);
   --cluster-gap: 12px;
   /* RETIRED by the label's move to full width — nothing needs a fixed column
-     any more, and --label-measure is what keeps the prose readable. It stays
-     defined only because `.label` still reads it; the rule goes with the
-     stand's layout. */
+     any more, and --label-measure is what keeps the prose readable. It is
+     still the width `.label` is given, and still subtracted by `--cluster-w`,
+     so it is live until the stand's layout migrates; the rules go together. */
   --label-w:     clamp(320px, 25vw, 380px);
   --group-gap:   clamp(200px, 46vw, 760px);
 
@@ -1941,12 +1943,17 @@ body {
    stand's frames crowding the edge of the screen. The gap is the frame around
    the exhibit — which is the only frame in this hall that is not gilt.
 
-   A stand is a composition of framed photographs ABOVE its own account. The
-   photographs are partitioned into columns by the stand's arrangement, and the
-   label beneath runs the stand's full width — nothing holds it to a fixed
-   column any more, so the arrangement can no longer squeeze the text it is
-   labelling. What keeps that prose readable is --label-measure, and what keeps
-   the pictures inside one screen is --frame-h.
+   A stand is a composition of framed photographs BESIDE its label, and it still
+   is: `.group` is a row, the label is the narrow column `--label-w` gives it,
+   and `--cluster-w` is what remains. The picture-above-a-full-width-label stand
+   is the intended replacement, and it is not in this file yet — the tokens for
+   it (`--frame-h`, `--stand-w`, `--label-measure`) are defined and unread.
+
+   That matters to what follows: because the label is still narrow, the account
+   this build newly renders is a tall column of prose, and what holds it is
+   `--label-w` rather than a measure in characters. The prose rules below
+   therefore cap their own line length with `--label-measure`'s fallback, which
+   is what keeps a line readable in the meantime.
 
    The Honours room is NOT one of these. It hangs no group and holds no row; it
    is the three-column list of tiles further down this file. */
@@ -2153,13 +2160,13 @@ body {
    entry's title and 13px for the account at 1536x864, and no smaller than
    13/11 at the 1280x704 floor.
 
-   The label runs the stand's full width beneath the picture band and stacks
-   downward: the account, then its awards, then a catalogue entry beneath
-   another. The plan of the hang used to sit at its head and is gone — the
-   catalogue's letters are what tie an entry to a photograph now. Nothing holds
-   the label to a fixed width any more; the prose keeps its measure by
-   --label-measure rather than by the column's width, and the two-column layout
-   that puts the awards and the team caption beside it belongs to the stand. */
+   The label sits in the `--label-w` column beside the cluster, exactly as
+   before, and stacks downward: the title and its meta, the opening lead, the
+   account, the awards, then a catalogue entry beneath another. The plan of the
+   hang used to head that stack and is gone — the catalogue's letters are what
+   tie an entry to a photograph now. The full-width label with the awards and
+   the team caption beside the prose is the intended replacement, and its
+   `--stand-w` grid is not in this file yet. */
 .label {
   flex: 0 0 auto;
   width: var(--label-w);
@@ -2183,6 +2190,10 @@ body {
   line-height: 1.15;
   color: var(--text-strong);
   margin: 0;
+  /* The label's ONE clamp, and it is the title's. See the note in
+     tests/renderer.test.mjs: a long title loses no reading when it is cut —
+     the same name is on the room heading and in the rail — where the account
+     had no second home, which is why its clamp was the defect. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2232,13 +2243,18 @@ body {
    it, and the row is a panel rather than a gilt frame because it is furniture
    on the label and not a work on the wall.
 
-   Only a row that resolves to photographs is a control, and it clears the 44px
-   tap floor by min-height rather than by padding: the row is dense text in a
-   column, and padding to reach the floor would space the list out until it
-   stopped reading as a list. The accent edge is the same cue a tile with
-   photographs carries, and it is the only thing telling a visitor that one row
-   is pressable and the next is not — a focusable row that opens nothing is
-   worse than one that plainly is not a control. */
+   Only a row that resolves to photographs is a control, and the control is a
+   real `<button>` — not an `<li>` wearing `role="button"`. The walk's
+   delegation is bound to `click` alone, so a role on an `<li>` is focusable and
+   still does nothing when Enter is pressed; the frames and the honours tiles
+   are buttons for the same reason. The photo-less row keeps the row's own
+   layout as a plain span, so the two read as the same list.
+
+   The accent edge is the same cue a tile with photographs carries, and it is
+   the only thing telling a visitor that one row is pressable and the next is
+   not. The row clears the 44px tap floor by min-height rather than by padding:
+   it is dense text in a column, and padding to reach the floor would space the
+   list out until it stopped reading as a list. */
 .awards {
   flex: 0 0 auto;
   min-width: 0;
@@ -2257,25 +2273,45 @@ body {
 .award-list { list-style: none; margin: 0; padding: 0; }
 
 .award {
+  min-height: 44px;
+  border-left: 2px solid var(--edge-soft);
+}
+
+.award-open {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 8px;
+  width: 100%;
   min-height: 44px;
   padding: 5px 8px;
-  border-left: 2px solid var(--edge-soft);
-}
-
-.award[data-gallery] {
-  cursor: pointer;
-  border-left-color: var(--accent);
+  /* A button brings its own font, colour, border and background, so every one
+     of them is reset here: without this the row renders in the platform's UI
+     font, with the platform's button chrome, inside a museum label. */
+  border: 0;
   background: var(--surface-1);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  /* The clickable cue: the same lit left edge a tile that opens photographs
+     carries, on the row itself rather than on the li. */
+  box-shadow: inset 2px 0 0 var(--accent);
+  transition: color var(--transition-fast), background var(--transition-fast);
 }
 
-.award[data-gallery]:hover,
-.award[data-gallery]:focus-visible {
+.award-open:hover,
+.award-open:focus-visible {
   color: var(--text-strong);
-  border-left-color: var(--accent);
+  background: var(--surface-2);
+}
+
+.award-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 5px 8px;
 }
 
 .award-desc {
