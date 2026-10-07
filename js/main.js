@@ -879,15 +879,41 @@
        box, so a padded column would report itself taller than its frames and
        the band budget would be spent twice. */
     var cols = layout.columns.map(function (indices, ci) {
-      var hung = indices.filter(function (i) { return pieces[i]; })
-        .map(function (i) { return piece(pieces[i], i); }).join('');
-      var rows = indices.filter(function (i) { return pieces[i]; }).length;
+      var hungPieces = indices.filter(function (i) { return pieces[i]; });
+      var hung = hungPieces.map(function (i) { return piece(pieces[i], i); }).join('');
+      var rows = hungPieces.length;
       var drop = layout.drop[ci] || 0;
-      return '<div class="col" style="--col-rows:' + rows + ';margin-top:' + drop + 'px">'
-        + hung + '</div>';
+      /* ── The column's own width, in units of the wall's height ──────────
+         `--ar-sum` is the sum of this column's photographs' aspect ratios, and
+         it is how many pixels wide the column wants to be for every 1px of
+         height the wall gives it. The stylesheet reads the LARGEST of them to
+         solve the wall's height — see the note on `.cluster` — because the
+         deepest column is the one that decides whether a hang fits its wall.
+
+         The ratios are not known until the photographs load, so a piece whose
+         photograph has not arrived contributes nothing and the sum falls back to
+         the piece count, which is the ratio a square frame would have. The
+         awaited-frame case is exact: `.piece--pending` is held at 3/2. */
+      var sum = hungPieces.reduce(function (a, i) {
+        var p = pieces[i];
+        var ar = p && p.awaiting ? 1.5 : (p && p.ar ? p.ar : 1.5);
+        return a + ar;
+      }, 0);
+      return '<div class="col" style="--col-rows:' + rows + ';--ar-sum:' + sum.toFixed(3)
+        + ';margin-top:' + drop + 'px">' + hung + '</div>';
     });
+    /* The wall takes the deepest column's ratio: the height at which that column
+       still fits is the height at which every column fits. */
+    var maxSum = layout.columns.reduce(function (a, indices) {
+      var sum = indices.filter(function (i) { return pieces[i]; }).reduce(function (s, i) {
+        var p = pieces[i];
+        return s + (p && p.awaiting ? 1.5 : (p && p.ar ? p.ar : 1.5));
+      }, 0);
+      return Math.max(a, sum);
+    }, 0);
     return '<div class="cluster" data-hang="' + esc(layout.name) + '"'
-      + ' style="--col-count:' + layout.columns.length + '">' + cols.join('') + '</div>';
+      + ' style="--col-count:' + layout.columns.length + ';--ar-max:' + (maxSum || 1).toFixed(3) + '">'
+      + cols.join('') + '</div>';
   }
 
   /* What a piece does when activated. A project piece opens that project's

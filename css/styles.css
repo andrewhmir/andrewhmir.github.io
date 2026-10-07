@@ -182,26 +182,20 @@
      screen: 614px at 1536 (588px of inner measure) and 512px at 1280 (486px),
      and the wall takes what is left. `--stand-w` is the stand's own width, and
      it is what stops a wider label making the walk longer. */
-  /* ── The two cells, and the dialectic between them ────────────────────
-     This is the number the whole shape turns on, and it is a SHARE rather than
-     a width because the two cells want opposite things. The label wants to be
-     wide: it holds a 1,228-character account, and every 40px of width is a line
-     off every column. The wall wants to be wide too, and needs it just as much:
-     a frame's width follows its photograph's proportions, so a wall narrowed to
-     make room for prose does not make its pictures smaller — it makes them
-     NARROWER AND TALLER, and 316px of wall measured frames of 65x651, which is a
-     sliver.
+  /* ── The two cells, and why the label is the SMALLER one ──────────────
+     The wall is the wider cell, and that is not a preference — it is what the
+     photographs require. A frame's width follows its own photograph, so a wall
+     has to be wide enough to lay a whole hang side by side at the height it is
+     given. Narrow the wall and the frames do not shrink: their columns do,
+     until a 2.251-ratio photograph is squeezed to the 44px tap floor and the
+     wall becomes a row of slivers. Measured on the three-across hang: 317px of
+     wall gave three 44x691 frames, which is a wall of lines, and the walk's
+     photograph area fell to 62,124 px² a screen.
 
-     Both extremes were measured. At 52-56vw the label fits its cell at 1440x900
-     but the walk's photograph area fell to 62,124 px² a screen — less than the
-     122,534 a wall-heavy split reached. At 40-46vw the pictures are large and
-     the label overruns its cell on four of the six project stands.
-
-     48vw is where both are as good as they get together: the label gets 691px at
-     1440 and 614px at 1280, and the wall keeps 585px and 470px. It is still not
-     enough for the densest record at the 1280x704 floor, which is why the label
-     column scrolls at short viewports — see the max-height query below. */
-  --label-col:      clamp(560px, 48vw, 780px);
+     56% of the stand is where a hang fits as pictures rather than slivers. The
+     label then gets 691px at 1440 and 614px at 1280 — enough for the account in
+     two columns at 12.5px, which is the size the owner chose. */
+  --label-col:      clamp(480px, 44vw, 700px);
   /* The furniture column inside the label — the summary, the awards, the team
      caption and the catalogue. A share of the label rather than a fixed width,
      so the two interior columns keep their proportion at every screen. */
@@ -2230,12 +2224,31 @@ body {
   align-items: stretch;
   gap: var(--cluster-gap);
   flex: 0 0 auto;
-  height: 100%;
-  min-height: 0;
+  /* ── The wall a hang stands on, which the columns divide ────────────────
+     A wall beside a label is narrower than a row of wide photographs wants.
+     Measured on PALAD's `lead-two` at 1536x864 with a 490px wall: at full height
+     the hang needs 1,189px, so the columns were squeezed until every frame sat
+     on the 44px tap floor — a wall of slivers, area 62,124 px² a screen. Letting
+     each column's height follow its own photograph divides the wall's width
+     instead, and collapses the frames to 44x29: a frame's box would be sized
+     against a parent whose height is derived from that same box.
+
+     So the wall is a fixed band and a column divides IT, which is the division
+     the pre-two-cell build did with `--band-h` — the difference is that this band
+     is a share of the wall's own WIDTH rather than a constant, so it scales with
+     the cell it was given. `--wall-h` is written by renderWall in js/main.js:
+     the largest height at which a hang of this many photographs still fits,
+     `wall / (sum of the widest column's ratios)`, clamped to the cell.
+
+     Below the clamp the frames come out landscape and fill the wall's width;
+     above it the wall has height to spare and the frames are as large as the
+     wall allows. Nothing is cropped and nothing is letterboxed. */
+  --wall-h:         clamp(150px, 22vh, 320px);
+  height: min(100%, var(--wall-h));
   /* The wall is bounded by its cell, and that bound is visible: a grid item
      whose content is wider than its track overflows the track by default, so a
      hang wider than the stand paints past `overflow: hidden`'s clip edge —
-     measured at 428px past the stand before this. The mini/max pair is what
+     measured at 428px past the stand before this. The min/max pair is what
      keeps a wide hang inside the cell it was given. */
   min-width: 0;
   max-width: 100%;
@@ -2267,11 +2280,10 @@ body {
   min-width: 0;
   height: 100%;
   min-height: 0;
-  /* A column is bounded by its share of the wall. Without this a frame whose
-     photograph is wide runs the column out of the stand: a grid item and a flex
-     item both default to `min-width: auto`, so the widest frame — measured at
-     1037px on a 2.251-ratio photograph — set a 1037px column inside a 432px wall
-     and painted 428px past its own stand, over the next stand's photographs. */
+  /* A column is one share of the wall's width, and it divides the wall's height
+     between its own frames. `flex: 1 1 0` is the width share; the frames inside
+     split the height. */
+  flex: 1 1 0;
   max-width: 100%;
   overflow: hidden;
 }
@@ -2287,19 +2299,19 @@ body {
    refuses to shrink below its content, and an image with a 6px mat has content. */
 .piece {
   display: block;
+  /* A frame divides its column's height, and its width follows its photograph.
+     `flex: 1 1 0` is that division: a column of three frames gives each of them
+     a third of the wall. `min-height: 0` is what allows it — without it a flex
+     item refuses to shrink below its content, and an image with a 6px mat has
+     content. */
   flex: 1 1 0;
   min-height: 0;
   /* ── A frame fits the column that holds it ─────────────────────────────
      `min-width: auto` is a flex item's default, and it is what let a frame grow
-     past its column: a 2.251-ratio photograph at full wall height measured
-     1037px inside a 432px wall, and painted 428px past its own stand. `0` lets
-     the frame take the column's width; `max-width: 100%` holds it there. The
-     photograph inside then follows its own proportions within that box.
-
-     This is the frame's ceiling, not its size. A frame is still as wide as its
-     photograph wants — `ux-check`'s "a frame is as wide as its photograph"
-     asserts the two agree — and this only binds when the column is the smaller
-     of the two. */
+     past its column: a 2.251-ratio photograph measured 1037px inside a 432px
+     wall, and painted 428px past its own stand. `0` lets the frame take the
+     column's width; `max-width: 100%` holds it there. The photograph inside then
+     follows its own proportions within that box. */
   min-width: 0;
   max-width: 100%;
   padding: 0;
