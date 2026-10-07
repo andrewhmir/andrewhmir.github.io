@@ -1028,7 +1028,8 @@
          is not a grid item, so the column gap never applied and the title ran
          into its own letter ("AThe palm scanner"). */
       out += '<div class="cat-entry" data-piece="' + i + '">'
-        + (list.length > 1 ? '<span class="ce-key">' + letter + '</span>' : '')
+        + (list.length > 1
+            ? '<span class="ce-key" data-piece="' + i + '">' + letter + '</span>' : '')
         + '<div class="ce-body">'
         + '<p class="ce-title">' + esc(p.title || ('Photograph ' + letter)) + '</p>'
         + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')

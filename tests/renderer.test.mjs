@@ -562,9 +562,13 @@ check('the opening lead and the account never say the same sentence twice', () =
       bad.push(r.description + ': the account reads ' + JSON.stringify(paras)
         + ', the summary is ' + JSON.stringify(r.summary));
     }
-    /* And the summary appears exactly once across the label's own text. */
+    /* And the summary appears exactly once across the label's own text. Split on
+       the ESCAPED summary: this is rendered markup, so a summary carrying `&`,
+       `<` or `"` arrives escaped, and splitting on the raw string would fail a
+       correct renderer. The paragraph comparison above already reads the
+       unescaped form, so this is the same comparison made twice. */
     const body = group.split('class="label"')[1] || '';
-    const seen = body.split(r.summary).length - 1;
+    const seen = body.split(escHtml(r.summary)).length - 1;
     if (seen !== 1) bad.push(r.description + ': its summary appears ' + seen + ' times on the label');
     checked++;
   });
@@ -596,15 +600,24 @@ check('the account is not line-clamped', () => {
      why it is gone, not the property. */
   const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
-  const clamped = blocks.filter((b) => /-webkit-line-clamp|line-clamp/.test(b));
+  /* Case-insensitively: CSS property names are ASCII case-insensitive, so
+     `-webkit-LINE-CLAMP: 4` clamps exactly as hard as the lowercase spelling. */
+  const clamped = blocks.filter((b) => /line-clamp/i.test(b));
   const selectors = clamped.map((b) => b.split('{')[0].trim()).sort();
   assert.deepEqual(selectors, ['.narr-title'],
     'line-clamp appears on rules other than the title: ' + selectors.join(' | '));
   assert.ok(blocks.length > 100, 'the stylesheet did not parse: ' + blocks.length + ' rules');
   /* And the account's rules are actually there, so the sweep above cannot pass
-     on a stylesheet that has lost them. */
-  const account = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]));
-  assert.ok(account.length >= 3, 'the account rules are missing: ' + account.length);
+     on a stylesheet that has lost them. NAMED, not counted: "at least three"
+     was the shape of check that let `.narr-lead`'s rule be deleted with the
+     guard still green, because four rules name these classes and three is what
+     is left. Each name below is asserted individually, so deleting any one
+     fails the check that exists to notice exactly that. */
+  const account = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]))
+    .map((b) => b.split('{')[0].trim());
+  assert.deepEqual(account.slice().sort(),
+    ['.acct-p', '.acct-p:last-child', '.label-account', '.narr-lead'],
+    'the account rules are not the four this label is built from: ' + account.join(' | '));
   assert.ok(!/\.narr-text/.test(css), '.narr-text still exists — the clamp was to live there');
 });
 
@@ -621,14 +634,20 @@ check('the only clamp in the label is the title\'s, and it is bounded', () => {
      limit is 2. A third line, or a second clamped selector, fails here. */
   const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
-  const clamped = blocks.filter((b) => /-webkit-line-clamp|line-clamp/.test(b));
+  const clamped = blocks.filter((b) => /line-clamp/i.test(b));
   assert.equal(clamped.length, 1, clamped.length + ' clamped rules in the stylesheet');
   assert.match(clamped[0].split('{')[0], /\.narr-title\b/, 'the clamped rule is not the title');
-  assert.match(clamped[0], /line-clamp:\s*2\b/, 'the title is not clamped to two lines');
+  assert.match(clamped[0], /line-clamp:\s*2\b/i, 'the title is not clamped to two lines');
   /* And the renderer cannot clamp inline either: an inline style is invisible
-     to the stylesheet sweep above and would hide the prose just as well. */
-  const renderer = readFileSync('js/main.js', 'utf8');
-  assert.ok(!/line-clamp/.test(renderer), 'js/main.js emits a line-clamp');
+     to the stylesheet sweep above and would hide the prose just as well.
+     Comments are stripped first, and only the PROPERTY is matched: this is a
+     claim about code, and a comment in the renderer naming the retired clamp is
+     prose, not a clamp — failing on it would be the false positive the CSS
+     sweep above already strips comments to avoid. */
+  const renderer = readFileSync('js/main.js', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(!/line-clamp\s*:/i.test(renderer),
+    'js/main.js emits a line-clamp: ' + (renderer.match(/.{0,40}line-clamp\s*:.{0,20}/i) || [''])[0]);
 });
 
 check('every project award is on the wall with its year', () => {
@@ -851,7 +870,7 @@ check('the catalogue letters every photograph, once each, in piece order', () =>
     if (i > 0) body = body.slice(body.indexOf('>') + 1);
     const end = body.indexOf('<div class="group"');
     if (end !== -1) body = body.slice(0, end);
-    const keys = [...body.matchAll(/<span class="ce-key">([A-Z])<\/span>/g)].map((m) => m[1]);
+    const keys = [...body.matchAll(/<span class="ce-key"[^>]*>([A-Z])<\/span>/g)].map((m) => m[1]);
     const entries = (body.match(/class="cat-entry"/g) || []).length;
     if (keys.length !== entries) {
       bad.push('group ' + i + ': ' + keys.length + ' letters for ' + entries + ' entries');
@@ -861,19 +880,25 @@ check('the catalogue letters every photograph, once each, in piece order', () =>
       bad.push('group ' + i + ': letters ' + keys.join('') + ', expected ' + want.join(''));
     }
     /* The letters ARE the piece indices — that is what ties an entry to a
-       photograph now the plan is gone — so each entry's letter must match its
-       own `data-piece`. Without this, a running counter over permuted entries
-       passes: the letters would run A, B, C while naming pieces 2, 0, 1. */
+       photograph now the plan is gone — so each letter must name its own piece.
+       Read from the letter's OWN `data-piece`, and separately from the entry's,
+       so neither can agree with the other by accident: a running counter over
+       permuted entries passes the A..N sequence test above while lettering
+       piece 2 as A. */
     const pairs = [...body.matchAll(
-      /<div class="cat-entry" data-piece="(\d+)">(?:<span class="ce-key">([A-Z])<\/span>)/g)];
+      /<div class="cat-entry" data-piece="(\d+)"><span class="ce-key" data-piece="(\d+)">([A-Z])<\/span>/g)]
+      .map(([, entryPiece, keyPiece, letter]) => ({ entryPiece, keyPiece, letter }));
     if (pairs.length !== entries) {
-      bad.push('group ' + i + ': ' + pairs.length + ' entries carry both a piece index and a letter'
-        + ' of ' + entries);
+      bad.push('group ' + i + ': ' + pairs.length + ' letters name their piece, of ' + entries + ' entries');
     }
-    pairs.forEach(([, piece, letter]) => {
-      const expected = String.fromCharCode(65 + Number(piece));
+    pairs.forEach(({ entryPiece, keyPiece, letter }) => {
+      const expected = String.fromCharCode(65 + Number(entryPiece));
+      if (entryPiece !== keyPiece) {
+        bad.push('group ' + i + ': the entry says piece ' + entryPiece
+          + ' and its letter says piece ' + keyPiece);
+      }
       if (letter !== expected) {
-        bad.push('group ' + i + ': entry for piece ' + piece + ' is lettered ' + letter
+        bad.push('group ' + i + ': entry for piece ' + entryPiece + ' is lettered ' + letter
           + ', expected ' + expected);
       }
     });
