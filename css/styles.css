@@ -2420,34 +2420,38 @@ body {
   .piece { transition: none; filter: none; }
 }
 
-/* ── The floor: the label column scrolls, and only there ──────────────────
-   At the spec's 1280x704 floor the arithmetic does not close. Measured on the
-   PALAD stand, which is the densest record: the label cell is 502px, and it has
-   to hold a 40px title block, a 1,228-character account (393px in two columns
-   at 12.5px), a 73px summary, three awards (189px), a team caption (92px) and a
-   three-entry catalogue (98px) — 530px, and the two longest records in
-   Applications reach 617px. The alternatives were each worse for the visitor:
-   an account smaller than the 12.5px floor the owner accepted, a hung frame
-   whose column is narrower than a photograph, or a clipped last paragraph that
-   is invisible until someone reads to the bottom.
+/* ── The label column scrolls when its content does not fit ───────────────
+   The arithmetic does not always close, and the numbers are worth recording
+   because they are the reason this rule is unconditional rather than a
+   short-viewport exception.
 
-   So at a viewport this short the LABEL COLUMN scrolls and nothing else does.
-   The hall keeps its single horizontal axis, the stand keeps its one screen, the
-   pictures keep their size, and the copy stays legible. The gradient is the cue:
-   without it a label that ends mid-sentence looks like a label that ends.
+   At the spec's 1280x704 floor the label cell is 502px and PALAD needs 530px of
+   it, BiyaHey! 617px. At 1536x864 the cell is 650px and Hivemind — 1,369
+   characters, the longest account in the collection — needs 741px, 91px over. So
+   the fault is not confined to the floor: it is any record whose account is long
+   enough, at any viewport, and `tools/label-fit.mjs` finds Hivemind's at
+   1536x864 even though the suite's own fold checks are green there.
 
-   Above 760px tall the rule does not apply and no label scrolls — 1440x900 and
-   1536x864 both fit with room to spare, and `ux-check` asserts "the label's own
-   content fits its cell" at 1440x900 and at the floor. */
-@media (max-height: 760px) {
-  .label {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--edge) transparent;
-    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
-    mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
-  }
+   What is NOT available: an account below the 12.5px floor the owner accepted, a
+   hung frame whose column is narrower than a photograph, or a clipped paragraph
+   that stays invisible until someone reads to the bottom. A label column a
+   visitor can scroll to the end of is the only one of those that keeps every
+   word readable.
+
+   The gradient is the cue: without it a label that ends mid-sentence looks like
+   a label that ends. `overscroll-behavior: contain` stops the wheel handing off
+   to the hall, which is the document's one scrolling axis and stays horizontal.
+
+   This is also why `ux-check` reads `overflow-y` rather than a boolean when it
+   asks whether a label is clipped: `hidden` is copy a visitor cannot reach,
+   `auto` is copy they can. */
+.label {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge) transparent;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
 }
 
 /* ── The exhibition label ─────────────────────────────────────────────
