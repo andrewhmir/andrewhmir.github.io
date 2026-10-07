@@ -2307,22 +2307,26 @@ body {
   grid-template-areas:
     "copy  aside"
     "copy  cat";
-  /* 1.6fr/1fr, and the ratio is measured. The copy column holds the prose and
-     the awards and is the taller cell, so widening it shortens the LABEL: at
-     1536x864, where the label is the band that does not fit, 1.4fr gives a
-     656px label, 1.6fr gives 636px and 1.8fr gives 617px — the prose loses a
-     line each step and the catalogue's entries stay one line (31px) at every
-     step down to a 358px column. 1.6fr is taken because it is where the gains
-     flatten — 1.8fr and 2fr buy no more at 1280x704 (602px either way) — and
-     because it leaves the catalogue 386px at 1536x864 and 421px at 1280x704,
-     where an entry is still a single line. */
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  /* 1.8fr/1fr, and the ratio is measured. The copy column holds the narrative,
+     the account and the awards stacked, so it is the binding cell and widening
+     it shortens the LABEL: at 1536x864 the label is 656px at 1.4fr, 636px at
+     1.6fr, 617px at 1.8fr, and flat from there to 2.4fr (the prose runs out of
+     lines to save). 1.8fr also measured the fewest clipped elements of any ratio
+     at every viewport — 0 at 1920x1080, and better than 1.6fr at 1536x864 — and
+     the catalogue is still 355px there, where an entry is a single 31px line.
+
+     The right column is NOT where the height is hiding, and that is worth
+     recording because it is the obvious guess: `.cat` measures 310px inside the
+     label but its own content is 98px for two photographs, the rest being the
+     grid stretching it to its row. Moving it into the aside column was measured
+     at 0px of difference to the label height. */
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
   column-gap: clamp(20px, 2.4vw, 40px);
-  /* 10px, not 14: this gap is spent three times on a stand — under the narrative,
-     under the awards, and again under the catalogue — and the label is the band
-     that has to fit. Measured at 1536x864, where the band is 729px, the 4px
-     saved here and the 2px in `.award-list` and `.cat` come to 20px of the 73px
-     the densest stand is over. */
+  /* 10px, not 14. This one gap is spent once per label, between the copy row and
+     the catalogue row, and the label is the band that has to fit — so it is the
+     cheapest 4px on the stand. Measured at 1536x864 the 4px here plus the 2px in
+     `.award-list` and `.cat` come to 8px of the label, which `label-fit`'s own
+     criterion counts. */
   row-gap: 10px;
   border-top: 1px solid var(--edge);
   padding-top: 10px;
