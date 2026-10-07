@@ -1150,6 +1150,39 @@
      rendering the lead as well prints the record's one sentence twice — which is
      what all four Leadership posts did. Honours are not in this path: they hang
      as tiles, not as groups, so they have no label at all. */
+  /* ── The account's two columns, dealt in ORDER ──────────────────────────
+     CSS was the obvious place for this and it does not work here: a
+     `repeat(2, minmax(0, 1fr))` grid inside the label's own grid resolved its
+     tracks to 151px inside a 324px cell and ignored the declaration even when it
+     was forced inline — measured, with the CSSOM confirming the rule was applied
+     — and a `columns: 2` multicol box either spills its remainder into a third
+     column that paints off the screen, or balances the columns so that the
+     reading order stops matching the document order.
+
+     Splitting here keeps the paragraphs in the record's own order, which is what
+     `tests/renderer.test.mjs` pins ("the account is the record's own overview,
+     paragraph for paragraph"), and it keeps the split measurable. The break is
+     placed at the paragraph where the running character count first passes half
+     the total, so the two columns finish as close to level as an in-order split
+     allows: for PALAD, seven paragraphs of 97/268/48/299/42/200/274 characters
+     break after the fourth, for 712 against 516. An out-of-order deal balances
+     better — 717 against 510 — and reorders the prose to do it, which is not a
+     trade this should make to save 8% of a column's height. */
+  function accountColumns(paragraphs) {
+    var total = paragraphs.reduce(function (a, t) { return a + t.length; }, 0);
+    var cut = paragraphs.length;
+    var seen = 0;
+    for (var i = 0; i < paragraphs.length; i++) {
+      seen += paragraphs[i].length;
+      if (seen >= total / 2) { cut = i + 1; break; }
+    }
+    return [paragraphs.slice(0, cut), paragraphs.slice(cut)].map(function (col) {
+      return '<div class="acct-col">' + col.map(function (t) {
+        return '<p class="acct-p">' + esc(t) + '</p>';
+      }).join('') + '</div>';
+    }).join('');
+  }
+
   function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];
     /* A frame is not a photograph. The count is the photographs that exist, not
@@ -1162,27 +1195,42 @@
     var account = labelAccount(record);
     var lead = record.summary && account.from === 'overview'
       ? '<p class="narr-lead">' + esc(record.summary) + '</p>' : '';
+    /* ── The label is one column of blocks, and the prose is a cell ────────
+       It was a 1.8fr/1fr grid with `grid-area`s: the account and the awards at
+       the left, the team caption and the catalogue at the right, across the
+       stand's full width. The label is a cell BESIDE the hang now, so it is a
+       column — and a column needs no areas, only order.
+
+       The account is the block that decides whether a stand fits, so it is the
+       one block with an interior layout of its own: it takes the label's full
+       width in two columns, and the furniture that is SET BESIDE it (the
+       summary, the awards, the team caption, the catalogue) stacks in a column
+       to its right. That is what buys the height — the account is 1,228
+       characters for the densest record, and as a full-width single column at
+       this cell's width it measured 750px inside a 690px cell.
+
+       `.narr` keeps the title and the meta only. The summary is furniture, not
+       part of the narrative, and it lives with the awards where it can be read
+       as a caption to the stand. */
     return '<div class="label">'
-      + '<div class="label-copy">'
       + '<div class="narr">'
       + '<p class="narr-title">' + esc(title) + '</p>'
       + (meta ? '<p class="narr-meta">' + esc(meta)
           + (photographs
               ? ' · ' + photographs + ' photograph' + (photographs === 1 ? '' : 's')
               : '') + '</p>' : '')
-      + lead
+      + '</div>'
+      + '<div class="label-body">'
       + (account.paragraphs.length
-          ? '<div class="label-account">'
-            + account.paragraphs.map(function (t) {
-                return '<p class="acct-p">' + esc(t) + '</p>';
-              }).join('')
-            + '</div>'
+          ? '<div class="label-account">' + accountColumns(account.paragraphs) + '</div>'
           : '')
-      + '</div>'
+      + '<div class="label-side">'
+      + lead
       + renderAwards(record)
-      + '</div>'
       + '<div class="label-aside">' + renderTeam(record) + '</div>'
       + '<div class="cat">' + renderCatalogue(record, list) + '</div>'
+      + '</div>'
+      + '</div>'
       + '</div>';
   }
   Site.renderLabel = renderLabel;

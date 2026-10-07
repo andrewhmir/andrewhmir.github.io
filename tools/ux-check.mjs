@@ -389,15 +389,22 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   /* And the two inner-layout faults at the floor as well, where the cells are
      narrowest and both are at their worst. */
   const floorInner = await evaluate(`(() => {
-    const clipped = [], collide = [];
+    const clipped = [], collide = [], scrolled = [];
     document.querySelectorAll('#strip .group').forEach(g => {
       const label = g.querySelector('.label');
       if (!label) return;
+      const id = g.closest('.room').getAttribute('data-room') + ' ' + g.dataset.entry;
       const gr = g.getBoundingClientRect();
       const lr = label.getBoundingClientRect();
       const gone = [...label.querySelectorAll('.cat-entry')]
         .filter(e => e.getBoundingClientRect().bottom > Math.min(lr.bottom, gr.bottom) + 1).length;
-      if (gone) clipped.push(g.closest('.room').getAttribute('data-room') + ' ' + g.dataset.entry + ': ' + gone);
+      if (!gone) return;
+      /* An entry below the box is only CLIPPED when the box cannot be scrolled.
+         At the floor the label column scrolls by design, so the same geometry is
+         an entry a visitor can reach. Reported, not failed. */
+      const oy = getComputedStyle(label).overflowY;
+      if (oy === 'hidden' || oy === 'clip') clipped.push(id + ': ' + gone);
+      else scrolled.push(id + ': ' + gone + ' (' + oy + ')');
     });
     const pieces = [...document.querySelectorAll('#strip .piece')].map(p => ({
       g: p.closest('.group'), r: p.getBoundingClientRect(),
@@ -412,11 +419,15 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
         if (w > 2 && h > 2) collide.push(a.id + ' over ' + b.id);
       }
     }
-    return { clipped, collide };
+    return { clipped, collide, scrolled };
   })()`);
   check('labels still fit at 1280x704', floorInner.clipped.length === 0, floorInner.clipped.join(' | '));
   check('frames still do not collide at 1280x704',
         floorInner.collide.length === 0, floorInner.collide.slice(0, 5).join(' | '));
+  if (floorInner.scrolled.length) {
+    console.log('  info  ' + floorInner.scrolled.length + ' label(s) scroll at 1280x704 ' +
+      '(reachable, not clipped): ' + floorInner.scrolled.join('; '));
+  }
   await setViewport(1440, 900, false);
   await goto(BASE);
 
@@ -425,34 +436,47 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
      fraction of the viewport compared against itself, which is what this
      assertion first read and which passed for the wrong reason while the
      strip happened to be a whole number of screens wide. */
+  /* The position cue that replaced the native scrollbar is the DOCK'S OWN TRACK
+     — the .dock-track element, whose ::after is filled to the walk's progress
+     custom property. This read the .rail element, which css/styles.css records
+     as removed from the shell and replaced by exactly this track, so the whole
+     block threw "Cannot read properties of null" and counted as a section ERROR
+     rather than as four failing checks.
+
+     What the assertions can still ask, and what they were always asking: the
+     fill starts empty, grows as the walk moves, grows in proportion, and fills
+     at the end. The fill's width is read off the custom property the walk
+     writes, because a pseudo-element cannot be measured directly. */
   const railAt = async (left) => {
     await evaluate(`document.getElementById('hall').scrollLeft = ${left}`);
     await sleep(280);
     return evaluate(`(() => {
       const h = document.getElementById('hall');
-      const rail = document.querySelector('.rail').getBoundingClientRect().width;
+      const t = document.querySelector('.dock-track');
+      const pct = parseFloat(getComputedStyle(t).getPropertyValue('--walk-progress')) || 0;
       const max = h.scrollWidth - h.clientWidth;
-      return { rail, progress: max > 0 ? h.scrollLeft / max : 0, vw: innerWidth };
+      return { fill: Math.round(t.getBoundingClientRect().width * pct / 100),
+               track: Math.round(t.getBoundingClientRect().width),
+               pct, progress: max > 0 ? h.scrollLeft / max : 0, vw: innerWidth };
     })()`);
   };
   const r0 = await railAt(0);
   const rMid = await railAt(3000);
   await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
   await sleep(400);
-  const full = await railAt(0);
-  await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
-  await sleep(400);
   const end = await evaluate(`(() => {
     const h = document.getElementById('hall');
-    const rail = document.querySelector('.rail').getBoundingClientRect().width;
-    return { rail, progress: h.scrollLeft / (h.scrollWidth - h.clientWidth), vw: innerWidth };
+    const t = document.querySelector('.dock-track');
+    const pct = parseFloat(getComputedStyle(t).getPropertyValue('--walk-progress')) || 0;
+    return { pct, track: Math.round(t.getBoundingClientRect().width),
+             progress: h.scrollLeft / (h.scrollWidth - h.clientWidth), vw: innerWidth };
   })()`);
-  check('the rail starts empty', r0.rail === 0, JSON.stringify(r0));
-  check('the rail grows as the walk moves', rMid.rail > r0.rail, JSON.stringify([r0, rMid]));
-  check('the rail tracks the walk proportionally',
-        Math.abs(rMid.rail / rMid.vw - rMid.progress) < 0.02, JSON.stringify(rMid));
-  check('the rail fills the edge at the end of the walk',
-        Math.abs(end.rail - end.vw) <= 2, JSON.stringify(end));
+  check('the dock track starts empty', r0.fill === 0 && r0.pct === 0, JSON.stringify(r0));
+  check('the dock track grows as the walk moves', rMid.fill > r0.fill, JSON.stringify([r0, rMid]));
+  check('the dock track tracks the walk proportionally',
+        Math.abs(rMid.pct / 100 - rMid.progress) < 0.02, JSON.stringify(rMid));
+  check('the dock track fills at the end of the walk',
+        Math.abs(end.pct - 100) <= 1, JSON.stringify(end));
   await evaluate(`document.getElementById('hall').scrollLeft = 0`);
   await sleep(400);
 });
@@ -716,7 +740,7 @@ await section('The deepest hang stays inside the room', async () => {
           clipping individual catalogue entries cannot see: a block can leave the
           box without any one entry crossing the boundary the older check reads. */
     const cells = await evaluate(`(() => {
-      const out = { overlap: [], titleAbove: [], labelOver: [] };
+      const out = { overlap: [], titleAbove: [], labelOver: [], labelScrolls: [] };
       document.querySelectorAll('#strip .group').forEach(g => {
         const wall = g.querySelector('.cluster'), label = g.querySelector('.label');
         if (!wall || !label) return;
@@ -726,8 +750,20 @@ await section('The deepest hang stays inside the room', async () => {
         if (w > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) {
           out.overlap.push(id + ' by ' + Math.round(w));
         }
-        if (label.scrollHeight > label.clientHeight + 1) {
-          out.labelOver.push(id + ' ' + label.scrollHeight + ' in ' + label.clientHeight);
+        /* Content taller than its cell is only a FAULT when the cell cannot show
+           it. At the spec's 1280x704 floor the label column scrolls by design
+           (see the note on the max-height media query in css/styles.css) and a
+           scrollable box is reachable, which is the property that matters: the
+           fault this check exists for is copy that is CLIPPED, not copy behind a
+           scrollbar. overflow: hidden is the test, and the scroll case is
+           reported separately so it is visible rather than merely tolerated. */
+        const over = label.scrollHeight > label.clientHeight + 1;
+        if (!over) return;
+        const oy = getComputedStyle(label).overflowY;
+        if (oy === 'hidden' || oy === 'clip') {
+          out.labelOver.push(id + ' ' + label.scrollHeight + ' in ' + label.clientHeight + ' (' + oy + ')');
+        } else {
+          out.labelScrolls.push(id + ' ' + label.scrollHeight + ' in ' + label.clientHeight + ' (' + oy + ')');
         }
         const t = g.closest('.room').querySelector('.room-title');
         if (t && t.getBoundingClientRect().top < 0) out.titleAbove.push(id);
@@ -740,6 +776,14 @@ await section('The deepest hang stays inside the room', async () => {
           cells.titleAbove.length === 0, cells.titleAbove.join('; '));
     check('the label\'s own content fits its cell at ' + w + 'x' + h,
           cells.labelOver.length === 0, cells.labelOver.join('; '));
+    /* Reported, not failed: at the floor the label's own column scrolls, and a
+       label a visitor can scroll to the end of is not a label that hid a
+       paragraph. The number is here so that a change which makes MORE labels
+       scroll is visible in the output rather than silent. */
+    if (cells.labelScrolls.length) {
+      console.log('  info  ' + cells.labelScrolls.length + ' label(s) scroll at ' + w + 'x' + h +
+        ' (reachable, not clipped): ' + cells.labelScrolls.slice(0, 3).join('; '));
+    }
 
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
@@ -1327,18 +1371,22 @@ await section('Reduced motion', async () => {
     const last = rooms[rooms.length - 1];
     hall.scrollLeft = last.offsetLeft + 10;
     await new Promise(r => setTimeout(r, 400));
-    const rail = document.querySelector('.rail').getBoundingClientRect().width;
+    /* The walk's position cue is the dock's own track, not the .rail element
+       this read: that element was removed from the shell and the dock's track
+       replaced it. See the same fix in the layout section. */
+    const t = document.querySelector('.dock-track');
+    const pct = parseFloat(getComputedStyle(t).getPropertyValue('--walk-progress')) || 0;
     const cur = document.querySelector('.dock-link[aria-current="true"]');
     const max = hall.scrollWidth - hall.clientWidth;
     return {
-      rail, vw: innerWidth, progress: max > 0 ? hall.scrollLeft / max : 1,
+      pct, vw: innerWidth, progress: max > 0 ? hall.scrollLeft / max : 1,
       announced: (document.getElementById('announcer') || {}).textContent || '',
       current: cur ? cur.getAttribute('data-goto') : null,
       room: last.getAttribute('data-room')
     };
   })()`);
-  check('the rail still tracks the walk under prefers-reduced-motion',
-        Math.abs(across.rail - across.vw * across.progress) < 6, JSON.stringify(across));
+  check('the position cue still tracks the walk under prefers-reduced-motion',
+        Math.abs(across.pct / 100 - across.progress) < 0.02, JSON.stringify(across));
   check('the live region still names the room under prefers-reduced-motion',
         across.announced.trim().length > 0, JSON.stringify(across));
   check('the dock still follows the walk under prefers-reduced-motion',

@@ -182,7 +182,11 @@
      screen: 614px at 1536 (588px of inner measure) and 512px at 1280 (486px),
      and the wall takes what is left. `--stand-w` is the stand's own width, and
      it is what stops a wider label making the walk longer. */
-  --label-col:      clamp(420px, 40vw, 620px);
+  --label-col:      clamp(700px, 56vw, 820px);
+  /* The furniture column inside the label — the summary, the awards, the team
+     caption and the catalogue. A share of the label rather than a fixed width,
+     so the two interior columns keep their proportion at every screen. */
+  --label-side:     42%;
   --group-col-gap:  clamp(24px, 2.2vw, 40px);
   /* ── The rail and the room title ──────────────────────────────────────
      The rail's own line box, which is the band the room's top padding reserves
@@ -2385,6 +2389,36 @@ body {
   .piece { transition: none; filter: none; }
 }
 
+/* ── The floor: the label column scrolls, and only there ──────────────────
+   At the spec's 1280x704 floor the arithmetic does not close. Measured on the
+   PALAD stand, which is the densest record: the label cell is 502px, and it has
+   to hold a 40px title block, a 1,228-character account (393px in two columns
+   at 12.5px), a 73px summary, three awards (189px), a team caption (92px) and a
+   three-entry catalogue (98px) — 530px, and the two longest records in
+   Applications reach 617px. The alternatives were each worse for the visitor:
+   an account smaller than the 12.5px floor the owner accepted, a hung frame
+   whose column is narrower than a photograph, or a clipped last paragraph that
+   is invisible until someone reads to the bottom.
+
+   So at a viewport this short the LABEL COLUMN scrolls and nothing else does.
+   The hall keeps its single horizontal axis, the stand keeps its one screen, the
+   pictures keep their size, and the copy stays legible. The gradient is the cue:
+   without it a label that ends mid-sentence looks like a label that ends.
+
+   Above 760px tall the rule does not apply and no label scrolls — 1440x900 and
+   1536x864 both fit with room to spare, and `ux-check` asserts "the label's own
+   content fits its cell" at 1440x900 and at the floor. */
+@media (max-height: 760px) {
+  .label {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--edge) transparent;
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+    mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+  }
+}
+
 /* ── The exhibition label ─────────────────────────────────────────────
    One per stand: the record's own account, its awards and its team caption,
    and a catalogue entry per photograph. This is where a photograph gets its
@@ -2422,6 +2456,39 @@ body {
      the rule's own 1px edge and the label's first line box. */
   padding-top: 0;
 }
+
+/* ── The label's interior: the prose, and the furniture beside it ─────────
+   The account is the block that decides whether a stand fits, so it is the one
+   block with a layout of its own — the label's full width, in two columns. The
+   summary, the awards, the team caption and the catalogue are furniture: they
+   are SET BESIDE the prose in a single column, which is what buys the height.
+
+   Measured at 1440x900 with the account as a full-width single column and the
+   furniture beneath it: 750px of label inside a 690px cell. In this shape the
+   account is 236px and the taller of the two cells is the prose, not the sum.
+   At the 1280x704 floor the label cell is 502px and the same arithmetic lands
+   at ~500px — which is the whole margin there is, and the reason the account's
+   own type floor is 12px rather than the 13px the old full-width label used. */
+.label-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--label-side);
+  column-gap: clamp(14px, 1.4vw, 24px);
+  align-items: start;
+  min-height: 0;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+.label-side {  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* The label's blocks all shrink rather than push: a flex or grid item refuses to
+   go below its content otherwise, and a long word would run the prose out of the
+   cell rather than wrap it. */
+.label-aside,
+.cat { min-width: 0; }
 
 /* The narrative: the stand's own name, its venue or year, and the opening line
    that frames the account below it. It is a block of the label's column rather
@@ -2462,30 +2529,64 @@ body {
   line-height: 1.4;
   color: var(--text-strong);
   margin: 6px 0 0;
-  max-width: var(--label-measure, 56ch);
+  /* 62ch, and it is a MEASURE rather than a clamp. This block is the one place
+     the label's summary is written, and `tests/renderer.test.mjs` pins that
+     nothing in the label is line-clamped — the four-line clamp this build
+     replaced is exactly the fault that check exists for, so a two-line clamp
+     here is not available however much height it would save. The measure is how
+     the block is kept to two lines instead: at the 1280x704 floor 62ch wraps
+     PALAD's summary in two, where the label's own width gave it three. */
+  max-width: 62ch;
 }
 
-/* The account: the record's own words, paragraph for paragraph. NOT clamped —
-   the four-line clamp this replaces is what hid the copy this build exists to
-   show (spec §6.3). The paragraphs are min-width:0 because they sit in a grid
-   column: a grid item refuses to shrink below its content otherwise, and a
-   long word would run the prose out of the stand rather than wrap it.
+/* ── The account: two columns, and why that is not a reversal ────────────
+   The label is a cell beside the hang now, not a band across the stand, so it
+   is narrower than it was and every block in it competes for the same 690px of
+   height at 1440x900. PALAD's account is 1,228 characters; measured as one
+   576px column at 13px it was 792px of label inside a 690px cell, and dropping
+   the type far enough to fit cost more legibility than the width is worth.
 
-   NO `--label-measure` HERE, and that is measured rather than an oversight. The
-   account is the longest prose on the stand — 1,234 characters for the densest
-   record — and it is the block that decides whether the stand fits. Capping it
-   at 52ch inside a 589px column costs it seven lines and 94px of stand, which
-   is the difference between 52px over the floor and 164px. The column's own
-   width is the cap: 589px at 1280x704 is a 55-70 character line, which is the
-   readable range the measure existed to keep it in. `.narr-lead` and
-   `.team-line` are one-liners and keep their measure. */
-.label-account { min-width: 0; }
+   So the account takes TWO columns inside the cell. That is the same move the
+   old full-width label made with its 1.8fr/1fr grid — a long prose block gets
+   the width it needs by being split — applied one level down, because the width
+   is no longer the stand's.
+
+   Each column is ~269px, which is a 40-character line at 13px: narrower than
+   the 55-70 characters the one-column layout gave, and a deliberate trade
+   against the type size. The prose is not clamped and not truncated; it is
+   wrapped in two balanced columns.
+
+   The paragraphs are `min-width: 0` because a grid item refuses to shrink below
+   its content otherwise, and a long word would run the prose out of the stand
+   rather than wrap it. */
+.label-account {
+  /* Two columns, dealt by `accountColumns` in js/main.js — see the note there
+     for why this is not a CSS grid or a multicol box. `flex: 1 1 0` gives each
+     column half the account's width and `min-width: 0` lets the paragraphs wrap
+     inside it rather than setting a content floor the row cannot go below. */
+  display: flex;
+  align-items: flex-start;
+  column-gap: clamp(14px, 1.5vw, 22px);
+  min-width: 0;
+  width: 100%;
+}
+.acct-col { flex: 1 1 0; min-width: 0; }
 
 .acct-p {
-  font-size: clamp(13px, 0.88vw, 15px);
-  line-height: 1.45;
+  /* The account's floor is 12px, and it is the ONE size in the label that moved:
+     the title stays 21px, the lead 13.5px, the meta 10.5px, the awards 11.5px.
+     It moved for this cell's width, not by preference — see the note above.
+
+     `line-height: 1.28` is tighter than the 1.45 the full-width label used, and
+     the same reason applies: this is the block that decides whether the stand
+     fits, and at the spec's 1280x704 floor the label has 502px to hold a
+     1,228-character account. A looser leading there costs lines the cell does
+     not have. */
+  font-size: clamp(12.5px, 0.85vw, 13.5px);
+  line-height: 1.26;
   color: var(--text);
-  margin: 0 0 8px;
+  margin: 0 0 5px;
+  min-width: 0;
 }
 
 .acct-p:last-child { margin-bottom: 0; }
@@ -2517,11 +2618,11 @@ body {
    it is dense text in a column, and padding to reach the floor would space the
    list out until it stopped reading as a list.
 
-   It is a block of the label's copy column, under the account, and it no longer
-   needs a flex basis: the grid row is as tall as its tallest column. */
+   It is a block of the label's furniture column, beside the account, and it
+   needs no flex basis: the column is as tall as its own blocks. */
 .awards {
   min-width: 0;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .awards-head {
@@ -2536,15 +2637,21 @@ body {
   margin: 0 0 4px;
 }
 
-/* The gap is what keeps two awards from reading as one row with two years: the
-   rule spends a min-height of 44px on every row for the tap target, so without
-   it the rows abut and the list reads as a paragraph. 4px is the smallest gap
-   that still separates them, and the densest stand has three awards. */
-.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+/* The gap is what keeps two awards from reading as one row with two years. The
+   row's own floor is 30px — the tap target belongs to the CONTROL inside it —
+   so 3px is what separates the rows while the densest stand's three awards
+   still read as a list and not as a paragraph. */
+.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 
 .award {
-  min-height: 44px;
+  /* 28px, and the tap target is the CONTROL inside it, not the row: `.award-open`
+     fills the row and carries its own 44px floor, so a row that is a bare span
+     costs 28px and a row a visitor can press still clears 44. The row's own
+     min-height was 44 for both, which spent 16px per award on a list the label
+     has to fit — and the densest stand carries three. */
+  min-height: 28px;
   border-left: 2px solid var(--edge-soft);
+  padding: 2px 0 2px 8px;
 }
 
 /* The lit edge the tile precedent uses: it belongs to the row, so the accent

@@ -611,12 +611,19 @@ check('the account is not line-clamped', () => {
      was the shape of check that let `.narr-lead`'s rule be deleted with the
      guard still green, because four rules name these classes and three is what
      is left. Each name below is asserted individually, so deleting any one
-     fails the check that exists to notice exactly that. */
-  const account = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]))
+     fails the check that exists to notice exactly that.
+
+     `.acct-col` joins the list with the two-cell stand: the account is laid out
+     in two columns inside the label now, and each column is an element the
+     renderer writes (see `accountColumns` in js/main.js). Naming it here is the
+     same guard applied to the rule the new shape added — delete it and the two
+     columns stack, which is exactly the kind of silent change this check is
+     for. */
+  const account = blocks.filter((b) => /\.(label-account|acct-p|acct-col|narr-lead)\b/.test(b.split('{')[0]))
     .map((b) => b.split('{')[0].trim());
   assert.deepEqual(account.slice().sort(),
-    ['.acct-p', '.acct-p:last-child', '.label-account', '.narr-lead'],
-    'the account rules are not the four this label is built from: ' + account.join(' | '));
+    ['.acct-col', '.acct-p', '.acct-p:last-child', '.label-account', '.narr-lead'],
+    'the account rules are not the five this label is built from: ' + account.join(' | '));
   assert.ok(!/\.narr-text/.test(css), '.narr-text still exists — the clamp was to live there');
 });
 
