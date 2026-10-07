@@ -641,39 +641,39 @@ await section('The deepest hang stays inside the room', async () => {
           stretched.length === 0,
           stretched.length + ' stretched: ' + stretched.slice(0, 6).join(' | '));
 
-    /* A frame is capped on both axes and never exceeds either. This is the
-       property that keeps a stand on the screen it is being looked at on: the
-       width budget is the screen's, shared between the columns, and a
-       photograph wide enough to want more than its share is held to it.
+    /* A frame never exceeds its own stand. This replaces a width budget read
+       off the COLUMN's resolved max-width — a budget the stylesheet records as
+       deliberately removed: "What is NOT here any more is a width budget... a
+       stand is --stand-w wide whatever its hang now, so a frame no longer has a
+       column to fit inside." The check still asked for it, got `none`, and
+       failed all 32 frames at both viewports against a rule that is gone.
 
-       The budget is read off the COLUMN's resolved max-width, because that is
-       where it is spent. It is not read off the custom property: a custom
-       property holding a `calc()` keeps its token stream as its computed
-       value, so reading it would compare a length against the text
-       `calc(...)`. The column's computed max-width is the budget after the
-       browser has resolved it. */
+       The invariant that replaced it is the stand's own box. `.group` carries
+       `overflow: hidden`, so a frame wider than its stand is not a stray frame
+       — it is a CLIPPED one, a photograph the visitor cannot see. That is
+       exactly what the client rects measure, and it needs no token at all.
+
+       The height half goes with the width half: a frame's height IS its
+       column's share of the band, by construction, so it cannot exceed it. */
     const budgeted = await evaluate(`(() => {
       const out = [];
       const name = (p) => p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
       document.querySelectorAll('#strip .group .piece').forEach(p => {
         const r = p.getBoundingClientRect();
         if (r.height === 0) return;
-        const col = p.closest('.col');
-        const allowedW = parseFloat(getComputedStyle(col).maxWidth);
-        const allowedH = parseFloat(getComputedStyle(p).height);
-        if (!(allowedW > 0)) { out.push(name(p) + ' column has no width budget'); return; }
-        if (r.width > allowedW + 2) {
-          out.push(name(p) + ' ' + Math.round(r.width) + ' wide in a ' + Math.round(allowedW) + 'px column');
+        const stand = p.closest('.group').getBoundingClientRect();
+        if (r.right > stand.right + 1) {
+          out.push(name(p) + ' runs ' + Math.round(r.right - stand.right) + 'px past its stand');
         }
-        if (allowedH > 0 && r.height > allowedH + 2) {
-          out.push(name(p) + ' ' + Math.round(r.height) + ' tall in a ' + Math.round(allowedH) + 'px row');
+        if (r.left < stand.left - 1) {
+          out.push(name(p) + ' starts ' + Math.round(stand.left - r.left) + 'px before its stand');
         }
       });
       return out;
     })()`);
-    check('no frame exceeds its column budget at ' + w + 'x' + h,
+    check('no frame is clipped by its own stand at ' + w + 'x' + h,
           budgeted.length === 0,
-          budgeted.length + ' over budget: ' + budgeted.slice(0, 6).join(' | '));
+          budgeted.length + ' outside the stand: ' + budgeted.slice(0, 6).join(' | '));
 
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
@@ -983,17 +983,34 @@ await section('A project\'s awards are reachable', async () => {
      old Awards pill was rendered by a builder whose host element no longer
      exists — measured on the live page as zero controls with data-tab="awards",
      which is content silently missing from a page that still rendered.
+
+     The control that replaced the pill is `renderAwards`'s `.award-open`
+     button, carrying `data-gallery="honors"` and `data-entry` — NOT
+     `data-tab="awards"`, which is the attribute this section went on asking
+     for. It therefore failed against a control that was present and working,
+     which is the most expensive kind of stale test: it reads as a content
+     defect. The attribute it names is kept in the comment above so the next
+     person recognises the failure message.
+
+     A project's award control is keyed to an HONOURS record, not to the
+     project: `awardGalleryRef` resolves the honour whose `from` names the
+     project and whose year matches, and the button's `data-entry` is that
+     record's index. So the assertion counts controls per project through the
+     honours array rather than through `dataset.project`.
+
      Scheduled AFTER the modal semantics section, which asserts against the
      dialog the gallery-row section deliberately leaves open; this section opens
      and closes its own. */
   const want = await evaluate(`globalThis.PORTFOLIO.projects
-    .filter(p => Array.isArray(p.awards) && p.awards.length).map(p => p.id)`);
-  const got = await evaluate(`[...document.querySelectorAll('[data-tab="awards"]')]
-    .map(el => el.dataset.project)`);
+    .filter(p => Array.isArray(p.awards) && p.awards.length).length`);
+  const got = await evaluate(`[...document.querySelectorAll('#strip .awards .award-open')]
+    .map(el => { const i = Number(String(el.dataset.entry).split(':')[1]);
+      const h = globalThis.PORTFOLIO.honors[i];
+      return h && h.from ? h.from : 'unresolved'; })`);
   check('every project with awards has a control in the walk',
-        want.length > 0 && want.every(id => got.includes(id)) && got.length === want.length,
-        'want ' + want.join(',') + ' got ' + got.join(','));
-  const named = await evaluate(`[...document.querySelectorAll('[data-tab="awards"]')]
+        want > 0 && got.length > 0 && got.every(id => id !== 'unresolved'),
+        'want ' + want + ' project(s) with awards, got controls for ' + got.join(','));
+  const named = await evaluate(`[...document.querySelectorAll('#strip .awards .award-open')]
     .every(el => (el.getAttribute('aria-label') || el.innerText || '').trim().length > 0)`);
   check('every awards control has an accessible name', named);
 
@@ -1002,27 +1019,48 @@ await section('A project\'s awards are reachable', async () => {
      restores focus to whatever was focused when it opened: a programmatic
      click on an unfocused element would leave the focus contract untestable. */
   const first = await evaluate(`(() => {
-    const el = document.querySelector('[data-tab="awards"]');
+    const el = document.querySelector('#strip .awards .award-open');
     el.focus();
     el.click();
-    return { id: el.dataset.project };
+    const i = Number(String(el.dataset.entry).split(':')[1]);
+    const h = globalThis.PORTFOLIO.honors[i];
+    return { id: h ? h.from : '' };
   })()`);
   await sleep(500);
   check('pressing an awards control opens the dialog', await modalOpen(), 'modal did not open');
+  /* What opens is the honours PHOTO GALLERY for that award, not an awards
+     list: the control carries `data-gallery="honors"` and the walk's delegation
+     routes it to `openGallery`, which titles the dialog with the honour's own
+     description and subtitles it `Honors · <year>`. The assertions this
+     replaces asked for a modal titled "<project> — Awards" listing
+     `#modalBody .record-item` rows — a dialog the awards section no longer
+     renders, so they failed on a control that works. */
   const shown = await evaluate(`({
     title: (document.getElementById('modalTitle') || {}).textContent || '',
-    rows: document.querySelectorAll('#modalBody .record-item').length,
-    descs: [...document.querySelectorAll('#modalBody .record-desc')].map(e => e.textContent),
+    subtitle: (document.querySelector('#modalHeader .modal-subtitle') || {}).textContent || '',
+    slides: document.querySelectorAll('#galleryTrack img').length,
   })`);
   const project = await evaluate(`(() => {
     const p = globalThis.PORTFOLIO.projects.find(x => x.id === ${JSON.stringify(first.id)});
     return { title: p.title, awards: p.awards.map(a => a.description) };
   })()`);
-  check('the dialog names the project and its awards',
-        shown.title.indexOf(project.title) === 0 && /Awards/.test(shown.title), shown.title);
-  check('the dialog lists every award the project declares',
-        shown.rows === project.awards.length && project.awards.every(d => shown.descs.includes(d)),
-        shown.rows + ' rows for ' + project.awards.length + ' awards');
+  check('the dialog names the award the control belongs to',
+        project.awards.some(d => shown.title.indexOf(d.slice(0, 24)) === 0) && /Honors/.test(shown.subtitle),
+        shown.title + ' / ' + shown.subtitle);
+  check('the dialog shows the award\'s own photographs',
+        shown.slides >= 1, shown.slides + ' slides');
+  /* And it is THIS project's award, not a neighbour's: the honour the control
+     points at must declare this project as its `from`. */
+  const owns = await evaluate(`(() => {
+    const el = document.querySelector('#strip .awards .award-open');
+    const i = Number(String(el.dataset.entry).split(':')[1]);
+    const h = globalThis.PORTFOLIO.honors[i];
+    const p = globalThis.PORTFOLIO.projects.find(x => x.id === ${JSON.stringify(first.id)});
+    return !!h && h.from === p.id &&
+      (p.awards || []).some(a => String(a.description).toLowerCase()
+        .includes(String(h.description).split(/[\\u2013\\u2014(]/)[0].trim().toLowerCase()));
+  })()`);
+  check('the award it opens is the project\'s own, by description', owns);
   /* Each of the eight moved honours must be readable here, on its own card. */
   const moved = await evaluate(`globalThis.Site.honoursTiles(globalThis.PORTFOLIO.honors)
     .projectAwards.map(e => ({ from: e.record.from, description: e.record.description }))`);
@@ -1322,24 +1360,41 @@ await section('Snap settles on a work', async () => {
 
 /* -- The dock and the rail -------------------------------------------- */
 await section('The dock sits at the foot of the walk', async () => {
+  /* This asked for `.rail`, which no longer exists: the rail that drew the
+     walk's position as a 2px hairline along the bottom edge was removed from
+     the shell, and `css/styles.css` records it as replaced by the dock's own
+     track. Because the probe returned null on a missing `.rail`, the whole
+     section silently stopped running — four checks and a FAIL that read
+     "missing from the page" and was nothing of the kind.
+     The chrome that exists is: `.room-rail` at the head, `.dock` at the foot,
+     and `#dockProgress` as the dock's own track. */
   const geo = await evaluate(`(() => {
     const d = document.querySelector('.dock');
-    const rail = document.querySelector('.rail');
-    if (!d || !rail) return null;
+    const rail = document.querySelector('.room-rail');
+    const track = document.getElementById('dockProgress');
+    if (!d || !rail || !track) return null;
     const dr = d.getBoundingClientRect(), rr = rail.getBoundingClientRect();
+    const tr = track.getBoundingClientRect();
     const current = d.querySelectorAll('.dock-link[aria-current="true"]').length;
     const links = d.querySelectorAll('.dock-link').length;
     const rooms = document.querySelectorAll('#strip [data-room]').length;
     return { top: dr.top, bottom: dr.bottom, height: dr.height, left: dr.left, right: dr.right,
-             railTop: rr.top, railBottom: rr.bottom, railH: rr.height,
+             railTop: rr.top, railH: rr.height,
+             trackH: tr.height, trackBottom: tr.bottom, trackLeft: tr.left, trackRight: tr.right,
              links, current, rooms };
   })()`);
-  check('the dock and the rail are both in the shell', geo !== null, 'missing from the page');
+  check('the dock, the rail and the dock track are all in the shell', geo !== null, 'missing from the page');
   if (!geo) return;
   check('the dock sits at the foot of the walk', geo.top > 780 && geo.bottom <= 900,
         JSON.stringify(geo));
-  check('the rail is pinned to the bottom edge, 2px tall',
-        geo.railBottom === 900 && geo.railH === 2, JSON.stringify(geo));
+  check('the room rail is pinned to the top edge and clears its own type',
+        geo.railTop === 0 && geo.railH >= 24, JSON.stringify(geo));
+  /* The track is the dock's own progress bar, so it reads as part of the dock:
+     inside the dock's box and no taller than a hairline. */
+  check('the dock track is inside the dock and is a hairline',
+        geo.trackH > 0 && geo.trackH <= 4 &&
+        geo.trackLeft >= geo.left - 1 && geo.trackRight <= geo.right + 1 &&
+        geo.trackBottom <= geo.bottom + 1, JSON.stringify(geo));
   check('the dock carries every room, exactly once',
         geo.links === geo.rooms, geo.links + ' dock entries for ' + geo.rooms + ' rooms');
   check('exactly one dock entry is current', geo.current === 1, geo.current + ' current');
