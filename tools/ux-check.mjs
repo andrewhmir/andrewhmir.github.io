@@ -1594,7 +1594,17 @@ await section('The walk scrolls without a native scrollbar', async () => {
   }
   check('the arrow keys still move the walk', after > before, before + ' -> ' + after);
 
-  /* And back, so this section leaves the walk where it found it. */
+  /* And back, so this section leaves the walk where it found it.
+     `waitSettled` FIRST, and it is the whole fix for a flake that made this
+     section's two checks and the mobile section's three fail on roughly one run
+     in two — measured on the same tree: one run 137 passed / 0 failed, the next
+     135 / 2 with `the arrow keys move the walk back -> 40 -> 40`. The walk had
+     moved once and then held, because Lenis's snap was still animating from the
+     ArrowRight above and swallowed the ArrowLeft. Moving out and back are two
+     presses, so they are two journeys, and each needs the walk to have arrived
+     before the next key is sent. The note above this block already records the
+     same fault for the FIRST press; it applies to every press after it too. */
+  await waitSettled(3000);
   const backBefore = await hallScrollLeft();
   await pressArrow('ArrowLeft', 'ArrowLeft');
   const backAfter = await hallScrollLeft();
