@@ -927,8 +927,19 @@
     /* The arrangement is dealt from the entry key, so two neighbouring groups
        almost never hang the same way and neither of them changes on reload. */
     var layout = Site.hangLayout(entryKey, pieces.length);
+    /* The stand is the snap target, not the room. A room holds two or three
+       projects, and parking a room's centre leaves the visitor between two
+       stands: the walk still snaps to the room for About and Contact, which
+       are single compositions, but a project room's own data-snap only ever
+       fired once per room before this.
+
+       `data-snap` goes AFTER the entry key rather than beside `data-group`,
+       because that is where the renderer suite reads the group's own kind and
+       key from: it matches `data-group data-kind="…" data-entry="…"` as one
+       run, so an attribute inserted in the middle of it reads as a group that
+       is not there. */
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
-      + ' data-entry="' + esc(entryKey) + '">'
+      + ' data-entry="' + esc(entryKey) + '" data-snap>'
       + renderCluster(pieces, layout, record, kind, entryKey)
       + renderLabel(record, pieces)
       + '</div>';

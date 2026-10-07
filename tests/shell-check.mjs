@@ -150,9 +150,11 @@ ok('css braces balance', braces === 0, braces + ' unbalanced');
 const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(x => x[1]));
 /* Set from JS at runtime, so they legitimately have no stylesheet definition:
    --scrollbar-w by lockBodyScroll, --reveal-delay by the inline reveal style,
-   and --h/--shift by renderCluster, which gives each framed piece its frame
-   height and its offset out of line. */
-const RUNTIME = new Set(['--scrollbar-w', '--reveal-delay', '--h', '--shift']);
+   --h/--shift by renderCluster, which gives each framed piece its frame
+   height and its offset out of line, and --walk-progress by initLights, which
+   writes the walk's own fraction on #dockProgress for `.dock-track::after` to
+   draw. */
+const RUNTIME = new Set(['--scrollbar-w', '--reveal-delay', '--h', '--shift', '--walk-progress']);
 const used = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(x => x[1]));
 const missing = [...used].filter(t => !defined.has(t) && !RUNTIME.has(t));
 ok('every var() is defined', missing.length === 0, missing.join(', '));
