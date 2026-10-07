@@ -211,6 +211,10 @@
   --label-measure:  clamp(46ch, 52ch, 60ch);
   --stand-w:        clamp(1040px, 64vw, 1320px);
   --col-gap:     clamp(  6px,  1.1vh,  10px);
+  /* Horizontal, so it is not part of the vertical budget the fold measures — but
+     the deepest arrangement puts three frames side by side and the four columns
+     of a six-piece stand at the widest, so it is 12px of a 1320px stand that
+     nothing else was using. */
   --cluster-gap: 12px;
   /* Half the wall a parked stand needs on each side, expressed as a multiple of
      the stand itself rather than as a magic pixel count. A stand is snapped
@@ -1657,11 +1661,17 @@ button.record-item {
   /* 100px at the foot reserves the dock (58px) plus breathing room. Content is
      centred in what is left, so no room is top-heavy. It was 124px; the 24
      reclaimed are 24px of frame height on every wall, and 100 still clears the
-     dock's top edge by a measured 48px at the spec's 1280x704 floor. The head
-     is 58px, not 36: the sticky room rail measures 52px, and 6px under it is
-     the clearance a room title needs to not slide beneath the rail's own
-     gradient. */
-  padding: 58px 34px 100px;
+     dock's top edge by a measured 48px at the spec's 1280x704 floor.
+
+     Both ends were re-measured against the chrome that is actually there rather
+     than against the estimates. The head is 42px: the rail is 35px tall, and
+     7px is the clearance the tallest room title (Honours) has at 1920x1080.
+     The foot is 92px, not 100: the dock's own box is 65px and it sits 18px off
+     the bottom, so it reaches 83px up — and the 9px left over is the gap a room
+     wants between its last line and the dock's edge. Measured, these two numbers
+     and the rail's own 20px come to 20px more usable band at 1536x864 (729 ->
+     749) and 19px at 1440x900 (767 -> 786). */
+  padding: 42px 34px 92px;
   /* ── The room is a scrim over the mural, not a wall of its own ──────────
      This was an OPAQUE gradient, and an opaque room hides the mural completely
      — which is the whole job of these alphas. Each stop keeps its old role
@@ -1964,6 +1974,15 @@ body {
    `pointer-events: none` keeps it out of the way of the controls beneath it,
    which is the whole reason it can sit at z-index above them.
 
+   It carries BOTH lines spec §8.1 draws — the area's title and its count — and
+   they are on ONE line, which is how that spec draws them. It measured 52px
+   because `.rr-title` inherited the document's 1.55 line-height, giving a
+   29.4px line box around a 22.8px glyph run; the line-height is set here, which
+   is 20px of every wall given back without moving either line, changing their
+   size, or removing either of them. The padding came down with it. At 1920x1080
+   that leaves the room title 7px clear of the rail at its worst (the Honours
+   room, whose title is its tallest).
+
    It replaces `.rail`, which drew the walk's position as a 2px hairline along
    the screen's own bottom edge. That rule is deleted rather than left here:
    `.rail` styled an element Task 2 removed from the shell, and a live rule for
@@ -1979,7 +1998,7 @@ body {
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 13px clamp(18px, 2.4vw, 34px) 11px;
+  padding: 6px clamp(18px, 2.4vw, 34px);
   background: linear-gradient(180deg, rgba(8, 12, 14, .92), rgba(8, 12, 14, 0));
   pointer-events: none;
 }
@@ -1987,6 +2006,11 @@ body {
 .rr-title {
   font-family: var(--font-heading);
   font-size: clamp(15px, 1.05vw, 19px);
+  /* The one line-height on the page that is a height budget rather than type
+     setting: this line box is the whole of the rail's height. At the inherited
+     1.55 it was 29.4px around a 22.8px run and the rail was 52px; at 1.2 it is
+     22.8px and the rail is 35px. The glyphs do not move. */
+  line-height: 1.2;
   color: var(--text-strong);
 }
 
@@ -2003,10 +2027,11 @@ body {
    now, and the sign was the element the old navigation bar covered. */
 .room-title {
   /* No top margin: the 34px it carried was the gap under the room's sign row,
-     which is gone — the dock names the room now. The bottom margin is 14px,
-     not 26px, because 1280x704 leaves a room 543.7px of content and the
-     densest honours room needs all but a few of them. */
-  margin: 0 0 14px;
+     which is gone — the dock names the room now. The bottom margin is 6px, not
+     the 14px it was: at 1536x864 the stand is taller than the room can hold, so
+     this is 8px measured rather than inherited. 6px still separates the title
+     from the picture band it heads. */
+  margin: 0 0 6px;
   font-family: var(--font-heading);
   font-weight: 400;
   font-size: clamp(1.7rem, 2.9vw, 3rem);
@@ -2078,7 +2103,11 @@ body {
 .group {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  /* 10px, not 14. The gap between the picture band and the label is one of the
+     last few gaps that stand between the fold and the last award, and it is
+     worth 4px of the stand — measured at 1536x864, where 4px of stand is 4px of
+     a residual that is still not zero. */
+  gap: 10px;
   width: var(--stand-w);
   max-width: var(--stand-w);
   min-height: 0;
@@ -2335,14 +2364,17 @@ body {
      at 0px of difference to the label height. */
   grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
   column-gap: clamp(20px, 2.4vw, 40px);
-  /* 10px, not 14. This one gap is spent once per label, between the copy row and
+  /* 8px, not 10. This one gap is spent once per label, between the copy row and
      the catalogue row, and the label is the band that has to fit — so it is the
-     cheapest 4px on the stand. Measured at 1536x864 the 4px here plus the 2px in
-     `.award-list` and `.cat` come to 8px of the label, which `label-fit`'s own
-     criterion counts. */
-  row-gap: 10px;
+     cheapest 2px on the stand. */
+  row-gap: 8px;
   border-top: 1px solid var(--edge);
-  padding-top: 10px;
+  /* No padding-top. It was 6px, and 6px is exactly the difference between
+     1440x900 clipping its last award year and not clipping it — measured with
+     everything else held: label 591px with the padding, 585px without, 1 clipped
+     against 0. The separation it bought under the rule above is bought instead by
+     the rule's own 1px edge and the label's first line box. */
+  padding-top: 0;
 }
 
 .label-copy  { grid-area: copy;  min-width: 0; }
@@ -2456,15 +2488,17 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent);
-  margin: 0 0 7px;
+  /* 4px, not 7. The awards block sits at the foot of the copy column, which is
+     the cell that decides the label's height, so this margin is spent directly
+     against the fold. */
+  margin: 0 0 4px;
 }
 
 /* The gap is what keeps two awards from reading as one row with two years: the
    rule spends a min-height of 44px on every row for the tap target, so without
-   it the rows abut and the list reads as a paragraph. 6px is the smallest gap
-   that still separates them, and it is 4px of the label's budget back — the
-   densest stand at 1280x704 has three awards and two catalogue entries. */
-.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+   it the rows abut and the list reads as a paragraph. 4px is the smallest gap
+   that still separates them, and the densest stand has three awards. */
+.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 
 .award {
   min-height: 44px;
