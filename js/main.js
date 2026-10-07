@@ -1238,7 +1238,30 @@
        `.narr` keeps the title and the meta only. The summary is furniture, not
        part of the narrative, and it lives with the awards where it can be read
        as a caption to the stand. */
-    return '<div class="label">'
+    /* `tabindex="0"` on the label, and it is not decoration. The label column
+       scrolls when its content does not fit (see the note on `.label` in
+       css/styles.css), and a scrollable box with no focusable descendant is
+       content a keyboard-only visitor cannot reach at all — measured: the
+       Applications label held 775px in a 502px box with `descendantsFocusable:
+       0`, and the simplest record there has no award control to focus. The
+       hall's own axis is horizontal, so the keyboard has no other way into it.
+
+       A region with a name is what makes the new focus stop announce itself
+       rather than reading as a bare focus ring, so it is labelled with the
+       record's own name. */
+    /* `tabindex="0"` on the label, and it is not decoration. The label column
+       scrolls when its content does not fit (see the note on `.label` in
+       css/styles.css), and a scrollable box with no focusable descendant is
+       content a keyboard-only visitor cannot reach at all — measured: the
+       Applications label held 775px in a 502px box with `descendantsFocusable:
+       0`, and the simplest record there has no award control to focus. The
+       hall's own axis is horizontal, so the keyboard has no other way into it.
+
+       A region with a name is what makes the new focus stop announce itself
+       rather than reading as a bare focus ring, so it is labelled with the
+       record's own name. */
+    return '<div class="label" tabindex="0" role="region"'
+      + ' aria-label="' + esc(title + ' — exhibition label') + '">'
       + '<div class="narr">'
       + '<p class="narr-title">' + esc(title) + '</p>'
       + (meta ? '<p class="narr-meta">' + esc(meta)

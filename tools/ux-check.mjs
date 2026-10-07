@@ -785,6 +785,29 @@ await section('The deepest hang stays inside the room', async () => {
         ' (reachable, not clipped): ' + cells.labelScrolls.slice(0, 3).join('; '));
     }
 
+    /* ── A scrollable label has to be reachable by keyboard ─────────────────
+       The label column scrolls when its content does not fit, and the hall's own
+       axis is horizontal, so a keyboard-only visitor has no other way into the
+       overflow. Measured before this assertion existed: the Applications label
+       held 775px in a 502px box with `descendantsFocusable: 0` — the record
+       there has no award control to focus — so its last paragraphs were
+       unreachable without a mouse. Focusable itself OR holding something that
+       is; the assertion is about the visitor being able to get in, not about
+       which element they land on. */
+    const kbd = await evaluate(`(() => {
+      const out = [];
+      document.querySelectorAll('#strip .label').forEach(l => {
+        if (l.scrollHeight <= l.clientHeight + 1) return;
+        const id = l.closest('.room').getAttribute('data-room') + ':' + l.closest('.group').dataset.entry;
+        const inOrder = l.tabIndex >= 0 ||
+          l.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]').length > 0;
+        if (!inOrder) out.push(id + ' (' + l.scrollHeight + ' in ' + l.clientHeight + ')');
+      });
+      return out;
+    })()`);
+    check('every scrolling label is reachable by keyboard at ' + w + 'x' + h,
+          kbd.length === 0, kbd.join('; '));
+
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
        contract, but a stray wrapper would be an inline-block with a height, so
