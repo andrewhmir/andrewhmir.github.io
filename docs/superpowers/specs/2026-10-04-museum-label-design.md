@@ -386,13 +386,19 @@ Three guards:
 
 | Condition | Behaviour |
 |---|---|
-| A project with no `overview` | The account falls back to `summary`; both absent, the block is omitted. |
+| A record with no `overview` | The account falls back to `summary`. **A record with neither falls back to its own `description`** — which is what `tests/renderer.test.mjs`'s existing "a record with no summary still renders a narrative" check requires, and what the codebase's standing invariant demands: `npm test` asserts that every shipped record has authored copy rather than fallback text, so a fallback that renders *something* identifiable is the point. The block is omitted only when all three are absent. |
 | A project with no `awards` | The awards block is omitted. Hivemind and SATLearn ship this way. |
 | A project with no `team` | The team block is omitted. |
 | An award with no `from`-tagged honour, or whose year matches none | Plain text, no control. **Five of the eight** shipped awards are plain text this way. |
 | `Site.awardPhotos` cannot resolve a year | Returns `[]` — plain text, never a guess at another award's photographs. |
 | A record whose photographs are all awaited | The frame is a reserved place, not a control, as today. |
 | A viewport narrower than the 1280px floor | `--stand-w`, `--frame-h` and `--label-measure` all clamp down; the label stays above the fold. Measured by `tools/label-fit.mjs`. |
+
+**The first row was corrected during implementation.** It originally read "both absent, the block is
+omitted", which contradicted the renderer suite's own check. Task 4's implementer added the
+`description` fallback to satisfy the check and flagged the contradiction rather than silently
+choosing one; the check and the codebase's invariant are the binding authority, so the spec's wording
+is what changed.
 
 ---
 
