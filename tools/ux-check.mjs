@@ -675,6 +675,45 @@ await section('The deepest hang stays inside the room', async () => {
           budgeted.length === 0,
           budgeted.length + ' outside the stand: ' + budgeted.slice(0, 6).join(' | '));
 
+    /* ── The stand's own shape, which is what this work changes ─────────────
+       A stand is two cells: the hang and the label beside it. Three properties
+       follow, and none of them is visible to tests/, which models no CSS.
+
+       1. The cells do not overlap. They cannot while `.group` is a flex column
+          that stacks them, so this one is the guard against the regression this
+          work could introduce rather than a fault it fixes.
+       2. No room title is drawn above the viewport. Today it is: the stand is
+          centred on a line that does not exist, so a stand taller than its band
+          pushes the title off the top — measured at -83 at the floor.
+       3. The label's content fits the cell it was given. This is the fault that
+          clipping individual catalogue entries cannot see: a block can leave the
+          box without any one entry crossing the boundary the older check reads. */
+    const cells = await evaluate(`(() => {
+      const out = { overlap: [], titleAbove: [], labelOver: [] };
+      document.querySelectorAll('#strip .group').forEach(g => {
+        const wall = g.querySelector('.cluster'), label = g.querySelector('.label');
+        if (!wall || !label) return;
+        const id = g.closest('.room').getAttribute('data-room') + ':' + g.dataset.entry;
+        const a = wall.getBoundingClientRect(), b = label.getBoundingClientRect();
+        const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        if (w > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) {
+          out.overlap.push(id + ' by ' + Math.round(w));
+        }
+        if (label.scrollHeight > label.clientHeight + 1) {
+          out.labelOver.push(id + ' ' + label.scrollHeight + ' in ' + label.clientHeight);
+        }
+        const t = g.closest('.room').querySelector('.room-title');
+        if (t && t.getBoundingClientRect().top < 0) out.titleAbove.push(id);
+      });
+      return out;
+    })()`);
+    check('the wall cell and the label cell do not overlap at ' + w + 'x' + h,
+          cells.overlap.length === 0, cells.overlap.join('; '));
+    check('no stand\'s room title is drawn above the viewport at ' + w + 'x' + h,
+          cells.titleAbove.length === 0, cells.titleAbove.join('; '));
+    check('the label\'s own content fits its cell at ' + w + 'x' + h,
+          cells.labelOver.length === 0, cells.labelOver.join('; '));
+
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
        contract, but a stray wrapper would be an inline-block with a height, so
