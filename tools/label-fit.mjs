@@ -44,17 +44,26 @@ await send('Runtime.evaluate', {
 
 const expr = [
   '(() => {',
-  '  const out = { viewport: innerWidth + "x" + innerHeight, clippedLabels: [], overlaps: [], inertPieces: 0, pieceCount: 0 };',
+  /* Two lists now, not one, and the difference is the whole question. A label
+     whose content is taller than its cell is CLIPPED when the cell cannot be
+     scrolled — copy the visitor can never reach — and merely SCROLLING when it
+     can. The two-cell stand's label column scrolls by design (see the note on
+     .label in css/styles.css), and this probe called every one of those a
+     clipped label until it learned to read `overflow-y`. */
+  '  const out = { viewport: innerWidth + "x" + innerHeight, clippedLabels: [], scrollingLabels: [], overlaps: [], inertPieces: 0, pieceCount: 0 };',
   '  document.querySelectorAll("#strip .group").forEach((g, gi) => {',
   '    const label = g.querySelector(".label");',
   '    if (label && label.scrollHeight > label.clientHeight + 1) {',
   '      const room = g.closest(".room").getAttribute("data-room");',
+  '      const oy = getComputedStyle(label).overflowY;',
   '      const hidden = [...label.querySelectorAll(".cat-entry")].filter(e => {',
   '        const er = e.getBoundingClientRect(), lr = label.getBoundingClientRect();',
   '        return er.bottom > lr.bottom + 1;',
   '      }).length;',
-  '      out.clippedLabels.push(room + " #" + g.dataset.entry + " labelH " + Math.round(label.clientHeight) +',
-  '        " content " + Math.round(label.scrollHeight) + " hidden entries " + hidden);',
+  '      const line = room + " #" + g.dataset.entry + " labelH " + Math.round(label.clientHeight) +',
+  '        " content " + Math.round(label.scrollHeight) + " hidden entries " + hidden + " (" + oy + ")";',
+  '      if (oy === "hidden" || oy === "clip") out.clippedLabels.push(line);',
+  '      else out.scrollingLabels.push(line);',
   '    }',
   '  });',
   '  /* Only frames inside a group: the About portrait is a .piece too, but it is',

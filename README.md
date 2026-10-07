@@ -55,26 +55,40 @@ label names however many are awaited in a single line rather than repeating "Pho
 each.
 
 Because a gallery is exactly one viewport tall inside a hall with `overflow-y: hidden`, there is no
-vertical axis to overflow into: the single row is what makes the width work. A frame is given a height
-and its width follows its own photograph, so nothing is ever cropped or letterboxed.
+vertical axis to overflow into: the single row is what makes the width work. A frame's width follows
+its own photograph, so nothing is ever cropped or letterboxed.
 
-**A stand is sized by the screen it is on.** A frame's WIDTH is what has to fit, because it follows
-the photograph; so a column's width budget is the screen less the label deck, shared between the
-columns of its arrangement, and the band only caps what is left. Every number in that chain comes from
-the viewport, so a narrower screen gives smaller frames rather than a stand that runs off the side:
-measured, the widest stand is 1480px on a 1536px screen, 1224px on a 1280px one and 1864px on a 1920px
-one. The `ux-check` suite asserts both halves of that — no frame exceeds its column, and no stand is
-wider than the screen — at 1440×900 and at the 1280×704 floor.
+**A stand is a row of two cells, and they are not equal.** The hang is the left cell and the label
+that reads it is the right, each taking the stand's full height — the label is *beside* the pictures,
+not beneath them. It was two stacked bands until this build: a picture band fixed at 156px with the
+label at the stand's full width below it, which measured 765.7px inside a 724px band at 1536×864, so
+the room title was drawn 15px above the top of the window and the last award 48px under the dock —
+116px over at the spec's 1280×704 floor.
 
-**How large a photograph reads is decided by its column's depth.** Each column of a hang divides the
-band between its own frames, so a column of two stands tall and a column of three splits the same
-band three ways; no arrangement can overrun the fold, because the deepest column is the one that
-divides by the most. That is also why every arrangement keeps its columns at most three deep — a
-column of five would have hung five frames one-fifth of the band tall. Three numbers in
-`css/styles.css` are the whole dial: `--label-w` (the deck, which sets how much screen is left for
-frames), `--band-h` (the band a room gives its stands) and `--max-panel-h` (the cap on a single
-frame). `tools/stand-fit.mjs`, `tools/stand-overflow.mjs` and `tools/avg-frame.mjs` measure what they
-produce.
+`--label-col` is the right cell and it is a share of the viewport rather than a fixed width, so the
+proportion survives every screen: 691px at 1440 and 614px at 1280. The wall takes what is left, and
+it needs the larger share — a frame's width follows its photograph, so a narrow wall does not make
+its pictures smaller, it makes them narrower and taller until a 2.251-ratio photograph is squeezed to
+the 44px tap floor. Measured at a 317px wall: three frames of 44×691, which is a wall of lines.
+
+**How large a photograph reads is decided by the wall's band and its column's depth.** A column
+divides the band between its own frames, so a column of two stands tall and a column of three splits
+the same band three ways, and no arrangement can overrun the fold because the deepest column is the
+one that divides by the most. That is also why every arrangement keeps its columns at most three deep
+— a column of five would have hung five frames one-fifth of the band tall. Two numbers in
+`css/styles.css` are the whole dial now: `--label-col` (the label's cell, which sets the wall's
+width) and `--wall-h` (the band a stand gives its hang). `--band-h`, `--frame-h`, `--max-panel-h` and
+`--label-w` are retired with the stacked shape they described. `tools/stand-fit.mjs`,
+`tools/avg-frame.mjs` and `tools/label-fit.mjs` measure what they produce.
+
+**The label column scrolls when its content does not fit, and the suite can tell that apart from
+clipping.** The arithmetic does not always close: at the 1280×704 floor PALAD's label needs 530px of
+a 502px cell and BiyaHey!'s 617px, and at 1536×864 Hivemind — 1,369 characters, the longest account
+in the collection — needs 741px of 650px. The alternatives were each worse for a visitor: an account
+below its 12.5px floor, a frame narrower than a photograph, or a paragraph that is clipped and
+invisible until someone reads to the bottom. So the label scrolls, with a gradient cue, and both
+`tools/ux-check.mjs` and `tools/label-fit.mjs` read `overflow-y` before they call a label clipped —
+`hidden` is copy a visitor cannot reach, `auto` is copy they can.
 
 ## Honours, and where an award lives
 
