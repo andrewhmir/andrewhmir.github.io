@@ -575,6 +575,26 @@ await section('The deepest hang stays inside the room', async () => {
   for (const [w, h] of [[1440, 900], [1280, 704]]) {
     await setViewport(w, h, false);
     await goto(BASE);
+    /* ── The loading floor, measured BEFORE anything is forced to load ──────
+       Every frame carries `loading="lazy"`, and every other frame check in this
+       file forces the photographs to load first — so none of them ever sees the
+       floor. What a visitor sees for the half-second before the bytes arrive is
+       an unloaded frame, and its width is the floor alone: the frame, its mat
+       and its gilt edge with no photograph inside. A floor under 44 is a tap
+       target that is not there yet, and it is what `.piece { min-width: 44px }`
+       exists to prevent. */
+    const unloaded = await evaluate(`(() => {
+      const out = { minW: Infinity, minH: Infinity, n: 0 };
+      document.querySelectorAll('#strip .group .piece').forEach(p => {
+        const r = p.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
+        out.n++; out.minW = Math.min(out.minW, r.width); out.minH = Math.min(out.minH, r.height);
+      });
+      return out;
+    })()`);
+    check('an unloaded frame still clears the tap floor at ' + w + 'x' + h,
+          unloaded.n > 0 && unloaded.minW >= 44 && unloaded.minH >= 44,
+          JSON.stringify(unloaded));
     /* Every photograph on the wall, not just the ones the walk has reached. A
        frame whose photograph has not been FETCHED has no width of its own, so
        measuring it measures the loading floor rather than the hang. */
