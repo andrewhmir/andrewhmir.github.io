@@ -56,6 +56,13 @@ cdp.sessionId = sessionId;
 await cdp.send('Page.enable');
 await cdp.send('Runtime.enable');
 await cdp.send('Network.enable');
+/* Cache off, and it is not a nicety: this suite re-navigates to the same URL
+   dozens of times while the stylesheet changes underneath it, and a cached
+   `css/styles.css` makes every geometry measurement describe the PREVIOUS
+   build. Observed while implementing the two-cell stand — the suite reported a
+   stand 828px tall from a stylesheet that had already been changed to make it
+   731px, and the two probes that created a fresh target disagreed with it. */
+await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
 await cdp.send('Log.enable');
 
 const consoleErrors = [];

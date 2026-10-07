@@ -146,8 +146,15 @@ ok('script order is data → vendor → main',
 const braces = (css.match(/{/g) || []).length - (css.match(/}/g) || []).length;
 ok('css braces balance', braces === 0, braces + ' unbalanced');
 
-/* ---- CSS: every var() reference resolves ---- */
-const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(x => x[1]));
+/* ---- CSS: every var() reference resolves ----
+   Over the stylesheet with its COMMENTS REMOVED, and that matters more than it
+   sounds: this file's comments discuss the tokens that were retired — "this was
+   `height: var(--band-h)`", "the floor was `calc(var(--band-h) / 4)`" — so a
+   scan of the raw text reports every retired token as a missing definition and
+   fails on exactly the notes that record why it was retired. The first version
+   of this check did that twice while the two-cell stand was built. */
+const cssBare = css.replace(/\/\*[\s\S]*?\*\//g, '');
+const defined = new Set([...cssBare.matchAll(/(--[\w-]+)\s*:/g)].map(x => x[1]));
 /* Set from JS at runtime, so they legitimately have no stylesheet definition:
    --scrollbar-w by lockBodyScroll, --reveal-delay by the inline reveal style,
    --h/--shift by renderCluster, which gives each framed piece its frame
@@ -155,7 +162,7 @@ const defined = new Set([...css.matchAll(/(--[\w-]+)\s*:/g)].map(x => x[1]));
    writes the walk's own fraction on #dockProgress for `.dock-track::after` to
    draw. */
 const RUNTIME = new Set(['--scrollbar-w', '--reveal-delay', '--h', '--shift', '--walk-progress']);
-const used = new Set([...css.matchAll(/var\((--[\w-]+)/g)].map(x => x[1]));
+const used = new Set([...cssBare.matchAll(/var\((--[\w-]+)/g)].map(x => x[1]));
 const missing = [...used].filter(t => !defined.has(t) && !RUNTIME.has(t));
 ok('every var() is defined', missing.length === 0, missing.join(', '));
 
