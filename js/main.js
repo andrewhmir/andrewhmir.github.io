@@ -964,9 +964,11 @@
                     ALSO rendered, as the opening lead above the account.
        'summary' / 'description' — a fallback, where the account IS that one
                     line. The caller must NOT render it a second time as the
-                    lead: on every Leadership post and every stand-alone honour
-                    the label would print the same sentence twice, one line
-                    apart, which is what this return value exists to prevent.
+                    lead: on every one of the four Leadership posts the label
+                    would print the same sentence twice, one line apart, which
+                    is what this return value exists to prevent. (Honours never
+                    reach here: they render as tiles, not as groups, and a tile
+                    has no label. The blast radius is Leadership alone.)
                     Decided by SOURCE, never by comparing the strings — a text
                     predicate cannot tell a genuine repetition from a record
                     whose two fields happen to agree, and this build has been
@@ -1088,11 +1090,16 @@
       var body = '<span class="award-desc">' + esc(a.description || '') + '</span>' + year;
       var row;
       if (ref) {
+        /* The accessible name carries the year as well as the award, exactly as
+           a tile's does: a screen reader hearing only "Open the photographs of
+           11th Philippine Robothon" cannot tell which year's win it is opening,
+           and a project may hold two Robothon awards. */
+        var named = (a.description || 'this award') + (a.year ? ' — ' + a.year : '');
         row = '<button type="button" class="award-open"'
           + ' data-gallery="honors" data-entry="' + esc(ref) + '"'
           + ' data-open-award-year="' + esc(a.year || '') + '"'
-          + ' aria-label="' + esc('Open the photographs of '
-              + (a.description || 'this award')) + '">' + body + '</button>';
+          + ' aria-label="' + esc('Open the photographs of ' + named) + '">'
+          + body + '</button>';
       } else {
         /* Nothing to open, so it is not a control and does not look like one. */
         row = '<span class="award-text">' + body + '</span>';
@@ -1129,8 +1136,9 @@
      The account block is omitted entirely when there are no words for it, and
      the opening lead is rendered ONLY when the account came from
      `overview.text`. On the fallback path the account IS the summary, so
-     rendering the lead as well prints the record's one sentence twice — which
-     is what every Leadership post and every stand-alone honour would have done. */
+     rendering the lead as well prints the record's one sentence twice — which is
+     what all four Leadership posts did. Honours are not in this path: they hang
+     as tiles, not as groups, so they have no label at all. */
   function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];
     /* A frame is not a photograph. The count is the photographs that exist, not

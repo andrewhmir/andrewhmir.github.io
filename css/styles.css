@@ -159,22 +159,28 @@
      because a column divides the band between its own frames: a column of two
      may stand tall, a column of three must split the same band three ways.
 
-     The three tokens below are DEFINED AND NOT YET READ. They are the stand
-     layout's dials, declared here so that one place owns their values: the
-     label still sits in the narrow `--label-w` column beside the cluster and
-     frames are still sized from `--band-h`/`--max-panel-h` per column. Until
-     the stand's own layout migrates, nothing here changes what a frame or a
-     label measures — do not read a size out of them yet.
+     The three tokens below are the stand layout's dials, declared here so that
+     one place owns their values. Only ONE of them is read yet — and it is worth
+     being exact about which, because deleting or renaming a live declaration
+     would silently widen three prose rules to their fallback:
 
-     When it does migrate: --frame-h is the height a frame is given, and its
-     width follows its photograph's own proportions from there. A height rather
-     than a width, because a frame sized by width takes an aspect ratio of its
-     own and `object-fit` then either crops a landscape photograph into a strip
-     or bars it inside the mat — neither of which is a photograph hung on a
-     wall. --stand-w and --label-measure are the horizontal pair: a stand is a
-     picture band above a full-width label rather than a cluster beside a
-     narrow deck, and what keeps that label's prose readable is a line length in
-     characters rather than a column width in pixels.
+       --label-measure  READ. `.narr-lead`, `.acct-p` and `.team-line` each cap
+                        their line length with it, which is what keeps the newly
+                        rendered account readable inside the narrow `--label-w`
+                        column. Its `56ch` fallback in those `var()` calls is
+                        never consulted.
+       --frame-h        NOT READ. Frames are still sized from
+                        `--band-h`/`--max-panel-h` per column below.
+       --stand-w        NOT READ. The label is still the `--label-w` column
+                        beside the cluster; there is no stand grid yet.
+
+     When the stand's own layout migrates: --frame-h becomes the height a frame
+     is given, and its width follows its photograph's own proportions from there.
+     A height rather than a width, because a frame sized by width takes an aspect
+     ratio of its own and `object-fit` then either crops a landscape photograph
+     into a strip or bars it inside the mat — neither of which is a photograph
+     hung on a wall. --stand-w becomes the stand's width, and --label-measure
+     keeps doing exactly what it does now, in a wider column.
 
      The pixel floor is a tap target, not decoration: it keeps every frame
      above 44x44 at every supported width without a width floor on the room. */
@@ -1946,14 +1952,14 @@ body {
    A stand is a composition of framed photographs BESIDE its label, and it still
    is: `.group` is a row, the label is the narrow column `--label-w` gives it,
    and `--cluster-w` is what remains. The picture-above-a-full-width-label stand
-   is the intended replacement, and it is not in this file yet — the tokens for
-   it (`--frame-h`, `--stand-w`, `--label-measure`) are defined and unread.
+   is the intended replacement, and it is not in this file yet. Of the three
+   tokens declared for it, `--frame-h` and `--stand-w` are unread and
+   `--label-measure` is already live — the prose rules below read it.
 
    That matters to what follows: because the label is still narrow, the account
-   this build newly renders is a tall column of prose, and what holds it is
-   `--label-w` rather than a measure in characters. The prose rules below
-   therefore cap their own line length with `--label-measure`'s fallback, which
-   is what keeps a line readable in the meantime.
+   this build newly renders is a tall column of prose. What keeps a line of it
+   readable is `--label-measure`, a measure in characters, applied by the prose
+   rules below — not `--label-w`, which is only the column's width.
 
    The Honours room is NOT one of these. It hangs no group and holds no row; it
    is the three-column list of tiles further down this file. */
@@ -2190,14 +2196,12 @@ body {
   line-height: 1.15;
   color: var(--text-strong);
   margin: 0;
-  /* The label's ONE clamp, and it is the title's. See the note in
-     tests/renderer.test.mjs: a long title loses no reading when it is cut —
-     the same name is on the room heading and in the rail — where the account
-     had no second home, which is why its clamp was the defect. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  /* A title WRAPS and is not clamped. It was, on the argument that a truncated
+     name loses no reading because the same name is on the room heading and in
+     the rail — and that argument is false: the room headings carry the DERIVED
+     room titles and the rail copies the room heading, while this line carries
+     the RECORD's own name. The record's name has no second home, so a clamp here
+     hides the only place it is written. It is a short heading; it wraps. */
 }
 
 .narr-meta {
@@ -2252,7 +2256,15 @@ body {
 
    The accent edge is the same cue a tile with photographs carries, and it is
    the only thing telling a visitor that one row is pressable and the next is
-   not. The row clears the 44px tap floor by min-height rather than by padding:
+   not. It is the ROW's own left edge, not a second edge drawn inside it: the
+   button fills the row, so an accent on the button would sit a couple of pixels
+   in from the row's soft edge and the two would read as a doubled border. The
+   row that carries a control is therefore the one whose edge turns accent, and
+   `:has()` is what lets the edge be decided by its contents. Where `:has()` is
+   unsupported the row keeps its soft edge and the button keeps its pointer
+   cursor, so the cue degrades rather than disappearing.
+
+   The row clears the 44px tap floor by min-height rather than by padding:
    it is dense text in a column, and padding to reach the floor would space the
    list out until it stopped reading as a list. */
 .awards {
@@ -2277,6 +2289,12 @@ body {
   border-left: 2px solid var(--edge-soft);
 }
 
+/* The lit edge the tile precedent uses: it belongs to the row, so the accent
+   IS the row's outer edge and there is only ever one border to look at. */
+.award:has(> .award-open) {
+  border-left-color: var(--accent);
+}
+
 .award-open {
   display: flex;
   flex-wrap: wrap;
@@ -2294,9 +2312,6 @@ body {
   color: inherit;
   text-align: left;
   cursor: pointer;
-  /* The clickable cue: the same lit left edge a tile that opens photographs
-     carries, on the row itself rather than on the li. */
-  box-shadow: inset 2px 0 0 var(--accent);
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 

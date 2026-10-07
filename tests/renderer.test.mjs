@@ -593,19 +593,18 @@ check('the account is not line-clamped', () => {
      Scoped by what can REACH the label, not by a list of prose selectors: a
      clamp on `.label-copy` (the account's own ancestor) hides exactly the same
      copy, and a check that only reads rules naming `.acct-p` cannot see it.
-     So every rule in the stylesheet is inspected, and the title's own two-line
-     clamp is the single, named exemption — see the check below for why.
+     So every rule in the stylesheet is inspected.
 
      Comments are stripped first: a comment naming the property is prose about
-     why it is gone, not the property. */
+     why it is gone, not the property. The match is case-insensitive because CSS
+     property names are ASCII case-insensitive. */
   const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
-  /* Case-insensitively: CSS property names are ASCII case-insensitive, so
-     `-webkit-LINE-CLAMP: 4` clamps exactly as hard as the lowercase spelling. */
-  const clamped = blocks.filter((b) => /line-clamp/i.test(b));
-  const selectors = clamped.map((b) => b.split('{')[0].trim()).sort();
-  assert.deepEqual(selectors, ['.narr-title'],
-    'line-clamp appears on rules other than the title: ' + selectors.join(' | '));
+  const clamped = blocks.filter((b) => /line-clamp/i.test(b))
+    .map((b) => b.split('{')[0].trim());
+  /* NO clamps anywhere, and no exemption: the title's own two-line clamp was
+     removed once its justification turned out to be false. See the check below. */
+  assert.deepEqual(clamped, [], 'line-clamp appears in the stylesheet: ' + clamped.join(' | '));
   assert.ok(blocks.length > 100, 'the stylesheet did not parse: ' + blocks.length + ' rules');
   /* And the account's rules are actually there, so the sweep above cannot pass
      on a stylesheet that has lost them. NAMED, not counted: "at least three"
@@ -621,29 +620,22 @@ check('the account is not line-clamped', () => {
   assert.ok(!/\.narr-text/.test(css), '.narr-text still exists — the clamp was to live there');
 });
 
-check('the only clamp in the label is the title\'s, and it is bounded', () => {
-  /* The constraint is "no line-clamp anywhere in the label". The title keeps a
-     two-line clamp, and that is a deliberate, narrow exemption rather than an
-     oversight: the title is the record's own name, it is repeated verbatim in
-     the room heading and in the rail, and a long title is the one string in the
-     label whose truncation loses no reading — the ellipsis says the name
-     continues, and the same name is on the wall above it. The ACCOUNT has no
-     such second home, which is why its clamp was the defect.
+check('no rule in the stylesheet clamps, and the renderer emits no clamp', () => {
+  /* The constraint is "no line-clamp anywhere in the label", and after the
+     title's clamp came out there is no exemption left to bound — so this is the
+     absolute version of the check it replaces, rather than a count and a limit.
 
-     Bounded on both sides: exactly one clamped rule, it is the title, and the
-     limit is 2. A third line, or a second clamped selector, fails here. */
+     The title's clamp was justified by "the same name is on the room heading
+     and in the rail". That is false: the room headings carry the DERIVED room
+     titles and the rail copies the room heading, while `.narr-title` carries the
+     RECORD's own name, which has no second home. A clamp there hides the only
+     place that name is written, so it goes.
+
+     The renderer half covers inline styles, which are invisible to the
+     stylesheet sweep. Comments are stripped and only the PROPERTY is matched, so
+     a comment naming the retired clamp cannot fail a check about code. */
   const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-  const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
-  const clamped = blocks.filter((b) => /line-clamp/i.test(b));
-  assert.equal(clamped.length, 1, clamped.length + ' clamped rules in the stylesheet');
-  assert.match(clamped[0].split('{')[0], /\.narr-title\b/, 'the clamped rule is not the title');
-  assert.match(clamped[0], /line-clamp:\s*2\b/i, 'the title is not clamped to two lines');
-  /* And the renderer cannot clamp inline either: an inline style is invisible
-     to the stylesheet sweep above and would hide the prose just as well.
-     Comments are stripped first, and only the PROPERTY is matched: this is a
-     claim about code, and a comment in the renderer naming the retired clamp is
-     prose, not a clamp — failing on it would be the false positive the CSS
-     sweep above already strips comments to avoid. */
+  assert.ok(!/line-clamp\s*:/i.test(css), 'the stylesheet clamps something');
   const renderer = readFileSync('js/main.js', 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   assert.ok(!/line-clamp\s*:/i.test(renderer),
