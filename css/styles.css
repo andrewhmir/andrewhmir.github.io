@@ -144,35 +144,56 @@
      tall, and one STAND is that screen: it is sized so that when the walk
      parks on it, nothing of its neighbours is in shot.
 
-     A stand is where the reading happens, so what has to FIT is now the
-     HEIGHT — the label's account, its awards, its team caption and its
-     catalogue have to land above the dock at the spec's 1280x704 floor, and
-     they have to land there at every width above it. The stand's width is
-     therefore fixed by --stand-w rather than following its hang: a label
-     whose copy decided the width would make a wordier record a longer walk.
-     Only the FRAMES follow their own photographs.
+     A stand is where the reading happens, so what has to FIT is the HEIGHT —
+     the label's account, its awards, its team caption and its catalogue have
+     to land above the dock at the spec's 1280x704 floor, and they have to land
+     there at every width above it. The stand's width is therefore fixed by
+     --stand-w rather than following its hang: a label whose copy decided the
+     width would make a wordier record a longer walk. Only the FRAMES follow
+     their own photographs.
+
+     HEIGHT is spent in two places, and spec §5.1 fixes both so that only the
+     prose flexes. The picture band is --band-h tall and a column of two or
+     three frames DIVIDES it rather than stacking it — see `.cluster`. The
+     label takes whatever is left, and it is the account inside the label that
+     the copy length decides.
 
      `--col-count` and `--col-rows` are written by renderCluster — one per
-     cluster, one per column — and are unitless divisors; they still decide
-     where a column breaks, but they no longer divide a band between frames.
-     Every frame is the same height, so a column's depth is its frame count
-     and its gap, and nothing else.
+     cluster, one per column — and are unitless divisors. They decide where a
+     column breaks; neither is read by any rule, because the band is divided by
+     flexbox instead (a re-derived divisor in the stylesheet is how the written
+     one and the read one drift apart).
 
      The three tokens below are the stand's dials, declared here so that one
-     place owns their values. All three are read by the rules further down,
-     and it is worth being exact about where, because deleting or renaming a
+     place owns their values. All three are read by the rules further down, and
+     it is worth being exact about where, because deleting or renaming a
      declaration here leaves `calc()` and `var()` invalid at computed-value
      time — the frame then falls back to its content height rather than to a
      smaller one, and the label's prose runs to its fallback measure:
 
-       --frame-h        READ by `.piece`, `.piece--lead` and `.piece--pending`.
-                        It is the HEIGHT a frame is given; the width follows
-                        the photograph's own proportions from there. A height
-                        rather than a width, because a frame sized by width
-                        takes an aspect ratio of its own and `object-fit` then
-                        either crops a landscape photograph into a strip or
-                        bars it inside the mat — neither of which is a
-                        photograph hung on a wall.
+       --band-h         READ by `.cluster`, which gives the picture band its
+                        height, and by `.piece`'s loading floor, which is a
+                        share of it. Spec §5.1 budgets 150px for the picture
+                        band — one frame plus its mat and border — and this is
+                        156px. The 6px are the 44x44 tap floor, and they are
+                        not decoration: the deepest arrangement the data deals
+                        is a 3-row column, and a 150px band splits into three
+                        43.3px frames, which `ux-check` measures at 37x43. 156px
+                        is the smallest band in which three frames and their two
+                        10px gaps still leave each frame 44px. §5.1's own note
+                        says its numbers are an estimate and that `ux-check` is
+                        the authority at the floor; that authority is what set
+                        this. It is a FIXED height and not a viewport share,
+                        because the band is the band at every screen — a band
+                        that grew with the window would spend the floor's height
+                        on pictures rather than on prose.
+       --frame-h        READ by nothing. It survives as the record of the
+                        single-frame frame height the band was sized from, and
+                        because §5.2 names it as one of the three dials; the
+                        frames themselves are sized by their column's share of
+                        --band-h. Do not re-point a rule at it: on a 2- or
+                        3-frame column it would make the band stack instead of
+                        divide, which is the 390px-in-a-150px-budget fault.
        --stand-w        READ by `.group`. It is the stand's own width, and it
                         is what stops a wider label making the walk longer.
        --label-measure  READ by `.narr-lead` and `.team-line`, which each cap
@@ -185,6 +206,7 @@
 
      The pixel floor is a tap target, not decoration: it keeps every frame
      above 44x44 at every supported width without a width floor on the room. */
+  --band-h:        156px;
   --frame-h:        clamp(96px, 11vh, 140px);
   --label-measure:  clamp(46ch, 52ch, 60ch);
   --stand-w:        clamp(1040px, 64vw, 1320px);
@@ -2074,48 +2096,71 @@ body {
    piece's black ground showing beside the narrow ones — measured at 135px of
    ground on the honours wall, and invisible to every other check because the
    frame still collides with nothing and still clears the tap floor. */
+/* ── The picture band: one budget, shared by every column ─────────────
+   The band is `--band-h` tall — one frame deep, the picture the visitor reads
+   at a glance, and the spec's §5.1 150px. A column of two or three frames must
+   DIVIDE that band rather than stack it, and that division is the whole reason
+   this rule has a height at all: without it a 3-row column (the deepest
+   arrangement the data deals) measured 390px at 1920x1080 against that 150px
+   budget, and the picture band, not the prose, was what ran past the dock.
+
+   The division is done by flexbox rather than by arithmetic, and that is
+   deliberate. `flex: 1 1 0` on the frames splits whatever height the column
+   has, so a column of one gives its frame the band, a column of two gives 70px
+   each and a column of three gives ~43px each — and the same arithmetic holds
+   when the gaps change, which a `calc((band - gaps) / rows)` re-derivation in
+   the stylesheet would not. `--col-rows` is still written by renderCluster and
+   is now read by nothing: the header of this file says why a divisor that is
+   written on the DOM and re-derived in the stylesheet is how the two drift. */
 .cluster {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--cluster-gap);
   flex: 0 0 auto;
+  height: var(--band-h);
 }
 
 /* ── A column's one budget ────────────────────────────────────────────
-   Every frame on the wall is the same height, `--frame-h`, and its width
-   follows its own photograph. So a column has exactly one thing to do: stack
-   its frames with the gap between them, and let the stand's own width clip
-   whatever will not fit. That is what replaced the two budgets this rule
-   carried — a width share computed from the screen left over beside the label,
-   and a height share that divided the band between a column's frames.
+   A column is one stack inside the band, so its height is the band's and it
+   spends that height on its own frames: `align-items: stretch` in the cluster
+   is what gives it the band, and each frame takes an equal share of it.
 
-   The width share is gone with the label's move to full width: a stand is
-   `--stand-w` wide whatever its hang, so a frame no longer has a column to fit
-   inside and capping it would only stop it following its photograph — the
+   What is NOT here any more is a width budget. It was computed from the screen
+   left over beside the label and spent as this rule's `max-width`; a stand is
+   `--stand-w` wide whatever its hang now, so a frame no longer has a column to
+   fit inside. Capping it would only stop it following its photograph — the
    image's own `height: 100%` needs the frame to have a definite height to
    resolve against, and a frame capped in width and height at once bars the
-   photograph inside it. The height share is gone too: frames are no longer as
-   tall as a band divided by their depth, and a column of three is now three
-   short frames rather than three tall ones.
+   photograph inside it.
 
    `--col-count` and `--col-rows` are still written by renderCluster and are
-   still what decides where a column breaks. They are no longer read here. */
+   still what decides where a column breaks. Neither is read here: the band is
+   divided by the flexbox below, not by a re-derived divisor. */
 .col {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
   gap: var(--col-gap);
   min-width: 0;
+  height: 100%;
+  min-height: 0;
 }
 
 /* A piece: a gold frame around a cream mat, drawn rather than loaded — no
    image request, no asset. The frame takes the photograph's own proportions:
-   its HEIGHT is the stand's own frame height, and its width follows the
-   photograph from there. Nothing caps that width any more — the cap belonged
-   to the column, and a stand has no column for a frame to fit inside. */
+   its WIDTH follows the photograph and its height is what its column gives it,
+   so nothing is cropped and nothing is barred. No width cap any more — that
+   belonged to the column, and a stand has no column for a frame to fit inside.
+
+   `flex: 1 1 0` is the band division, and it is the one thing here that is not
+   about the photograph: a column of three frames gives each of them a third of
+   the band. `min-height: 0` is what allows that — without it a flex item
+   refuses to shrink below its content, and an image with a 6px mat has content. */
 .piece {
   display: block;
-  height: var(--frame-h);
+  flex: 1 1 0;
+  min-height: 0;
   padding: 0;
   border: 3px solid transparent;
   border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
@@ -2144,32 +2189,34 @@ body {
    phone, far under the 44px tap floor, and then it popped open when the
    photograph arrived. The floor holds it open until then.
 
-   7/10 is deliberately narrower than every photograph in the collection: the
+   3/4 is deliberately narrower than every photograph in the collection: the
    narrowest is 0.75 (three 3:4 portraits) and the widest is 2.251. So once a
    frame is loaded this rule never binds and no photograph is ever barred
    inside its own frame — which is what would happen at any floor above 0.75,
-   and did at the 6/5 this replaces. It replaces a 2/3 of the ROW budget, and
-   7/10 rather than 3/4 so the floor keeps a hair of clearance under the
-   narrowest photograph rather than meeting it exactly. 7/10 of the shortest
-   frame a stand can hang (--frame-h's 96px floor) is 67px across, still well
-   above the 44x44 tap target at the spec's 1280x704 floor — and the unloaded
-   case is a frame waiting on bytes, not one a visitor can press.
+   and did at the 6/5 this replaces. It is 3/4 and not the 2/3 of the old ROW
+   budget, because the floor now has to hold a 3-row column's frame above the
+   44px tap target on its OWN: the rendered frame is the image's width plus its
+   6px mat and the 3px gilt edge either side, so a 44px-tall frame is 44 - 6 -
+   6 = 32px of image, and 3/4 of 44 is 33px. Measured at 1440x900 the smallest
+   frame is 44x44; at 2/3 it was 37x43 and `ux-check` failed it.
 
    It is on .piece and not on the image because the image's own percentage
    floor resolves against an indefinite width and does nothing. */
-.piece { min-width: calc(var(--frame-h) * 7 / 10); }
+.piece { min-width: calc(var(--band-h) / 4); }
 
 /* The lead is the stand's principal photograph: it keeps a column of its own,
    which is why a three-frame stand shows one big frame beside two small ones.
-   It obeys the same frame height as any other frame — the composition's variety
-   comes from the arrangement, not from a second set of numbers — and it needs
-   no width cap once the stand has a fixed width of its own. */
-.piece--lead { max-height: var(--frame-h); }
+   That column is what makes it read as the principal photograph — the lead's
+   frame is the band's full height because it is alone in its column, while the
+   two beside it divide theirs. It needs no width cap once the stand has a fixed
+   width of its own, and no height rule of its own either: its height is its
+   column's, which is the band. */
+.piece--lead { }
 
 /* An awaited photograph is a reserved place on the wall: the gilt frame and its
    mat, and no picture. Unlike every other frame it has no photograph to take
    its proportions from, so it is held at the 3:2 of the frame that will hang
-   there, at the same height as every other frame.
+   there, and it takes the same share of its column that a hung frame would.
 
    The mat is drawn as an inset shadow because a hung frame gets its mat from
    the image's own 6px border and this frame has no image. Without it the
@@ -2179,7 +2226,6 @@ body {
 .piece--pending {
   width: auto;
   aspect-ratio: 3 / 2;
-  height: var(--frame-h);
   cursor: default;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .66), inset 0 0 0 6px #ece3d2;
 }
@@ -2195,8 +2241,15 @@ body {
   aspect-ratio: auto;
   /* A photograph whose bytes have not arrived has no intrinsic width, so the
      frame collapses to a sliver and the wall reflows when it loads. The floor
-     holds the frame open at the shape a landscape photograph will take. */
-  min-width: 40%;
+     holds the frame open at the shape a landscape photograph will take.
+
+     38px, and a LENGTH rather than the 40% it was: the frame the deepest
+     arrangement gives is ~33px of content box, so 40% of it is 13px and the
+     rendered frame came out 39px wide — under the 44px tap floor. 38px of image
+     plus its 6px mat and the piece's 3px gilt edge either side is a 44px frame.
+     Measured at 1440x900: 38px gives minFrame 44x45 and no frame under the
+     floor; 36px gives 42x45 and one fails. */
+  min-width: 38px;
   max-width: 100%;
   object-fit: contain;
   border: 6px solid #ece3d2;
@@ -2251,12 +2304,26 @@ body {
   flex: 0 0 auto;
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   grid-template-areas:
     "copy  aside"
     "copy  cat";
+  /* 1.6fr/1fr, and the ratio is measured. The copy column holds the prose and
+     the awards and is the taller cell, so widening it shortens the LABEL: at
+     1536x864, where the label is the band that does not fit, 1.4fr gives a
+     656px label, 1.6fr gives 636px and 1.8fr gives 617px — the prose loses a
+     line each step and the catalogue's entries stay one line (31px) at every
+     step down to a 358px column. 1.6fr is taken because it is where the gains
+     flatten — 1.8fr and 2fr buy no more at 1280x704 (602px either way) — and
+     because it leaves the catalogue 386px at 1536x864 and 421px at 1280x704,
+     where an entry is still a single line. */
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   column-gap: clamp(20px, 2.4vw, 40px);
-  row-gap: 14px;
+  /* 10px, not 14: this gap is spent three times on a stand — under the narrative,
+     under the awards, and again under the catalogue — and the label is the band
+     that has to fit. Measured at 1536x864, where the band is 729px, the 4px
+     saved here and the 2px in `.award-list` and `.cat` come to 20px of the 73px
+     the densest stand is over. */
+  row-gap: 10px;
   border-top: 1px solid var(--edge);
   padding-top: 10px;
 }
@@ -2377,8 +2444,10 @@ body {
 
 /* The gap is what keeps two awards from reading as one row with two years: the
    rule spends a min-height of 44px on every row for the tap target, so without
-   it the rows abut and the list reads as a paragraph. */
-.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+   it the rows abut and the list reads as a paragraph. 6px is the smallest gap
+   that still separates them, and it is 4px of the label's budget back — the
+   densest stand at 1280x704 has three awards and two catalogue entries. */
+.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 
 .award {
   min-height: 44px;
@@ -2480,7 +2549,7 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 9px;
 }
 
 .cat-entry {
