@@ -159,17 +159,39 @@
      because a column divides the band between its own frames: a column of two
      may stand tall, a column of three must split the same band three ways.
 
+     --frame-h is the height a frame is given, and its width follows its
+     photograph's own proportions from there. It cannot be a width: a frame
+     sized by width takes an aspect ratio of its own, and `object-fit` then
+     either crops a landscape photograph into a strip or bars it inside the
+     mat — neither of which is a photograph hung on a wall. Nor can it live
+     here as `cqi`: a gallery is as wide as its contents, so sizing a stand
+     from its own width is circular, and the binding constraint on one row is
+     the room's height.
+
+     --stand-w and --label-measure are the horizontal pair. A stand is now a
+     picture band above a full-width label rather than a cluster beside a
+     narrow deck, so nothing holds the label to a fixed width any more; what
+     keeps its prose readable is --label-measure, a line length in characters
+     rather than a column width in pixels.
+
      The pixel floor is a tap target, not decoration: it keeps every frame
      above 44x44 at every supported width without a width floor on the room. */
   --max-panel-h: 260px;
   --band-h:      calc(100vh - 300px);
+  /* Both above are on their way out: --frame-h replaces them, and the rules
+     that still divide --band-h per column are migrated with the stand's own
+     layout. They stay defined until every reader of them has moved, because a
+     deleted token leaves `calc()` with an invalid value and the frame falls
+     back to its content height rather than to a smaller frame. */
+  --frame-h:        clamp(96px, 11vh, 140px);
+  --label-measure:  clamp(46ch, 52ch, 60ch);
+  --stand-w:        clamp(1040px, 64vw, 1320px);
   --col-gap:     clamp(  6px,  1.1vh,  10px);
   --cluster-gap: 12px;
-  /* The label is the deck beside the stand, and it is also what keeps the
-     stand inside one screen: a stand is deck + cluster + gaps, so a wider deck
-     is a narrower stand. The gutter below is what makes one stand per screen
-     true rather than nearly true — the next stand must not be in shot at the
-     edge of this one. */
+  /* RETIRED by the label's move to full width — nothing needs a fixed column
+     any more, and --label-measure is what keeps the prose readable. It stays
+     defined only because `.label` still reads it; the rule goes with the
+     stand's layout. */
   --label-w:     clamp(320px, 25vw, 380px);
   --group-gap:   clamp(200px, 46vw, 760px);
 
@@ -1919,9 +1941,12 @@ body {
    stand's frames crowding the edge of the screen. The gap is the frame around
    the exhibit — which is the only frame in this hall that is not gilt.
 
-   A stand is a composition of framed photographs BESIDE its label. The
+   A stand is a composition of framed photographs ABOVE its own account. The
    photographs are partitioned into columns by the stand's arrangement, and the
-   label holds a fixed width whatever the cluster does — see --label-w.
+   label beneath runs the stand's full width — nothing holds it to a fixed
+   column any more, so the arrangement can no longer squeeze the text it is
+   labelling. What keeps that prose readable is --label-measure, and what keeps
+   the pictures inside one screen is --frame-h.
 
    The Honours room is NOT one of these. It hangs no group and holds no row; it
    is the three-column list of tiles further down this file. */
@@ -2116,23 +2141,25 @@ body {
 }
 
 /* ── The exhibition label ─────────────────────────────────────────────
-   One per stand: a plan of the hang, the narrative that frames it, and a
-   catalogue entry per photograph. This is where a photograph gets its text,
-   and it is the only place a visitor can find out what they are looking at.
+   One per stand: the record's own account, its awards and its team caption,
+   and a catalogue entry per photograph. This is where a photograph gets its
+   text, and it is the only place a visitor can find out what they are looking
+   at.
 
    Type scale. The sizes this replaces were 7.4-11.5px — measured, the meta
    line was 7.4px and the narrative 9.3px, which is not small print but
    illegible print. Every size here is a share of the VIEWPORT rather than a
    fixed rem, so the label scales with the wall it is hung on: 15.6px for an
-   entry's title and 13px for the narrative at 1536x864, and no smaller than
+   entry's title and 13px for the account at 1536x864, and no smaller than
    13/11 at the 1280x704 floor.
 
-   The label sits beside the cluster and stacks downward: the plan of the
-   hang, the title and its year, the narrative, then a catalogue entry beneath
-   another. Its width is fixed (--label-w) rather than a share of what the
-   cluster leaves — that is load-bearing in two directions: a wider cluster
-   widens the STAND instead of squeezing the text, and every label on a long
-   wall is the same width, which is what makes them read as a set. */
+   The label runs the stand's full width beneath the picture band and stacks
+   downward: the account, then its awards, then a catalogue entry beneath
+   another. The plan of the hang used to sit at its head and is gone — the
+   catalogue's letters are what tie an entry to a photograph now. Nothing holds
+   the label to a fixed width any more; the prose keeps its measure by
+   --label-measure rather than by the column's width, and the two-column layout
+   that puts the awards and the team caption beside it belongs to the stand. */
 .label {
   flex: 0 0 auto;
   width: var(--label-w);
@@ -2143,64 +2170,11 @@ body {
   padding-top: 9px;
 }
 
-/* The plan is a picture of the hang, built from the same arrangement the
-   cluster hangs, so it cannot disagree with the wall — not in its box count and
-   not in its columns. It is a fixed gutter, not a column that grows, and its
-   boxes carry the same letters the catalogue entries do: the letter is what
-   says WHICH photograph an entry describes. */
-.plan {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-}
-
-.pcol {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.plan i {
-  display: block;
-  border: 1px solid var(--text-quiet);
-  font-style: normal;
-}
-
-/* ── The letter: the one thing that ties an entry to a box in the plan ─
-   The catalogue names photographs A, B, C and the plan draws their boxes, and
-   both carry the letter. It is the LABEL's index: the frames on the wall hang
-   clean, so this is the only place a visitor can put a name to a picture.
-   Without it they have a list of names and a plan of boxes and no way to put
-   them together — which is exactly what "I don't understand it" means when the
-   label is the only text there is.
-
-   The letter sits in the middle of its box on BOTH axes, which is what the flex
-   centring below is for: a box is a photograph's place in the hang, and a letter
-   tucked into a corner of it reads as a caption on that corner rather than as
-   the name of the box. */
-.plan .pi-lead,
-.plan .pi {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-size: clamp(9px, 0.72vw, 11px);
-  line-height: 1;
-  color: var(--text-quiet);
-}
-
-/* ORDER IS LOAD-BEARING. Both rules are two classes deep, so on the lead's own
-   box — `<i class="pi pi-lead">`, which matches both — the LATER rule wins. It
-   has to be this one: written the other way round the lead's size was silently
-   overridden, and every box in every plan came out the same size, which is a
-   plan that cannot show a stand's principal photograph as the larger one. */
-.plan .pi { min-width: 17px; min-height: 15px; padding: 0 3px; }
-.plan .pi-lead { min-width: 20px; min-height: 18px; padding: 0 3px; }
-
-/* The narrative: the stand's own name, its venue or year, and one paragraph,
-   capped at four lines so a long summary cannot push the catalogue's last
-   entries past the foot of the wall, where there is no vertical axis to
-   scroll to them. */
+/* The narrative: the stand's own name, its venue or year, and the opening line
+   that frames the account below it. Only these are fixed-height — the account
+   is the band the copy length decides, and it is the one the fit check
+   measures. Nothing here is clamped to four lines any more: the clamp is what
+   hid the very copy this build exists to show. */
 .narr { flex: 0 0 auto; min-width: 0; }
 
 .narr-title {
@@ -2227,49 +2201,125 @@ body {
   text-overflow: ellipsis;
 }
 
-.narr-text {
-  font-size: clamp(12.5px, 0.85vw, 14.5px);
-  line-height: 1.34;
-  color: var(--text);
-  margin: 4px 0 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.narr-lead {
+  font-size: clamp(13px, 0.9vw, 15px);
+  line-height: 1.4;
+  color: var(--text-strong);
+  margin: 6px 0 0;
+  max-width: var(--label-measure, 56ch);
 }
 
-/* ── The awards control on a project's label ──────────────────────────────
-   A project's awards are read in the dialog, so this is the only handle on
-   them. It sits between the narrative and the catalogue: after the paragraph
-   that says what the project is, before the list of its photographs. It is a
-   panel rather than a gilt frame, because it is furniture on the label and not
-   a work on the wall, and it clears the 44px tap floor. */
-.label-awards {
+/* The account: the record's own words, paragraph for paragraph. NOT clamped —
+   the four-line clamp this replaces is what hid the copy this build exists to
+   show (spec §6.3). The paragraphs are min-width:0 because they sit in a grid
+   column now: a grid item refuses to shrink below its content otherwise, and a
+   long word would run the prose out of the stand rather than wrap it. */
+.label-account { min-width: 0; }
+
+.acct-p {
+  font-size: clamp(13px, 0.88vw, 15px);
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0 0 8px;
+  max-width: var(--label-measure, 56ch);
+}
+
+.acct-p:last-child { margin-bottom: 0; }
+
+/* ── The awards, read on the project's own label ──────────────────────────
+   They used to be a button into a dialog, which left eight awards invisible to
+   a visitor who did not press it. Each one is a row here, with its year beside
+   it, and the row is a panel rather than a gilt frame because it is furniture
+   on the label and not a work on the wall.
+
+   Only a row that resolves to photographs is a control, and it clears the 44px
+   tap floor by min-height rather than by padding: the row is dense text in a
+   column, and padding to reach the floor would space the list out until it
+   stopped reading as a list. The accent edge is the same cue a tile with
+   photographs carries, and it is the only thing telling a visitor that one row
+   is pressable and the next is not — a focusable row that opens nothing is
+   worse than one that plainly is not a control. */
+.awards {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
-  min-height: 44px;
-  padding: 9px 15px;
-  border: 1px solid var(--edge);
-  background: var(--surface-1);
+  min-width: 0;
+  margin-top: 10px;
+}
+
+.awards-head {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: clamp(10px, 0.62vw, 11.5px);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text);
+  color: var(--accent);
+  margin: 0 0 5px;
+}
+
+.award-list { list-style: none; margin: 0; padding: 0; }
+
+.award {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-height: 44px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--edge-soft);
+}
+
+.award[data-gallery] {
   cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  border-left-color: var(--accent);
+  background: var(--surface-1);
 }
 
-.label-awards i { color: var(--accent); }
-
-.label-awards:hover,
-.label-awards:focus-visible {
+.award[data-gallery]:hover,
+.award[data-gallery]:focus-visible {
   color: var(--text-strong);
-  border-color: var(--accent);
+  border-left-color: var(--accent);
 }
+
+.award-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: clamp(12px, 0.8vw, 13.5px);
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.award-year {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: clamp(9.5px, 0.6vw, 11px);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-quiet);
+}
+
+/* ── The team caption ─────────────────────────────────────────────────────
+   The only thing on the walk that names who is in the team photograph, and it
+   was behind a button. It reads as a caption and not as prose: a heading and
+   one line per line of the authored caption, so a caption that arrives as three
+   lines stays three lines. */
+.team { flex: 0 0 auto; min-width: 0; margin-top: 10px; }
+
+.team-head {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.62vw, 11.5px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 4px;
+}
+
+.team-line {
+  font-size: clamp(12px, 0.8vw, 13.5px);
+  line-height: 1.35;
+  color: var(--text-quiet);
+  margin: 0 0 3px;
+  max-width: var(--label-measure, 56ch);
+}
+
+.team-line:last-child { margin-bottom: 0; }
 
 /* The catalogue: one entry per photograph that exists, stacked, each with its
    letter. It was two columns of a strip ninety pixels wide, which is where

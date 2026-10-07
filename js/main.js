@@ -820,14 +820,13 @@
      arrangement — Site.hangLayout, dealt from the group's own key so
      neighbouring groups differ and a reload never reshuffles the wall.
 
-     The heights themselves are `--band-h` and `--max-panel-h` in
-     css/styles.css, resolved per column into `--panel-h`. They cannot live
-     here as `cqi`: a gallery is as wide as its contents, so sizing a stand
+     The height a frame is given is `--frame-h` in css/styles.css. It cannot
+     live here as `cqi`: a gallery is as wide as its contents, so sizing a stand
      from its own width is circular, and the binding constraint on a single row
-     is the room's height. Nor can a single height serve every arrangement —
-     a column of three must divide the band three ways — which is why
-     renderCluster writes each column's depth and the stylesheet does the
-     division.
+     is the room's height. Nor can one height serve every arrangement — a
+     column of three hangs three frames in the band a column of two divides in
+     two — which is why renderCluster writes each column's depth and the
+     stylesheet does the division.
 
      Every frame clears 44x44 at every supported width, because the panel
      height carries its own floor and the collection's photographs are wide. */
@@ -843,11 +842,11 @@
       var lead = i === layout.lead;
       var label = open.name || (title + ' — photograph ' + pieceLetter(i));
       /* The frame is the whole of a piece on the wall. A letter used to hang on
-         it — the plan's index brought to the picture, in a box over the frame's
-         bottom-left corner — and it is gone: a mark in the corner of a work
-         reads as part of the work. The letters are read in the label, where the
-         plan draws this same hang and the catalogue names each photograph, so
-         nothing on the wall is unaccounted for by taking them off. */
+         it — the catalogue's index brought to the picture, in a box over the
+         frame's bottom-left corner — and it is gone: a mark in the corner of a
+         work reads as part of the work. The letters are still read in the
+         label, in the column beside each catalogue entry, so nothing on the
+         wall is unaccounted for by taking them off. */
       var frame;
       /* A photograph still waiting for its file has nothing to open, so it is
          not a button: a focusable control that does nothing when activated is
@@ -929,19 +928,21 @@
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
       + ' data-entry="' + esc(entryKey) + '">'
       + renderCluster(pieces, layout, record, kind, entryKey)
-      + renderLabel(record, pieces, layout)
+      + renderLabel(record, pieces)
       + '</div>';
   }
 
   /* ── The exhibition label ───────────────────────────────────────────────
      One label per group, and it is where every photograph gets its text. The
-     shape is the reference wall's: a plan of the hang, the narrative that
-     frames the group, and a catalogue entry per photograph.
+     shape is the reference wall's: the record's own account, its awards and its
+     team caption, then a catalogue entry per photograph. The plan of the hang
+     used to stand at its head; the catalogue's letters are what tie an entry to
+     a photograph now.
 
      Every level falls back rather than rendering an empty box, because the
      owner will not have written copy for every group on day one: a group with
-     no `summary` narrates its own description, and a piece with no title is
-     named for its position. */
+     no `overview` accounts for itself in its summary and then in its own
+     description, and a piece with no title is named for its position. */
   function labelTitle(record) {
     return record.title || record.description || '';
   }
@@ -950,29 +951,23 @@
     return record.venue || record.year || '';
   }
 
-  function labelNarrative(record) {
-    if (record.summary) return record.summary;
-    /* A project's own framing is its first paragraph; a record has none. */
-    if (record.overview && record.overview.text) {
-      return String(record.overview.text).split('\n\n')[0];
-    }
-    return labelTitle(record);
-  }
+  /* The account is the record's own words, paragraph for paragraph. This is the
+     one field with the real story, and until now nothing on the walk rendered
+     it: labelNarrative() returned `summary` and stopped.
 
-  /* The plan: the same composition the cluster hangs, drawn small. It is built
-     from the ARRANGEMENT rather than from a piece count, so it cannot disagree
-     with what is on the wall — not in its box count and not in its columns. A
-     piece count could only ever draw one shape, and the wall hangs several. */
-  function renderPlan(layout) {
-    var cols = (layout && layout.columns) ? layout.columns : [];
-    return '<div class="plan" aria-hidden="true">'
-      + cols.map(function (indices) {
-          return '<span class="pcol">' + indices.map(function (i) {
-            return '<i class="pi' + (i === layout.lead ? ' pi-lead' : '') + '">'
-              + pieceLetter(i) + '</i>';
-          }).join('') + '</span>';
-        }).join('')
-      + '</div>';
+     The fallback is the record's own DESCRIPTION, not its title, and the
+     difference is the whole safety net: a record added without copy must still
+     say what it is, where its account would go. Reproduced by the title, it
+     would render a second copy of the line already above it and read as a
+     finished label rather than as a missing one. */
+  function labelAccount(record) {
+    var text = record && record.overview && record.overview.text;
+    if (typeof text === 'string' && text.trim()) {
+      return text.split('\n\n').map(function (t) { return t.trim(); }).filter(Boolean);
+    }
+    if (record && record.summary) return [record.summary];
+    if (record && record.description) return [record.description];
+    return [];
   }
 
   /* The technical line is derived, never authored, and it names the FILE the
@@ -1025,32 +1020,80 @@
     return out + (awaited ? awaitedNote(awaited) : '');
   }
 
-  /* A project's AWARDS live in the shared dialog, because that is the only
-     place they can be read: eight honours were moved off the walls of this walk
-     and into these dialogs, so a project whose awards are in the data and have
-     no control here has silently lost them.
+  /* A project's awards, read on the wall. They used to be a button into a
+     dialog, which made eight awards invisible to a visitor who did not press
+     it. An award that has photographs is a real control opening them in the
+     photograph carousel — those honours are excluded from the Honours room, so
+     without this their six photographs would be unreachable. One without is
+     plain text, as a photo-less honours tile already is.
 
-     The walk hangs groups and has no cards, so the control lives on the group's
-     LABEL — the one element that already carries the project's own text — and
-     it reuses the same data-action/data-tab pair the old card's pill carried.
-     The document-level delegation has always handled that pair; what was
-     missing was any element that carried it. */
-  function renderAwardsControl(record) {
-    if (!record || !Array.isArray(record.awards) || !record.awards.length) return '';
-    var n = record.awards.length;
-    return '<button type="button" class="label-awards"'
-      + ' data-action="modal" data-project="' + esc(record.id) + '" data-tab="awards"'
-      + ' aria-label="' + esc('Read ' + (record.title || 'this project') + '’s '
-          + n + ' award' + (n === 1 ? '' : 's')) + '">'
-      + '<i class="fas fa-trophy" aria-hidden="true"></i> Awards · ' + n
-      + '</button>';
+     WHICH award carries the control is decided per award, by Site.awardPhotos,
+     and it has to be: a project's wins are separate honours and only some of
+     them hang photographs. Asked once for the whole project, the March 2025
+     honour's three photographs would be handed to the May 2025 award too — a
+     control that opens a different win's gallery, which is worse than no
+     control at all.
+
+     The control carries the same data-gallery/data-entry pair every other
+     control on the walk carries, rather than a handle of its own: the
+     document-level delegation already resolves that pair, and a second way in
+     would be a second path to keep working. `data-open-award-year` rides along
+     because the pair alone does not say WHICH of the project's awards this row
+     is, and a later reader (the dialog's own handlers) has to be able to
+     re-resolve the award from a click. */
+  function awardGalleryRef(projectId, award) {
+    var honors = Array.isArray(PORTFOLIO.honors) ? PORTFOLIO.honors : [];
+    var year = award && award.year;
+    for (var i = 0; i < honors.length; i++) {
+      var h = honors[i];
+      if (h && h.from === projectId && String(h.year) === String(year)) {
+        return 'honors:' + i;
+      }
+    }
+    return '';
   }
 
-  /* One label per group, and it is a COLUMN beside the cluster rather than a
-     strip across it: the plan of the hang, the narrative that frames the group,
-     then a catalogue entry beneath another. `kind` and `index` used to be
-     parameters here and neither was ever read. */
-  function renderLabel(record, pieces, layout) {
+  function renderAwards(record) {
+    if (!record || !Array.isArray(record.awards) || !record.awards.length) return '';
+    var items = record.awards.map(function (a) {
+      var photos = (typeof Site.awardPhotos === 'function')
+        ? Site.awardPhotos(record.id, PORTFOLIO.honors, a) : [];
+      var ref = photos.length ? awardGalleryRef(record.id, a) : '';
+      var open = ref
+        ? ' data-gallery="honors" data-entry="' + esc(ref) + '"'
+          + ' data-open-award-year="' + esc(a.year || '') + '"'
+          + ' role="button" tabindex="0"'
+        : '';
+      var year = a.year ? '<span class="award-year">' + esc(a.year) + '</span>' : '';
+      return '<li class="award"' + open + '>'
+        + '<span class="award-desc">' + esc(a.description || '') + '</span>'
+        + year + '</li>';
+    }).join('');
+    return '<div class="awards">'
+      + '<p class="awards-head">Awards · ' + record.awards.length + '</p>'
+      + '<ul class="award-list">' + items + '</ul></div>';
+  }
+
+  /* The team photo's caption is the only thing on the walk that names who is in
+     the picture, and it was behind a button. */
+  function renderTeam(record) {
+    var t = record && record.team;
+    if (!t || !Array.isArray(t.text) || !t.text.length) return '';
+    return '<div class="team"><p class="team-head">Team</p>'
+      + t.text.map(function (line) {
+          return '<p class="team-line">' + esc(line) + '</p>';
+        }).join('')
+      + '</div>';
+  }
+
+  /* One label per group, and it is where the group's own account is read: the
+     title, the lead line that frames it, the record's words paragraph by
+     paragraph, its awards, its team caption and then a catalogue entry per
+     photograph. `kind` and `index` used to be parameters here and neither was
+     ever read; `layout` joined them and went the same way, because the plan it
+     drew is gone — the catalogue's letters are what tie an entry to a
+     photograph now. */
+  function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];
     /* A frame is not a photograph. The count is the photographs that exist, not
        the frames hung: padding fills a group up to the floor, so a record with
@@ -1059,17 +1102,25 @@
     var photographs = list.filter(function (p) { return !p.awaited; }).length;
     var title = labelTitle(record);
     var meta = labelMeta(record);
+    var account = labelAccount(record);
     return '<div class="label">'
-      + renderPlan(layout)
+      + '<div class="label-copy">'
       + '<div class="narr">'
       + '<p class="narr-title">' + esc(title) + '</p>'
       + (meta ? '<p class="narr-meta">' + esc(meta)
           + (photographs
               ? ' · ' + photographs + ' photograph' + (photographs === 1 ? '' : 's')
               : '') + '</p>' : '')
-      + '<p class="narr-text">' + esc(labelNarrative(record)) + '</p>'
+      + (record.summary ? '<p class="narr-lead">' + esc(record.summary) + '</p>' : '')
+      + '<div class="label-account">'
+      + account.map(function (t) {
+          return '<p class="acct-p">' + esc(t) + '</p>';
+        }).join('')
       + '</div>'
-      + renderAwardsControl(record)
+      + '</div>'
+      + renderAwards(record)
+      + '</div>'
+      + '<div class="label-aside">' + renderTeam(record) + '</div>'
       + '<div class="cat">' + renderCatalogue(record, list) + '</div>'
       + '</div>';
   }

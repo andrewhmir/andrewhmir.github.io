@@ -210,6 +210,43 @@ const strip = el('strip').innerHTML;
 const directory = el('directory').innerHTML;
 const titles = [...strip.matchAll(/<span class="t">([^<]+)<\/span>/g)].map((m) => m[1]);
 
+/* The body of the top-level group whose text carries `title`. Splitting on the
+   group opening tag leaves the previous tag's attributes at the head of each
+   part, so drop up to the first '>' in every part but the first. */
+function groupHtmlFor(title) {
+  const parts = strip.split('<div class="group"').slice(1);
+  for (let i = 0; i < parts.length; i++) {
+    let body = parts[i];
+    if (i > 0) body = body.slice(body.indexOf('>') + 1);
+    const end = body.indexOf('<div class="group"');
+    if (end !== -1) body = body.slice(0, end);
+    if (body.includes('>' + title + '<')) return body;
+  }
+  return '';
+}
+
+/* The project's awards block, bounded at its own closing tag. A check scoped to
+   the whole GROUP can be satisfied by a neighbour's copy or by the project's own
+   prose; the block is what has to carry the awards. The block holds one flat
+   list of `<li class="award">` rows, so its own end is the first `</div>` that
+   closes a tag opened after its head. */
+function awardsBlockFor(title) {
+  const group = groupHtmlFor(title);
+  const at = group.indexOf('<div class="awards">');
+  if (at === -1) return '';
+  const rest = group.slice(at);
+  let depth = 0;
+  for (let i = 0; i < rest.length; i++) {
+    if (rest.startsWith('<div', i)) { depth++; i += 3; continue; }
+    if (rest.startsWith('</div>', i)) {
+      depth--;
+      if (depth === 0) return rest.slice(0, i + 6);
+      i += 5;
+    }
+  }
+  return rest;
+}
+
 /* ── The DOM contract ────────────────────────────────────────────────── */
 /* The honours ROOM holds only the honours that stand alone. The ones that ARE a
    project's award live on that project's card, and the room must not hang them
@@ -439,43 +476,155 @@ check('a piece is a real button with a named target', () => {
 });
 
 /* ── The label ───────────────────────────────────────────────────────────
-   One label per group: a plan of the hang, the narrative that frames the
-   group, and a catalogue entry per photograph. This is where a photograph
-   gets its text, so a group shipping without one is a group whose
-   photographs are never explained. */
-check('every group carries a plan, a narrative and a catalogue', () => {
-  const groups = strip.split('<div class="group"').slice(1);
-  assert.ok(groups.length > 0, 'no groups rendered');
+   One label per group: the record's own account, its awards, its team caption
+   and a catalogue entry per photograph. This is where a photograph gets its
+   text, so a group shipping without one is a group whose photographs are
+   never explained. */
+check('every group carries a full account, not a one-line narrative', () => {
+  const groups = [...strip.matchAll(/<div class="group"[\s\S]*?(?=<div class="group"|<\/section>)/g)].map((m) => m[0]);
+  assert.ok(groups.length, 'no groups rendered');
   const bad = [];
   groups.forEach((g, i) => {
-    if (!/<div class="plan"/.test(g)) bad.push('group ' + i + ': no plan');
-    const title = g.match(/<p class="narr-title">([^<]*)<\/p>/);
-    if (!title || !title[1].trim()) bad.push('group ' + i + ': no narrative title');
-    const text = g.match(/<p class="narr-text">([^<]*)<\/p>/);
-    if (!text || !text[1].trim()) bad.push('group ' + i + ': empty narrative');
-    if (!/class="cat-entry"/.test(g) && !/class="ca-note"/.test(g)) {
-      bad.push('group ' + i + ': neither a catalogue entry nor an awaited note');
+    if (!/class="label-account"/.test(g)) bad.push('group ' + i + ': no account block');
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+  assert.ok(!/class="plan"/.test(strip), 'the retired plan diagram is still rendered');
+});
+
+check('the account is the record\'s own overview, paragraph for paragraph', () => {
+  const p = PORTFOLIO.projects.find((x) => x.overview && x.overview.text.includes('\n\n'));
+  assert.ok(p, 'fixture needs a project whose overview has more than one paragraph');
+  const paras = p.overview.text.split('\n\n');
+  const group = groupHtmlFor(p.title);
+  const rendered = [...group.matchAll(/<p class="acct-p">([\s\S]*?)<\/p>/g)].map((m) => m[1]);
+  assert.equal(rendered.length, paras.length,
+    p.title + ' rendered ' + rendered.length + ' of ' + paras.length + ' paragraphs');
+  paras.forEach((t, i) => assert.ok(rendered[i].includes(t.slice(0, 40)),
+    p.title + ' paragraph ' + i + ' does not match the data'));
+});
+
+check('the account is not line-clamped', () => {
+  /* Spec §6.3 and §10.3: the four-line clamp is what hid the account, and a
+     silent reintroduction would hide it again with every unit check green.
+
+     Comments are stripped before the rules are read. A comment naming the
+     property is prose about why it is gone, not the property — and matching it
+     would fail the check on the one line that explains the rule. */
+  const css = readFileSync('css/styles.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const blocks = css.match(/[^{}]+\{[^}]*\}/g) || [];
+  const prose = blocks.filter((b) => /\.(label-account|acct-p|narr-lead)\b/.test(b.split('{')[0]));
+  assert.ok(prose.length >= 3,
+    'the account rules are not in the stylesheet at all: found ' + prose.length);
+  const clamped = prose.filter((b) => /line-clamp/.test(b));
+  assert.deepEqual(clamped, [], 'the account is line-clamped again: ' + clamped.join(' | '));
+  assert.ok(!/\.narr-text/.test(css), '.narr-text still exists — the clamp was to live there');
+});
+
+check('every project award is on the wall with its year', () => {
+  /* Scoped to the project's OWN awards block, not to its whole group: an award
+     string checked against the group would be satisfied by a neighbour's copy or
+     by the project's own prose, and the year by any year anywhere in the label.
+     The block is what has to carry both — and the wall is where they are read
+     now, so no award is behind a control any more. */
+  const withAwards = PORTFOLIO.projects.filter((p) => Array.isArray(p.awards) && p.awards.length);
+  assert.ok(withAwards.length > 0, 'fixture needs a project with awards');
+  const bad = [];
+  withAwards.forEach((p) => {
+    const block = awardsBlockFor(p.title);
+    if (!block) { bad.push(p.title + ': no awards block'); return; }
+    p.awards.forEach((a) => {
+      const item = block.split('<li class="award"').slice(1).find((it) => it.includes(a.description));
+      if (!item) { bad.push(p.title + ': "' + a.description + '" is not an award on the wall'); return; }
+      if (!item.includes(a.year)) {
+        bad.push(p.title + ': award year ' + a.year + ' is not on its own award row');
+      }
+    });
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+  assert.ok(!/data-tab="awards"/.test(strip), 'a project award still opens a dialog');
+});
+
+check('an award with photographs is a control, and one without is not', () => {
+  /* Six real photographs hang off `from`-tagged honours that the Honours room
+     excludes, so an award that resolves to them MUST be a control. An award
+     that resolves to nothing must NOT be — a focusable control that opens
+     nothing is worse than a row that plainly is not one. */
+  const awards = [...strip.matchAll(/<li class="award"([^>]*)>/g)].map((m) => m[1]);
+  assert.ok(awards.length > 0, 'no awards rendered on the wall');
+  const withPhotos = awards.filter((a) => /data-gallery=/.test(a));
+  const without = awards.filter((a) => !/data-gallery=/.test(a));
+  assert.ok(withPhotos.length > 0,
+    'no award with photographs is a control — six photographs are unreachable');
+  assert.ok(without.length > 0, 'every award is a control, including the photo-less ones');
+  /* And the count is right: exactly the awards that Site.awardPhotos resolves. */
+  let expected = 0, total = 0;
+  PORTFOLIO.projects.forEach((p) => {
+    (p.awards || []).forEach((a) => {
+      total++;
+      if (Site.awardPhotos(p.id, PORTFOLIO.honors, a).length) expected++;
+    });
+  });
+  assert.equal(awards.length, total, 'the wall does not carry every award');
+  assert.equal(withPhotos.length, expected,
+    withPhotos.length + ' award controls for ' + expected + ' awards that have photographs');
+});
+
+check('every team caption is on the wall, one line each, inside its own block', () => {
+  /* Scoped to the `.team` block, for the same reason the awards are: the
+     caption's words could otherwise be satisfied by the project's own prose,
+     and the block is what has to carry them. One `<p>` per authored line, so a
+     caption that arrives as three lines stays three lines. */
+  const withTeam = PORTFOLIO.projects.filter((p) => p.team && Array.isArray(p.team.text) && p.team.text.length);
+  assert.ok(withTeam.length > 0, 'fixture needs a project with a team caption');
+  const bad = [];
+  withTeam.forEach((p) => {
+    const group = groupHtmlFor(p.title);
+    const at = group.indexOf('<div class="team">');
+    if (at === -1) { bad.push(p.title + ': no team block'); return; }
+    /* The team block runs to where the catalogue begins, and its closing tag is
+       the one immediately before it — so the block does not swallow the
+       catalogue's own entries. */
+    const block = group.slice(at).split('<div class="cat">')[0].replace(/<\/div>\s*$/, '');
+    const lines = [...block.matchAll(/<p class="team-line">([\s\S]*?)<\/p>/g)].map((m) => m[1]);
+    assert.equal(lines.length, p.team.text.length,
+      p.title + ' renders ' + lines.length + ' team lines for ' + p.team.text.length + ' authored');
+    p.team.text.forEach((line, i) => {
+      if (lines[i] !== line) {
+        bad.push(p.title + ': team line ' + i + ' is "' + String(lines[i]).slice(0, 40)
+          + '", the data says "' + line.slice(0, 40) + '"');
+      }
+    });
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('every shipped project shows its full account on the wall', () => {
+  /* The whole point of this work: no project's story is behind a control. */
+  const bad = [];
+  PORTFOLIO.projects.forEach((p) => {
+    const group = groupHtmlFor(p.title);
+    if (!group) { bad.push(p.title + ': no group on the wall'); return; }
+    const want = p.overview && p.overview.text;
+    if (!want) { bad.push(p.title + ': no overview in the data'); return; }
+    if (!group.includes(want.split('\n\n')[0].slice(0, 40))) {
+      bad.push(p.title + ': the account is not rendered');
     }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
-check('the catalogue has one entry per photograph, and names the awaited ones once', () => {
+check('the catalogue names every awaited frame once, not once per frame', () => {
   /* A group whose photographs are all awaited gets no catalogue entry at all,
      only the note: three entries reading "Photograph awaited" is not a
-     catalogue, it is a stutter. */
+     catalogue, it is a stutter. The entries themselves are counted by the check
+     above; this one is the note. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     /* Bound the group at the next group, so the count cannot pick up a
        neighbouring group's catalogue. */
     const body = g.split('<div class="group"')[0];
-    const frames  = (body.match(/class="piece[" ]/g) || []).length;
     const awaited = (body.match(/class="piece piece--pending/g) || []).length;
-    const entries = (body.match(/class="cat-entry"/g) || []).length;
     const notes   = (body.match(/class="ca-note"/g) || []).length;
-    if (entries !== frames - awaited) {
-      bad.push('group ' + i + ': ' + entries + ' entries for ' + (frames - awaited) + ' photographs');
-    }
     if (notes !== (awaited > 0 ? 1 : 0)) {
       bad.push('group ' + i + ': ' + notes + ' awaited notes for ' + awaited + ' awaited frames');
     }
@@ -486,46 +635,44 @@ check('the catalogue has one entry per photograph, and names the awaited ones on
 check('no frame on the wall carries a letter', () => {
   /* The letter began as a badge on the frame, so a visitor reading entry C could
      find C on the photograph. On the wall it is a mark on the picture — a dark
-     box in the corner of a work — and the letters are read in the label anyway:
-     the plan draws the same hang, and the catalogue beneath it names each
-     photograph. So the frame hangs clean and the label carries the letters. */
+     box in the corner of a work — and it is gone: a mark in the corner of a work
+     reads as part of the work. The letters are read in the label, where the
+     catalogue names each photograph in its own letter's column, so nothing on
+     the wall is unaccounted for by taking them off. */
   const walled = [...strip.matchAll(/<span class="piece-(?:key|wrap)\b[^>]*>/g)].map((m) => m[0]);
   assert.deepEqual(walled, [], walled.length + ' letters still on the wall');
 });
 
-check('the plan and the catalogue carry the letters, and cover every frame', () => {
-  /* Two places a letter appears, both keyed on the PIECE index: the plan's box
-     and the catalogue entry. They cannot disagree about which photograph is
-     which, and between them they account for every hung frame — a letter no box
-     draws is a photograph nobody can find. Awaited frames are lettered too:
-     they are hung frames and the plan draws them.
-
-     The letters are the piece indices, so they are NOT in document order: a lead
-     hangs in a column of its own, and in a "two-lead" arrangement that column is
-     the second one — the frame a visitor reads first is photograph A. What has
-     to hold is that the boxes cover every frame, and cover nothing twice. */
-  const bad = [];
+check('the catalogue letters every photograph, once each, in piece order', () => {
+  /* The plan that used to carry these letters is gone, so the catalogue is now
+     the only place a letter appears — and the letters ARE the piece indices,
+     which is what ties an entry to a photograph. A catalogue that lettered its
+     entries A, B, D would name a photograph nobody can find, and a catalogue
+     with more letters than entries would name one twice. */
   const range = (n) => Array.from({ length: n }, (_, i) => String.fromCharCode(65 + i));
-  strip.split('<div class="group"').slice(1).forEach((g, i) => {
-    const body = g.split('<div class="group"')[0];
-    const frames = (body.match(/class="piece[" ]/g) || []).length;
+  const bad = [];
+  let lettered = 0;
+  /* The opening tag of each part is left at the head of the NEXT part, so drop
+     up to the first '>' in every part but the first — the same repair
+     groupHtmlFor() makes, for the same reason. */
+  const parts = strip.split('<div class="group"').slice(1);
+  parts.forEach((g, i) => {
+    let body = g;
+    if (i > 0) body = body.slice(body.indexOf('>') + 1);
+    const end = body.indexOf('<div class="group"');
+    if (end !== -1) body = body.slice(0, end);
     const keys = [...body.matchAll(/<span class="ce-key">([A-Z])<\/span>/g)].map((m) => m[1]);
-    const plan = (body.match(/<div class="plan"[\s\S]*?<\/div>\s*<div class="narr"/) || [''])[0];
-    const boxes = [...plan.matchAll(/<i class="pi[^"]*">([A-Z])<\/i>/g)].map((m) => m[1]);
-    const sorted = (a) => a.slice().sort().join('');
-    if (frames > 1) {
-      if (sorted(boxes) !== range(frames).join('')) {
-        bad.push('group ' + i + ': the plan draws ' + boxes.join('') + ' for ' + frames + ' frames');
-      }
-      /* Every catalogue entry must have its box: an entry for a letter the plan
-         does not draw names a photograph nobody can find. */
-      const orphan = keys.filter((k) => !boxes.includes(k));
-      if (orphan.length) bad.push('group ' + i + ': entries ' + orphan.join('') + ' have no box in the plan');
-    } else if (keys.length || boxes.length) {
-      /* One photograph needs no letter: there is nothing to tell apart. */
-      bad.push('group ' + i + ': a single-photograph stand is lettered');
+    const entries = (body.match(/class="cat-entry"/g) || []).length;
+    if (keys.length !== entries) {
+      bad.push('group ' + i + ': ' + keys.length + ' letters for ' + entries + ' entries');
     }
+    const want = range(entries);
+    if (JSON.stringify(keys) !== JSON.stringify(want)) {
+      bad.push('group ' + i + ': letters ' + keys.join('') + ', expected ' + want.join(''));
+    }
+    lettered += keys.length;
   });
+  assert.ok(lettered > 0, 'no catalogue entry carries a letter — the check above proved nothing');
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
@@ -558,53 +705,49 @@ check('an awaited frame is an empty frame, not a grey picture', () => {
     'a frame still draws the placeholder picture');
 });
 
-check('the plan is hidden from assistive tech', () => {
-  /* It is a picture of the hang; the catalogue already names every piece in
-     order, so a screen reader reading both would hear the group twice. */
-  const plans = [...strip.matchAll(/<div class="plan"[^>]*>/g)].map((m) => m[0]);
-  assert.ok(plans.length > 0, 'no plan rendered');
-  plans.forEach((p) => assert.match(p, /aria-hidden="true"/, 'a plan is not aria-hidden'));
-});
-
-check('the label reads plan, narrative, catalogue — in that order', () => {
-  /* The label is a column now, not a strip: it stacks downward beside the
-     cluster. The order is what makes it a museum label rather than a caption,
-     and it is the only part of that the DOM alone can pin — the direction
-     itself is CSS. */
+check('the label reads account, awards and team caption on the wall', () => {
+  /* The order is what makes it a museum label rather than a caption, and it is
+     the only part of that the DOM alone can pin — the direction itself is CSS.
+     The account is the copy a visitor came for, so it is above the awards; the
+     team caption stands apart in its own block, not mixed into the prose. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
-    const order = ['class="plan"', 'class="narr"', 'class="cat"'].map((needle) => body.indexOf(needle));
+    const order = ['class="narr-title"', 'class="label-account"', 'class="cat"']
+      .map((needle) => body.indexOf(needle));
     if (order.some((n) => n < 0)) { bad.push('group ' + i + ': a label part is missing'); return; }
     if (JSON.stringify(order) !== JSON.stringify(order.slice().sort((a, b) => a - b))) {
-      bad.push('group ' + i + ': the label does not read plan, narrative, catalogue');
+      bad.push('group ' + i + ': the label does not read title, account, catalogue');
+    }
+    const awardsAt = body.indexOf('class="awards"');
+    if (awardsAt !== -1 && awardsAt < body.indexOf('class="label-account"')) {
+      bad.push('group ' + i + ': the awards are read before the account');
     }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
-check('the plan draws the arrangement the wall hangs', () => {
-  /* The plan is a picture of the hang, so its box count has to match the
-     wall's AND its columns have to be the same columns. Drawn from a piece
-     count it could only ever be a picture of something else. */
-  const named = new Map();
-  Object.values(Site.HANG_LAYOUTS).flat().forEach((l) => named.set(l.name, l));
+check('the catalogue covers every hung frame, so no frame is left unnamed', () => {
+  /* The plan that used to draw the hang is gone, so the catalogue is the only
+     text that accounts for a frame. It has to account for every one of them:
+     a frame hanging with no entry is a photograph nobody can name, and the
+     letters are keyed on the PIECE index, so the count is what can be read off
+     the DOM without a layout engine. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
-    const plan = body.match(/<div class="plan"[\s\S]*?<\/div>/);
-    if (!plan) { bad.push('group ' + i + ': no plan'); return; }
-    const boxes = (plan[0].match(/<i class=/g) || []).length;
     const frames = (body.match(/class="piece[" ]/g) || []).length;
-    if (boxes !== frames) bad.push('group ' + i + ': ' + boxes + ' boxes for ' + frames + ' frames');
-    const layout = named.get((body.match(/data-hang="([^"]+)"/) || [])[1]);
-    const cols = (plan[0].match(/<span class="pcol"/g) || []).length;
-    if (layout && cols !== layout.columns.length) {
-      bad.push('group ' + i + ': plan has ' + cols + ' columns, wall has ' + layout.columns.length);
+    const awaited = (body.match(/class="piece piece--pending/g) || []).length;
+    const entries = (body.match(/class="cat-entry"/g) || []).length;
+    /* An awaited frame is accounted for by the count of awaited photographs. */
+    if (entries !== frames - awaited) {
+      bad.push('group ' + i + ': ' + entries + ' entries for ' + (frames - awaited) + ' photographs');
     }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
-  /* And the honours groups with a single real photograph are among them. */
+  /* A record with a single real photograph is still hung as a full stand: the
+     floor pads it to MIN_PIECES, so a one-photograph record is never a lone
+     frame with an empty column beside it. */
   const single = Site.groupPieces({ description: 'x', images: ['a.jpg'] }, 'record');
   assert.equal(single.length, Site.MIN_PIECES);
 });
@@ -638,24 +781,41 @@ check('the label counts photographs, not frames', () => {
   assert.ok(none.length > 0, 'fixture needs an honour with no photographs');
   none.forEach((h) => {
     const pieces = Site.groupPieces(h, 'record');
-    const html = renderLabelFor(h, pieces, Site.hangLayout('test', pieces.length));
-    assert.ok(!/photographs?<\/p>/.test(html.split('class="narr-text"')[0]),
+    const html = renderLabelFor(h, pieces);
+    assert.ok(!/photographs?<\/p>/.test(html.split('class="label-account"')[0]),
       'a photograph-less group still claims photographs: ' + h.description);
   });
 });
 
-check('a record with no summary still renders a narrative', () => {
+check('a record with no summary still renders an account', () => {
+  /* The account falls back to the record's own description, because a record
+     added without copy must not render an empty box where its story goes. */
   const stripped = { description: 'Some Award – Champion', year: '2026' };
   const pieces = Site.groupPieces(stripped, 'record');
-  const html = renderLabelFor(stripped, pieces, Site.hangLayout('test', pieces.length));
+  const html = renderLabelFor(stripped, pieces);
   assert.match(html, /Some Award/, 'fell through to nothing');
-  assert.match(html, /class="narr-text">[^<]*Some Award/, 'the narrative is empty');
+  assert.match(html, /class="acct-p">[^<]*Some Award/, 'the account is empty');
+});
+
+check('a record with no copy at all falls back to its own description, in one paragraph', () => {
+  /* The last resort: a record added with no `overview` and no `summary` still
+     names what it is where its account goes. It is the description and NOT the
+     title — reproduced by the title it would print the line above itself twice
+     and read as a finished label rather than as one still waiting for copy. */
+  const bare = { id: 'bare', description: 'Some Honour', year: '2026' };
+  const pieces = Site.groupPieces(bare, 'record');
+  const html = renderLabelFor(bare, pieces);
+  assert.match(html, /<p class="narr-title">Some Honour<\/p>/,
+    'the record is not named anywhere on its own label');
+  const paras = [...html.matchAll(/<p class="acct-p">([\s\S]*?)<\/p>/g)].map((m) => m[1]);
+  assert.deepEqual(paras, ['Some Honour'],
+    'the account of a copy-less record is not its own description, once: ' + paras.join(' / '));
 });
 
 check('a pieces array shorter than images falls back per entry', () => {
   const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
   const pieces = Site.groupPieces(record, 'record');
-  const html = renderLabelFor(record, pieces, Site.hangLayout('test', pieces.length));
+  const html = renderLabelFor(record, pieces);
   assert.match(html, /Only one/, 'the first entry lost its title');
   assert.match(html, /Photograph B/, 'the missing tail did not fall back');
 });
@@ -663,9 +823,8 @@ check('a pieces array shorter than images falls back per entry', () => {
 check('a pieces array longer than images is ignored, not thrown', () => {
   const record = { description: 'X', images: ['a.jpg'], pieces: [{ title: 'A' }, { title: 'B' }] };
   const pieces = Site.groupPieces(record, 'record');
-  const layout = Site.hangLayout('test', pieces.length);
-  assert.doesNotThrow(() => renderLabelFor(record, pieces, layout));
-  const html = renderLabelFor(record, pieces, layout);
+  assert.doesNotThrow(() => renderLabelFor(record, pieces));
+  const html = renderLabelFor(record, pieces);
   assert.equal((html.match(/class="cat-entry"/g) || []).length, 1,
     'an extra pieces entry was hung as a photograph that does not exist');
   /* The other two frames are padding, and the label says so in one line rather
@@ -677,14 +836,12 @@ check('a pieces array longer than images is ignored, not thrown', () => {
 check('a project label names the venue, a record label names the year', () => {
   const projectRecord = { title: 'Project X', venue: 'August 2025', overview: { text: 'why' } };
   const projectPieces = Site.groupPieces(projectRecord, 'project');
-  const project = renderLabelFor(projectRecord, projectPieces,
-    Site.hangLayout('test', projectPieces.length));
+  const project = renderLabelFor(projectRecord, projectPieces);
   assert.match(project, /Project X/);
   assert.match(project, /August 2025/);
   const recordRecord = { description: 'Some Honour', year: 'April 2026' };
   const recordPieces = Site.groupPieces(recordRecord, 'record');
-  const record = renderLabelFor(recordRecord, recordPieces,
-    Site.hangLayout('test', recordPieces.length));
+  const record = renderLabelFor(recordRecord, recordPieces);
   assert.match(record, /Some Honour/);
   assert.match(record, /April 2026/);
 });
@@ -839,34 +996,87 @@ check('the project awards the honours room gave up are on their project cards', 
   });
 });
 
-check('every project with awards has a control that opens them', () => {
-  /* The dialog is the ONLY place a project's awards can be read — eight honours
-     were moved off the wall into it — so a project whose awards are in the data
-     but have no control in the walk has silently lost them. The control is on
-     the group's label, because the walk hangs groups and has no cards. */
+check('every award control opens that award\'s own photographs', () => {
+  /* The count check above only says a control EXISTS. The defect this replaces
+     was worse than a missing control: a control that opens a different win's
+     photographs. The six photographs hang off `from`-tagged honours the Honours
+     room excludes, so a control wired to the wrong entry silently misattributes
+     another award's pictures — and every count would still be right.
+     `data-entry` is resolved exactly as main.js's delegation resolves it. */
   const withAwards = PORTFOLIO.projects.filter((p) => Array.isArray(p.awards) && p.awards.length);
   assert.ok(withAwards.length > 0, 'fixture needs a project with awards');
+  const bad = [];
+  let controls = 0;
   withAwards.forEach((p) => {
-    assert.match(strip, new RegExp(
-      '<button[^>]*data-action="modal"[^>]*data-project="' + p.id + '"[^>]*data-tab="awards"'),
-      p.title + ' has awards in the data and no control in the walk');
+    const group = groupHtmlFor(p.title);
+    /* The group is split at its award items rather than matched with one
+       pattern: a full description in a pattern is a regex to escape, and a
+       half-match against the wrong `<li>` is exactly the confusion this check
+       exists to prevent. Each item runs to the end of its own group. */
+    const items = group.split('<li class="award"').slice(1);
+    p.awards.forEach((a) => {
+      const html = items.find((it) => it.includes(a.description));
+      if (!html) { bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": no award on the wall'); return; }
+      const photos = Site.awardPhotos(p.id, PORTFOLIO.honors, a);
+      const ref = (html.match(/data-entry="([^"]+)"/) || [])[1];
+      const open = /data-gallery="honors"/.test(html);
+      if (!photos.length) {
+        /* The two directions of the same contract: a photo-less award must not
+           be a control, and must not LOOK like one to a screen reader either. */
+        if (ref || open) bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": a photo-less award opens ' + ref);
+        if (/role="button"/.test(html)) {
+          bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": a photo-less award is a button');
+        }
+        return;
+      }
+      controls++;
+      if (!open || !ref) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": no gallery handle (' + html.slice(0, 60) + ')');
+        return;
+      }
+      /* A control that is focusable but does nothing when activated is worse
+         than a row that plainly is not one — the rule the frames already obey. */
+      if (!/role="button"/.test(html) || !/tabindex="0"/.test(html)) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": the control is not reachable by keyboard');
+      }
+      /* The year rides along so a click can be re-resolved to THIS award: a
+         bare entry index does not say which of the project's wins it is. */
+      const carried = (html.match(/data-open-award-year="([^"]*)"/) || [])[1];
+      if (carried !== a.year) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": carries year "' + carried
+          + '", the award is ' + a.year);
+      }
+      const at = ref.indexOf(':');
+      const resolved = Site.galleryFor(ref.slice(0, at), ref.slice(at + 1)).images;
+      if (JSON.stringify(resolved) !== JSON.stringify(photos)) {
+        bad.push(p.title + ' / "' + a.description.slice(0, 30) + '": ' + ref + ' opens ['
+          + resolved.slice(0, 2).join(', ') + '], the award holds ['
+          + photos.slice(0, 2).join(', ') + ']');
+      }
+    });
   });
-  const buttons = (strip.match(/data-tab="awards"/g) || []).length;
-  assert.equal(buttons, withAwards.length,
-    buttons + ' awards controls for ' + withAwards.length + ' projects with awards');
+  assert.deepEqual(bad, [], bad.join(' | '));
+  assert.ok(controls > 0, 'no award control was resolved at all');
 });
 
-check('every award entry can be named in a dialog', () => {
-  /* The dialog is the only place a project's awards can be read, and it renders
-     each entry's description and year. An entry missing either would render a
-     blank row rather than throw, so the shape is pinned here. */
-  PORTFOLIO.projects.filter((p) => p.awards).forEach((p) => {
-    p.awards.forEach((a) => {
-      assert.equal(typeof a.description, 'string', p.title + ' has an unnamed award');
-      assert.ok(a.description.trim(), p.title + ' has an empty award description');
-      assert.equal(typeof a.year, 'string', p.title + ' award "' + a.description + '" has no year');
-      assert.ok(a.year.trim(), p.title + ' award "' + a.description + '" has an empty year');
-    });
+check('the awards the honours room gave up are readable on the wall', () => {
+  /* This is the whole point of the move: an honour that IS a project's award
+     hangs nowhere in the Honours room, so the project's label is its only route
+     to a visitor. Its description and its year have to be readable there — the
+     dialog it used to live in is no longer the way to them. */
+  const linked = PORTFOLIO.honors.filter((h) => h.from);
+  assert.ok(linked.length > 0, 'no honour is linked to a project');
+  linked.forEach((h) => {
+    const project = PORTFOLIO.projects.find((p) => p.id === h.from);
+    assert.ok(project, h.description + ' names project ' + h.from + ', which does not exist');
+    const group = groupHtmlFor(project.title);
+    assert.ok(group, project.title + ' has no group on the wall');
+    const award = (project.awards || []).find((a) => a.year === h.year);
+    assert.ok(award, h.description + ' (' + h.year + ') is not among ' + project.title + "'s awards");
+    assert.ok(group.includes(award.description),
+      '"' + award.description + '" is not readable on ' + project.title + "'s label");
+    assert.ok(group.includes(award.year),
+      'the award year ' + award.year + ' is not readable on ' + project.title + "'s label");
   });
 });
 
