@@ -300,6 +300,20 @@ no CSS):
 - every frame clears 44×44 at both reference viewports and at 390×844;
 - the wall's cell never overlaps the label's cell.
 
+**The suite itself is red before this work starts, and three of its ten failures are its own
+fault.** Measured on the draft build — `node tools/ux-check.mjs` reports `102 passed, 10 failed`:
+
+| failing check | cause |
+|---|---|
+| `no frame exceeds its column budget` (both viewports, 32 frames) | the column width budget was deliberately removed (`css/styles.css`, the `.col` note); the check reads a `max-width` that is now `none` |
+| `every project with awards has a control in the walk` | the check queries `[data-tab="awards"]`; `renderAwards` emits `[data-gallery="honors"]` |
+| `the dock and the rail are both in the shell` | the check queries `.rail`, which `css/styles.css` records as removed from the shell and replaced by the dock's track; it then returns early, silently skipping its whole section |
+
+The remaining seven are the layout faults §3 measures. The three that are the suite's own fault
+are fixed by the plan's first task, before the baseline is taken, so that a red suite can be
+read. A green run has to mean the walk is right — a suite that fails on absent code cannot be
+used to judge this change.
+
 **The probes need re-pointing**: `tools/rooms.mjs` (prints `.group` height and the deepest
 column), `tools/stand-fit.mjs` (resolves `--band-h` / `--max-panel-h` / `--label-w`, all
 retired), `tools/label-fit.mjs` (the overlap check is the one that found fault 3),
@@ -309,9 +323,10 @@ retired), `tools/label-fit.mjs` (the overlap check is the one that found fault 3
 **The measured claim this work is judged on**: photograph area per screen at 1536×864, today
 40,560 px². Expected above 120,000 px². `tools/avg-frame.mjs` is the instrument.
 
-> **Caveat.** Headless Chrome needs Mojo named pipes, which a confined session forbids. The
-> browser suite and the probes must run with the sandbox off, or as a single escalated
-> command. No green run will be claimed without one.
+> **Caveat.** Headless Chrome was expected to need Mojo named pipes, which a confined session
+> forbids. It does not on this build: the suite ran confined and completed all 112 checks. If a
+> run does fail with a named-pipe error, the sandbox is the cause and the same command works
+> unconfined. No green run will be claimed without one.
 
 **Docs:** `README.md` §"The walk" and §"The stand" describe the two-band stand and the fixed
 band throughout; they are rewritten with the new shape.
