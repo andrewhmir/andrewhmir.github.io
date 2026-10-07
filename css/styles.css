@@ -182,7 +182,26 @@
      screen: 614px at 1536 (588px of inner measure) and 512px at 1280 (486px),
      and the wall takes what is left. `--stand-w` is the stand's own width, and
      it is what stops a wider label making the walk longer. */
-  --label-col:      clamp(700px, 56vw, 820px);
+  /* ── The two cells, and the dialectic between them ────────────────────
+     This is the number the whole shape turns on, and it is a SHARE rather than
+     a width because the two cells want opposite things. The label wants to be
+     wide: it holds a 1,228-character account, and every 40px of width is a line
+     off every column. The wall wants to be wide too, and needs it just as much:
+     a frame's width follows its photograph's proportions, so a wall narrowed to
+     make room for prose does not make its pictures smaller — it makes them
+     NARROWER AND TALLER, and 316px of wall measured frames of 65x651, which is a
+     sliver.
+
+     Both extremes were measured. At 52-56vw the label fits its cell at 1440x900
+     but the walk's photograph area fell to 62,124 px² a screen — less than the
+     122,534 a wall-heavy split reached. At 40-46vw the pictures are large and
+     the label overruns its cell on four of the six project stands.
+
+     48vw is where both are as good as they get together: the label gets 691px at
+     1440 and 614px at 1280, and the wall keeps 585px and 470px. It is still not
+     enough for the densest record at the 1280x704 floor, which is why the label
+     column scrolls at short viewports — see the max-height query below. */
+  --label-col:      clamp(560px, 48vw, 780px);
   /* The furniture column inside the label — the summary, the awards, the team
      caption and the catalogue. A share of the label rather than a fixed width,
      so the two interior columns keep their proportion at every screen. */
