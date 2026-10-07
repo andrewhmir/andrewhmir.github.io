@@ -2204,14 +2204,27 @@ body {
    floor resolves against an indefinite width and does nothing. */
 .piece { min-width: calc(var(--band-h) / 4); }
 
-/* The lead is the stand's principal photograph: it keeps a column of its own,
-   which is why a three-frame stand shows one big frame beside two small ones.
-   That column is what makes it read as the principal photograph — the lead's
-   frame is the band's full height because it is alone in its column, while the
-   two beside it divide theirs. It needs no width cap once the stand has a fixed
-   width of its own, and no height rule of its own either: its height is its
-   column's, which is the band. */
-.piece--lead { }
+/* ── The lead has no rule, and that is the design ─────────────────────
+   A standalone `piece--lead` block used to live here, capping the lead's width
+   with the column budget and its height with the row budget. Both budgets are
+   gone, and nothing replaces them.
+
+   The lead is the stand's principal photograph because of where the arrangement
+   PUTS it, not because it is styled differently. Read off `HANG_LAYOUTS` in
+   js/data.js: eight of the ten arrangements give the lead a column of its own,
+   where it takes the whole band while the frames beside it divide theirs. The
+   other two — `two-two` at four pieces and `three-three` at six — put it at the
+   head of a shared column with the same `drop: 0` its neighbours get, so there
+   it reads as the first of a pair rather than as a dominant frame. That is the
+   arrangement's business and the arrangement is right to vary; what matters
+   here is that no `--frame-h`-shaped rule can express it, because a frame's
+   height is now its column's share of the band.
+
+   The `piece--lead` class is still written on the element by renderCluster and
+   still asserted by tests/renderer.test.mjs; it is a hook, not a style. Do not
+   add a height rule here — a per-frame height is what makes the band stack
+   instead of divide, and that fault measured 390px of band against a 150px
+   budget. */
 
 /* An awaited photograph is a reserved place on the wall: the gilt frame and its
    mat, and no picture. Unlike every other frame it has no photograph to take
