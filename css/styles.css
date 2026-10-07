@@ -144,71 +144,72 @@
      tall, and one STAND is that screen: it is sized so that when the walk
      parks on it, nothing of its neighbours is in shot.
 
-     A stand is where the reading happens, so what has to FIT is the HEIGHT —
-     the label's account, its awards, its team caption and its catalogue have
-     to land above the dock at the spec's 1280x704 floor, and they have to land
-     there at every width above it. The stand's width is therefore fixed by
-     --stand-w rather than following its hang: a label whose copy decided the
-     width would make a wordier record a longer walk. Only the FRAMES follow
-     their own photographs.
+     A stand is where the reading happens, so what has to FIT is the HEIGHT.
 
-     HEIGHT is spent in two places, and spec §5.1 fixes both so that only the
-     prose flexes. The picture band is --band-h tall and a column of two or
-     three frames DIVIDES it rather than stacking it — see `.cluster`. The
-     label takes whatever is left, and it is the account inside the label that
-     the copy length decides.
+     ── The shape: two cells side by side, not two bands stacked ──────────
+     A stand is a ROW of two full-height cells — the hang, and the label that
+     reads it. This replaces a column of two stacked bands: a picture band fixed
+     at 156px with the label at the stand's full width beneath it. That shape
+     measured 765.7px inside a 724px band at 1536x864, so the stand was centred
+     on a line that did not exist: the room title was drawn at y = -14.7 and the
+     last award at y = 829 against a dock top of 781. At the spec's 1280x704
+     floor it was 116px over. The fault was invisible at 1440x900 only because
+     its 21px overrun fitted inside the room's 42px head padding.
+
+     HEIGHT is spent in two places and neither is a constant now:
+
+       the WALL   is the left cell. A column of two or three frames DIVIDES it
+                  rather than stacking it — see `.cluster` and `.col`.
+       the LABEL  is the right cell, sized by --label-col, and it is the account
+                  inside it that the copy length decides.
+
+     The old --band-h was a FIXED pixel height, and it was fixed for a reason
+     that has not survived: the deepest arrangement is a 3-row column, and 156px
+     was the smallest band in which three frames and their two gaps still left
+     each frame above the 44x44 tap floor. That constraint belongs to a COLUMN,
+     and a column now divides the STAND — at the floor the stand's band is 466px,
+     so a 3-row column gives 148px frames, three times the tap floor. The
+     constant and its argument retire together.
 
      `--col-count` and `--col-rows` are written by renderCluster — one per
      cluster, one per column — and are unitless divisors. They decide where a
-     column breaks; neither is read by any rule, because the band is divided by
+     column breaks; neither is read by any rule, because a column is divided by
      flexbox instead (a re-derived divisor in the stylesheet is how the written
      one and the read one drift apart).
 
-     The three tokens below are the stand's dials, declared here so that one
-     place owns their values. All three are read by the rules further down, and
-     it is worth being exact about where, because deleting or renaming a
-     declaration here leaves `calc()` and `var()` invalid at computed-value
-     time — the frame then falls back to its content height rather than to a
-     smaller one, and the label's prose runs to its fallback measure:
+     The tokens below are the stand's dials. `--label-col` is a VIEWPORT share
+     rather than a fixed width, so the proportion survives every supported
+     screen: 614px at 1536 (588px of inner measure) and 512px at 1280 (486px),
+     and the wall takes what is left. `--stand-w` is the stand's own width, and
+     it is what stops a wider label making the walk longer. */
+  --label-col:      clamp(420px, 40vw, 620px);
+  --group-col-gap:  clamp(24px, 2.2vw, 40px);
+  /* ── The rail and the room title ──────────────────────────────────────
+     The rail's own line box, which is the band the room's top padding reserves
+     above its content. 35px, measured at 1536x864 where `.rr-title` resolves to
+     17px of Newsreader at `line-height: 1.2`. */
+  --rail-h:         35px;
+  /* The room title's block, which is what a stand's band has to give up.
+     DERIVED from the title's own type rather than measured per viewport, so
+     the two cannot drift: `.room-title`'s font size is one line tall (1.15),
+     the `.sub` line beneath it adds a 0.68rem mono line plus its 8px margin,
+     and the rule carries 6px of margin-bottom. Measured against the sum at
+     five viewports — 1440x900 69px, 1536x864 72, 1280x704 63, 1920x1080 76,
+     390x844 52 — and this expression reproduces each within 0.6px.
 
-       --band-h         READ by `.cluster`, which gives the picture band its
-                        height, and by `.piece`'s loading floor, which is a
-                        share of it. Spec §5.1 budgets 150px for the picture
-                        band — one frame plus its mat and border — and this is
-                        156px. The 6px are the 44x44 tap floor, and they are
-                        not decoration: the deepest arrangement the data deals
-                        is a 3-row column, and a 150px band splits into three
-                        43.3px frames, which `ux-check` measures at 37x43. 156px
-                        is the smallest band in which three frames and their two
-                        10px gaps still leave each frame 44px. §5.1's own note
-                        says its numbers are an estimate and that `ux-check` is
-                        the authority at the floor; that authority is what set
-                        this. It is a FIXED height and not a viewport share,
-                        because the band is the band at every screen — a band
-                        that grew with the window would spend the floor's height
-                        on pictures rather than on prose.
-       --frame-h        READ by nothing. It survives as the record of the
-                        single-frame frame height the band was sized from, and
-                        because §5.2 names it as one of the three dials; the
-                        frames themselves are sized by their column's share of
-                        --band-h. Do not re-point a rule at it: on a 2- or
-                        3-frame column it would make the band stack instead of
-                        divide, which is the 390px-in-a-150px-budget fault.
-       --stand-w        READ by `.group`. It is the stand's own width, and it
-                        is what stops a wider label making the walk longer.
-       --label-measure  READ by `.narr-lead` and `.team-line`, which each cap
-                        their line length with it. The account carries no cap:
-                        it is the longest prose on the stand and the block that
-                        decides whether the stand fits, so its grid column's own
-                        width is what measures it — see the note on `.acct-p`.
-                        The `56ch` fallback in those `var()` calls is never
-                        consulted.
-
-     The pixel floor is a tap target, not decoration: it keeps every frame
-     above 44x44 at every supported width without a width floor on the room. */
-  --band-h:        156px;
-  --frame-h:        clamp(96px, 11vh, 140px);
-  --label-measure:  clamp(46ch, 52ch, 60ch);
+     The 48px ceiling is `.room-title`'s own clamp maximum; it is repeated here
+     so this expression cannot run away on a very wide screen, and `--room-title-type`
+     is the single definition both read. */
+  --room-title-type: clamp(1.7rem, 2.9vw, 3rem);
+  --room-title-h:    calc(var(--room-title-type) * 1.65 + 6px);
+  /* The measure for the label's one-line blocks — the narrative's opening line
+     and each team caption. The ACCOUNT deliberately carries no cap: it is the
+     longest prose on the stand and the block that decides whether the stand
+     fits, so its own column is its measure. 56ch is the value those two rules
+     used to carry as a `var()` fallback while the token was undefined; naming it
+     here is what shell-check's "every var() is defined" asks for, and it keeps
+     the two rules' measure in one place. */
+  --label-measure:   56ch;
   --stand-w:        clamp(1040px, 64vw, 1320px);
   --col-gap:     clamp(  6px,  1.1vh,  10px);
   /* Horizontal, so it is not part of the vertical budget the fold measures — but
@@ -1652,11 +1653,20 @@ button.record-item {
      spec's floor, which pushed the densest rooms past the fold. */
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* ── The room stacks from the top, and it does NOT centre ───────────────
+     This was `justify-content: center`, and centring is what let the flaw hide:
+     a stand taller than the room was centred on a line that did not exist, so
+     half the overflow went ABOVE the top edge and took the room title with it —
+     measured at a title top of -83 at the spec's 1280x704 floor.
+
+     Now the stack starts at the head padding and the stand is given exactly the
+     band that is left (see `.groups`). A stand that still does not fit is
+     clipped at the foot, under the dock, where at least the fault is visible as
+     a missing last line rather than as a missing room title. */
+  justify-content: flex-start;
   /* The room is exactly one hall tall. Without this the room is only as tall
-     as its content plus its padding, so its centring axis and its dock
-     reserve are measured against a box that does not match the fold: content
-     centres too low and can slide under the dock. */
+     as its content plus its padding, so its band is measured against a box
+     that does not match the fold: content runs under the dock. */
   height: 100%;
   /* 100px at the foot reserves the dock (58px) plus breathing room. Content is
      centred in what is left, so no room is top-heavy. It was 124px; the 24
@@ -2034,7 +2044,10 @@ body {
   margin: 0 0 6px;
   font-family: var(--font-heading);
   font-weight: 400;
-  font-size: clamp(1.7rem, 2.9vw, 3rem);
+  /* The token exists so `--room-title-h` can be derived from this very value:
+     the title's block height is this line, plus its `.sub` line, plus its
+     own margin-bottom. Change the size here and the band a stand gets follows. */
+  font-size: var(--room-title-type);
   line-height: 1.15;
   color: var(--text-strong);
 }
@@ -2074,26 +2087,57 @@ body {
    values are recorded.
 
    The Honours room is NOT one of these. It hangs no group and holds no row; it
-   is the three-column list of tiles further down this file. */
+   is the three-column list of tiles further down this file.
+
+   ── The band, which the stands now divide ──────────────────────────────
+   A stand is a GRID of two cells that divide its height, so unlike the stacked
+   shape it cannot be allowed to grow past the room and let `overflow: hidden`
+   clip the surplus: a grid row grows to its tallest cell, which pushed the
+   room's own content down and under the dock — measured at a group bottom of
+   963px against a 621px dock top at the spec's floor.
+
+   So the row names the band, and a stand fills it. The band is a room's height
+   less the chrome at both ends and less the room title that heads the stack:
+   42px at the head, 92px at the foot, and `--room-title-h` for the title block.
+   Both padding figures are `.room`'s own, and the head one is already the
+   rail's reserve — `.room`'s note records it as "42px at the head (the rail is
+   35px tall, and 7px is the clearance)" — so the rail is NOT subtracted here a
+   second time. That double subtraction is exactly the fault this line first
+   shipped with: the row came out 731px inside a 766px band, and the stand,
+   centred in a band it no longer filled, ran 11px past the dock.
+
+   With the band right, the arithmetic lands where `.room`'s note says it
+   should: at 1440x900 the title occupies 69px, so the row is 697px, the stand
+   fills it from y=111 to y=808, and the dock's top edge is 817 — a 9px gap,
+   which is the clearance that note names. `dvh` follows the address bar on a
+   phone; the `vh` line above it is the fallback for engines without it.
+
+   Writing it HERE and not on `.group` is load-bearing. `.groups` is a flex item
+   of the room, and a `height: calc()` on a flex item resolves; the same
+   declaration on the stand inside it does not, because the stand's containing
+   block is the row and the row had no definite height. */
 .groups {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: var(--group-gap);
   position: relative;
   flex: 0 0 auto;
+  height: calc(100vh - 42px - 92px - var(--room-title-h));
+  height: calc(100dvh - 42px - 92px - var(--room-title-h));
   min-height: 0;
 }
 
-/* A stand is two bands: the pictures above, the label beneath at the stand's
-   full width. It was a row, with the label as a 320-380px column beside the
-   hang; at that width the account is clamped to four lines and the catalogue
-   is pushed past the fold. A full-width label is what lets the copy be read.
+/* ── The stand: the wall, and the label beside it ───────────────────────
+   This was two stacked bands — the pictures above, the label beneath at the
+   stand's full width. It is a grid now, because the two things a stand holds
+   are not a stack: the hang is looked at and the label is read, side by side,
+   and each gets the stand's full height to do it in.
 
-   The width is the stand's own (--stand-w) and not its hang's: the label is
-   full-width now, so a width that followed the content would make a wordier
-   record a longer walk, and two stands on one screen. `min-height: 0` is what
-   lets the two bands share a stand that is shorter than its contents instead of
-   the label pushing the pictures off the top.
+   The width is the stand's own (--stand-w) and not its hang's: the label is a
+   column of its own now, so a width that followed the content would make a
+   wordier record a longer walk, and two stands on one screen. `min-height: 0`
+   is what lets the cells share a stand that is shorter than its contents
+   instead of the label pushing the wall off the top.
 
    `overflow: hidden` stays, and it is doing the same job it did when this was a
    row: a hang wider than --stand-w would otherwise paint over the neighbouring
@@ -2101,19 +2145,31 @@ body {
    of six wide frames is now clipped to its own stand rather than spilling into
    the next one. */
 .group {
-  display: flex;
-  flex-direction: column;
-  /* 10px, not 14. The gap between the picture band and the label is one of the
-     last few gaps that stand between the fold and the last award, and it is
-     worth 4px of the stand — measured at 1536x864, where 4px of stand is 4px of
-     a residual that is still not zero. */
-  gap: 10px;
+  /* ── The stand is two cells: the wall, and the label beside it ──────────
+     This was a flex COLUMN of two stacked bands, and that shape is what the
+     rest of this file's notes call the museum-label shape. It is a grid now:
+     the wall takes what the label's fixed column leaves, and both cells are the
+     stand's full height.
+
+     `align-items: stretch` is what gives the wall and the label their height
+     without either naming one: the grid row is the stand's own height, so a
+     column inside the wall can divide it and the label can lay its blocks out
+     against it.
+
+     `overflow: hidden` stays, and its job is unchanged: a hang wider than its
+     cell would otherwise paint over the neighbouring exhibit. What changes is
+     that the cell is now the wall rather than the whole stand, so the clip
+     happens at a boundary a visitor can see the reason for. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--label-col);
+  column-gap: var(--group-col-gap);
+  align-items: stretch;
   width: var(--stand-w);
   max-width: var(--stand-w);
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
-
 /* The columns of the hang, in flow, so each frame takes its own photograph's
    width. How many columns there are, and which pieces sit in each, is the
    arrangement's business; the drop that keeps a stack from reading as one tall
@@ -2125,45 +2181,59 @@ body {
    piece's black ground showing beside the narrow ones — measured at 135px of
    ground on the honours wall, and invisible to every other check because the
    frame still collides with nothing and still clears the tap floor. */
-/* ── The picture band: one budget, shared by every column ─────────────
-   The band is `--band-h` tall — one frame deep, the picture the visitor reads
-   at a glance, and the spec's §5.1 150px. A column of two or three frames must
-   DIVIDE that band rather than stack it, and that division is the whole reason
-   this rule has a height at all: without it a 3-row column (the deepest
-   arrangement the data deals) measured 390px at 1920x1080 against that 150px
-   budget, and the picture band, not the prose, was what ran past the dock.
+/* ── The wall: one budget, shared by every column ─────────────────────
+   The wall is the stand's LEFT CELL and it is the stand's full height. A column
+   of two or three frames must DIVIDE that height rather than stack it, and that
+   division is the whole reason this rule has a height at all: without it a
+   3-row column (the deepest arrangement the data deals) measured 390px at
+   1920x1080 against a 150px budget, and the picture band, not the prose, was
+   what ran past the dock.
+
+   What changed is the dividend, not the division. This was `height: var(--band-h)`
+   — a fixed 156px, sized so that a 3-row column's frames still cleared the 44x44
+   tap floor. The dividend is now the stand, so at the 1280x704 floor a 3-row
+   column gives 148px frames: three times the floor, and three times the picture.
 
    The division is done by flexbox rather than by arithmetic, and that is
    deliberate. `flex: 1 1 0` on the frames splits whatever height the column
-   has, so a column of one gives its frame the band, a column of two gives 70px
-   each and a column of three gives ~43px each — and the same arithmetic holds
-   when the gaps change, which a `calc((band - gaps) / rows)` re-derivation in
-   the stylesheet would not. `--col-rows` is still written by renderCluster and
-   is now read by nothing: the header of this file says why a divisor that is
-   written on the DOM and re-derived in the stylesheet is how the two drift. */
+   has, so a column of one gives its frame the wall, a column of two gives half
+   each and a column of three a third — and the same arithmetic holds when the
+   gaps change, which a `calc((band - gaps) / rows)` re-derivation in the
+   stylesheet would not. `--col-rows` is still written by renderCluster and is
+   read by nothing: the header of this file says why a divisor that is written
+   on the DOM and re-derived in the stylesheet is how the two drift. */
 .cluster {
   display: flex;
   align-items: stretch;
   gap: var(--cluster-gap);
   flex: 0 0 auto;
-  height: var(--band-h);
+  height: 100%;
+  min-height: 0;
+  /* The wall is bounded by its cell, and that bound is visible: a grid item
+     whose content is wider than its track overflows the track by default, so a
+     hang wider than the stand paints past `overflow: hidden`'s clip edge —
+     measured at 428px past the stand before this. The mini/max pair is what
+     keeps a wide hang inside the cell it was given. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* ── A column's one budget ────────────────────────────────────────────
-   A column is one stack inside the band, so its height is the band's and it
+   A column is one stack inside the wall, so its height is the wall's and it
    spends that height on its own frames: `align-items: stretch` in the cluster
-   is what gives it the band, and each frame takes an equal share of it.
+   is what gives it the wall, and each frame takes an equal share of it.
 
-   What is NOT here any more is a width budget. It was computed from the screen
-   left over beside the label and spent as this rule's `max-width`; a stand is
-   `--stand-w` wide whatever its hang now, so a frame no longer has a column to
-   fit inside. Capping it would only stop it following its photograph — the
-   image's own `height: 100%` needs the frame to have a definite height to
-   resolve against, and a frame capped in width and height at once bars the
-   photograph inside it.
+   What is NOT here is a width budget. It was computed from the screen left over
+   beside the label and spent as this rule's `max-width`; a stand is `--stand-w`
+   wide whatever its hang is, and the label is a grid column of its own now, so
+   a frame has no column-shaped box to fit inside. Capping it would only stop it
+   following its photograph — the image's own `height: 100%` needs the frame to
+   have a definite height to resolve against, and a frame capped in width and
+   height at once bars the photograph inside it.
 
    `--col-count` and `--col-rows` are still written by renderCluster and are
-   still what decides where a column breaks. Neither is read here: the band is
+   still what decides where a column breaks. Neither is read here: the wall is
    divided by the flexbox below, not by a re-derived divisor. */
 .col {
   display: flex;
@@ -2174,22 +2244,41 @@ body {
   min-width: 0;
   height: 100%;
   min-height: 0;
+  /* A column is bounded by its share of the wall. Without this a frame whose
+     photograph is wide runs the column out of the stand: a grid item and a flex
+     item both default to `min-width: auto`, so the widest frame — measured at
+     1037px on a 2.251-ratio photograph — set a 1037px column inside a 432px wall
+     and painted 428px past its own stand, over the next stand's photographs. */
+  max-width: 100%;
+  overflow: hidden;
 }
 
 /* A piece: a gold frame around a cream mat, drawn rather than loaded — no
    image request, no asset. The frame takes the photograph's own proportions:
    its WIDTH follows the photograph and its height is what its column gives it,
-   so nothing is cropped and nothing is barred. No width cap any more — that
-   belonged to the column, and a stand has no column for a frame to fit inside.
+   so nothing is cropped and nothing is barred.
 
-   `flex: 1 1 0` is the band division, and it is the one thing here that is not
+   `flex: 1 1 0` is the wall's division, and it is the one thing here that is not
    about the photograph: a column of three frames gives each of them a third of
-   the band. `min-height: 0` is what allows that — without it a flex item
+   the wall. `min-height: 0` is what allows that — without it a flex item
    refuses to shrink below its content, and an image with a 6px mat has content. */
 .piece {
   display: block;
   flex: 1 1 0;
   min-height: 0;
+  /* ── A frame fits the column that holds it ─────────────────────────────
+     `min-width: auto` is a flex item's default, and it is what let a frame grow
+     past its column: a 2.251-ratio photograph at full wall height measured
+     1037px inside a 432px wall, and painted 428px past its own stand. `0` lets
+     the frame take the column's width; `max-width: 100%` holds it there. The
+     photograph inside then follows its own proportions within that box.
+
+     This is the frame's ceiling, not its size. A frame is still as wide as its
+     photograph wants — `ux-check`'s "a frame is as wide as its photograph"
+     asserts the two agree — and this only binds when the column is the smaller
+     of the two. */
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
   border: 3px solid transparent;
   border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
@@ -2212,26 +2301,20 @@ body {
   transition: filter .55s var(--ease-lit);
 }
 
-/* A photograph is fetched when the walk reaches it, so a frame can be on screen
-   before its bytes are. With the width following the photograph, an unloaded
-   frame collapsed to the frame and the mat alone — measured at 18x152 on a
-   phone, far under the 44px tap floor, and then it popped open when the
-   photograph arrived. The floor holds it open until then.
+/* ── The loading floor, and why it is now a plain 44 ───────────────────
+   A photograph is fetched when the walk reaches it, so a frame can be on screen
+   before its bytes are. An unloaded frame used to collapse to the frame and the
+   mat alone — measured at 18x152 on a phone, far under the 44px tap floor, and
+   then it popped open when the photograph arrived.
 
-   3/4 is deliberately narrower than every photograph in the collection: the
-   narrowest is 0.75 (three 3:4 portraits) and the widest is 2.251. So once a
-   frame is loaded this rule never binds and no photograph is ever barred
-   inside its own frame — which is what would happen at any floor above 0.75,
-   and did at the 6/5 this replaces. It is 3/4 and not the 2/3 of the old ROW
-   budget, because the floor now has to hold a 3-row column's frame above the
-   44px tap target on its OWN: the rendered frame is the image's width plus its
-   6px mat and the 3px gilt edge either side, so a 44px-tall frame is 44 - 6 -
-   6 = 32px of image, and 3/4 of 44 is 33px. Measured at 1440x900 the smallest
-   frame is 44x44; at 2/3 it was 37x43 and `ux-check` failed it.
-
-   It is on .piece and not on the image because the image's own percentage
-   floor resolves against an indefinite width and does nothing. */
-.piece { min-width: calc(var(--band-h) / 4); }
+   The floor was `calc(var(--band-h) / 4)` — a quarter of the 156px band, which
+   is 39px plus the mat and gilt edge to a 44px frame. The band is gone, so the
+   floor is stated as what it was always FOR: 44px of frame. `min-width: 0` on
+   the same rule is what lets the column be the smaller of the two, and a frame
+   that is narrower than 44px once its photograph arrives is a frame whose column
+   is narrower than a tap target — a layout fault, not a floor to paper over.
+   `ux-check` measures the loaded minimum at both reference viewports. */
+.piece { min-width: 44px; }
 
 /* ── The lead has no rule, and that is the design ─────────────────────
    A standalone `piece--lead` block used to live here, capping the lead's width
@@ -2311,63 +2394,26 @@ body {
    Type scale. The sizes this replaces were 7.4-11.5px — measured, the meta
    line was 7.4px and the narrative 9.3px, which is not small print but
    illegible print. Every size here is a share of the VIEWPORT rather than a
-   fixed rem, so the label scales with the wall it is hung on: 15.6px for an
-   entry's title and 13px for the account at 1536x864, and no smaller than
-   13/11 at the 1280x704 floor.
+   fixed rem, so the label scales with the wall it is hung on.
 
-   The label is the stand's full width now and lays its blocks out in a GRID
-   rather than a stack: the account and the awards at the left, the team
-   caption and the catalogue at the right, with the copy column spanning both
-   rows so the prose is not cut short by a row boundary. The stack it replaces
-   was a narrow column beside the hang, and it is why the account ran to four
-   lines and the catalogue was pushed past the fold. The plan of the hang used
-   to head that stack and is gone — the catalogue's letters are what tie an
-   entry to a photograph now.
+   The label is the stand's RIGHT CELL, and it is one COLUMN of blocks rather
+   than a grid of areas. The grid it replaces laid the copy and the catalogue
+   side by side across the stand's full width, because the label WAS the stand's
+   full width and had a whole band to fill beneath the pictures. Beside the hang
+   it has a cell of its own, ~614px at 1536 and ~512px at the floor, and a
+   column is what that cell is: the narrative heads it, the account follows, and
+   the awards, the team caption and the catalogue close it.
 
-   The column split is measured, not chosen. Ten arrangements were tried against
-   the band at 1280x704 with every photograph loaded, each scored by its LABEL
-   height. The four that mattered, as measured:
-
-     copy | aside, catalogue in a second full-width row      704px
-     copy full width, team and catalogue beneath it          629px
-     copy spanning two rows | aside then catalogue, 52ch     812px
-     THIS: copy spanning two rows | aside then catalogue     607px
-
-   and this one is the only arrangement that fits BOTH reference viewports with
-   room to spare — its stand is 842px in an 882px band at 1440x900 and 941px in
-   a 974px band at 1920x1080. Its catalogue column is the narrower for it
-   (421px at the floor, where an entry is still a single line), and that is the
-   trade it makes for the height the copy column needs.
-
-   The grid is what the fit check measures: `label-fit` asks whether the
-   label's own content is taller than the box it was given, and the box is a
-   row of the stand rather than a column of prose. */
+   The cell's height is the stand's, so the label's own content is what has to
+   fit inside it — see the `.label-account` note for the one size that moved to
+   make that true, and `ux-check`'s "the label's own content fits its cell",
+   which is the assertion that measures it. */
 .label {
-  flex: 0 0 auto;
-  width: 100%;
-  display: grid;
-  grid-template-areas:
-    "copy  aside"
-    "copy  cat";
-  /* 1.8fr/1fr, and the ratio is measured. The copy column holds the narrative,
-     the account and the awards stacked, so it is the binding cell and widening
-     it shortens the LABEL: at 1536x864 the label is 656px at 1.4fr, 636px at
-     1.6fr, 617px at 1.8fr, and flat from there to 2.4fr (the prose runs out of
-     lines to save). 1.8fr also measured the fewest clipped elements of any ratio
-     at every viewport — 0 at 1920x1080, and better than 1.6fr at 1536x864 — and
-     the catalogue is still 355px there, where an entry is a single 31px line.
-
-     The right column is NOT where the height is hiding, and that is worth
-     recording because it is the obvious guess: `.cat` measures 310px inside the
-     label but its own content is 98px for two photographs, the rest being the
-     grid stretching it to its row. Moving it into the aside column was measured
-     at 0px of difference to the label height. */
-  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
-  column-gap: clamp(20px, 2.4vw, 40px);
-  /* 8px, not 10. This one gap is spent once per label, between the copy row and
-     the catalogue row, and the label is the band that has to fit — so it is the
-     cheapest 2px on the stand. */
-  row-gap: 8px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
   border-top: 1px solid var(--edge);
   /* No padding-top. It was 6px, and 6px is exactly the difference between
      1440x900 clipping its last award year and not clipping it — measured with
@@ -2377,16 +2423,12 @@ body {
   padding-top: 0;
 }
 
-.label-copy  { grid-area: copy;  min-width: 0; }
-.label-aside { grid-area: aside; min-width: 0; }
-.cat         { grid-area: cat;   min-width: 0; }
-
 /* The narrative: the stand's own name, its venue or year, and the opening line
-   that frames the account below it. It is a block of the label's copy column
-   now rather than a band of a flex stack, so its height is its contents' and
-   `min-width: 0` is what lets a long word wrap inside the column instead of
-   running the prose out of the stand. Nothing here is clamped: the clamp is
-   what hid the very copy this build exists to show. */
+   that frames the account below it. It is a block of the label's column rather
+   than a band of a flex stack, so its height is its contents' and `min-width: 0`
+   is what lets a long word wrap inside the column instead of running the prose
+   out of the stand. Nothing here is clamped: the clamp is what hid the very copy
+   this build exists to show. */
 .narr { min-width: 0; }
 
 .narr-title {
