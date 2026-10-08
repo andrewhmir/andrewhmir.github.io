@@ -2,7 +2,12 @@
 
 **Data Engineer | Computational Cognition Researcher**
 
-Personal portfolio website, built as a single horizontal walk through a dark gallery: six rooms
+> **Editing this repo?** Read [`AGENTS.md`](AGENTS.md) first — it routes an
+> intent ("change how frames are sized") to the file and the section, and lists
+> the vocabulary and the constraints that have tests behind them. This README is
+> the design's reasoning: read it when you want to know *why*, not *where*.
+
+Personal portfolio website, built as a single horizontal walk through a dark gallery: eight rooms
 side by side in one strip, each project, post and award hung as a **group** — a composition of
 framed photographs carrying one exhibition label — and the honours that stand alone read as a
 three-column list of tiles. Vanilla HTML, CSS and JavaScript — no frameworks and no build step.

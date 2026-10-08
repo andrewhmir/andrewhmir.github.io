@@ -5,32 +5,37 @@
 /*
    Table of Contents
    ─────────────────
-   1.  Custom Properties
-   2.  Reset & Base
-   3.  Typography
-   4. Base (the page void; the old painting layer is gone)
-   5.  Layout: Container, Section
-   6.  Scroll Progress
-   7.  Navigation
-   8.  Hero
-   9.  Buttons / Pills
-   10. Timeline (News)
-   11. Project Cards
-   12. Records (Leadership / Honors)
-   13. Footer
-   14. Scroll-to-Top
-   15. Modal
-   16. Fade-in Reveal
-   17. Utility: Screen Reader Only
-   18. Reduced Motion
-   19. Responsive
-   20. Hall — the horizontal walk (Night Gallery)
-   21. Room — one leg of the walk (Night Gallery)
+   Search by NAME, not by line — line numbers move on every edit.
 
-   Sections 5–14 style the vertical document this build replaces. They are kept
-   while the rooms are being built because the dialog, its carousel, the toast
-   and the nav still live in them, and they are pruned once nothing references
-   them.
+   19. Responsive
+   20. Hall — the horizontal walk
+   21. Room — one leg of the walk
+
+   The tail below 21 is the walk's interior, unnumbered. Its headings in file
+   order: `The dock:` · `The walk's progress` · `The narrow dock` ·
+   `The sticky room rail` · `Room furniture:` · `The groups:` · `The stand:` ·
+   `The wall: one budget` · `A column's one budget` · `The loading floor` ·
+   `The lead has no rule` · `The label column scrolls` · `The exhibition label` ·
+   `The label's interior` · `The account:` · `The awards,` · `The team caption` ·
+   `The honours room:`
+
+    1. Custom Properties (the palette)   8. Hero           RETIRED .hero-*
+    2. Reset & Base                      9. Pills          LIVE
+    3. Typography                       10. Project Cards  RETIRED .project-list
+    4. Atmosphere (layer removed)       11. News Bulletin  LIVE
+    5. Layout                           12. Records        LIVE
+    6. Scroll Progress  RETIRED         13. Footer         RETIRED .site-footer
+    7. Navigation       DELETED         14. Scroll-to-Top  RETIRED .scroll-top
+                                        15. Modal          LIVE
+                                        15b. Gallery carousel LIVE
+                                        16. Fade-in Reveal LIVE
+                                        17. Screen Reader Only LIVE
+                                        18. Reduced Motion LIVE
+
+   RETIRED means no selector in this file is referenced by index.html, js/main.js
+   or js/data.js — 19 of its 129 selectors. Those sections are the vertical
+   document this site replaced and are NOT where a change to the walk belongs.
+   `7. Navigation` is listed because it was deleted; do not re-add it.
    ========================================================================== */
 
 /* ── 1. Custom Properties ────────────────────────────────────────── */

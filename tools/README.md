@@ -2,6 +2,28 @@
 
 Not required to build or run the site — the site is plain static files.
 
+Every tool here needs the site served (`node tools/serve.mjs 3333`) unless it
+says otherwise, and every one that renders needs headless Chrome with the
+sandbox off. `BASE` and `CDP` override the URL and the debugging port.
+
+## Which tool for which symptom
+
+| A visitor reports | Run |
+|---|---|
+| "content is cut off at the bottom" | `ux-check.mjs` (the authority), then `rooms.mjs` |
+| "a frame is squashed / has black bars" | `pieces.mjs`, then `label-fit.mjs` |
+| "a frame's bottom edge is missing" | `stand-boxes.mjs <entry>` — the cell's padding box is the edge that clips |
+| "two photographs overlap" | `label-fit.mjs` |
+| "one stand doesn't fit one screen" | `stand-gap.mjs`, then `stand-overflow.mjs` |
+| "the pictures read too small" | `avg-frame.mjs`, then `stand-fit.mjs` |
+| "the wall / mural looks wrong" | `wall-verify.mjs` first; `wall-pixels.mjs` for contrast |
+| "there's a line on the wall" | `mural-columns.mjs` — is it in the picture or in the CSS? |
+| "a photograph has no description" | `caption-worklist.mjs` |
+| "the dock is off screen / too small" | `dock-check.mjs` |
+
+Do not reach for `wall-drift.mjs` — it reports `STATIC` for a wall that moves.
+See its note below.
+
 ## ux-check.mjs
 
 Drives headless Chrome over the DevTools Protocol to assert the UX contract. It
@@ -218,45 +240,6 @@ previous URL — `wall-drift.mjs` and `wall-verify.mjs` both check that the walk
 actually loaded before measuring.
 
 ## make-images.mjs
-
-Generates the Open Graph share card (`files/og-card.jpg`), one poster frame per
-project video (`files/posters/*.jpg`), and a still for each project whose media
-is a video and whose image is missing or a placeholder (the `STILLS` table at
-the top), using headless Chrome's own video decoding and canvas. The still pass
-prints the `js/data.js` line to wire each file in — it does not edit the data
-file, so nothing there ever references an image that is not on disk yet.
-
-Do **not** substitute the ffmpeg bundled with Playwright — it is built with
-`--disable-everything` and has no H.264 decoder, so it cannot open these MP4s.
-
-## import-photos.mjs
-
-Imports the source photos from the staging folder (`~/Downloads/AAA` by default,
-override with `SRC=`) into `files/`, resized to 1600px on the long edge at JPEG
-quality 82. The `MAPPING` table at the top of the script is the contract between
-the source filenames and the paths referenced in `js/data.js`; add an entry there
-before wiring a new path into the data file.
-
-It serves the staging folder to a headless Chrome tab (same-origin, so the canvas
-stays untainted) and lets Chrome do the decoding and resizing. Re-running is
-idempotent and reports `source -> shipped` sizes.
-
-```powershell
-# terminal 1 — headless Chrome with debugging (also used by ux-check.mjs)
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" `
-  --headless=new --remote-debugging-port=9222 `
-  --user-data-dir="$env:TEMP\ux-check-profile" about:blank
-
-# terminal 2 — import
-node tools/import-photos.mjs
-```
-
-Source files whose extension lies about their format are handled — the server
-sniffs the JPEG/PNG magic bytes, so a `.CR3` that is really a JPEG imports fine.
-
-Note: headless Chrome needs Mojo named pipes to start, so these tools cannot run
-from a session whose sandbox forbids named-pipe access.
-
 
 Generates the Open Graph share card (`files/og-card.jpg`), one poster frame per
 project video (`files/posters/*.jpg`), and a still for each project whose media
