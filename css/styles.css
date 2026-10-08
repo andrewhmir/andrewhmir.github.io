@@ -2393,7 +2393,23 @@ body {
 /* The photograph fills its frame's height and its width follows its own
    proportions, so nothing is cropped and nothing is barred. `aspect-ratio:
    auto` is what lets the height rule while the width stays intrinsic — without
-   it the `max-width` below would squash the photograph out of proportion. */
+   it the `max-width` below would squash the photograph out of proportion.
+
+   `object-fit` is DELIBERATELY ABSENT, and its absence is the fix for a fault
+   that shipped in this change: with `contain` the photograph was fitted into
+   whatever box the frame happened to have, so a frame whose box was taller than
+   it was wide drew a landscape photograph letterboxed inside it. Measured at
+   1536x864 with `contain`: the box was 0.489 wide per 1 of height against
+   photographs of 1.78 to 2.25, so 15 of 23 frames were 63-77% black bar. A
+   photograph that is a quarter photograph is not a photograph.
+
+   Without it the drawn picture IS the box: the height is the column's share and
+   the width is that height times the photograph's own ratio, so there is no
+   leftover to bar. The `--wall-h` solve in js/main.js is what makes the frame
+   wide enough for that arithmetic to fit its wall; `max-width: none` is what
+   stops the frame's width being clipped back into a box of the wrong shape if a
+   future change gets that solve wrong — the photograph would overflow its column,
+   which is visible, rather than be silently letterboxed, which is not. */
 .piece img {
   display: block;
   height: 100%;
@@ -2410,8 +2426,7 @@ body {
      Measured at 1440x900: 38px gives minFrame 44x45 and no frame under the
      floor; 36px gives 42x45 and one fails. */
   min-width: 38px;
-  max-width: 100%;
-  object-fit: contain;
+  max-width: none;
   border: 6px solid #ece3d2;
   box-sizing: border-box;
 }

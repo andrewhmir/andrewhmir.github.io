@@ -808,6 +808,48 @@ await section('The deepest hang stays inside the room', async () => {
     check('every scrolling label is reachable by keyboard at ' + w + 'x' + h,
           kbd.length === 0, kbd.join('; '));
 
+    /* ── No photograph is letterboxed ───────────────────────────────────────
+       This is the assertion whose absence let a real fault ship. The check above
+       (a frame is as wide as its photograph) compares `.piece`'s width to its own
+       `<img>`'s width, which the layout sets to the frame's content width — so it
+       is true by construction and cannot fail however the picture is drawn inside
+       the box. The fault it missed: `object-fit: contain` fitted every photograph
+       into a box of whatever shape the frame happened to have, and a frame whose
+       box was 0.489 wide per 1 of height drew 1.78-2.25 photographs letterboxed —
+       15 of 23 frames, 63-77% black bar, measured.
+
+       What can fail is the comparison of the photograph's CONTENT box — the
+       image box less its own mat, which is what the picture is drawn into — to
+       the photograph's ratio. With no `object-fit` the picture fills that box, so
+       the two must agree; a difference IS a bar. Measuring the border box instead
+       is what made this check's first version report 4-19% on frames whose
+       content box matched the photograph to three decimal places. 2% is the
+       allowance for sub-pixel layout, and a fraction of the smallest real bar
+       (32%). */
+    const barred = await evaluate(`(() => {
+      const out = [];
+      document.querySelectorAll('#strip .group .piece').forEach(p => {
+        const im = p.querySelector('img');
+        if (!im || !im.naturalWidth) return;
+        const id = p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
+        const cs = getComputedStyle(im);
+        const r = im.getBoundingClientRect();
+        const w = r.width - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
+        const h = r.height - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
+        if (!w || !h) return;
+        const boxAR = w / h;
+        const photoAR = im.naturalWidth / im.naturalHeight;
+        const diff = Math.abs(boxAR - photoAR) / photoAR;
+        if (diff > 0.02) {
+          out.push(id + ' box ' + boxAR.toFixed(3) + ' vs photo ' + photoAR.toFixed(3) +
+            ' (' + Math.round(diff * 100) + '% barred)');
+        }
+      });
+      return out;
+    })()`);
+    check('no photograph is letterboxed at ' + w + 'x' + h,
+          barred.length === 0, barred.slice(0, 4).join(' | '));
+
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
        contract, but a stray wrapper would be an inline-block with a height, so

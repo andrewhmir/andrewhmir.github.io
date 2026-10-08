@@ -879,42 +879,91 @@
        box, so a padded column would report itself taller than its frames and
        the band budget would be spent twice. */
     var cols = layout.columns.map(function (indices, ci) {
-      var hungPieces = indices.filter(function (i) { return pieces[i]; });
-      var hung = hungPieces.map(function (i) { return piece(pieces[i], i); }).join('');
-      var rows = hungPieces.length;
+      var hung = indices.filter(function (i) { return pieces[i]; })
+        .map(function (i) { return piece(pieces[i], i); }).join('');
+      var rows = indices.filter(function (i) { return pieces[i]; }).length;
       var drop = layout.drop[ci] || 0;
-      /* ── The column's own width, in units of the wall's height ──────────
-         `--ar-sum` is the sum of this column's photographs' aspect ratios, and
-         it is how many pixels wide the column wants to be for every 1px of
-         height the wall gives it. The stylesheet reads the LARGEST of them to
-         solve the wall's height — see the note on `.cluster` — because the
-         deepest column is the one that decides whether a hang fits its wall.
-
-         The ratios are not known until the photographs load, so a piece whose
-         photograph has not arrived contributes nothing and the sum falls back to
-         the piece count, which is the ratio a square frame would have. The
-         awaited-frame case is exact: `.piece--pending` is held at 3/2. */
-      var sum = hungPieces.reduce(function (a, i) {
-        var p = pieces[i];
-        var ar = p && p.awaiting ? 1.5 : (p && p.ar ? p.ar : 1.5);
-        return a + ar;
-      }, 0);
-      return '<div class="col" style="--col-rows:' + rows + ';--ar-sum:' + sum.toFixed(3)
-        + ';margin-top:' + drop + 'px">' + hung + '</div>';
+      return '<div class="col" style="--col-rows:' + rows + ';margin-top:' + drop + 'px">'
+        + hung + '</div>';
     });
-    /* The wall takes the deepest column's ratio: the height at which that column
-       still fits is the height at which every column fits. */
-    var maxSum = layout.columns.reduce(function (a, indices) {
-      var sum = indices.filter(function (i) { return pieces[i]; }).reduce(function (s, i) {
-        var p = pieces[i];
-        return s + (p && p.awaiting ? 1.5 : (p && p.ar ? p.ar : 1.5));
-      }, 0);
-      return Math.max(a, sum);
-    }, 0);
     return '<div class="cluster" data-hang="' + esc(layout.name) + '"'
-      + ' style="--col-count:' + layout.columns.length + ';--ar-max:' + (maxSum || 1).toFixed(3) + '">'
-      + cols.join('') + '</div>';
+      + ' style="--col-count:' + layout.columns.length + '">' + cols.join('') + '</div>';
   }
+
+  /* ── The band a hang stands on, solved from its photographs ──────────────
+     A frame's width follows its own photograph, so a hang's natural width is
+     `band x (sum of its pieces' aspect ratios)`. A wall narrower than that does
+     not shrink the photographs — it squeezes their columns, and then
+     `object-fit: contain` draws each one letterboxed inside a box of the wrong
+     shape. Measured before this existed, at 1536x864: the box was 0.489 wide for
+     every 1 of height while the photographs are 1.78 to 2.25, so 15 of 23 frames
+     were 63-77% black bar. A photograph that is 23% photograph is not a
+     photograph.
+
+     So the band is DERIVED, not chosen: the tallest height at which the deepest
+     column still fits its wall. A column's frames divide the band between them,
+     so the deepest column needs `band / rows x arSum` and the wall needs the sum
+     of that across the columns. Solving:
+
+         band = (wallWidth - gaps) / SUM(column arSum / column rows)
+
+     This is the same solve the mockup's layout engine did (`fitRow` in
+     .superpowers/mockups/_gen.mjs`), and it is what makes `--wall-h` a measured
+     number rather than a guess. The aspect ratios come from the photographs
+     themselves, which is why this runs on `load`: before a photograph arrives
+     there is no ratio to solve with, and the stylesheet's clamp is the band until
+     then.
+
+     A wall that cannot fit its hang at any height above the tap floor is left at
+     the floor and clips, which is visible; letterboxing every photograph is not. */
+  function fitWall(cluster) {
+    var wall = cluster.parentElement;
+    if (!wall) return;
+    var cols = [].slice.call(cluster.querySelectorAll('.col'));
+    var ratio = 0;
+    var imgs0 = 0;
+    var solvable = cols.length > 0;
+    for (var i = 0; i < cols.length; i++) {
+      var imgs = [].slice.call(cols[i].querySelectorAll('.piece'));
+      if (!imgs.length) continue;
+      imgs0 += imgs.length;
+      var arSum = 0;
+      for (var j = 0; j < imgs.length; j++) {
+        var im = imgs[j].querySelector('img');
+        /* An awaited frame is held at 3/2 by `.piece--pending`; a photograph
+           whose bytes have not arrived contributes its pending shape and the
+           solve is repeated when it loads. */
+        if (im && im.naturalWidth) arSum += im.naturalWidth / im.naturalHeight;
+        else arSum += 1.5;
+      }
+      if (!arSum) { solvable = false; break; }
+      ratio += arSum / imgs.length;
+    }
+    /* `clientWidth` is the wall's own content box; the gaps are the cluster's.
+       A column's frames divide the band between them, so a column of `n` frames
+       needs `band / n x arSum` of wall — the deepest column is the one that
+       binds, and `ratio` has already summed `arSum / n` per column. */
+    var gaps = 12 * Math.max(0, cols.length - 1);
+    var available = cluster.clientWidth || wall.clientWidth;
+    if (!solvable || !available || !ratio) return;
+    var band = (available - gaps) / ratio;
+    /* ── The tap floor, per FRAME and not per band ─────────────────────────
+       A frame is `band / rows` tall, so the smallest frame is the one in the
+       deepest column. The floor is `rows x 44` for that column, not a flat 44:
+       a band of 44 in a 2-row column gives 22px frames, which is what the
+       previous floor measured — 46x41, two pixels under the target. */
+    var deepest = 1;
+    for (var k = 0; k < cols.length; k++) {
+      deepest = Math.max(deepest, cols[k].querySelectorAll('.piece').length);
+    }
+    var floorH = 44 * deepest;
+    cluster.style.setProperty('--wall-h', Math.max(floorH, Math.round(band)) + 'px');
+  }
+
+  function fitWalls(root) {
+    [].slice.call((root || document).querySelectorAll('.cluster')).forEach(fitWall);
+  }
+  Site.fitWalls = fitWalls;
 
   /* What a piece does when activated. A project piece opens that project's
      dialog; a record piece opens the record's photographs. The gallery index
@@ -1699,6 +1748,33 @@
 
     renderDock();
     renderRooms();
+
+    /* ── The band each wall stands on, solved from its photographs ──────────
+       `renderRooms` writes the hang; the band is a measurement, not a choice,
+       so it is solved once here against whatever ratios are already available
+       (the awaited frames' 3/2, and any photograph the cache has), then again
+       whenever a photograph arrives. A photograph is fetched when the walk
+       reaches it, so an unsolved wall would draw its photographs letterboxed
+       until the visitor got there.
+
+       The listener is on the strip with capture, because `load` does not bubble
+       and the images are added by the renderer rather than by markup. */
+    fitWalls();
+    var strip = document.getElementById('strip');
+    if (strip) {
+      strip.addEventListener('load', function (e) {
+        if (e.target && e.target.tagName === 'IMG') {
+          var cluster = e.target.closest && e.target.closest('.cluster');
+          if (cluster) fitWall(cluster); else fitWalls();
+        }
+      }, true);
+    }
+    window.addEventListener('resize', function () { fitWalls(); });
+    /* The band follows a font-size change too: the label's height is set by its
+       own type, so a webfont arriving moves the wall's width. */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { fitWalls(); });
+    }
 
     /* After the walk and the rooms, so the first update() sees real geometry:
        Lenis has measured the strip and every work has an offsetLeft. */

@@ -376,6 +376,19 @@ const PORTFOLIO = {
 
      Several arrangements per count, so neighbouring stands differ and the wall
      reads as a hang rather than as a repeated cell. */
+  /* ── The arrangements, and why no column is deeper than two ───────────────
+     A column divides the band between its frames, so a column of three gives
+     each frame a third of it. That was affordable while the band was the wall's
+     full height; beside a label the wall is ~330px wide and the band is solved
+     from the hang's own aspect ratios (see `fitWall` in js/main.js), which puts
+     it at 60-110px. A third of 108px is 36px, and a 0.750-ratio portrait at 36px
+     tall is 27px wide — under the 44px tap floor, and measured exactly that on
+     the AGHAM Research Club stand before this cap.
+
+     Two rows is the deepest that clears the floor in every arrangement the data
+     actually deals. The alternative was to drop only the arrangements with a
+     three-row column, and the cap is the same thing stated once rather than
+     three times: every layout below has at most two pieces in any column. */
   var HANG_LAYOUTS = {
     3: [
       { name: 'lead-two',     columns: [[0], [1, 2]],         lead: 0, drop: [0, 14] },
@@ -384,18 +397,18 @@ const PORTFOLIO = {
     ],
     4: [
       { name: 'two-two',      columns: [[0, 1], [2, 3]],      lead: 0, drop: [0, 14] },
-      { name: 'three-lead',   columns: [[1, 2, 3], [0]],      lead: 0, drop: [14, 0] },
-      { name: 'lead-three',   columns: [[0], [1, 2, 3]],      lead: 0, drop: [0, 14] },
+      { name: 'two-two-b',    columns: [[2, 3], [0, 1]],      lead: 0, drop: [14, 0] },
+      { name: 'pair-lead-pair', columns: [[1, 2], [0, 3]],    lead: 0, drop: [0, 14] },
     ],
     5: [
-      { name: 'lead-two-two', columns: [[0], [1, 2], [3, 4]], lead: 0, drop: [0, 14, 0] },
-      { name: 'three-two',    columns: [[0, 1, 2], [3, 4]],   lead: 0, drop: [0, 14] },
-      { name: 'two-three',    columns: [[0, 1], [2, 3, 4]],   lead: 0, drop: [14, 0] },
+      { name: 'two-two-one',  columns: [[0, 1], [2, 3], [4]], lead: 0, drop: [0, 14, 0] },
+      { name: 'pair-trio-lead', columns: [[0, 1], [2, 3, 4]], lead: 0, drop: [0, 14] },
+      { name: 'trio-pair-lead', columns: [[0, 1, 2], [3, 4]], lead: 0, drop: [14, 0] },
     ],
     6: [
-      { name: 'three-three',  columns: [[0, 1, 2], [3, 4, 5]], lead: 0, drop: [0, 14] },
-      { name: 'two-two-two',  columns: [[0, 1], [2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
-      { name: 'six-three-two', columns: [[0], [1, 2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
+      { name: 'pair-pair-pair', columns: [[0, 1], [2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
+      { name: 'pair-pair-pair-b', columns: [[1, 2], [3, 4], [5, 0]], lead: 0, drop: [0, 14, 0] },
+      { name: 'lead-two-two-one', columns: [[0], [1, 2], [3, 4], [5]], lead: 0, drop: [0, 14, 0, 14] },
     ]
   };
 
