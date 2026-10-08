@@ -2464,7 +2464,19 @@ body {
 
    This is also why `ux-check` reads `overflow-y` rather than a boolean when it
    asks whether a label is clipped: `hidden` is copy a visitor cannot reach,
-   `auto` is copy they can. */
+   `auto` is copy they can.
+
+   ── The fade retires when there is nothing left to cue ────────────────────
+   The gradient is drawn on the scrollport, so it sits at the bottom of the box
+   whatever the scroll position — including at the END of the scroll, where the
+   last line of the copy lands in a strip that fades to fully transparent. That
+   is copy a visitor cannot finish reading, which is the fault this whole rule
+   exists to avoid. Measured: at the scroll end the last paragraph's bottom edge
+   sat exactly on the label's bottom edge, 26px inside the band.
+
+   `js/main.js` marks a label whose scroll has reached its end, and the mask is
+   dropped there. The mark is a class and not a style, so the fade stays the
+   stylesheet's business. */
 .label {
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -2472,6 +2484,11 @@ body {
   scrollbar-color: var(--edge) transparent;
   -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
   mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
+}
+
+.label[data-scroll-end] {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* ── The exhibition label ─────────────────────────────────────────────

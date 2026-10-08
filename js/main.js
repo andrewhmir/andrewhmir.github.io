@@ -965,6 +965,32 @@
   }
   Site.fitWalls = fitWalls;
 
+  /* ── The label's fade, which must retire at the end of its scroll ────────
+     The mask in css/styles.css is a cue that there is more below. Drawn on the
+     scrollport it also sits over the LAST line at the end of the scroll, where
+     there is nothing left to cue and the copy is instead unreadable — measured,
+     the last paragraph's bottom edge landed 26px inside a band that fades to
+     fully transparent.
+
+     So a label whose scroll has reached its end is marked, and the stylesheet
+     drops the mask there. The mark is recomputed on every scroll, which is one
+     comparison per event on a handful of labels. */
+  function markLabelScrollEnd(label) {
+    var atEnd = label.scrollTop + label.clientHeight >= label.scrollHeight - 1;
+    if (atEnd) label.setAttribute('data-scroll-end', '');
+    else label.removeAttribute('data-scroll-end');
+  }
+
+  function initLabelFades(root) {
+    [].slice.call((root || document).querySelectorAll('.label')).forEach(function (label) {
+      if (label.__fadeBound) return;
+      label.__fadeBound = true;
+      label.addEventListener('scroll', function () { markLabelScrollEnd(label); }, { passive: true });
+      markLabelScrollEnd(label);
+    });
+  }
+  Site.initLabelFades = initLabelFades;
+
   /* What a piece does when activated. A project piece opens that project's
      dialog; a record piece opens the record's photographs. The gallery index
      is the record's own position in its array, so a record with no
@@ -1760,6 +1786,7 @@
        The listener is on the strip with capture, because `load` does not bubble
        and the images are added by the renderer rather than by markup. */
     fitWalls();
+    initLabelFades();
     var strip = document.getElementById('strip');
     if (strip) {
       strip.addEventListener('load', function (e) {
