@@ -808,6 +808,41 @@ await section('The deepest hang stays inside the room', async () => {
     check('every scrolling label is reachable by keyboard at ' + w + 'x' + h,
           kbd.length === 0, kbd.join('; '));
 
+    /* ── And the copy at the END of that scroll is readable ─────────────────
+       The label's mask gradient is a fade cue, and a fade cue drawn on the
+       scrollport always sits at the bottom of the box — including at the end of
+       the scroll, where there is nothing left to cue. Measured before this
+       assertion: at the scroll end the last paragraph's bottom edge landed
+       exactly on the label's bottom edge, which is 26px inside a band that fades
+       to fully transparent, so the final line of the copy was drawn into an
+       invisible strip. A scrollable region a visitor cannot finish reading is
+       the same fault as a clipped one.
+
+       The test is the mask's own state: at the end of the scroll the label must
+       carry no fade. Read as `mask-image` rather than as a class, because the
+       class is the implementation and the mask is what the visitor sees. */
+    /* The test scrolls and WAITS: marking the end is a scroll handler, and a
+       programmatic scrollTop is delivered asynchronously like a real one, so
+       reading the mask in the same turn reads the state before the visitor's
+       own scroll would have produced it. */
+    const fade = await evaluate(`(async () => {
+      const out = [];
+      const labels = [...document.querySelectorAll('#strip .label')]
+        .filter(l => l.scrollHeight > l.clientHeight + 1);
+      for (const l of labels) {
+        const id = l.closest('.room').getAttribute('data-room') + ':' + l.closest('.group').dataset.entry;
+        l.scrollTop = l.scrollHeight;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const atEnd = getComputedStyle(l).maskImage;
+        l.scrollTop = 0;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        if (atEnd && atEnd !== 'none') out.push(id + ' still fades at the scroll end: ' + atEnd);
+      }
+      return out;
+    })()`);
+    check('a scrolling label does not fade over its own last line at ' + w + 'x' + h,
+          fade.length === 0, fade.slice(0, 3).join(' | '));
+
     /* ── No photograph is letterboxed ───────────────────────────────────────
        This is the assertion whose absence let a real fault ship. The check above
        (a frame is as wide as its photograph) compares `.piece`'s width to its own
