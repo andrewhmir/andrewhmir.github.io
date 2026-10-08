@@ -75,11 +75,22 @@ the 44px tap floor. Measured at a 317px wall: three frames of 44×691, which is 
 divides the band between its own frames, so a column of two stands tall and a column of three splits
 the same band three ways, and no arrangement can overrun the fold because the deepest column is the
 one that divides by the most. That is also why every arrangement keeps its columns at most three deep
-— a column of five would have hung five frames one-fifth of the band tall. Two numbers in
-`css/styles.css` are the whole dial now: `--label-col` (the label's cell, which sets the wall's
-width) and `--wall-h` (the band a stand gives its hang). `--band-h`, `--frame-h`, `--max-panel-h` and
-`--label-w` are retired with the stacked shape they described. `tools/stand-fit.mjs`,
-`tools/avg-frame.mjs` and `tools/label-fit.mjs` measure what they produce.
+— a column of five would have hung five frames one-fifth of the band tall. Every arrangement is at
+most two rows deep, which is the deepest that keeps the narrowest frame above the 44px tap floor in
+a wall this wide.
+
+**The band is solved, not chosen.** A frame's width follows its photograph, so a hang needs
+`band × (the sum of its aspect ratios)` of wall. `fitWall` in `js/main.js` solves that for the band
+— `(wall − gaps) / SUM(column arSum / column rows)` — from the photographs themselves, on load, on
+resize and after the fonts settle; `css/styles.css`'s `--wall-h` clamp is the band until the first
+photograph arrives. Without that solve the frame is an arbitrary box and `object-fit` draws the
+photograph letterboxed inside it: measured, 15 of 23 frames at 1536×864 were 63–77% black bar
+before the solve existed, and `ux-check` now asserts no photograph is letterboxed by comparing each
+photograph's content box to its natural ratio.
+
+`--label-col` (the label's cell, which sets the wall's width) is the other dial. `--band-h`,
+`--frame-h`, `--max-panel-h` and `--label-w` are retired with the stacked shape they described.
+`tools/stand-fit.mjs`, `tools/avg-frame.mjs` and `tools/label-fit.mjs` measure what they produce.
 
 **The label column scrolls when its content does not fit, and the suite can tell that apart from
 clipping.** The arithmetic does not always close: at the 1280×704 floor PALAD's label needs 530px of

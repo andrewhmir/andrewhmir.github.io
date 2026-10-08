@@ -2225,24 +2225,29 @@ body {
   gap: var(--cluster-gap);
   flex: 0 0 auto;
   /* ── The wall a hang stands on, which the columns divide ────────────────
-     A wall beside a label is narrower than a row of wide photographs wants.
-     Measured on PALAD's `lead-two` at 1536x864 with a 490px wall: at full height
-     the hang needs 1,189px, so the columns were squeezed until every frame sat
-     on the 44px tap floor — a wall of slivers, area 62,124 px² a screen. Letting
-     each column's height follow its own photograph divides the wall's width
-     instead, and collapses the frames to 44x29: a frame's box would be sized
-     against a parent whose height is derived from that same box.
+     A wall beside a label is narrower than a row of wide photographs wants,
+     measured at 330px at 1536x864 and 375px at 1440x900 — the label has the rest
+     of the stand. So the band is SOLVED for that wall rather than chosen.
 
-     So the wall is a fixed band and a column divides IT, which is the division
-     the pre-two-cell build did with `--band-h` — the difference is that this band
-     is a share of the wall's own WIDTH rather than a constant, so it scales with
-     the cell it was given. `--wall-h` is written by renderWall in js/main.js:
-     the largest height at which a hang of this many photographs still fits,
-     `wall / (sum of the widest column's ratios)`, clamped to the cell.
+     `--wall-h` below is the fallback, and the clamp is what a wall wears until
+     its photographs have loaded and their ratios are known. Then `fitWall` in
+     js/main.js overwrites it, inline, with
 
-     Below the clamp the frames come out landscape and fill the wall's width;
-     above it the wall has height to spare and the frames are as large as the
-     wall allows. Nothing is cropped and nothing is letterboxed. */
+         (wall − gaps) / SUM(column arSum / column rows)
+
+     — the tallest band at which the deepest column still fits the wall. A column
+     of `n` frames is `band / n` tall each, so it needs `band / n × arSum` of
+     wall, and the columns sum.
+
+     This is not a refinement; it is the difference between photographs and black
+     bars. A frame's width follows its photograph, so a frame standing in a box
+     the layout happened to leave — rather than in a box sized to the band the
+     solve chose — draws the photograph fitted inside the wrong shape. Measured
+     before the solve existed: 15 of 23 frames at 1536x864 were 63-77% black bar,
+     and the box was 0.489 wide per 1 of height against photographs of 1.78 to
+     2.25. Nothing is cropped and nothing is letterboxed, and `ux-check` asserts
+     the second of those by comparing each photograph's content box to its own
+     natural ratio. */
   --wall-h:         clamp(150px, 22vh, 320px);
   height: min(100%, var(--wall-h));
   /* The wall is bounded by its cell, and that bound is visible: a grid item
