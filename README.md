@@ -79,6 +79,19 @@ one that divides by the most. That is also why every arrangement keeps its colum
 most two rows deep, which is the deepest that keeps the narrowest frame above the 44px tap floor in
 a wall this wide.
 
+**A column the arrangement drops is held by the cell, not cut by it.** An arrangement offsets a
+column down by 14px so a stack never reads as one tall frame, and that offset is a margin — so the
+dropped column's outer box is 14px taller than the band, and the frame at its foot hangs that far
+below the cell. The cell's `overflow: hidden` is what stops a hang painting over its neighbour, so
+it cut the difference off: measured, 10 of the collection's 32 frames — one per stand — each lost
+exactly 14px, the gilt and the mat and, on six of them, part of the photograph itself. An awaited
+frame in that position is the shape a visitor reported: a black rectangle with no bottom edge, which
+is a hole rather than a reserved place. `--drop` is now the deepest offset the arrangement actually
+deals, written on the cluster by `renderCluster` and spent as the cell's own `padding-bottom` with
+`box-sizing: content-box`, so the room is added below the band instead of being taken out of it.
+`ux-check` measures every frame against its cell's padding box — the edge the clip really happens at
+— rather than against the stand, which is the looser box that let this ship.
+
 **The band is solved, not chosen.** A frame's width follows its photograph, so a hang needs
 `band × (the sum of its aspect ratios)` of wall. `fitWall` in `js/main.js` solves that for the band
 — `(wall − gaps) / SUM(column arSum / column rows)` — from the photographs themselves, on load, on

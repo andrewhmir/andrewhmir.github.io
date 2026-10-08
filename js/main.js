@@ -877,7 +877,14 @@
 
        The drop is a margin, not padding: padding belongs to the column's own
        box, so a padded column would report itself taller than its frames and
-       the band budget would be spent twice. */
+       the band budget would be spent twice.
+
+       And because it IS a margin, the dropped column's outer box is taller than
+       the band by exactly the drop — which is why the arrangement publishes its
+       deepest drop on the cluster as `--drop`. The drop has to live somewhere,
+       and the cell is what has to hold it: see the note on `.cluster`'s
+       `padding-bottom` in css/styles.css. */
+    var dropMax = layout.drop.reduce(function (a, d) { return d > a ? d : a; }, 0);
     var cols = layout.columns.map(function (indices, ci) {
       var hung = indices.filter(function (i) { return pieces[i]; })
         .map(function (i) { return piece(pieces[i], i); }).join('');
@@ -887,7 +894,8 @@
         + hung + '</div>';
     });
     return '<div class="cluster" data-hang="' + esc(layout.name) + '"'
-      + ' style="--col-count:' + layout.columns.length + '">' + cols.join('') + '</div>';
+      + ' style="--col-count:' + layout.columns.length + ';--drop:' + dropMax + 'px">'
+      + cols.join('') + '</div>';
   }
 
   /* ── The band a hang stands on, solved from its photographs ──────────────

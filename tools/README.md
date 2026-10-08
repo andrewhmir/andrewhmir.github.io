@@ -23,8 +23,13 @@ It is also the only place the gallery's own geometry can be checked, because the
 DOM stub in `tests/` models no CSS: that no gallery is narrower than one screen,
 that every label is the same width, that the deepest arrangement stays inside
 the room's band at both reference viewports, and that every frame clears 44×44
-there. The honours room is measured here too, because "three columns" is a
-layout fact and no unit check can see it: that it is exactly one screen wide,
+there. Each frame is measured against its own WALL CELL as well as against its
+stand, because the cell is the box that clips and the stand is the looser of the
+two: a stand-level check passed a frame the cell had cut, which is how the 14px
+drop shaved the bottom off one frame per stand — six of them photographs —
+without any check noticing. The honours room is measured here too, because
+"three columns" is a layout fact and no unit check can see it: that it is exactly
+one screen wide,
 that its tiles land in three columns and no more than two rows, that none of
 them crosses the dock band or the fold at 1440×900 and at 1280×704, and that
 each one clears 44×44.

@@ -726,6 +726,55 @@ await section('The deepest hang stays inside the room', async () => {
           budgeted.length === 0,
           budgeted.length + ' outside the stand: ' + budgeted.slice(0, 6).join(' | '));
 
+    /* ── And no frame is clipped by its own WALL CELL ──────────────────────
+       The check above measures a frame against its STAND, and the stand is the
+       looser box of the two: `.group` is 1040x563 at 1440x900 while the wall
+       cell inside it is 375x110. A frame the cell cuts is still inside the
+       stand, so that check passed it — which is how this fault shipped.
+
+       What cuts is `.cluster`'s own `overflow: hidden`, so the edge that matters
+       is the cell's PADDING box, which is where the clip actually happens. The
+       cause is the drop: an arrangement offsets a column down by writing an
+       inline `margin-top`, and a margin adds to the column's outer height
+       without adding to the cell's, so the dropped column's last frame hangs
+       exactly the drop below the clip edge. What it loses is the bottom of
+       itself — the gilt, the mat, and on a hung frame part of the photograph.
+
+       Measured as shipped at every reference viewport: 10 of the collection's 32
+       frames, one per stand, each losing exactly 14px — six of them real
+       photographs, and the worst of those (Leadership's three-across) losing 14
+       of its 103px. A visitor was being shown 86% of a photograph with a flat
+       cut across the bottom. */
+    const inCell = await evaluate(`(() => {
+      const out = [];
+      const name = (p) => p.closest('.room').getAttribute('data-room') + ':' +
+        p.closest('.group').dataset.entry + ':' + p.dataset.piece;
+      document.querySelectorAll('#strip .cluster').forEach(cl => {
+        const cs = getComputedStyle(cl);
+        const box = cl.getBoundingClientRect();
+        /* The clip is at the padding box, so the border is taken off the box —
+           and it stays correct if the cell ever carries padding of its own. */
+        const clipBottom = box.bottom - (parseFloat(cs.borderBottomWidth) || 0);
+        const clipRight = box.right - (parseFloat(cs.borderRightWidth) || 0);
+        cl.querySelectorAll('.piece').forEach(p => {
+          const r = p.getBoundingClientRect();
+          if (r.height === 0) return;
+          const below = r.bottom - clipBottom, past = r.right - clipRight;
+          if (below > 1) {
+            out.push(name(p) + ' loses ' + Math.round(below) + 'px of ' +
+              Math.round(r.height) + ' below its wall');
+          }
+          if (past > 1) {
+            out.push(name(p) + ' runs ' + Math.round(past) + 'px past its wall');
+          }
+        });
+      });
+      return out;
+    })()`);
+    check('no frame is clipped by its own wall cell at ' + w + 'x' + h,
+          inCell.length === 0,
+          inCell.length + ' cut by the wall: ' + inCell.slice(0, 6).join(' | '));
+
     /* ── The stand's own shape, which is what this work changes ─────────────
        A stand is two cells: the hang and the label beside it. Three properties
        follow, and none of them is visible to tests/, which models no CSS.

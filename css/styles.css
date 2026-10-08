@@ -2249,7 +2249,32 @@ body {
      the second of those by comparing each photograph's content box to its own
      natural ratio. */
   --wall-h:         clamp(150px, 22vh, 320px);
+  /* Declared here as the shape a stand with no arrangement of its own wears —
+     renderCluster overwrites it inline with the deepest drop the arrangement
+     actually deals, so the two cannot drift: one that starts dropping a column
+     further brings its own room, and one that stops dropping takes it away. */
+  --drop:           0px;
   height: min(100%, var(--wall-h));
+  /* ── The room an arrangement's drop spends, which the cell has to hold ───
+     An arrangement offsets a column down by writing an inline `margin-top` (see
+     HANG_LAYOUTS in js/data.js), and a margin adds to that column's OUTER box
+     without adding to the cell's. So the dropped column's last frame hung
+     exactly the drop below this box's bottom edge, and the `overflow: hidden`
+     below — which is here on purpose — cut that much off it: the gilt, the mat,
+     and on a hung frame part of the photograph. Measured as shipped at every
+     reference viewport: 10 of the collection's 32 frames, one per stand, each
+     losing exactly 14px, six of them real photographs. `ux-check` asserts the
+     cell's padding box against every frame's own box now, and this is the rule
+     that answers it.
+
+     `content-box` is explicit and load-bearing, not tidiness. The page sets
+     `border-box` globally, and under it this padding would come OUT of the
+     height above instead of adding to it — the columns divide the content box,
+     so every frame in a dropped arrangement would have lost half the drop, and
+     the 44px tap floor with it. With `content-box` the height stays the band the
+     solve chose, and the drop hangs in the room below it. */
+  box-sizing: content-box;
+  padding-bottom: var(--drop);
   /* The wall is bounded by its cell, and that bound is visible: a grid item
      whose content is wider than its track overflows the track by default, so a
      hang wider than the stand paints past `overflow: hidden`'s clip edge —
@@ -2384,15 +2409,31 @@ body {
    there, and it takes the same share of its column that a hung frame would.
 
    The mat is drawn as an inset shadow because a hung frame gets its mat from
-   the image's own 6px border and this frame has no image. Without it the
-   interior is the piece's black ground inside a gilt edge — on a near-black
-   wall that is a hole, not a reserved place. The drop shadow is repeated here
-   because box-shadow does not add across rules. */
+   the image's own 6px border and this frame has no image. The drop shadow is
+   repeated here because box-shadow does not add across rules.
+
+   ── And the opening is NOT the piece's black ground ───────────────────────
+   That was the fault a visitor reported on the Robotics wall: a frame whose
+   opening was #000 read as a hole punched in the wall rather than as a place
+   kept for a photograph. Measured on the shipped page around Project PALAD's
+   awaited frame, the wall a visitor sees beside it is rgb(15,22,26) to
+   rgb(18,27,31) — so the black opening was DARKER than the wall it hung on,
+   which is what made it read as a void.
+
+   The opening is a slate a step LIGHTER than that wall, shaded inward from its
+   top edge, so the frame reads as an opening with nothing in it: plainly not a
+   photograph, and not a hole either. #1e262c is that step — rgb(30,38,44)
+   against the wall's rgb(15,22,26) — and it stays a step lighter under the
+   piece's own unlit brightness of .9, which is what most of the wall most of
+   the time wears. */
 .piece--pending {
   width: auto;
   aspect-ratio: 3 / 2;
   cursor: default;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .66), inset 0 0 0 6px #ece3d2;
+  background: #1e262c;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .66),
+              inset 0 0 0 6px #ece3d2,
+              inset 0 2px 9px 5px rgba(0, 0, 0, .55);
 }
 
 /* The photograph fills its frame's height and its width follows its own
