@@ -13,8 +13,10 @@
 
    The tail below 21 is the walk's interior, unnumbered. Its headings in file
    order: `The dock:` · `The walk's progress` · `The narrow dock` ·
-   `The sticky room rail` · `Room furniture:` · `The groups:` · `The stand:` ·
-   `The wall: one budget` · `A column's one budget` · `The loading floor` ·
+   `The room heading is the walk's sticky sign` · `Room furniture:` ·
+   `The groups:` · `The stand:` ·
+   `The hang cell:` · `The legend:` · `The wall: one budget` ·
+   `A column's one budget` · `The loading floor` ·
    `The lead has no rule` · `The label column scrolls` · `The exhibition label` ·
    `The label's interior` · `The account:` · `The awards,` · `The team caption` ·
    `The honours room:`
@@ -199,18 +201,45 @@
 
      56% of the stand is where a hang fits as pictures rather than slivers. The
      label then gets 691px at 1440 and 614px at 1280 — enough for the account in
-     two columns at 12.5px, which is the size the owner chose. */
-  --label-col:      clamp(480px, 44vw, 700px);
-  /* The furniture column inside the label — the summary, the awards, the team
-     caption and the catalogue. A share of the label rather than a fixed width,
-     so the two interior columns keep their proportion at every screen. */
-  --label-side:     42%;
+     two columns at 12.5px, which is the size the owner chose.
+
+     ── Both numbers were retuned when the legend moved under the hang ────────
+     The label is a VIEWPORT SHARE again rather than a fixed cell, and the stand
+     is wider than it was. The catalogue left this column for the wall (see
+     `── The legend` below), so the label has one block fewer to hold and the
+     account is the only thing that decides whether it fits. Measured at
+     1440x900: the label's own content was 743px in the 44vw/634px cell it had,
+     which scrolled, and the same record fits with room to spare once the
+     catalogue is out of it.
+
+     It has to be a SHARE and not a fixed width, and that is measured rather than
+     assumed: a 560px cell fits every record at 1440x900 and overflows by 91px at
+     1536x864, because the label's type is a share of the viewport and its cell
+     was not. The column has to grow with the type it holds. */
+  --label-col:      clamp(520px, 44vw, 720px);
+  /* ── The furniture column inside the label — the summary, the awards and the
+     team caption. It was 42%, sized when the catalogue was its fourth block; the
+     catalogue is on the wall now, and the three blocks that remain are wider
+     than they are tall, so the account takes the share the catalogue gave up.
+     A share of the label rather than a fixed width, so the two interior columns
+     keep their proportion at every screen.
+
+     This is a floor as well as a preference, and the measurement is the reason:
+     at 26% the awards block wraps to 684px inside a 650px cell at 1536x864, so
+     the FURNITURE becomes the tall pole and the label scrolls; at 36% the
+     account loses the width it needs and the PROSE becomes one. 30% is where
+     both columns are shorter than the cell they share at every viewport the
+     suite measures. */
+  --label-side:     30%;
   --group-col-gap:  clamp(24px, 2.2vw, 40px);
-  /* ── The rail and the room title ──────────────────────────────────────
-     The rail's own line box, which is the band the room's top padding reserves
-     above its content. 35px, measured at 1536x864 where `.rr-title` resolves to
-     17px of Newsreader at `line-height: 1.2`. */
-  --rail-h:         35px;
+  /* ── The room's gutter ────────────────────────────────────────────────
+     The one number the room's side padding and the sticky heading's pin offset
+     both read. They were two: the padding carried a literal 34px, and the rail
+     that the heading replaced carried a `clamp(18px, 2.4vw, 34px)` offset of
+     its own — equal at a wide viewport, and drifting apart below 1400px. The
+     pinned heading has to sit on the same edge as the stands it heads, so the
+     pin reads this token and so does the padding. */
+  --room-gutter:    34px;
   /* The room title's block, which is what a stand's band has to give up.
      DERIVED from the title's own type rather than measured per viewport, so
      the two cannot drift: `.room-title`'s font size is one line tall (1.15),
@@ -224,15 +253,15 @@
      is the single definition both read. */
   --room-title-type: clamp(1.7rem, 2.9vw, 3rem);
   --room-title-h:    calc(var(--room-title-type) * 1.65 + 6px);
-  /* The measure for the label's one-line blocks — the narrative's opening line
-     and each team caption. The ACCOUNT deliberately carries no cap: it is the
-     longest prose on the stand and the block that decides whether the stand
-     fits, so its own column is its measure. 56ch is the value those two rules
-     used to carry as a `var()` fallback while the token was undefined; naming it
-     here is what shell-check's "every var() is defined" asks for, and it keeps
-     the two rules' measure in one place. */
-  --label-measure:   56ch;
-  --stand-w:        clamp(1040px, 64vw, 1320px);
+  /* ── `--label-measure` is RETIRED, with the two rules that read it ────────
+     It was 56ch: the measure for the label's one-line blocks, the narrative's
+     opening line and each team caption. The narrative reads the label's width
+     now and the team caption sits in the 30% furniture column, which is
+     narrower than any cap a `ch` measure would impose — and a `ch` in Georgia,
+     the caption's own family, is wide enough that 56ch would have run past the
+     column rather than capping it. Nothing reads this name; it is kept as a
+     comment so the next search for it finds the reason it is gone. */
+  --stand-w:        clamp(1100px, 68vw, 1440px);
   --col-gap:     clamp(  6px,  1.1vh,  10px);
   /* Horizontal, so it is not part of the vertical budget the fold measures — but
      the deepest arrangement puts three frames side by side and the four columns
@@ -1696,14 +1725,20 @@ button.record-item {
      dock's top edge by a measured 48px at the spec's 1280x704 floor.
 
      Both ends were re-measured against the chrome that is actually there rather
-     than against the estimates. The head is 42px: the rail is 35px tall, and
-     7px is the clearance the tallest room title (Honours) has at 1920x1080.
+     than against the estimates. The head is 42px: it reserved the rail's 35px
+     plus the 7px clearance the tallest room title (Honours) had at 1920x1080.
+     The rail is deleted — the room's own heading is the sticky sign now, and it
+     sits BELOW this padding rather than under a fixed bar — so the 42px is
+     headroom the heading does not need and nothing else claims. It is left
+     exactly as it was on purpose: giving it back to the pictures moves every
+     number below, and that is its own change with its own measurements, not a
+     side effect of removing a piece of chrome.
      The foot is 92px, not 100: the dock's own box is 65px and it sits 18px off
      the bottom, so it reaches 83px up — and the 9px left over is the gap a room
      wants between its last line and the dock's edge. Measured, these two numbers
      and the rail's own 20px come to 20px more usable band at 1536x864 (729 ->
      749) and 19px at 1440x900 (767 -> 786). */
-  padding: 42px 34px 92px;
+  padding: 42px var(--room-gutter) 92px;
   /* ── The room is a scrim over the mural, not a wall of its own ──────────
      This was an OPAQUE gradient, and an opaque room hides the mural completely
      — which is the whole job of these alphas. Each stop keeps its old role
@@ -1812,7 +1847,13 @@ body {
 /* ── The dock: the walk's directory, gathered at its foot ──
    The 94px band this replaces sat at the top of the walk and covered the
    room title; 84 of its pixels were empty gradient. At the foot it spends
-   only wall no room was using, and the top edge belongs to the room. */
+   only wall no room was using, and the top edge belongs to the room.
+
+   It is also where the walk's position is drawn now. `.rail` used to draw the
+   same fraction as a 2px hairline along the screen's own bottom edge, and that
+   rule is deleted rather than left here: it styled an element the shell no
+   longer has, and a live rule for a deleted element is documentation that lies.
+   The fraction is `.dock-track::after`, inside the dock's own box. */
 .dock {
   position: fixed;
   left: 50%;
@@ -1998,60 +2039,48 @@ body {
   }
 }
 
-/* ── The sticky room rail ────────────────────────────────────────────────
-   Names the area the walk is standing in, at the head of the screen. It is
-   the one element fixed over a room; a title pinned over a hang was rejected
-   when it was a second copy of a heading already on the wall, and this is not
-   that — it is the only way to know which area an 8,700px wall belongs to.
-   `pointer-events: none` keeps it out of the way of the controls beneath it,
-   which is the whole reason it can sit at z-index above them.
+/* ── The room heading is the walk's sticky sign ───────────────────────────
+   It names the area the walk is standing in, and it does that as ITSELF: the
+   room's own `h2.room-title`, at its own 27-48px, travelling with the walk.
+   There is no second element and no second copy of the name.
 
-   It carries BOTH lines spec §8.1 draws — the area's title and its count — and
-   they are on ONE line, which is how that spec draws them. It measured 52px
-   because `.rr-title` inherited the document's 1.55 line-height, giving a
-   29.4px line box around a 22.8px glyph run; the line-height is set here, which
-   is 20px of every wall given back without moving either line, changing their
-   size, or removing either of them. The padding came down with it. At 1920x1080
-   that leaves the room title 7px clear of the rail at its worst (the Honours
-   room, whose title is its tallest).
+   It replaced `.room-rail`, a `position: fixed` bar at the head of the screen
+   holding a 15-19px duplicate of the current room's title and subtitle, which
+   `writeRail()` refilled on every boundary crossed. That element had been
+   argued for on the grounds that a title pinned over a hang would be a second
+   copy of a heading already on the wall — and the argument was right about the
+   fault and wrong about the fix: it answered a duplicate by making one. The
+   real heading pins itself now, so nothing is duplicated, and the rail's
+   markup, its rules, its `--rail-h` token and its write path are all deleted
+   rather than left here — a live rule for a deleted element is documentation
+   that lies.
 
-   It replaces `.rail`, which drew the walk's position as a 2px hairline along
-   the screen's own bottom edge. That rule is deleted rather than left here:
-   `.rail` styled an element Task 2 removed from the shell, and a live rule for
-   a deleted element is documentation that lies. The same fraction is drawn
-   inside the dock now, as `.dock-track::after`. */
-.room-rail {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 950;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 6px clamp(18px, 2.4vw, 34px);
-  background: linear-gradient(180deg, rgba(8, 12, 14, .92), rgba(8, 12, 14, 0));
-  pointer-events: none;
-}
+   ── Why `.room > .room-title` and not a bare `.room-title` ────────────────
+   `.room > * { position: relative }` is specificity 0-1-1 and a bare class is
+   0-1-0, so a bare rule loses to it and the heading silently stops sticking.
+   The extra class in the selector is load-bearing, not stylistic.
 
-.rr-title {
-  font-family: var(--font-heading);
-  font-size: clamp(15px, 1.05vw, 19px);
-  /* The one line-height on the page that is a height budget rather than type
-     setting: this line box is the whole of the rail's height. At the inherited
-     1.55 it was 29.4px around a 22.8px run and the rail was 52px; at 1.2 it is
-     22.8px and the rail is 35px. The glyphs do not move. */
-  line-height: 1.2;
-  color: var(--text-strong);
-}
+   ── Why `align-self` is the whole trick ──────────────────────────────────
+   Sticky travels only through the DISTANCE between the element's own size and
+   its containing block's. `.room` is a column flex container, so `stretch` —
+   the default — makes the heading exactly as wide as the room, leaving that
+   distance at zero: `position: sticky` would be correct, present, and inert.
+   `align-self: flex-start` gives the heading its own text width, which is the
+   slack it travels through.
 
-.rr-meta {
-  font-family: var(--font-mono);
-  font-size: clamp(9.5px, 0.6vw, 11px);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-quiet);
+   `max-width: 100%` is the safety on the other side of that. Shrinking to
+   max-content means a long subtitle — Honours is "Competitions, conferences and
+   citations · 5 HONOURS" — would stop wrapping and paint over the neighbouring
+   room, since nothing between here and `#hall` clips. Capping it at its room
+   restores the wrap exactly where the text needs the whole width, and that is
+   also the only case where the heading has no slack to travel through — which
+   is the Honours, About and Contact rooms, each exactly one screen wide, where
+   there is nothing to travel across in the first place. */
+.room > .room-title {
+  position: sticky;
+  left: var(--room-gutter);
+  align-self: flex-start;
+  max-width: 100%;
 }
 
 /* ── Room furniture: the title ──
@@ -2192,7 +2221,63 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-/* The columns of the hang, in flow, so each frame takes its own photograph's
+/* ── The hang cell: the hang, and the legend under it ──────────────────────
+   The stand's first cell, and it holds TWO blocks: the cluster, and the legend
+   that names each photograph. It is a flex column with the legend pinned to its
+   foot, which is what makes the cell's height the thing the legend is measured
+   against: a legend anywhere in the middle would sit on top of the hang the
+   moment the two together were taller than the cell.
+
+   `margin-top: auto` on the legend does the pinning, and the cluster takes what
+   is left. That is the shape the hang wants: a short arrangement leaves a band
+   of wall between the pictures and their names, exactly as a hang centred on a
+   wall does, and a tall one closes the gap rather than pushing its own legend
+   out of the cell.
+
+   It is a BOX that clips — `overflow: hidden`, exactly as the stand had before
+   this element existed — so a legend that could not fit would be cut off
+   silently, which is the one fault this shape can produce that nothing else
+   would notice. `ux-check` measures every legend against this cell for that
+   reason, and the heights here are chosen so it never happens.
+
+   Named `.hang-cell` and NOT `.wall`: the vocabulary calls this box the wall
+   CELL, but `.wall` is reserved for the mural layer this repo forbids — see the
+   `WHY NOT A .wall ELEMENT` note under the walk, and shell-check's guard. */
+.hang-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── The legend: the catalogue, under the hang ─────────────────────────────
+   It was the label's side column. It is here because it is text about the
+   HANG — one entry per photograph, keyed by the letter the arrangement hung —
+   and a photograph's own name belongs under the photograph rather than in the
+   cell beside it. Moving it is also what let the label stop scrolling: it was
+   the tallest of the label's side blocks.
+
+   Its width is a share of the WALL rather than the wall's full width, because
+   the entries are prose and the label beside them is a reading column: at 62%
+   of a 588px wall an entry is ~365px, which is a 45-character line, and the
+   remaining 38% is the air a caption needs to read as a caption. The same 62%
+   is what the hang is given, so the legend and the pictures it names share one
+   left edge and one right edge.
+
+   `flex: 0 0 auto` is load-bearing: the legend is the block whose natural
+   height the cluster must not be allowed to spend, and a shrinkable legend
+   would be squeezed to nothing before the cluster gave up any of its height. */
+.legend {
+  flex: 0 0 auto;
+  width: 62%;
+  min-width: 0;
+  margin-top: auto;
+}
+
+/* ── The columns of the hang, in flow, so each frame takes its own photograph's
    width. How many columns there are, and which pieces sit in each, is the
    arrangement's business; the drop that keeps a stack from reading as one tall
    frame is written inline per column.
@@ -2228,7 +2313,14 @@ body {
   display: flex;
   align-items: stretch;
   gap: var(--cluster-gap);
-  flex: 0 0 auto;
+  /* The hang is a block of the wall ABOVE its legend, so it is sized but does
+     not grow: it takes the band `fitWall` solved for it and no more. It was
+     `flex: 0 0 auto` with `height: min(100%, var(--wall-h))` when it was the
+     wall's only child; a basis is what lets it keep that height while sharing
+     the cell with the legend. `min-height: 0` lets it be shorter than its
+     contents rather than pushing the legend out of the cell. */
+  flex: 0 0 var(--wall-h);
+  min-height: 0;
   /* ── The wall a hang stands on, which the columns divide ────────────────
      A wall beside a label is narrower than a row of wide photographs wants,
      measured at 330px at 1536x864 and 375px at 1440x900 — the label has the rest
@@ -2259,7 +2351,11 @@ body {
      actually deals, so the two cannot drift: one that starts dropping a column
      further brings its own room, and one that stops dropping takes it away. */
   --drop:           0px;
-  height: min(100%, var(--wall-h));
+  /* No `height` here. This was `height: min(100%, var(--wall-h))` while the
+     cluster was the wall's only child and the only thing to size; the wall is a
+     flex column now and the cluster's own `flex-basis` above is what gives it
+     the band. A height here would resolve against `100%` of a cell it shares
+     with the legend and fight that basis. */
   /* ── The room an arrangement's drop spends, which the cell has to hold ───
      An arrangement offsets a column down by writing an inline `margin-top` (see
      HANG_LAYOUTS in js/data.js), and a margin adds to that column's OUTER box
@@ -2482,6 +2578,27 @@ body {
   box-sizing: border-box;
 }
 
+/* ── A short viewport needs a wider label, and it is a HEIGHT query ───────
+   The label's height is the stand's, which is the viewport less the room title,
+   the chrome and the dock — so a short screen is a short label. The label's TYPE,
+   though, is a share of the viewport's WIDTH, so it does not shrink with it. A
+   wide, short window therefore has the worst of both: the same amount of text,
+   set at the same size, in the least room.
+
+   Measured at 1280x704, where 44vw gives a 563px cell: four labels scroll, the
+   worst by 163px. The same geometry at 1366x768 scrolls three, and at 1440x900
+   none. The fix is width, because the account is in two columns and column
+   WIDTH is what its height is made of: at 1366x768 the label needs 620px of cell
+   to fit and `44vw` gives it 601px, so this rule buys the 20px where the margin
+   is thin. It is a `max-height` query rather than a `max-width` one because the
+   deficit is the label's HEIGHT, and a 1920x700 window needs this rule as much
+   as a 1280x704 one does. */
+@media (max-height: 800px) {
+  :root {
+    --label-col: clamp(600px, calc(48vw + 90px), 760px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .piece { transition: none; filter: none; }
 }
@@ -2538,10 +2655,10 @@ body {
 }
 
 /* ── The exhibition label ─────────────────────────────────────────────
-   One per stand: the record's own account, its awards and its team caption,
-   and a catalogue entry per photograph. This is where a photograph gets its
-   text, and it is the only place a visitor can find out what they are looking
-   at.
+   One per stand: the record's own account, its awards and its team caption.
+   This is where a record is read, and with the catalogue under the hang it is
+   the reading half of the stand — the wall carries the name of every individual
+   photograph, and this carries the record's own words.
 
    Type scale. The sizes this replaces were 7.4-11.5px — measured, the meta
    line was 7.4px and the narrative 9.3px, which is not small print but
@@ -2552,9 +2669,9 @@ body {
    than a grid of areas. The grid it replaces laid the copy and the catalogue
    side by side across the stand's full width, because the label WAS the stand's
    full width and had a whole band to fill beneath the pictures. Beside the hang
-   it has a cell of its own, ~614px at 1536 and ~512px at the floor, and a
-   column is what that cell is: the narrative heads it, the account follows, and
-   the awards, the team caption and the catalogue close it.
+   it has a cell of its own, 560px at every viewport above the floor, and a
+   column is what that cell is: the narrative heads it, and the account, the
+   awards and the team caption follow.
 
    The cell's height is the stand's, so the label's own content is what has to
    fit inside it — see the `.label-account` note for the one size that moved to
@@ -2578,8 +2695,11 @@ body {
 /* ── The label's interior: the prose, and the furniture beside it ─────────
    The account is the block that decides whether a stand fits, so it is the one
    block with a layout of its own — the label's full width, in two columns. The
-   summary, the awards, the team caption and the catalogue are furniture: they
-   are SET BESIDE the prose in a single column, which is what buys the height.
+   summary, the awards and the team caption are furniture: they are SET BESIDE
+   the prose in a single column, which is what buys the height. The CATALOGUE was
+   the fourth of those blocks and it is not one any more — it stands under the
+   hang it describes, in the wall cell, so this column lost its tallest block and
+   the account took the width back (see `--label-side`).
 
    Measured at 1440x900 with the account as a full-width single column and the
    furniture beneath it: 750px of label inside a 690px cell. In this shape the
@@ -2604,9 +2724,9 @@ body {
 
 /* The label's blocks all shrink rather than push: a flex or grid item refuses to
    go below its content otherwise, and a long word would run the prose out of the
-   cell rather than wrap it. */
-.label-aside,
-.cat { min-width: 0; }
+   cell rather than wrap it. `.cat` is not in this list any more: it is inside
+   `.legend`, in the wall cell, and `.legend` carries the same floor. */
+.label-aside { min-width: 0; }
 
 /* The narrative: the stand's own name, its venue or year, and the opening line
    that frames the account below it. It is a block of the label's column rather
@@ -2852,17 +2972,25 @@ body {
   line-height: 1.35;
   color: var(--text-quiet);
   margin: 0 0 5px;
-  max-width: var(--label-measure, 56ch);
+  /* No measure cap. `var(--label-measure, 56ch)` was here while the team caption
+     shared the label's full width; it is in the 30% furniture column now, which
+     is 168px at 1440x900 — narrower than any cap a ch measure would impose, and
+     Georgia's `ch` is wide enough that 56ch would have run past the column. The
+     column IS the measure. */
 }
 
 .team-line:last-child { margin-bottom: 0; }
 
-/* The catalogue: one entry per photograph that exists, each with its letter. It
-   was two columns of a strip ninety pixels wide, which is where every entry's
-   title ended in an ellipsis. It is the label's right-hand column, under the
-   team caption, with about 421px of stand at the floor and 495px at
-   1920x1080 — still one line per entry at both, which is the trade the copy
-   column's height buys. */
+/* ── The catalogue: one entry per photograph that exists, each with its letter.
+   It was two columns of a strip ninety pixels wide, which is where every entry's
+   title ended in an ellipsis; it then became the label's right-hand column. It
+   is the LEGEND now — the block under the hang, inside the wall cell — because
+   an entry is the text for one photograph and belongs under the photographs it
+   names rather than in the reading column beside them.
+
+   Its width is the legend's own 62% of the wall (see `.legend`), so an entry is
+   ~330px at 1440x900: one line for the title and one for the file, which is what
+   the letters and the two-column entry below are laid out for. */
 .cat {
   min-width: 0;
   display: flex;

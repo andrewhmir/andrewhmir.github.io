@@ -35,8 +35,9 @@ here asserts frame rate, because headless Chrome has no GPU.
 
 Sections cover the layout contract (the hall's own height, a room being exactly
 one viewport tall, no room content crossing into the dock band at the foot, at
-both 1440×900 and the spec's 1280×704 floor), the dock and the rail, the
-keyboard still reaching the walk with the native scrollbar hidden, the whole
+both 1440×900 and the spec's 1280×704 floor), the dock and the room heading that
+pins itself to the walk, the keyboard still reaching the walk with the native
+scrollbar hidden, the whole
 piece as a click target, a piece being framed and named, gallery rows, modal
 focus containment, that the walk moves and settles, that lights come up and
 stay up per piece, that no piece hangs empty, and tap targets at 390×844.

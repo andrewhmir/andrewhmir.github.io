@@ -171,7 +171,7 @@ const closeModal = async () => {
 await setViewport(1440, 900, false);
 await goto(BASE);
 
-/* -- Layout: the fold, the dock and the rail --------------------------- */
+/* -- Layout: the fold, the dock and the heading ------------------------ */
 await section('Layout: nothing is clipped and nothing overlaps', async () => {
   /* The hall is the document's only scroller and it is one viewport tall.
      If its own horizontal scrollbar is visible it eats 15px of that box, and
@@ -251,8 +251,15 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
          its group's box, and that comparison cannot be fooled. */
       const gr = g.getBoundingClientRect();
       const lr = label.getBoundingClientRect();
-      const gone = [...label.querySelectorAll('.cat-entry')]
-        .filter(e => e.getBoundingClientRect().bottom > Math.min(lr.bottom, gr.bottom) + 1).length;
+      /* The catalogue is the LEGEND now, and it hangs in the wall cell under the
+         cluster rather than inside the label. It is measured against the HANG
+         CELL, which is the box that clips it — the group's own overflow is not
+         the edge that would cut an entry, the cell's is. */
+      const legend = g.querySelector('.legend');
+      const wall = g.querySelector('.hang-cell');
+      const wr = wall ? wall.getBoundingClientRect() : gr;
+      const gone = legend ? [...legend.querySelectorAll('.cat-entry')]
+        .filter(e => e.getBoundingClientRect().bottom > Math.min(wr.bottom, gr.bottom) + 1).length : 0;
       if (gone) clipped.push(room + ' ' + g.dataset.entry + ': ' + gone + ' catalogue entries clipped');
       /* And the narrative, which is above the catalogue and can push it out. */
       const narr = label.querySelector('.narr-text');
@@ -395,14 +402,17 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
       if (!label) return;
       const id = g.closest('.room').getAttribute('data-room') + ' ' + g.dataset.entry;
       const gr = g.getBoundingClientRect();
-      const lr = label.getBoundingClientRect();
-      const gone = [...label.querySelectorAll('.cat-entry')]
-        .filter(e => e.getBoundingClientRect().bottom > Math.min(lr.bottom, gr.bottom) + 1).length;
+      const legend = g.querySelector('.legend');
+      const wall = g.querySelector('.hang-cell');
+      const wr = wall ? wall.getBoundingClientRect() : gr;
+      const gone = legend ? [...legend.querySelectorAll('.cat-entry')]
+        .filter(e => e.getBoundingClientRect().bottom > Math.min(wr.bottom, gr.bottom) + 1).length : 0;
       if (!gone) return;
-      /* An entry below the box is only CLIPPED when the box cannot be scrolled.
-         At the floor the label column scrolls by design, so the same geometry is
-         an entry a visitor can reach. Reported, not failed. */
-      const oy = getComputedStyle(label).overflowY;
+      /* An entry below the cell is only CLIPPED when the cell cannot be scrolled.
+         The hang cell is overflow: hidden by design — it is the box that keeps a
+         hang from painting over its neighbour — so a legend that does not fit it
+         is content a visitor cannot reach, which is the fault this reads for. */
+      const oy = getComputedStyle(wall || label).overflowY;
       if (oy === 'hidden' || oy === 'clip') clipped.push(id + ': ' + gone);
       else scrolled.push(id + ': ' + gone + ' (' + oy + ')');
     });
@@ -431,11 +441,6 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   await setViewport(1440, 900, false);
   await goto(BASE);
 
-  /* The rail is the position cue that replaced the native scrollbar. Its
-     width is a fraction of the EDGE, driven by the walk's progress — not a
-     fraction of the viewport compared against itself, which is what this
-     assertion first read and which passed for the wrong reason while the
-     strip happened to be a whole number of screens wide. */
   /* The position cue that replaced the native scrollbar is the DOCK'S OWN TRACK
      — the .dock-track element, whose ::after is filled to the walk's progress
      custom property. This read the .rail element, which css/styles.css records
@@ -447,7 +452,7 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
      fill starts empty, grows as the walk moves, grows in proportion, and fills
      at the end. The fill's width is read off the custom property the walk
      writes, because a pseudo-element cannot be measured directly. */
-  const railAt = async (left) => {
+  const trackAt = async (left) => {
     await evaluate(`document.getElementById('hall').scrollLeft = ${left}`);
     await sleep(280);
     return evaluate(`(() => {
@@ -460,8 +465,8 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
                pct, progress: max > 0 ? h.scrollLeft / max : 0, vw: innerWidth };
     })()`);
   };
-  const r0 = await railAt(0);
-  const rMid = await railAt(3000);
+  const r0 = await trackAt(0);
+  const rMid = await trackAt(3000);
   await evaluate(`(() => { const h = document.getElementById('hall'); h.scrollLeft = h.scrollWidth; })()`);
   await sleep(400);
   const end = await evaluate(`(() => {
@@ -1511,7 +1516,7 @@ await section('Reduced motion', async () => {
 
   /* Reduced motion removes the light falloff, NOT the walk's bookkeeping. This
      asserted the opposite once: the controller returned before binding its
-     scroll handler, so under reduced motion the rail stayed empty, the live
+     scroll handler, so under reduced motion the room went unnamed, the live
      region was never written and the dock never followed the walk — while the
      spec requires the live region to keep announcing. */
   const across = await evaluate(`(async () => {
@@ -1621,7 +1626,7 @@ await section('Snap settles on a work', async () => {
   check('the walk comes to rest', Math.abs(a - b) < 2, `still moving: ${a} -> ${b}`);
 });
 
-/* -- The dock and the rail -------------------------------------------- */
+/* -- The dock, and the heading that names the walk --------------------- */
 await section('The dock sits at the foot of the walk', async () => {
   /* This asked for `.rail`, which no longer exists: the rail that drew the
      walk's position as a 2px hairline along the bottom edge was removed from
@@ -1629,29 +1634,41 @@ await section('The dock sits at the foot of the walk', async () => {
      track. Because the probe returned null on a missing `.rail`, the whole
      section silently stopped running — four checks and a FAIL that read
      "missing from the page" and was nothing of the kind.
-     The chrome that exists is: `.room-rail` at the head, `.dock` at the foot,
-     and `#dockProgress` as the dock's own track. */
+     The chrome that exists is: the room's own heading at the head of each room,
+     `.dock` at the foot, and `#dockProgress` as the dock's own track. */
   const geo = await evaluate(`(() => {
     const d = document.querySelector('.dock');
-    const rail = document.querySelector('.room-rail');
+    const heading = document.querySelector('#strip .room .room-title');
     const track = document.getElementById('dockProgress');
-    if (!d || !rail || !track) return null;
-    const dr = d.getBoundingClientRect(), rr = rail.getBoundingClientRect();
+    if (!d || !heading || !track) return null;
+    const dr = d.getBoundingClientRect(), hr = heading.getBoundingClientRect();
     const tr = track.getBoundingClientRect();
     const current = d.querySelectorAll('.dock-link[aria-current="true"]').length;
     const links = d.querySelectorAll('.dock-link').length;
     const rooms = document.querySelectorAll('#strip [data-room]').length;
+    /* One heading per room and no more. The rail this replaced was a SEVENTH
+       element carrying the sixth room's name a second time; if a header comes
+       back, this count is what says so. */
+    const headings = document.querySelectorAll('.room-title').length;
     return { top: dr.top, bottom: dr.bottom, height: dr.height, left: dr.left, right: dr.right,
-             railTop: rr.top, railH: rr.height,
+             headTop: hr.top, headBottom: hr.bottom,
+             headPosition: getComputedStyle(heading).position,
              trackH: tr.height, trackBottom: tr.bottom, trackLeft: tr.left, trackRight: tr.right,
-             links, current, rooms };
+             links, current, rooms, headings };
   })()`);
-  check('the dock, the rail and the dock track are all in the shell', geo !== null, 'missing from the page');
+  check('the dock, the room heading and the dock track are all in the shell',
+        geo !== null, 'missing from the page');
   if (!geo) return;
   check('the dock sits at the foot of the walk', geo.top > 780 && geo.bottom <= 900,
         JSON.stringify(geo));
-  check('the room rail is pinned to the top edge and clears its own type',
-        geo.railTop === 0 && geo.railH >= 24, JSON.stringify(geo));
+  /* The heading names the room now, and it does it as a STICKY element in the
+     room's own flow. `fixed` here would be the deleted bar back again — an
+     element pinned over the walk that every room's heading competes for. */
+  check('the room heading is the sticky element, not a fixed bar',
+        geo.headPosition === 'sticky', JSON.stringify(geo));
+  check('each room has one heading, and no second header carries the name',
+        geo.headings === geo.rooms,
+        geo.headings + ' headings for ' + geo.rooms + ' rooms');
   /* The track is the dock's own progress bar, so it reads as part of the dock:
      inside the dock's box and no taller than a hairline. */
   check('the dock track is inside the dock and is a hairline',
@@ -1663,6 +1680,123 @@ await section('The dock sits at the foot of the walk', async () => {
   check('exactly one dock entry is current', geo.current === 1, geo.current + ' current');
   check('the dock fits the viewport', geo.left >= 0 && geo.right <= 1440,
         geo.left + '..' + geo.right);
+});
+
+/* -- The heading travels with the walk, and stays in its band -----------
+   This is the check the unit suites cannot make. `tests/shell-check.mjs` proves
+   the DECLARATIONS are present; the DOM stub models no CSS at all, so a
+   `position: sticky` that is inert — which is exactly what a full-width flex
+   item produces, and what this shipped as before `align-self` was added —
+   passes every one of them. Only a browser can say whether the heading MOVED.
+
+   Two things are measured, at both viewports the spec names:
+
+   1. The heading PIN. Its flow position inside a room is `roomLeft + gutter`,
+      so an unpinned heading slides left at exactly the scroll rate. A pinned
+      one does not move at all. Sampling twice deep inside a multi-screen room
+      separates the two completely: the room has to travel, the heading must
+      not, and it must come to rest on the same edge the stands start on.
+   2. The heading's BAND. It is pinned along the walk's axis and never on the
+      vertical one, so it must stay clear of the stands below it at every room
+      — the failure mode being a heading that sits on top of a hang. */
+await section('The room heading pins itself as the walk moves', async () => {
+  for (const [w, h] of [[1440, 900], [1280, 704]]) {
+    await setViewport(w, h, false);
+    await goto(BASE);
+
+    /* A room wide enough to walk through. Rooms that are exactly one screen
+       (Honours, About, Contact) have nothing to travel across, so the pin is
+       not observable in them and they are not what this samples. */
+    const probe = await evaluate(`(async () => {
+      const hall = document.getElementById('hall');
+      const rooms = [...document.querySelectorAll('#strip .room')];
+      const room = rooms.find(r => r.getBoundingClientRect().width > innerWidth + 400);
+      if (!room) return { error: 'no room wider than a screen to sample' };
+      const heading = room.querySelector('.room-title');
+      const below = room.querySelector('.groups, .hang, .tiles');
+      const read = () => {
+        const t = heading.getBoundingClientRect();
+        const cs = getComputedStyle(heading);
+        return {
+          left: Math.round(t.left), right: Math.round(t.right),
+          top: Math.round(t.top), bottom: Math.round(t.bottom),
+          roomLeft: Math.round(room.getBoundingClientRect().left),
+          gutter: parseFloat(getComputedStyle(room).paddingLeft),
+          belowTop: below ? Math.round(below.getBoundingClientRect().top) : null,
+          position: cs.position, display: cs.display
+        };
+      };
+      const settle = () => new Promise(r => setTimeout(r, 380));
+      hall.scrollLeft = room.offsetLeft + 80;
+      await settle();
+      const first = read();
+      /* 700px deeper into the same room: the room must have moved, so this is
+         not a sample of two identical instants. */
+      hall.scrollLeft = room.offsetLeft + 780;
+      await settle();
+      const second = read();
+      hall.scrollLeft = 0;
+      await settle();
+      return { first, second, roomKey: room.getAttribute('data-room'),
+               roomW: Math.round(room.getBoundingClientRect().width), vw: innerWidth };
+    })()`);
+
+    check('a multi-screen room exists to sample at ' + w + 'x' + h,
+          !probe.error, probe.error || '');
+    if (probe.error) continue;
+
+    const a = probe.first, b = probe.second;
+    check('the walk moved between the two samples at ' + w + 'x' + h,
+          a.roomLeft - b.roomLeft > 500, JSON.stringify([a.roomLeft, b.roomLeft]));
+    /* The pin: the heading did NOT move, while its room moved 700px under it. */
+    check('the heading stays put while its room travels at ' + w + 'x' + h,
+          Math.abs(a.left - b.left) <= 1, JSON.stringify([a.left, b.left]));
+    /* And it rests on the same edge the stands start on — the room's own
+       gutter, which is the token the padding and the offset share. */
+    check('the pinned heading lines up with the stands at ' + w + 'x' + h,
+          Math.abs(b.left - b.gutter) <= 1, JSON.stringify([b.left, b.gutter]));
+    check('the pinned heading is on screen at ' + w + 'x' + h,
+          b.left >= 0 && b.right <= w, JSON.stringify([b.left, b.right, w]));
+    /* The band: pinned along the walk's axis only, so it must never reach the
+       stands below it. */
+    if (b.belowTop !== null) {
+      check('the pinned heading stays clear of the stands at ' + w + 'x' + h,
+            b.bottom <= b.belowTop + 1, JSON.stringify([b.bottom, b.belowTop]));
+    }
+    check('the pinned heading starts below the fold edge at ' + w + 'x' + h,
+          b.top >= 0, JSON.stringify([b.top]));
+  }
+
+  /* Every room's heading, at the floor viewport: one per room, each inside its
+     own room's box, and none of them crossing the stands beneath it. */
+  await setViewport(1280, 704, false);
+  await goto(BASE);
+  const all = await evaluate(`(() => {
+    return [...document.querySelectorAll('#strip .room')].map(room => {
+      const heading = room.querySelector('.room-title');
+      const below = room.querySelector('.groups, .hang, .tiles');
+      const hb = heading.getBoundingClientRect();
+      const rb = room.getBoundingClientRect();
+      return {
+        key: room.getAttribute('data-room'),
+        position: getComputedStyle(heading).position,
+        insideRoom: hb.left >= rb.left - 1 && hb.right <= rb.right + 1,
+        clearOfBelow: !below || hb.bottom <= below.getBoundingClientRect().top + 1,
+        width: Math.round(hb.width), roomW: Math.round(rb.width)
+      };
+    });
+  })()`);
+  check('every room has a sticky heading', all.length > 0 && all.every(r => r.position === 'sticky'),
+        JSON.stringify(all));
+  check('no heading escapes its own room',
+        all.every(r => r.insideRoom), JSON.stringify(all.filter(r => !r.insideRoom)));
+  check('no heading sits on the stands beneath it',
+        all.every(r => r.clearOfBelow), JSON.stringify(all.filter(r => !r.clearOfBelow)));
+  /* The wrap safety: a heading is only allowed to be narrower than its room if
+     it is at least as wide as its own text — i.e. `max-width: 100%` is capping
+     it where the room is narrow, and it is not collapsing to a sliver. */
+  check('every heading is at least its room content width or its own text width',
+        all.every(r => r.width > 80), JSON.stringify(all.map(r => r.width)));
 });
 
 /* -- The walk is still reachable from the keyboard with no scrollbar --- */

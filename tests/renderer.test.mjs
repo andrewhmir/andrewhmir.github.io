@@ -29,8 +29,9 @@ function makeEl(id) {
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     attributes: {},
     /* Listeners are kept, not swallowed, so a check can prove the scroll
-       handler that drives the rail and the bar was actually bound to #hall —
-       as opposed to the two functions working while nothing ever calls them. */
+       handler that names the room and drives the bar was actually bound to
+       #hall — as opposed to the two functions working while nothing ever calls
+       them. */
     listeners: new Map(),
     offsetLeft: 0, offsetWidth: 1, offsetHeight: 1, offsetParent: null, tabIndex: -1,
     children: [],
@@ -51,10 +52,11 @@ const els = new Map();
 const el = (id) => { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); };
 /* Current markup: the renderer's output targets, plus the walk's two anchors
    and the two pieces of chrome initLights() drives. #hall must exist or
-   initWalk returns null by design; #roomRail and #dockProgress must exist or
-   writeRail() and updateProgress() both early-return and the rail and the bar
-   are silently dead in every check below. */
-for (const id of ['strip', 'directory', 'roomRail', 'dockProgress', 'hall']) el(id);
+   initWalk returns null by design; #dockProgress must exist or updateProgress()
+   early-returns and the bar is silently dead in every check below. The room's
+   sticky heading needs no element here: it is rendered into #strip by
+   renderRooms() and its stickiness is CSS, which this stub does not model. */
+for (const id of ['strip', 'directory', 'dockProgress', 'hall']) el(id);
 
 /* The walk's geometry, seeded rather than left as the 0s and 1s makeEl defaults
    to. Unseeded, roomAtOffset() coerces them and the first check passes for a
@@ -67,7 +69,7 @@ hall.clientWidth = 1440;
 /* ── The rooms the walk is standing in ────────────────────────────────────
    initLights() finds the current room through #strip's own querySelectorAll,
    so rooms have to be in that list or roomAt() returns null, announceRoom()
-   never fires, and writeRail() is never reached. Two rooms, because the rail's
+   never fires, and the room is never named. Two rooms, because the named-room
    rule is "write on room CHANGE only" and one room cannot cross a boundary.
    Each carries the title and the subtitle the real renderRooms() emits, and
    the geometry a room has: a viewport wide, starting at the walk's origin. */
@@ -76,8 +78,8 @@ function makeRoom(key, title, subRuns, offsetLeft) {
   room.setAttribute('data-room', key);
   /* Rooms tile the walk, so this is what puts one at 0..1440 and the next at
      1440..2880. pageX() reads it through the offsetParent chain, as a browser
-     resolves it, and the boundary between the two is what the rail's change
-     rule is exercised across. */
+     resolves it, and the boundary between the two is what the room-naming rule
+     is exercised across. */
   room.offsetLeft = offsetLeft;
   room.offsetWidth = 1440;
   const titleEl = makeEl('span');
@@ -107,35 +109,25 @@ function makeRoom(key, title, subRuns, offsetLeft) {
 const ABOUT = makeRoom('About', 'About the practice',
   ['  Design   and\n fabrication ', 'of eleven years'], 0);
 const ROBOTICS = makeRoom('Robotics', 'Works in Robotics', ['3 projects', 'ROBOTICS'], 1440);
-const railTitleEl = ABOUT.titleEl;
 el('strip').querySelectorAll = (sel) =>
   (sel === '[data-room]' ? [ABOUT.room, ROBOTICS.room] : []);
 
-/* The rail's two lines, as the shell has them, and one handler that returns the
-   span matching its selector — the same arrangement roomEl.querySelector has in
-   tests/dom-harness.mjs.
+/* The live region, which is what names the room in assistive tech now that the
+   visible name is the room's own heading doing its sticky work in CSS.
 
-   `.rr-title` counts the writes that land on it. The rail is written on room
-   CHANGE only — the rule that keeps this off the per-frame path — and a count
-   is the only way to observe that a repeat of the same room did not rewrite it. */
-let railTitleWrites = 0;
-const railNodes = {
-  '.rr-title': makeEl('span'),
-  '.rr-meta': makeEl('span'),
-};
-railNodes['.rr-title'].className = 'rr-title';
-railNodes['.rr-meta'].className = 'rr-meta';
-const railNode = railNodes['.rr-title'];
-railNodes['.rr-title'] = new Proxy(railNode, {
+   It counts the writes that land on it. The name is written on room CHANGE
+   only — the rule that keeps this off the per-frame path, so scrolling does not
+   spam a screen reader dozens of times a second — and a count is the only way
+   to observe that a repeat of the same room did not rewrite it. */
+let announcerWrites = 0;
+const announcerNode = new Proxy(makeEl('announcer'), {
   set(target, prop, value) {
-    if (prop === 'textContent') railTitleWrites++;
+    if (prop === 'textContent') announcerWrites++;
     target[prop] = value;
     return true;
   },
 });
-const railEl = el('roomRail');
-railEl.children.push(railNode, railNodes['.rr-meta']);
-railEl.querySelector = (sel) => railNodes[sel] ?? null;
+els.set('announcer', announcerNode);
 
 globalThis.document = {
   readyState: 'complete',
@@ -152,7 +144,7 @@ globalThis.document = {
 
 /* Flippable, because the reduced-motion branch of initLights() is the branch
    the plan's Review Focus names as most likely to bite — a prior build's early
-   return left the rail empty and the dock unfollowed — and a fixed `false`
+   return left the room unnamed and the dock unfollowed — and a fixed `false`
    means no check here can ever reach it. main.js is module-cached, so the
    branch is exercised by flipping this and re-running Site.initLights(), the
    pattern tests/lights.test.mjs already uses for the same reason. */
@@ -228,19 +220,45 @@ function groupHtmlFor(title) {
   return '';
 }
 
+/* The label's own markup, bounded at the next group. The LEGEND is deliberately
+   NOT in here: it stands under the hang, in the wall cell, so it is a sibling of
+   the label rather than a block of it. Checks that count catalogue entries have
+   to read `.legend` for that reason — inside `labelHtmlFor` they would find
+   nothing and pass on an empty string. */
+function labelHtmlFor(title) {
+  const body = groupHtmlFor(title);
+  const at = body.indexOf('<div class="hang-cell"');
+  return at === -1 ? body : body.slice(0, at);
+}
+
+/* The legend's markup: the catalogue under the hang. Bounded at the label that
+   follows it, so a count cannot pick up the next group's entries. */
+function legendHtmlFor(title) {
+  const body = groupHtmlFor(title);
+  const at = body.indexOf('<div class="legend"');
+  if (at === -1) return '';
+  const after = body.slice(at);
+  const end = after.indexOf('<div class="label"');
+  return end === -1 ? after : after.slice(0, end);
+}
+
 /* The project's awards block. A check scoped to the whole GROUP can be satisfied
    by a neighbour's copy or by the project's own prose; the block is what has to
    carry the awards. It is bounded by the two landmarks that surround it — its
-   own opening tag, and the catalogue that follows it — rather than by counting
-   `<div>` tags, which is what the obvious depth walk gets wrong: `<div` also
-   occurs inside emitted text. */
+   own opening tag, and the legend at the foot of the wall — rather than by
+   counting `<div>` tags, which is what the obvious depth walk gets wrong: `<div`
+   also occurs inside emitted text.
+
+   The legend is the closing bound and it is still AFTER the awards in document
+   order, which is what the bound needs; it is no longer inside the label, so the
+   slice runs to the end of the label's markup rather than to the catalogue. */
 function awardsBlockFor(title) {
   const group = groupHtmlFor(title);
   const at = group.indexOf('<div class="awards">');
   if (at === -1) return '';
   const after = group.slice(at);
-  const cat = after.indexOf('<div class="cat">');
-  return cat === -1 ? after : after.slice(0, cat);
+  const labelEnd = after.indexOf('<div class="label"');
+  return labelEnd === -1 ? after : after.slice(0, labelEnd);
 }
 
 /* The reverse of `esc()` in js/main.js, so a rendered paragraph can be compared
@@ -633,10 +651,11 @@ check('no rule in the stylesheet clamps, and the renderer emits no clamp', () =>
      absolute version of the check it replaces, rather than a count and a limit.
 
      The title's clamp was justified by "the same name is on the room heading
-     and in the rail". That is false: the room headings carry the DERIVED room
-     titles and the rail copies the room heading, while `.narr-title` carries the
-     RECORD's own name, which has no second home. A clamp there hides the only
-     place that name is written, so it goes.
+     and in the rail". Both halves of that were wrong: the room headings carry
+     the DERIVED room titles rather than a record's, and the rail that copied
+     them is deleted. `.narr-title` carries the RECORD's own name, which has no
+     second home at all. A clamp there hides the only place that name is
+     written, so it goes.
 
      The renderer half covers inline styles, which are invisible to the
      stylesheet sweep. Comments are stripped and only the PROPERTY is matched, so
@@ -781,29 +800,36 @@ check('every shipped project shows its full account on the wall', () => {
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
-check('the label reads title, account, awards, team, catalogue — in that order', () => {
+check('the label reads title, account, awards, team — and the legend names the hang', () => {
   /* The order is what makes it a museum label rather than a caption, and it is
      the only part of that the DOM alone can pin — the direction itself is CSS.
      The TEAM block is located, not merely presumed: a check named for the team
      caption that never looks for it passes while the caption is emitted above
-     the title. */
+     the title.
+
+     The CATALOGUE is no longer the fourth block of that order: it is the legend,
+     which stands under the hang in the wall cell. What this check still owns is
+     the reading order INSIDE the label, and the two halves are read separately
+     for that reason — the label's own markup first, then the legend's. */
   const bad = [];
   let withTeam = 0;
+  let legends = 0;
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = i === 0 ? g.split('<div class="group"')[0]
       : g.slice(g.indexOf('>') + 1).split('<div class="group"')[0];
-    const at = (needle) => body.indexOf(needle);
+    const labelAt = body.indexOf('<div class="label"');
+    const label = labelAt === -1 ? '' : body.slice(labelAt);
+    const at = (needle) => label.indexOf(needle);
     const order = [
       ['title', at('class="narr-title"')],
       ['account', at('class="label-account"')],
       ['awards', at('class="awards"')],
       ['team', at('class="team"')],
-      ['catalogue', at('class="cat"')],
     ];
     const missing = order.filter(([, n]) => n < 0).map(([name]) => name);
-    /* Only the title, the account and the catalogue are on every label: a
-       record with no awards and no team caption legitimately has neither. */
-    const required = ['title', 'account', 'catalogue'];
+    /* Only the title and the account are on every label: a record with no awards
+       and no team caption legitimately has neither. */
+    const required = ['title', 'account'];
     const absent = missing.filter((name) => required.includes(name));
     if (absent.length) { bad.push('group ' + i + ': missing ' + absent.join(', ')); return; }
     const present = order.filter(([, n]) => n >= 0);
@@ -812,12 +838,32 @@ check('the label reads title, account, awards, team, catalogue — in that order
       bad.push('group ' + i + ': reads ' + sorted.join(', ') + ', expected '
         + present.map(([name]) => name).join(', '));
     }
+    /* ── And the legend stands with the hang it names ──────────────────────
+       The catalogue is the only text that accounts for a frame, so a group whose
+       legend is missing or empty is a group whose photographs have no names at
+       all. It is checked by PIECE COUNT rather than by presence, because an
+       empty `.cat` would satisfy a presence check. */
+    const legendAt = body.indexOf('<div class="legend"');
+    if (legendAt === -1) { bad.push('group ' + i + ': no legend under the hang'); return; }
+    if (body.indexOf('<div class="cat"', legendAt) === -1) {
+      bad.push('group ' + i + ': the legend carries no catalogue');
+    }
+    const frames = (body.match(/class="piece[" ]/g) || []).length;
+    const awaited = (body.match(/class="piece piece--pending/g) || []).length;
+    const entries = (body.slice(legendAt).match(/class="cat-entry"/g) || []).length;
+    if (entries !== frames - awaited) {
+      bad.push('group ' + i + ': ' + entries + ' legend entries for '
+        + (frames - awaited) + ' photographs');
+    }
+    legends++;
     /* The team block is located, not merely presumed: a check named for the team
        caption that never looks for it passes while the caption is emitted above
        the title. */
     if (!missing.includes('team')) withTeam++;
   });
   assert.ok(withTeam > 0, 'no group carries a team block, so its position was never checked');
+  assert.equal(legends, strip.split('<div class="group"').length - 1,
+    'a group carries no legend at all');
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
@@ -943,16 +989,22 @@ check('the label reads account, awards and team caption on the wall', () => {
      team caption stands apart in its own block, not mixed into the prose. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
-    const body = g.split('<div class="group"')[0];
-    const order = ['class="narr-title"', 'class="label-account"', 'class="cat"']
+    const body = g.split('<div class="group"')[0].split('<div class="label"')[1] || '';
+    const order = ['class="narr-title"', 'class="label-account"']
       .map((needle) => body.indexOf(needle));
     if (order.some((n) => n < 0)) { bad.push('group ' + i + ': a label part is missing'); return; }
     if (JSON.stringify(order) !== JSON.stringify(order.slice().sort((a, b) => a - b))) {
-      bad.push('group ' + i + ': the label does not read title, account, catalogue');
+      bad.push('group ' + i + ': the label does not read title, account');
     }
     const awardsAt = body.indexOf('class="awards"');
     if (awardsAt !== -1 && awardsAt < body.indexOf('class="label-account"')) {
       bad.push('group ' + i + ': the awards are read before the account');
+    }
+    /* The catalogue is NOT in this slice any more, and its absence is the change:
+       it is the legend, in the wall cell, so a label that still carried it would
+       be the duplication this check exists to catch. */
+    if (body.includes('class="cat"')) {
+      bad.push('group ' + i + ': the catalogue is back inside the label');
     }
   });
   assert.deepEqual(bad, [], bad.join(' | '));
@@ -1092,16 +1144,18 @@ check('a record with no copy at all falls back to its own description, in one pa
 check('a pieces array shorter than images falls back per entry', () => {
   const record = { description: 'X', images: ['a.jpg', 'b.jpg'], pieces: [{ title: 'Only one' }] };
   const pieces = Site.groupPieces(record, 'record');
-  const html = renderLabelFor(record, pieces);
-  assert.match(html, /Only one/, 'the first entry lost its title');
-  assert.match(html, /Photograph B/, 'the missing tail did not fall back');
+  /* The two catalogue entries are the LEGEND now, so the check reads the legend.
+     Reading the label would find nothing and pass on an empty string. */
+  const legend = Site.renderLegend(record, pieces);
+  assert.match(legend, /Only one/, 'the first entry lost its title');
+  assert.match(legend, /Photograph B/, 'the missing tail did not fall back');
 });
 
 check('a pieces array longer than images is ignored, not thrown', () => {
   const record = { description: 'X', images: ['a.jpg'], pieces: [{ title: 'A' }, { title: 'B' }] };
   const pieces = Site.groupPieces(record, 'record');
   assert.doesNotThrow(() => renderLabelFor(record, pieces));
-  const html = renderLabelFor(record, pieces);
+  const html = renderLabelFor(record, pieces) + Site.renderLegend(record, pieces);
   assert.equal((html.match(/class="cat-entry"/g) || []).length, 1,
     'an extra pieces entry was hung as a photograph that does not exist');
   /* The other two frames are padding, and the label says so in one line rather
@@ -1408,10 +1462,10 @@ check('the dock marks none when the walk names no room', () => {
 });
 
 /* ── The chrome that tracks the walk ─────────────────────────────────────
-   The sticky rail and the dock's progress bar are both driven from the scroll
-   position, and neither is reachable from the renderer's own readback, which is
-   static markup. The two checks below read the shell; the third drives the
-   controller and reads what it wrote. */
+   The dock's progress bar and the live region that names the room are both
+   driven from the scroll position, and neither is reachable from the renderer's
+   own readback, which is static markup. The two checks below read the shell; the
+   third drives the controller and reads what it wrote. */
 check('the progress bar is the dock\'s own, and the old rail is gone', () => {
   const shell = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(shell, /id="dockProgress"[\s\S]*<\/nav>/,
@@ -1438,13 +1492,13 @@ check('the progress bar survives a dock render', () => {
    import at the head of this file already called it against the seeded rooms —
    and reads back what it wrote. Without it, both features could be missing from
    js/main.js entirely and every check in this file would still pass. */
-check('the rail carries the room it is in, and the dock carries its progress', () => {
-  assert.ok(railNodes['.rr-title'].textContent, 'nothing named the room in the rail');
-  assert.equal(railNodes['.rr-title'].textContent, railTitleEl.textContent,
-    'the rail\'s name is not the room title it stands for');
-  assert.equal(railNodes['.rr-meta'].textContent, 'Design and fabrication · of eleven years',
-    'the rail\'s second line is not the room subtitle: its runs are not separated, '
-    + 'or its whitespace was not collapsed to one line');
+check('the walk names the room it is in, and the dock carries its progress', () => {
+  assert.ok(announcerNode.textContent, 'nothing named the room');
+  /* The name is the heading's own words and not the room's `data-room` key: the
+     About room's display title is "About the practice" while its key is
+     "About", so a name read off the attribute would pass a lazier assertion. */
+  assert.equal(announcerNode.textContent, 'Room: ' + ABOUT.titleEl.textContent,
+    'the announced name is not the room title it stands for');
 
   /* The bar is a percentage written on the track element, and the fraction is
      Site.progressFraction's. 2700 of a 5040-wide walk inside a 1440 viewport is
@@ -1504,42 +1558,40 @@ check('the rail carries the room it is in, and the dock carries its progress', (
     'a walk that cannot scroll must not divide by zero');
 });
 
-/* The rail is written on room CHANGE only — the same condition the announcer
-   uses — so it is two DOM writes per boundary crossed, not per frame. Nothing
-   else in this file can see that: hoisting writeRail() above the
-   `name !== lastRoom` guard leaves every other check green. */
-check('the rail is rewritten when the room changes, and not when it has not', () => {
-  const before = railTitleWrites;
+/* The room's name reaches the live region on room CHANGE only — the same
+   condition that moves the dock — so it is two DOM writes per boundary crossed,
+   not per frame. Nothing else in this file can see that: hoisting the write
+   above the `name !== lastRoom` guard leaves every other check green. */
+check('the room is named when it changes, and not when it has not', () => {
+  const before = announcerWrites;
   globalThis.Site.announceRoom();                    /* the same room again */
   globalThis.Site.announceRoom();
-  assert.equal(railTitleWrites, before,
-    'the rail was rewritten ' + (railTitleWrites - before) + ' times for a room that had '
+  assert.equal(announcerWrites, before,
+    'the room was renamed ' + (announcerWrites - before) + ' times for a room that had '
     + 'not changed — it is on the per-frame path');
 
   hall.scrollLeft = 1440;                            /* the boundary into Robotics */
   globalThis.Site.announceRoom();
-  assert.equal(railNodes['.rr-title'].textContent, ROBOTICS.titleEl.textContent,
-    'crossing into Robotics did not rewrite the rail');
-  assert.equal(railNodes['.rr-meta'].textContent, '3 projects · ROBOTICS',
-    'the count beside the room subtitle is glued to it, or missing');
-  assert.equal(railTitleWrites, before + 1,
+  assert.equal(announcerNode.textContent, 'Room: ' + ROBOTICS.titleEl.textContent,
+    'crossing into Robotics did not rename the room');
+  assert.equal(announcerWrites, before + 1,
     'a room change did not write exactly once');
 
   hall.scrollLeft = 0;                               /* back into About */
   globalThis.Site.announceRoom();
-  assert.equal(railNodes['.rr-title'].textContent, ABOUT.titleEl.textContent,
-    'coming back to About did not rewrite the rail');
+  assert.equal(announcerNode.textContent, 'Room: ' + ABOUT.titleEl.textContent,
+    'coming back to About did not rename the room');
 });
 
 /* Review Focus item 5, and the one regression the plan records from a prior
    build: the reduced-motion branch of initLights() returns early, and before
-   that return calls bindTracking() the rail stayed empty and the dock never
+   that return calls bindTracking() the room went unnamed and the dock never
    followed the walk. Dropping bindTracking() from that branch leaves every
    check in every suite green — lights.test.mjs reaches the branch but its scene
    carries no room, so announceRoom() returns null and nothing is observable.
    Here the branch is reached directly, by flipping the preference and re-running
    the controller against the same rooms. */
-check('reduced motion still writes the rail and still follows the walk', () => {
+check('reduced motion still names the room and still follows the walk', () => {
   motion.reduced = true;
   /* Re-running initLights() binds a fresh tracking flush each time — it has no
      teardown, and in the page it runs once — so the listeners from the earlier
@@ -1552,25 +1604,25 @@ check('reduced motion still writes the rail and still follows the walk', () => {
     /* Two things this must not be able to pass on: a value left over from the
        focused path, and the identical value written by the import-time run. */
     el('dockProgress').style.removeProperty('--walk-progress');
-    railNode.textContent = '';
-    railTitleWrites = 0;
+    announcerNode.textContent = '';
+    announcerWrites = 0;
     hall.scrollLeft = 0;
 
     globalThis.Site.initLights();
 
-    assert.ok(railNodes['.rr-title'].textContent,
-      'under reduced motion the rail stayed empty — bindTracking() is not being called '
+    assert.ok(announcerNode.textContent,
+      'under reduced motion the room went unnamed — bindTracking() is not being called '
       + 'on the early-return branch');
-    assert.equal(railNodes['.rr-title'].textContent, ABOUT.titleEl.textContent,
-      'the rail named the wrong room under reduced motion');
-    assert.equal(railTitleWrites, 1,
-      'the rail was written ' + railTitleWrites + ' times on the reduced-motion path');
+    assert.equal(announcerNode.textContent, 'Room: ' + ABOUT.titleEl.textContent,
+      'the wrong room was named under reduced motion');
+    assert.equal(announcerWrites, 1,
+      'the room was named ' + announcerWrites + ' times on the reduced-motion path');
     assert.equal(el('dockProgress').style.get('--walk-progress'), '0%',
       'under reduced motion the dock did not follow the walk');
   } finally {
     motion.reduced = false;
-    railNode.textContent = '';
-    railTitleWrites = 0;
+    announcerNode.textContent = '';
+    announcerWrites = 0;
     hall.scrollWidth = 5040;
     hall.clientWidth = 1440;
     hall.scrollLeft = 0;
@@ -1582,13 +1634,13 @@ check('reduced motion still writes the rail and still follows the walk', () => {
   }
 });
 
-/* And the walk itself has to drive both of them. Everything above proves the
-   functions; this proves the controller bound its tracking to the walk at all,
-   which is the difference between a bar that follows the walk and two correct
-   functions that nothing ever calls. */
-check('the tracking flush is bound to the walk and drives the rail and the bar', () => {
+/* And the walk itself has to drive it. Everything above proves the functions;
+   this proves the controller bound its tracking to the walk at all, which is the
+   difference between a bar that follows the walk and a correct function that
+   nothing ever calls. */
+check('the tracking flush is bound to the walk and drives the bar', () => {
   assert.ok((hall.listeners.get('scroll') || []).length > 0,
-    'nothing is listening for the walk to scroll, so the rail and the bar never follow it');
+    'nothing is listening for the walk to scroll, so the bar never follows it');
 
   /* Identified by BEHAVIOUR, not by position in the listener list. The list is
      ordered by whoever registered first, which depends on which branch

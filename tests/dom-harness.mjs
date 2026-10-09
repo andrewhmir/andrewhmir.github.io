@@ -159,9 +159,11 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   /* The walk's two anchors (#hall, #strip must exist or initWalk returns null by
      design), the render targets, the announcer, and the dialog — without the
      dialog elements openModal/openGallery bail out and every control looks dead
-     for the wrong reason. */
+     for the wrong reason. The room's own heading is not in this list: it is
+     rendered into #strip by renderRooms() and does its sticky work in CSS, so
+     no element here has to stand in for it. */
   for (const id of ['strip', 'directory', 'hall', 'announcer',
-    'roomRail', 'dockProgress',
+    'dockProgress',
     'modalOverlay', 'modalCard', 'modalClose', 'modalHeader', 'modalImage', 'modalBody',
     'heroPhoto', 'heroBio', 'heroEmail', 'heroLinks',
     'newsTimeline', 'projectList', 'leadershipList', 'honorsList',
@@ -170,21 +172,6 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   el('modalCard').setAttribute('aria-modal', 'true');
   el('modalCard').setAttribute('aria-labelledby', 'modalTitle');
   el('modalOverlay').parentNode = null;
-
-  /* The rail's two lines, as the shell has them. initLights() looks them up
-     through the rail's own querySelector — the stub is per element, as it is
-     for a room's title below — so a rail with no .rr-title / .rr-meta leaves
-     writeRail() writing nowhere and the rail silently empty in every test. */
-  const railEl = el('roomRail');
-  const railLines = {};
-  for (const cls of ['rr-title', 'rr-meta']) {
-    const line = makeEl('span');
-    line.className = cls;
-    line.parentNode = railEl;
-    railEl.children.push(line);
-    railLines['.' + cls] = line;
-  }
-  railEl.querySelector = (sel) => railLines[sel] ?? null;
 
   const hall = el('hall');
   hall.scrollLeft = 0;

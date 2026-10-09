@@ -31,20 +31,22 @@ continuous frieze.
 
 One room is one viewport tall, and the hall is the document's only scroller, on one axis:
 horizontal. Chrome lives at the **foot** of the walk — a dock carrying every room and the current
-one, with a rail along the bottom edge for position. Nothing is fixed over the top of a room.
+one, with the walk's progress drawn inside it as a track. Nothing is fixed over the top of a room:
+each room's own heading carries `position: sticky` and travels with the walk, so the name on screen
+is the heading itself rather than a second, smaller copy of it.
 
 A **stand** is the unit that hangs: one project or one leadership post. Its photographs
 hang together in frames with mats — partitioned into columns by one of several **arrangements**,
 dealt from the stand's own key so neighbouring stands differ and a reload never reshuffles the wall —
-and one label beside them carries a plan of the hang, the paragraph that frames the stand, and a
-catalogue entry per photograph.
+with a **legend** of one catalogue entry per photograph beneath them, and one **label** beside the
+whole cell carrying the record's own account, its awards and its team caption.
 
-**The label is the only place a visitor can find out what they are looking at**, so its letters are
-the label's own index. The plan's box and the catalogue entry's key carry the same letter — keyed on
-the same piece index, so they cannot disagree, and the letter sits in the middle of its box — and a
-visitor reading entry C finds C in the plan of the hang. The frames on the wall hang clean, because a
-letter badged onto a photograph reads as part of the work. A stand with a single photograph is not
-lettered, because there is nothing to tell apart.
+**The legend is the only place a visitor can find out what a photograph is**, and it stands under the
+photographs it names: an entry is the text for one picture, so a picture and its name are not in
+different columns of the stand. Each entry carries the photograph's letter, its title, its caption and
+the file it came from; the frames on the wall hang clean, because a letter badged onto a photograph
+reads as part of the work. A stand with a single photograph is not lettered, because there is nothing
+to tell apart.
 
 **What a photograph is called comes from its record's `pieces[]`**, and from nowhere else: `title` is
 what the picture shows, `caption` is a sentence about it. Where a record declares none, the entry falls
@@ -63,18 +65,40 @@ Because a gallery is exactly one viewport tall inside a hall with `overflow-y: h
 vertical axis to overflow into: the single row is what makes the width work. A frame's width follows
 its own photograph, so nothing is ever cropped or letterboxed.
 
-**A stand is a row of two cells, and they are not equal.** The hang is the left cell and the label
-that reads it is the right, each taking the stand's full height — the label is *beside* the pictures,
-not beneath them. It was two stacked bands until this build: a picture band fixed at 156px with the
-label at the stand's full width below it, which measured 765.7px inside a 724px band at 1536×864, so
-the room title was drawn 15px above the top of the window and the last award 48px under the dock —
-116px over at the spec's 1280×704 floor.
+**A stand is a row of two cells, and they are not equal.** The left cell holds the hang and the legend
+beneath it; the right cell is the label that reads the record. Each takes the stand's full height — the
+label is *beside* the pictures, not beneath them. It was two stacked bands until an earlier build: a
+picture band fixed at 156px with the label at the stand's full width below it, which measured 765.7px
+inside a 724px band at 1536×864, so the room title was drawn 15px above the top of the window and the
+last award 48px under the dock — 116px over at the spec's 1280×704 floor.
 
 `--label-col` is the right cell and it is a share of the viewport rather than a fixed width, so the
-proportion survives every screen: 691px at 1440 and 614px at 1280. The wall takes what is left, and
-it needs the larger share — a frame's width follows its photograph, so a narrow wall does not make
-its pictures smaller, it makes them narrower and taller until a 2.251-ratio photograph is squeezed to
-the 44px tap floor. Measured at a 317px wall: three frames of 44×691, which is a wall of lines.
+proportion survives every screen: 634px at 1440, 669px at 1520, 676px at 1536 and 704px at 1600 (its
+720px ceiling binds at about 1640 and holds above that). The left cell takes what is left and it needs
+the larger share — a frame's width follows its photograph, so a narrow cell does not make its pictures
+smaller, it makes them narrower and taller until a 2.251-ratio photograph is squeezed to the 44px tap
+floor. Measured at a 317px wall: three frames of 44×691, which is a wall of lines. The stand is
+`clamp(1100px, 68vw, 1440px)`, so that leaves the hang cell 435px at 1440, 390px at 1536, 361px at 1600
+and 546px at 1920.
+
+The legend is 62% of that cell's width, so it shares a left and a right edge with the hang above it; it
+is pinned to the cell's foot, which leaves the band of wall between the pictures and their names that a
+hang centred on a wall has. `--label-side` is the label's own interior split — 30% for the furniture
+(the summary, the awards, the team caption) beside the account's two columns. Both numbers are
+measured, not chosen: a narrower furniture column wraps the awards until *they* are the tall pole and
+the label scrolls, and a wider one takes the width the account needs.
+
+The label column **does not scroll at any desktop viewport from 1366×768 up** — below that the stand is
+wider than the window and the walk is a pan, not a page — which is the change that put the legend under
+the hang: the catalogue was the tallest block of the label's furniture column, and the label's own
+content came to 743px inside a 690px box at 1440×900, a scrollbar over copy a visitor had to go looking
+for. The 1280×704 floor still scrolls, by 44px on its worst label where it used to scroll by 273px on
+six of them; a `max-height: 800px` query widens the label to buy back what width can, and nothing there
+is clipped either way — `ux-check` reports the scrolls as information and fails only on copy that is cut
+off. The loading floor is the other half of the same arithmetic: a frame is
+`(band − the column's gaps) / its rows` tall, so the floor a hang may not go under is
+`44 × rows + gap × (rows − 1)`, and a floor that forgets the gaps comes out at 39px on a frame whose
+bytes have not arrived.
 
 **How large a photograph reads is decided by the wall's band and its column's depth.** A column
 divides the band between its own frames, so a column of two stands tall and a column of three splits
@@ -171,7 +195,7 @@ the columns, the rows and the tile boxes at both reference viewports.
 ## Structure
 
 ```
-├── index.html          Entry point — the hall, the strip, the dock, the rail, the dialog
+├── index.html          Entry point — the hall, the strip, the dock, the dialog
 ├── css/
 │   └── styles.css      All styles
 ├── js/
@@ -248,8 +272,8 @@ The suites that drive `js/main.js` run it under a DOM stub (`tests/dom-harness.m
 suite below remains the authority on anything visual.
 
 `tools/ux-check.mjs` drives headless Chrome over the DevTools Protocol and is the authority on
-layout: the fold, the dock band, the rail, tap targets, the dialog's focus containment, the
-lighting contract, and every room's fit at 1440×900 and at the spec's 1280×704 floor. It is also
+layout: the fold, the dock band, the room heading's pin, tap targets, the dialog's focus containment,
+the lighting contract, and every room's fit at 1440×900 and at the spec's 1280×704 floor. It is also
 the only place a gallery's width, the depth of the tallest hang and a label's fixed basis can be
 measured at all — the DOM stub models no CSS. It needs headless Chrome, which needs named pipes —
 see `tools/README.md`.

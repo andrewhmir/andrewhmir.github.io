@@ -33,8 +33,8 @@ Three files carry the whole site:
 | `js/main.js` | ~1840 | Everything that renders `PORTFOLIO`: the cluster, the label, the rooms, the dock, the lighting, the dialog |
 | `css/styles.css` | ~3160 | All styling. **76% of it is comment** — read the Table of Contents at the top, then jump to a section |
 
-`index.html` is a 134-line shell: `#hall` → `#strip` (rooms are rendered into
-it), the dock, the room rail, the dialog, the announcer.
+`index.html` is a 133-line shell: `#hall` → `#strip` (rooms are rendered into
+it), the dock, the dialog, the announcer.
 
 ## Where to change what
 
@@ -52,9 +52,10 @@ nearest one — the anchors are the shortest path to the surrounding code.
 | An award's photographs, in the dialog | `js/data.js` | `function awardPhotos(` |
 | How a frame is sized — the band | `js/main.js` + `css/styles.css` | `function fitWall(`; `The wall: one budget` |
 | A single column's frame height | `css/styles.css` | `A column's one budget` |
-| The stand — wall cell vs label cell | `css/styles.css` | `The stand: the wall, and the label beside it` |
-| The exhibition label's copy and furniture | `js/main.js` + `css/styles.css` | `function renderLabel(`, `function renderCatalogue(`; `── The exhibition label` |
-| Room title, spacing, the walk's chrome | `css/styles.css` | `── The sticky room rail`, `Room furniture: the title` |
+| The stand — the hang cell vs the label cell | `css/styles.css` | `The stand: the wall, and the label beside it`, `The hang cell` |
+| The legend under the hang — the catalogue | `js/main.js` + `css/styles.css` | `function renderLegend(`, `function renderCatalogue(`; `── The legend` |
+| The exhibition label's copy and furniture | `js/main.js` + `css/styles.css` | `function renderLabel(`; `── The exhibition label` |
+| Room title, spacing, the walk's chrome | `css/styles.css` | `The room heading is the walk's sticky sign`, `Room furniture: the title` |
 | The dock and its progress bar | `js/main.js` + `css/styles.css` | `function renderDock(`, `function initLights(`; `The dock: the walk`, `The narrow dock` |
 | How big the photographs read | `css/styles.css` | `--label-col:` — the token with its colon, not the prose about it |
 | The wall mural | `css/styles.css` | `#hall` — own background, `background-attachment: local` |
@@ -73,10 +74,12 @@ thing. These are not synonyms:
 | **hall** | The document's only scroller. One axis: horizontal | `#hall` |
 | **room** | One leg of the walk — Robotics, Applications, Leadership, Honours, About, Contact | `renderRooms` |
 | **gallery** | A room's row of stands, as wide as its own hang | `.groups` |
-| **stand** | The unit that hangs: **one record**, being a cluster plus its label. Not a *group* | `renderGroup`, `.group` |
+| **stand** | The unit that hangs: **one record**, being a hang plus its legend plus its label. Not a *group* | `renderGroup`, `.group` |
 | **cluster** | The photographs of one stand | `renderCluster`, `.cluster` |
-| **wall** | The left cell of a stand — where the cluster hangs | `The stand` in CSS |
-| **label** | The right cell — the prose, the plan of the hang, the catalogue | `renderLabel` |
+| **hang cell** | The stand's LEFT cell — it holds the cluster and the legend under it. Named `.hang-cell`, NOT `.wall`, which is reserved for the forbidden mural layer | `.hang-cell` |
+| **legend** | The catalogue under the hang — one entry per photograph, in the hang cell | `renderLegend`, `.legend` |
+| **catalogue** | The legend's list of entries | `renderCatalogue`, `.cat` |
+| **label** | The stand's RIGHT cell — the record's own account, its awards, its team caption | `renderLabel`, `.label` |
 | **piece** | One framed photograph on the wall | `.piece` |
 | **lead** | The piece that opens the record when pressed | `.piece--lead` |
 | **awaited** | A reserved frame with no photograph behind it yet | `.piece--pending` |
@@ -109,8 +112,8 @@ exits non-zero on any failure; `npm test` stops at the first failing file.
 **The DOM stub models no CSS.** A layout rule can be wrong with every unit check
 green — this has already happened here more than once. `tools/ux-check.mjs` is
 the authority on anything geometric: it drives headless Chrome over the DevTools
-Protocol and measures the fold, the dock, tap targets and the dialog at
-1440×900 and the spec's 1280×704 floor.
+Protocol and measures the fold, the dock, the room heading's pin, tap targets and
+the dialog at 1440×900 and the spec's 1280×704 floor.
 
 ```powershell
 # terminal 1
@@ -138,7 +141,21 @@ once:
   first six.
 - **The mural is `#hall`'s own background with `background-attachment: local`.**
   Both halves are load-bearing and both fail silently. Never reintroduce a
-  `.wall` element — no box inside this walk spans its scroll width.
+  `.wall` element — no box inside this walk spans its scroll width, and
+  `shell-check.mjs` fails on any top-level `.wall` rule. The stand's left cell is
+  `.hang-cell` for exactly that reason; the vocabulary calls it the hang cell.
+- **The room heading is the walk's sticky sign, and `align-self` is what makes
+  it work.** `position: sticky` on a full-width flex item is inert: an element
+  travels only through the distance between its own size and its containing
+  block's, and `.room`'s column-flex `stretch` leaves that distance at zero. The
+  rule is `.room > .room-title` — a bare class loses to `.room > *` in silence —
+  and it carries `align-self: flex-start` for the slack and `max-width: 100%` so
+  a long subtitle still wraps instead of painting over the next room. It pins to
+  `--room-gutter`, the same token the room's own padding reads.
+  `shell-check.mjs` asserts those declarations; only `ux-check.mjs` can say
+  whether the heading actually MOVED. Do not reintroduce a second header
+  element: the deleted `#roomRail` was a 15-19px copy of the name, and a copy is
+  the fault, not the fix.
 - **No sub-pixel dot grid.** A dot under one pixel quantises into hard vertical
   lines at a fractional device pixel ratio.
 - **No native CSS scroll-snap.** It re-snaps when the position is set

@@ -925,6 +925,11 @@
      A wall that cannot fit its hang at any height above the tap floor is left at
      the floor and clips, which is visible; letterboxing every photograph is not. */
   function fitWall(cluster) {
+    /* The hang cell is the stand's first cell and it is the hang's own box now:
+       the legend is a sibling under the cluster, so the cell that holds both is
+       the width a hang has to fit. It used to be the cluster's PARENT, which was
+       the stand itself — the cluster was the only thing in the cell and the label
+       was its sibling. */
     var wall = cluster.parentElement;
     if (!wall) return;
     var cols = [].slice.call(cluster.querySelectorAll('.col'));
@@ -956,15 +961,36 @@
     if (!solvable || !available || !ratio) return;
     var band = (available - gaps) / ratio;
     /* ── The tap floor, per FRAME and not per band ─────────────────────────
-       A frame is `band / rows` tall, so the smallest frame is the one in the
-       deepest column. The floor is `rows x 44` for that column, not a flat 44:
-       a band of 44 in a 2-row column gives 22px frames, which is what the
-       previous floor measured — 46x41, two pixels under the target. */
+       A frame is `(band - this column's own gaps) / rows` tall, so the smallest
+       frame is the one in the deepest column. The floor is what that column needs
+       for every one of its frames to clear 44px, not a flat 44: a band of 44 in a
+       2-row column gives 22px frames, which is what the previous floor measured —
+       46x41, two pixels under the target.
+
+       The column's GAPS are part of that floor and they were missing from it.
+       `rows x 44` leaves the gap with nowhere to come from, so the frames pay for
+       it: with `--col-gap: 10px` a 3-row column of 44px frames needs 152px and the
+       old floor gave it 132px, which is 39.3px per frame. Measured with nothing
+       forced to load at 1440x900, a 3-row column came out 44 x 39.05 — 39px of the
+       44px tap target, on the frame a visitor sees before its bytes arrive.
+
+       `--col-gap` is read from the COLUMN's resolved style and not restated here.
+       A percent or `calc()` in a custom property does not serialise to something
+       `parseFloat` can read, so reading `--col-gap` itself gives 0 and the floor
+       silently loses the gaps again — which is how this shipped once. The column
+       is the element the gap is applied to, so its computed row-gap is the number
+       the frames actually divide. */
     var deepest = 1;
     for (var k = 0; k < cols.length; k++) {
       deepest = Math.max(deepest, cols[k].querySelectorAll('.piece').length);
     }
-    var floorH = 44 * deepest;
+    var colGap = 10;
+    if (cols.length) {
+      var ccs = getComputedStyle(cols[0]);
+      var gap = parseFloat(ccs.rowGap || ccs.gap);
+      if (isFinite(gap) && gap > 0) colGap = gap;
+    }
+    var floorH = 44 * deepest + colGap * Math.max(0, deepest - 1);
     cluster.style.setProperty('--wall-h', Math.max(floorH, Math.round(band)) + 'px');
   }
 
@@ -1049,7 +1075,24 @@
        is not there. */
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
       + ' data-entry="' + esc(entryKey) + '" data-snap>'
+      /* ── The stand's first cell is the HANG CELL, and it holds two blocks ──
+         The hang, and the legend that names it. They are one cell because they
+         are one thing looked at together: a frame is a photograph and the entry
+         under it is that photograph's own name, so the two do not belong in
+         different columns of the stand.
+         It is a named element rather than a bare cluster because a flex item
+         cannot be two blocks: the cluster takes the height the legend leaves,
+         and `fitWall` measures the cell this hang was given.
+
+         It is NOT called `.wall`. That name is reserved by this repo for the
+         mural layer that must never exist — `#hall` carries the mural as its own
+         background, and `tests/shell-check.mjs` fails on any top-level `.wall`
+         rule. The vocabulary table in AGENTS.md calls this box the wall CELL;
+         the element is named for what it holds. */
+      + '<div class="hang-cell">'
       + renderCluster(pieces, layout, record, kind, entryKey)
+      + renderLegend(record, pieces)
+      + '</div>'
       + renderLabel(record, pieces)
       + '</div>';
   }
@@ -1292,6 +1335,29 @@
     }).join('');
   }
 
+  /* ── The legend: the catalogue, and where it stands ─────────────────────
+     The legend is the text for the HANG, so it stands under the hang and not
+     in the label's reading column. It was the last block of the label's side
+     column, which put a photograph's own name in a different cell from the
+     photograph and, because it was the tallest thing in that column, is part of
+     what made the label taller than its cell: measured at 1440x900 the
+     Applications label held 743px in a 690px box and scrolled.
+
+     It is emitted by its own function because it is no longer part of the
+     label's markup: `renderGroup` hangs it in the wall cell, under the cluster.
+     `Site.renderLabel` therefore no longer contains the catalogue, and the
+     checks that count its entries read it from `.legend` instead.
+
+     It is a block of its own rather than a bare list because the wall cell has
+     to be able to keep it out of the hang's way: the cluster takes the leftover
+     height, and the legend is what it leaves over. */
+  function renderLegend(record, pieces) {
+    return '<div class="legend">'
+      + '<div class="cat">' + renderCatalogue(record, pieces) + '</div>'
+      + '</div>';
+  }
+  Site.renderLegend = renderLegend;
+
   function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];
     /* A frame is not a photograph. The count is the photographs that exist, not
@@ -1360,7 +1426,6 @@
       + lead
       + renderAwards(record)
       + '<div class="label-aside">' + renderTeam(record) + '</div>'
-      + '<div class="cat">' + renderCatalogue(record, list) + '</div>'
       + '</div>'
       + '</div>'
       + '</div>';
@@ -1585,24 +1650,27 @@
     var hall = document.getElementById('hall');
     if (!strip || !hall) return;
 
-    /* The live region that names the room the walk is in (spec §9), the sticky
-       rail that repeats the name on screen, and the dock's progress track. All
-       three are set up before the lighting's early returns: naming the room and
-       drawing how far along the walk is are independent of whether any work is
-       currently lit, so a room of plates still names itself and still advances
-       the bar. The announcer and the rail are written only when the room
-       changes, so scrolling does not spam a screen reader — or the DOM — with
-       the same name dozens of times a second; the bar is one property write per
-       frame. */
+    /* The live region that names the room the walk is in (spec §9) and the
+       dock's progress track. Both are set up before the lighting's early
+       returns: naming the room and drawing how far along the walk is are
+       independent of whether any work is currently lit, so a room of plates
+       still names itself and still advances the bar. The announcer is written
+       only when the room changes, so scrolling does not spam a screen reader —
+       or the DOM — with the same name dozens of times a second; the bar is one
+       property write per frame.
+
+       The name on SCREEN is not written here at all. It is the room's own
+       `h2.room-title`, which carries `position: sticky` and travels with the
+       walk; `writeRail()` and the `#roomRail` element it filled are deleted.
+       The live region is what is left needing a write. */
     var announcer = document.getElementById('announcer');
-    var roomRail = document.getElementById('roomRail');
     var dockProgress = document.getElementById('dockProgress');
     var lastRoom = null;
 
     /* Which room the middle of the viewport is standing in. The interval test
-       is not repeated here: Site.roomAtOffset owns it, so the rail, the
-       announcer and the dock cannot drift from the walk's own rule for where a
-       boundary falls. This measures the geometry; that decides. */
+       is not repeated here: Site.roomAtOffset owns it, so the announcer and the
+       dock cannot drift from the walk's own rule for where a boundary falls.
+       This measures the geometry; that decides. */
     function roomAt() {
       var rooms = strip.querySelectorAll('[data-room]');
       var boxes = [];
@@ -1614,42 +1682,20 @@
       return box ? box.el : null;
     }
 
-    /* A room heading's own text, with its child elements' text kept as separate
-       runs rather than glued on. `.room-title .sub` carries a nested
-       `<span class="count">` in four of the six rooms (Robotics and Applications
-       "3 projects" + "ROBOTICS", Leadership "Posts held" + "6 POSTS", Honours
-       "Competitions, conferences and citations" + "5 HONOURS"), and the two are
-       separated only by a CSS `margin-left` — which textContent knows nothing
-       about, so it reads "3 projectsROBOTICS". Joining the runs with a visible
-       separator is the fix, and it keeps the count, which is real content. */
-    var RUN_SEP = ' · ';
-    function textRuns(el) {
-      if (!el) return '';
-      var nodes = el.childNodes;
-      if (!nodes || !nodes.length) return String(el.textContent || '').replace(/\s+/g, ' ').trim();
-      var runs = [];
-      for (var i = 0; i < nodes.length; i++) {
-        var run = String(nodes[i].textContent || '').replace(/\s+/g, ' ').trim();
-        if (run) runs.push(run);
-      }
-      return runs.join(RUN_SEP);
-    }
-
-    /* The rail's two lines, read from the room element so the rail cannot drift
-       from the heading it duplicates. Written on room CHANGE only — the same
-       condition the announcer uses — so this is two DOM writes per boundary
-       crossed, not per frame. */
-    function writeRail(roomEl) {
-      if (!roomRail || !roomEl) return;
-      var t = roomRail.querySelector('.rr-title');
-      var m = roomRail.querySelector('.rr-meta');
-      if (t) t.textContent = textRuns(roomEl.querySelector('.room-title .t'));
-      if (m) m.textContent = textRuns(roomEl.querySelector('.room-title .sub'));
-    }
+    /* `writeRail()` and its `textRuns()` helper lived here. Both are deleted
+       with the rail they served, and neither has another caller: `textRuns`
+       existed only to keep `.sub`'s nested `<span class="count">` from reading
+       as "3 projectsROBOTICS" once it was copied into a second element, and
+       nothing copies `.sub` anywhere now that the heading names itself. The
+       live region reads `.t`, which carries no nested run to glue. */
 
     function announceRoom() {
       var r = roomAt();
       if (!r) return '';
+      /* The name is the heading's own words, and the fallback is the room's key.
+         It is ANNOUNCED here and nowhere else: the name on screen needs no
+         write, because the heading it belongs to is the element doing the
+         sticking. */
       var titleEl = r.querySelector('.room-title .t');
       var name = (titleEl && titleEl.textContent) || r.getAttribute('data-room') || '';
       if (name && name !== lastRoom) {
@@ -1658,10 +1704,6 @@
         /* The dock follows the walk. Keyed on data-room, not the display
            title: the two differ where the dock shortens a name. */
         markCurrentRoom(r.getAttribute('data-room'));
-        /* The sticky rail names the same room. Written here, on the change,
-           for the same reason the announcer is: scrolling must not rewrite two
-           elements dozens of times a second. */
-        writeRail(r);
       }
       return name;
     }

@@ -65,7 +65,7 @@ const expr = [
   '         takes what is left; `--band-h` / `--max-panel-h` / `--label-w` are',
   '         retired with the stacked shape and no longer resolve. */',
   '      labelCol: tok("--label-col"), labelSide: tok("--label-side"),',
-  '      roomTitleH: tok("--room-title-h"), railH: tok("--rail-h"),',
+  '      roomTitleH: tok("--room-title-h"), roomGutter: tok("--room-gutter"),',
   '      colGap: tok("--col-gap"), clusterGap: tok("--cluster-gap"),',
   '      groupGap: tok("--group-gap"), colGapX: tok("--group-col-gap"),',
   '      /* Resolved, not declared: what the two cells actually came out as. */',

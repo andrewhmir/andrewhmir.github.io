@@ -43,14 +43,13 @@
        ════════════════════════════════════════════════════════════ -->
   <div class="content-layer">
 
-    <!-- The sticky rail names the area the walk is standing in. Its text is
-         written by initLights() on the same room-change path that moves the
-         dock, so the two cannot disagree. aria-hidden: #announcer already
-         announces every room change, and a second announcement is a duplicate. -->
-    <header class="room-rail" id="roomRail" aria-hidden="true">
-      <span class="rr-title"></span>
-      <span class="rr-meta"></span>
-    </header>
+    <!-- The walk names the area it is standing in with the room's OWN heading:
+         `h2.room-title` carries `position: sticky` and travels with the walk.
+         There is deliberately no second header here. The `<header
+         class="room-rail" id="roomRail">` that used to sit at this spot held a
+         15-19px COPY of the current room's title, refilled by writeRail() on
+         every boundary crossed, while the real 27-48px heading scrolled away.
+         Do not reintroduce it — a copy is the fault, not the fix. -->
 
     <!-- The only navigation: the walk's directory at its foot, with the walk's
          progress filling inside the dock box rather than along the screen edge.

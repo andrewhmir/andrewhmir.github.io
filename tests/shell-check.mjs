@@ -36,7 +36,6 @@ ok('html tags balance', errors.length === 0 && stack.length === 0,
 /* ---- HTML: the DOM contract later tasks consume ---- */
 const required = [
   ['id="directory"', 'directory'],
-  ['id="roomRail"', 'roomRail'],
   ['id="dockProgress"', 'dockProgress'],
   ['id="hall"', 'hall'],
   ['id="strip"', 'strip'],
@@ -53,19 +52,31 @@ for (const [needle, label] of required) {
   ok('shell has ' + label, html.includes(needle), 'missing ' + needle);
 }
 
-/* ---- HTML: the sticky rail and the in-dock progress ----
-   The rail names the area the walk is standing in, and the progress bar draws
-   the walk's position inside the dock's own box rather than along the screen
-   edge. #dockProgress is a SIBLING of #directory, not a child: renderDock()
-   writes #directory.innerHTML, which destroys every child node it has, so a bar
-   placed inside it would be wiped on every render. */
-ok('the shell has a sticky room rail, hidden from assistive tech',
-  /<header class="room-rail"[^>]*id="roomRail"[^>]*aria-hidden="true"/.test(html),
-  'the shell has no aria-hidden #roomRail');
+/* ---- HTML: one heading, not a second smaller copy of it ----
+   The walk names the area it is standing in with the room's OWN heading, which
+   does it by carrying `position: sticky` and travelling with the walk. It is
+   NOT a second element that repeats the name: the `<header class="room-rail"
+   id="roomRail">` that used to head the shell was exactly that — a 15-19px
+   copy that writeRail() refilled with the current room's title and subtitle on
+   every boundary crossed, while the real 27-48px heading scrolled away.
 
-ok('the rail carries both lines initLights() writes into',
-  /<span class="rr-title"><\/span>/.test(html) && /<span class="rr-meta"><\/span>/.test(html),
-  'the rail has no .rr-title / .rr-meta, so writeRail() would write nowhere');
+   This is the half of the guard that reads markup; the half that reads the
+   rule lives with the other CSS checks below, where the rule-body helper is
+   defined. Three names to keep deleted: the id, the class, and the write path.
+
+   Both sources are read with their COMMENTS STRIPPED, for the reason the
+   stylesheet checks further down record: the notes that explain why the rail is
+   gone have to name it, and a raw-text scan reports every one of those notes as
+   a reintroduction. `index.html` and `js/main.js` both carry such a note. */
+const htmlCode = withoutComments;
+const mainCode = main.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+ok('the shell has no duplicate room header',
+  !/id="roomRail"/.test(htmlCode) && !/class="room-rail"/.test(htmlCode),
+  'the #roomRail copy of the room heading is back in the shell — the room already has one');
+
+ok('main.js has no rail write path',
+  !/function writeRail\b/.test(mainCode) && !/getElementById\('roomRail'\)/.test(mainCode),
+  'writeRail() survives, so the heading is being duplicated into a second element again');
 
 ok('the shell has no progress rail outside the dock',
   !/class\s*=\s*["']rail["'\s]/.test(html),
@@ -218,6 +229,49 @@ const ruleBody = (sel) => {
   return '';
 };
 const room = ruleBody('.room');
+
+/* ── The room heading IS the walk's sticky sign ────────────────────────────────
+   The heading names the area the walk is standing in, and it does that job as
+   ITSELF rather than through a second, smaller copy of the name. Three
+   declaration-level facts make that work, and each of the three fails silently
+   in a browser while the stylesheet still reads correctly:
+
+   1. `position: sticky`, obviously — without it the heading simply scrolls off
+      the left of a room that is three screens wide.
+   2. `align-self: flex-start`, which is the one that is easy to miss. `.room` is
+      a column flex container and the heading is its first item, so `stretch`
+      makes it exactly as wide as the room. A sticky element can only travel
+      through the DISTANCE between its own size and its containing block's, so a
+      full-width heading has zero slack and a correct-looking `position: sticky`
+      is a no-op. `align-self` gives it its own text width — the slack.
+   3. The offset is the room's own gutter TOKEN, not a repeated literal, so the
+      pin and the padding cannot drift apart when one of them is retuned.
+
+   The selector is `.room > .room-title` and not a bare `.room-title` for a
+   fourth reason: `.room > * { position: relative }` is specificity 0-1-1 and
+   outranks a bare class at 0-1-0, so a bare rule loses to it in silence. */
+const roomTitle = ruleBody('.room > .room-title');
+ok('the room heading is the sticky sign, not a copy of it',
+  /position:\s*sticky/.test(roomTitle),
+  'no `position: sticky` on .room > .room-title, so the heading scrolls off the walk');
+ok('the sticky heading pins at the room gutter',
+  /left:\s*var\(--room-gutter\)/.test(roomTitle),
+  'the pin offset is not the room gutter token — it will drift from the stands it heads');
+ok('the sticky heading is given the slack to travel',
+  /align-self:\s*flex-start/.test(roomTitle),
+  'the heading is still stretched to the full room width, so `position: sticky` cannot move it');
+ok('the sticky heading still wraps rather than overflowing its room',
+  /max-width:\s*100%/.test(roomTitle),
+  'nothing caps the heading at its room, so a long subtitle stops wrapping at max-content '
+  + 'width and paints over the neighbouring room');
+ok('the pin offset and the room padding are one number',
+  /padding:\s*42px\s+var\(--room-gutter\)\s+92px/.test(room) && /--room-gutter:\s*34px/.test(cssCode),
+  'the room padding no longer reads --room-gutter, so the heading can pin off the stands\' edge');
+ok('no rule styles a room rail',
+  !/\.room-rail\b/.test(cssCode) && !/\.rr-title\b/.test(cssCode) && !/\.rr-meta\b/.test(cssCode),
+  'a rule for the deleted rail survives — a live rule for a deleted element is documentation that lies');
+ok('the rail height token is gone', !/--rail-h/.test(cssCode),
+  '--rail-h survives; nothing reserves a band for a rail that no longer exists');
 
 /* The ramp is read to the end of the declaration, not to the first `)` — the
    first stop's own `rgba(...)` closes a lazy match at three digits and the
