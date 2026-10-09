@@ -545,8 +545,8 @@ ok('every border-radius is zero', radii.length === 0, 'non-zero: ' + [...new Set
    tools/ux-check.mjs measures the real thing; these are the static halves.
 
    The category gap is a share of the SCREEN rather than of the stand, because
-   it is a band of wall a visitor crosses: a screen of it is what makes the next
-   room a different place instead of the next exhibit. It is spent as a ROOM's
+   it is a band of wall a visitor crosses: half a screen of it is what makes the
+   next room a different place instead of the next exhibit. It is spent as a ROOM's
    own padding and never as a gap in `#strip`, and this is the check that keeps
    it there. A flex gap is bare hall, and bare hall renders BRIGHTER than the
    rooms it separates — measured at 1440x900, the same 1,000px of wall reads
@@ -563,7 +563,17 @@ ok('every border-radius is zero', radii.length === 0, 'non-zero: ' + [...new Set
    700px apart that must read the same read 1250 and 550. The direction is
    load-bearing, so it is asserted here. The two gaps' ORDER — sibling nearer
    than category — is asserted in ux-check, where both can be measured in the
-   same units; here they can only be asserted to exist. */
+   same units; here they can only be asserted to exist.
+
+   The floor below is 45vw, and it was 50vw: it came down in the same change
+   that halved the token itself, from 90vw, because the old floor made the
+   token's own value the thing being read rather than the property it buys. What
+   this check is for is that the category distance is read in SCREENS and stays
+   the larger of the walk's two — and ux-check measures that directly, 717px
+   against a 275px sibling gap at 1440x900, 2.6x, at all three viewports. The
+   floor is a minimum and not a target: it now sits at the value the token
+   carries, so any further reduction has to come through this line and argue for
+   itself rather than slip past it. */
 const groupGap = (cssCode.match(/--group-gap:\s*([^;]+);/) || [])[1] || '';
 const roomGap = (cssCode.match(/--room-gap:\s*([^;]+);/) || [])[1] || '';
 const siblingShare = parseFloat((groupGap.match(/([\d.]+)\s*\*\s*var\(--stand-w\)/) || [])[1]);
@@ -583,9 +593,10 @@ ok('the band between two rooms is the room\'s own ground, not a gap in the strip
   + 'room delays its heading\'s pin by a whole band');
 const categoryShare = parseFloat((roomGap.match(/([\d.]+)vw/) || [])[1]);
 ok('the gap between two categories is measured in screens, not stands',
-  categoryShare >= 50,
+  categoryShare >= 45,
   '--room-gap is "' + roomGap.trim() + '" — the threshold between two rooms is the one distance '
-  + 'in this walk that should read as a change of place');
+  + 'in this walk that should read as a change of place: at least half a screen (45vw), and always '
+  + 'the larger of the walk\'s two distances');
 
 /* Hard constraint: --lit must never be written on a subtree root. */
 ok('--lit is written only to work elements',

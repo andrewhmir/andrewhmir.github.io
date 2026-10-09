@@ -314,9 +314,9 @@
 
      `--room-gap` is the CATEGORY distance, and it is a threshold rather than a
      frame: a band of wall a visitor walks through on the way from one room to
-     the next. That is why it is a share of the SCREEN and not of the stand — a
-     screen of wall is what makes the next room a different place rather than
-     the next exhibit, and it is also the stretch the walk's sticky heading
+     the next. That is why it is a share of the SCREEN and not of the stand —
+     half a screen of wall is what makes the next room a different place rather
+     than the next exhibit, and it is also the stretch the walk's sticky heading
      hands over across. It is spent as the LEAVING room's own right padding
      (see `.room:not(:last-child)`), not as a gap in `#strip` and not as the
      arriving room's left padding, and both halves of that are measured: the
@@ -325,14 +325,23 @@
      two stands, which is the ground the projects are already hung on — and
      padding-left on the arriving room delays its heading's pin by a whole band,
      which ux-check caught at 1250 against 550. See the notes on `#strip` and on
-     `.room:not(:last-child)`. MEASURED at 1440x900 after this change: 1,365px
-     between the last stand of one room and the first of the next — 1,296px of
-     band, the two 34px gutters and the 1px recess — against 275px between two
-     stands of one room, where those same two distances were 69px and 2,200px
-     before it. tools/ux-check.mjs asserts the ORDER of the pair, since that is
-     the property the eye reads. */
+     `.room:not(:last-child)`. MEASURED at 1440x900: 717px between the last
+     stand of one room and the first of the next — 648px of band, the two 34px
+     gutters and the 1px recess — against 275px between two stands of one room,
+     where those same two distances were 69px and 2,200px before it.
+     tools/ux-check.mjs asserts the ORDER of the pair, since that is the
+     property the eye reads.
+
+     It was 90vw and it is 45vw — halved. The floor `shell-check.mjs` asserts on
+     this token came down with it, from 50vw to 45vw, because the property that
+     matters is the ORDER above and the old floor made the token's own value the
+     only thing anyone was reading: at 45vw the crossing is 717px against a
+     275px sibling gap at 1440x900 — 2.6x, and 2.3x at the 1280x704 floor. The
+     floor is still a floor and not a target: the smallest value it admits has to
+     keep reading as a change of place, or the category boundary has become a
+     sibling gap wearing a threshold's name. */
   --group-gap:   max(calc(0.25 * var(--stand-w)), calc((100vw - var(--stand-w)) / 2));
-  --room-gap:    90vw;
+  --room-gap:    45vw;
 
   --lit:          0;
   --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
@@ -1740,7 +1749,7 @@ button.record-item {
      ground reaches a gap. MEASURED at 1440x900, the same 1,000px of wall reads
      28.91 as a gap and 20.44 as the room's own padding — 1.41x brighter, one
      flat lit screen of mural in the middle of a dim walk, and
-     worse at the 1280x704 floor, where it is 1,221px of it. For scale, the
+     worse at the 1280x704 floor, where it is 645px of it. For scale, the
      room's own wall between two stands reads 20.93, so the gap version was
      nearly half again as bright as the ground the projects hang on.
 
@@ -1895,7 +1904,7 @@ button.record-item {
    to their width and keep the content box they had. Every other room is
    `width: max-content`, whose intrinsic contribution includes its padding, so
    the band grows the room without touching the hang inside it — measured: the
-   stands are still 1,100px and the crossing still 1,365px at 1440x900.
+   stands are still 1,100px and the crossing 717px at 1440x900.
 
    The recess stays where it was, at the END of the room the visitor is leaving,
    so it falls at the far edge of the band. That is the reading the walk wants:

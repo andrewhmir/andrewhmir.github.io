@@ -169,7 +169,8 @@ once:
   Honours and About are one screen wide by construction and pay for the band in
   their own width rules. They shipped the other way round — 2,200px between two
   projects of one room against 69px between two rooms — and `shell-check.mjs`
-  asserts the shape of both tokens plus where the second is spent. Only
+  asserts the shape of both tokens, a half-screen (45vw) floor on the second,
+  and where that second is spent. Only
   `ux-check.mjs` can measure which of the two is actually the larger, and it
   does, at all three viewports.
 - **The mural is `#hall`'s own background with `background-attachment: local`.**

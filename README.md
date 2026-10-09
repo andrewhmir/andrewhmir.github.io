@@ -31,7 +31,7 @@ actually need — and a stand fills 66–86% of the screen's width. So the walk 
 exhibits rather than as a continuous frieze.
 
 The walk measures **two** distances, and they are not the same size. Siblings in one room are
-separated by that frame; two ROOMS are separated by a threshold: 90vw of wall, 1,365px between the
+separated by that frame; two ROOMS are separated by a threshold: 45vw of wall, 717px between the
 last stand of one room and the first of the next at 1440×900, against 275px between two stands of one
 room. It is spent as a **room's own right padding** — the room the visitor is leaving — and never as
 a gap in the strip: a flex gap is bare hall, and bare hall measures 28.91 where the room's own ground
