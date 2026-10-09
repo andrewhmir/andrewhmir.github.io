@@ -24,10 +24,24 @@ screen, so a short gallery is never narrower than the window and a visitor is al
 one named gallery rather than looking at two.
 
 Within that row, **one stand is one screen**. A stand — a project or a post, with its label
-and its frames — is sized so that when the walk parks on it, nothing of its neighbours is in shot: the
-gap between two stands is about half a screen of bare wall, measured at 707px at 1536×864, and a stand
-fills 66–86% of the screen's width. So the walk reads as a sequence of exhibits rather than as a
-continuous frieze.
+and its frames — is sized so that when the walk parks on it, nothing of its neighbours is in shot:
+the gap between two stands of the SAME room is the smallest one that keeps that true — a quarter of
+a stand, 275px at 1440×900, 1536×864 and 1280×704, against the 170 / 218 / 90px those windows
+actually need — and a stand fills 66–86% of the screen's width. So the walk reads as a sequence of
+exhibits rather than as a continuous frieze.
+
+The walk measures **two** distances, and they are not the same size. Siblings in one room are
+separated by that frame; two ROOMS are separated by a threshold: 90vw of wall, 1,365px between the
+last stand of one room and the first of the next at 1440×900, against 275px between two stands of one
+room. It is spent as a **room's own right padding** — the room the visitor is leaving — and never as
+a gap in the strip: a flex gap is bare hall, and bare hall measures 28.91 where the room's own ground
+measures 20.44 (1.41× brighter), one flat lit screen of mural in the middle of a dim walk. The
+arriving room's left padding cannot carry it either: padding-left pushes that room's content box a
+band to the right, and its sticky heading then cannot reach its pin until the band has gone by
+(measured at 1250 against 550). As right padding the band is the same ground the projects hang on,
+20.44 against 20.93 for the room's own wall between two stands, and each room's 1px recess is the
+joint at the far edge of it. It was the other way round: `--group-gap` was `2 × --stand-w`, so two
+projects of one room stood 2,200px apart while two categories touched, 69px apart at 1440×900.
 
 One room is one viewport tall, and the hall is the document's only scroller, on one axis:
 horizontal. Chrome lives at the **foot** of the walk — a dock carrying every room and the current

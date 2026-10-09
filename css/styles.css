@@ -268,17 +268,52 @@
      of a six-piece stand at the widest, so it is 12px of a 1320px stand that
      nothing else was using. */
   --cluster-gap: 12px;
-  /* Half the wall a parked stand needs on each side, expressed as a multiple of
-     the stand itself rather than as a magic pixel count. A stand is snapped
-     with its CENTRE on the screen's centre, so the next stand begins intruding
-     when the gap falls under (viewport + this stand's width) / 2. MEASURED, not
-     reasoned: against the real stands, factors of 2, 2.4, 2.8, 3.2 and 4 were
-     each run through tools/stand-gap.mjs's own criterion at both reference
-     viewports, and 2 is the smallest at which every stand in every room reports
-     `neighboursInShot: 0` — 2,080px at 1280x704 and 2,458px at 1920x1080. The
-     old clamp(200px, 46vw, 760px) gave 589px and 760px, a fifth of what
-     isolation needs now that a stand is 1040-1320px wide. */
-  --group-gap:   calc(2 * var(--stand-w));
+  /* ── The walk's two distances: the frame, and the threshold ───────────────
+     Two stands in one room are SIBLINGS — the same category under the same
+     heading — and two rooms are different categories under different headings.
+     Those are two different distances, and they are deliberately not the same
+     size. They were, and this pair of tokens is the record of which way round
+     they now go.
+
+     `--group-gap` is the SIBLING distance, and it is a frame: the smallest gap
+     that keeps the property the wall is hung for. A stand parks with its CENTRE
+     on the screen's centre (see `initWalk`), so the bare wall beside a parked
+     stand is `(100vw - stand) / 2` — 170px at 1440x900, 218 at 1536x864, 90 at
+     1280x704 — and a gap at least that wide leaves no neighbour in shot.
+     `max()` of that term and a quarter of a stand is that criterion written
+     down once, so the gap cannot be retuned below the property it buys, at the
+     three viewports tools/ux-check.mjs measures or at any other: 275px at all
+     three, against the 170 / 218 / 90px they need. The share is 0.25 rather
+     than 0.2 so the 1536x864 window keeps 57px of margin over its own floor
+     rather than 2px.
+
+     It was `calc(2 * var(--stand-w))` — 2,200px, two screens of bare wall
+     between two projects of the same room — while two ROOMS were separated by
+     nothing but their own 34px gutters and the 1px recess, 69px measured at
+     1440x900. The category boundary was the smallest distance in the walk and
+     the sibling gap was the largest, which is the pair the wrong way round.
+
+     `--room-gap` is the CATEGORY distance, and it is a threshold rather than a
+     frame: a band of wall a visitor walks through on the way from one room to
+     the next. That is why it is a share of the SCREEN and not of the stand — a
+     screen of wall is what makes the next room a different place rather than
+     the next exhibit, and it is also the stretch the walk's sticky heading
+     hands over across. It is spent as the LEAVING room's own right padding
+     (see `.room:not(:last-child)`), not as a gap in `#strip` and not as the
+     arriving room's left padding, and both halves of that are measured: the
+     same 1,000px of wall reads 28.91 as a gap and 20.44 as a room's padding at
+     1440x900 — 1.41x brighter, against 20.93 for the room's own wall between
+     two stands, which is the ground the projects are already hung on — and
+     padding-left on the arriving room delays its heading's pin by a whole band,
+     which ux-check caught at 1250 against 550. See the notes on `#strip` and on
+     `.room:not(:last-child)`. MEASURED at 1440x900 after this change: 1,365px
+     between the last stand of one room and the first of the next — 1,296px of
+     band, the two 34px gutters and the 1px recess — against 275px between two
+     stands of one room, where those same two distances were 69px and 2,200px
+     before it. tools/ux-check.mjs asserts the ORDER of the pair, since that is
+     the property the eye reads. */
+  --group-gap:   max(calc(0.25 * var(--stand-w)), calc((100vw - var(--stand-w)) / 2));
+  --room-gap:    90vw;
 
   --lit:          0;
   --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
@@ -1679,6 +1714,25 @@ button.record-item {
   z-index: 1;                   /* the rooms hang ON the wall */
   display: flex;
   align-items: stretch;
+  /* ── Where the gap between two rooms is NOT spent ────────────────────────
+     The walk's larger distance separates two rooms — and it is deliberately
+     not a `gap` here. A flex gap is bare hall: it carries the mural at the
+     hall's own 32% scrim with no room gradient over it, and neither room's
+     ground reaches a gap. MEASURED at 1440x900, the same 1,000px of wall reads
+     28.91 as a gap and 20.44 as the room's own padding — 1.41x brighter, one
+     flat lit screen of mural in the middle of a dim walk, and
+     worse at the 1280x704 floor, where it is 1,221px of it. For scale, the
+     room's own wall between two stands reads 20.93, so the gap version was
+     nearly half again as bright as the ground the projects hang on.
+
+     The threshold is `.room`'s own padding instead — see `.room:not(:last-child)`
+     below, and `--room-gap` in the token block for the measurement that pair
+     replaces. Padding is inside the box a background paints, so the band is the
+     same lit ground as the wall the projects hang on, and the two rooms read as
+     one wall with a joint in it rather than as two panels with a light on
+     between them. It is the LEAVING room's padding-RIGHT: on the arriving room
+     the same band pushes that room's content box a whole band to the right, and
+     its heading then cannot reach its pin until the band has gone by. */
   /* The strip is exactly the hall's height, so each room's `height: 100%`
      resolves to one viewport rather than to the strip's content height. */
   height: 100%;
@@ -1788,6 +1842,47 @@ button.record-item {
      a joint in stone actually looks like: the rooms stay separate, and the
      wall stops having a bright line drawn on it. */
   border-right: 1px solid rgba(8, 12, 14, 0.55);
+}
+
+/* ── The threshold between two categories, which is the room's own ground ───
+   The walk's larger distance. Two stands of one room are separated by
+   `--group-gap`, a frame; two ROOMS are separated by this, and it is the
+   LEAVING room's own RIGHT PADDING rather than a gap in the strip. That choice
+   is measured, not stylistic: a flex `gap` is bare hall — the mural at the
+   hall's 32% scrim with no room gradient over it — so a band spent there
+   rendered 1.41x brighter than the rooms either side of it (see the note on
+   `#strip`, which is where the numbers live). Padding is inside the box a
+   background paints, so this band is the same lit ground as the wall the
+   projects hang on.
+
+   ── Why the band belongs to the room being LEFT and not the one arriving ───
+   The band was the FOLLOWING room's left padding first, and `ux-check` threw it
+   out. Padding-left pushes that room's content box a whole band to the right,
+   and a sticky heading travels inside its containing block: the arriving room's
+   heading could not reach its pin until the band had gone by, so the two
+   samples 700px apart that must read the same read 1250 and 550 instead — a
+   heading travelling with the content, which is the exact failure `align-self`
+   exists to prevent. On the room being left, the heading is already pinned and
+   stays pinned across the whole band, and the band carries the ground whose
+   name is on screen. So the direction of the band is load-bearing, and
+   `shell-check` asserts `padding-right` rather than either.
+
+   `.room:not(:last-child)` and not `.room`: the last room in the walk has
+   nothing after it to separate from, and the selector is what says so.
+
+   What it costs the two fixed-width rooms is paid in their own rules below.
+   `padding` on a border-box box comes out of the width, and Honours and About
+   are each exactly one screen wide by construction, so both add the band back
+   to their width and keep the content box they had. Every other room is
+   `width: max-content`, whose intrinsic contribution includes its padding, so
+   the band grows the room without touching the hang inside it — measured: the
+   stands are still 1,100px and the crossing still 1,365px at 1440x900.
+
+   The recess stays where it was, at the END of the room the visitor is leaving,
+   so it falls at the far edge of the band. That is the reading the walk wants:
+   the band is this room's wall, and the joint is the door into the next. */
+.room:not(:last-child) {
+  padding-right: calc(var(--room-gutter) + var(--room-gap));
 }
 
 /* Wall nap — REMOVED. It was two offset dot grids on a 4px period, drawn at
@@ -2132,10 +2227,12 @@ body {
    a gallery at four exhibits, and it is the whole reason thirteen honours were
    cut into four galleries all called Honours. A row has no such limit.
 
-   The row's gap is the frame around the exhibit — the only frame in this hall
-   that is not gilt. It is measured rather than reasoned: see the note on
-   `--group-gap` in the token block, where the isolation test and both measured
-   values are recorded.
+   The row's gap is the frame around the exhibit — the gilt frame's opposite
+   number, and now one of TWO distances in the walk rather than the only one:
+   it is the wall between two projects of this room, and the much longer wall
+   between one room and the next is the leaving room's own right padding. See
+   `--group-gap` in the token block, where both are derived and measured, and
+   the check in tools/ux-check.mjs that asserts the order of the two.
 
    The Honours room is NOT one of these. It hangs no group and holds no row; it
    is the three-column list of tiles further down this file.
@@ -3205,17 +3302,38 @@ body {
    grid 1372px inside it, and three 448px tracks that all fit. Do NOT widen the
    grid back out with a negative margin to line the tiles up with the frames on
    the other walls — that made the grid 1439px inside a 1372px box and clipped
-   the third column again, which is the fault this rule exists to fix. */
+   the third column again, which is the fault this rule exists to fix.
+
+   ── And it pays for the threshold band on its right ───────────────────────
+   Leadership follows Honours, so `.room:not(:last-child)` gives Honours a band
+   of right padding — and on a border-box box that padding comes straight OUT of
+   the width. A fixed `100vw` here would leave the grid 76px at 1440x900 with the
+   tiles in a column. So the width is one screen PLUS the band, and the content
+   box is the same 1371px it was: `100vw + gap − 34px − (34px + gap)`. `max-width`
+   has to go with it — left at `100vw` it would clamp the box back and do the
+   damage the width was changed to avoid. About carries the band for the same
+   reason and is compensated in the same way, below. */
 .room[data-room="Honours"] {
   box-sizing: border-box;
-  width: 100vw;
-  min-width: 100vw;
-  max-width: 100vw;
+  width: calc(100vw + var(--room-gap));
+  min-width: calc(100vw + var(--room-gap));
+  max-width: none;
 }
 
 /* About and Contact are single compositions, not runs of groups. Every other
-   gallery is as wide as its own hang; these two are exactly one screen. */
-.room[data-room="About"],
+   gallery is as wide as its own hang; these two are exactly one screen.
+
+   About is followed by Robotics, so it carries the threshold band on its right
+   and pays for it exactly as Honours does: one screen plus the band in the
+   width, so the content box stays `100vw − 68px` and the portrait, the bio and
+   the links are where they were. Contact is the LAST room in the walk, so
+   `.room:not(:last-child)` leaves it alone and its width is one screen flat.
+   That difference is the whole reason these are two rules and not one. */
+.room[data-room="About"] {
+  width: calc(100vw + var(--room-gap));
+  min-width: calc(100vw + var(--room-gap));
+}
+
 .room[data-room="Contact"] {
   width: 100vw;
   min-width: 100vw;

@@ -524,6 +524,69 @@ const radii = [...cssCode.matchAll(/border-radius:\s*([^;}]+)/g)]
   .filter((v) => v !== '0' && !/^var\(--radius-(sm|md)\)$/.test(v));
 ok('every border-radius is zero', radii.length === 0, 'non-zero: ' + [...new Set(radii)].join(', '));
 
+/* ── The two gaps: one between projects, one between categories ───────────────
+   The walk has two distances and they are not the same thing. Two stands in one
+   room are SIBLINGS — the same category under the same heading — and the wall
+   between them is a frame. Two rooms are different categories, and the wall
+   between them is a threshold the visitor walks through.
+
+   They shipped the other way round. `--group-gap` was `2 * var(--stand-w)`:
+   2,200px of bare wall between two projects of the SAME room. Two ROOMS, by
+   contrast, were separated by nothing but their own 34px gutters and the 1px
+   recess — 69px, measured at 1440x900, against a sibling gap of 2,200. The
+   category boundary was the smallest distance in the walk.
+
+   The sibling gap is now the smallest one that keeps the property the wall is
+   hung for. A stand parks with its CENTRE on the screen's centre, so the bare
+   wall beside it is `(100vw - stand) / 2` — 170px at 1440x900, 218 at
+   1536x864, 90 at 1280x704 — and a gap at least that wide leaves no neighbour
+   in shot. `max()` of that and a quarter of a stand is that same criterion,
+   written down once, so the gap cannot be tuned below the property it buys.
+   tools/ux-check.mjs measures the real thing; these are the static halves.
+
+   The category gap is a share of the SCREEN rather than of the stand, because
+   it is a band of wall a visitor crosses: a screen of it is what makes the next
+   room a different place instead of the next exhibit. It is spent as a ROOM's
+   own padding and never as a gap in `#strip`, and this is the check that keeps
+   it there. A flex gap is bare hall, and bare hall renders BRIGHTER than the
+   rooms it separates — measured at 1440x900, the same 1,000px of wall reads
+   28.91 as a gap against 20.44 as the room's padding, a 1.41x step, where the
+   room's own wall between two stands reads 20.93. Padding is inside the box a
+   background paints, so the band is the same ground as the wall the projects
+   hang on.
+
+   And it is the padding-RIGHT of the room being LEFT, not the padding-left of
+   the one arriving. That was the first cut of this, and ux-check threw it out:
+   padding-left pushes the arriving room's content box a whole band to the
+   right, and a sticky heading travels inside its containing block, so its
+   heading could not reach its pin until the band had gone by — the two samples
+   700px apart that must read the same read 1250 and 550. The direction is
+   load-bearing, so it is asserted here. The two gaps' ORDER — sibling nearer
+   than category — is asserted in ux-check, where both can be measured in the
+   same units; here they can only be asserted to exist. */
+const groupGap = (cssCode.match(/--group-gap:\s*([^;]+);/) || [])[1] || '';
+const roomGap = (cssCode.match(/--room-gap:\s*([^;]+);/) || [])[1] || '';
+const siblingShare = parseFloat((groupGap.match(/([\d.]+)\s*\*\s*var\(--stand-w\)/) || [])[1]);
+ok('the gap between two stands is at most one stand wide',
+  siblingShare > 0 && siblingShare <= 1,
+  '--group-gap is "' + groupGap.trim() + '" — a gap wider than the stand it separates is a '
+  + 'room boundary, not a frame between siblings');
+ok('the gap between two stands covers the wall beside a parked stand',
+  /max\(/.test(groupGap) && /\(\s*100vw\s*-\s*var\(--stand-w\)\s*\)\s*\/\s*2/.test(groupGap),
+  '--group-gap must be at least (100vw - stand) / 2 at every window: that term is what '
+  + 'leaves no neighbouring stand in shot when the walk parks');
+ok('the band between two rooms is the room\'s own ground, not a gap in the strip',
+  !/gap:\s*var\(--room-gap\)/.test(cssCode)
+  && /padding-right:\s*calc\(var\(--room-gutter\)\s*\+\s*var\(--room-gap\)\)/.test(cssCode),
+  'the threshold must be read by a room\'s padding-right: a gap between rooms is bare hall, and '
+  + 'bare hall is brighter than every room on either side of it, while padding-LEFT on the arriving '
+  + 'room delays its heading\'s pin by a whole band');
+const categoryShare = parseFloat((roomGap.match(/([\d.]+)vw/) || [])[1]);
+ok('the gap between two categories is measured in screens, not stands',
+  categoryShare >= 50,
+  '--room-gap is "' + roomGap.trim() + '" — the threshold between two rooms is the one distance '
+  + 'in this walk that should read as a change of place');
+
 /* Hard constraint: --lit must never be written on a subtree root. */
 ok('--lit is written only to work elements',
   /w\.style\.setProperty\('--lit'/.test(main) &&

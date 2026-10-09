@@ -56,6 +56,7 @@ nearest one — the anchors are the shortest path to the surrounding code.
 | The legend under the hang — the catalogue | `js/main.js` + `css/styles.css` | `function renderLegend(`, `function renderCatalogue(`; `── The legend` |
 | The exhibition label's copy and furniture | `js/main.js` + `css/styles.css` | `function renderLabel(`; `── The exhibition label` |
 | Room title, spacing, the walk's chrome | `css/styles.css` | `The room heading is the walk's sticky sign`, `Room furniture: the title` |
+| The two gaps — between projects, and between categories | `css/styles.css` | `--group-gap:` — the token with its colon; `--room-gap:`; `The threshold between two categories` |
 | The dock and its progress bar | `js/main.js` + `css/styles.css` | `function renderDock(`, `function initLights(`; `The dock: the walk`, `The narrow dock` |
 | How big the photographs read | `css/styles.css` | `--label-col:` — the token with its colon, not the prose about it |
 | The wall mural | `css/styles.css` | `#hall` — own background, `background-attachment: local` |
@@ -139,6 +140,22 @@ once:
   box, not the stand: the cell is the box that clips.
 - **A stand hangs 3 to 6 frames.** Fewer hangs empty gilt frames; more hangs the
   first six.
+- **Siblings are nearer than categories.** Two stands of one room are separated by
+  `--group-gap`, a frame: the smallest gap that still leaves no neighbour in shot
+  when the walk parks, derived from `(100vw − stand) / 2` and floored at a
+  quarter of a stand. Two rooms are separated by `--room-gap`, a threshold spent
+  as a room's own **right padding** — the room being left (`.room:not(:last-child)`)
+  — and never as a gap in `#strip` nor as the arriving room's left padding: a
+  flex gap is bare hall, which renders 1.41× brighter than the rooms it separates
+  (28.91 against 20.44 at 1440×900), and padding-left delays the arriving room's
+  heading pin by a whole band (ux-check read 1250 against 550). Padding is inside
+  the box a background paints, so the band is the ground the projects hang on.
+  Honours and About are one screen wide by construction and pay for the band in
+  their own width rules. They shipped the other way round — 2,200px between two
+  projects of one room against 69px between two rooms — and `shell-check.mjs`
+  asserts the shape of both tokens plus where the second is spent. Only
+  `ux-check.mjs` can measure which of the two is actually the larger, and it
+  does, at all three viewports.
 - **The mural is `#hall`'s own background with `background-attachment: local`.**
   Both halves are load-bearing and both fail silently. Never reintroduce a
   `.wall` element — no box inside this walk spans its scroll width, and

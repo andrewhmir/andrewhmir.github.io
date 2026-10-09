@@ -492,23 +492,38 @@ await section('A gallery is as wide as its contents', async () => {
   await goto(BASE);
   const geo = await evaluate(`(() => {
     const rooms = [...document.querySelectorAll('#strip .room')];
-    return rooms.map(r => ({
-      key: r.getAttribute('data-room'),
-      w: r.getBoundingClientRect().width,
-      vw: innerWidth,
-      groups: r.querySelectorAll('.group').length,
-      labels: [...r.querySelectorAll('.label')].map(l => l.getBoundingClientRect().width),
-    }));
+    return rooms.map(r => {
+      const cs = getComputedStyle(r);
+      const tiles = r.querySelector('.tiles');
+      return {
+        key: r.getAttribute('data-room'),
+        w: r.getBoundingClientRect().width,
+        vw: innerWidth,
+        gutter: parseFloat(cs.paddingLeft),
+        tiles: tiles ? tiles.getBoundingClientRect().width : null,
+        groups: r.querySelectorAll('.group').length,
+        labels: [...r.querySelectorAll('.label')].map(l => l.getBoundingClientRect().width),
+      };
+    });
   })()`);
   const honoursRooms = geo.filter((r) => r.key && r.key.indexOf('Honours') === 0);
   const honours = honoursRooms[0];
   check('honours is one room, not four',
         honoursRooms.length === 1, honoursRooms.map((r) => r.key).join(', '));
-  /* The honours room is a LIST of tiles now, so it is one screen wide rather
-     than as wide as a hang — a grid under `width: max-content` is circular. */
-  check('the honours room is exactly one screen wide',
-        !!honours && Math.abs(honours.w - honours.vw) <= 1,
-        honours ? Math.round(honours.w) + 'px in a ' + honours.vw + 'px viewport' : 'no honours room');
+  /* The honours room is a LIST of tiles now, so its CONTENT is one screen wide
+     rather than as wide as a hang — a grid under `width: max-content` is
+     circular. What is measured is the tiles' own span, and not the room's box,
+     because the box is no longer the same thing as what it holds: every room
+     that has a room after it carries the threshold band as padding (see
+     `--room-gap`), so the honours room's BOX is one screen PLUS a band while
+     its grid is still one screen less the two gutters. Only the grid is what
+     the rule exists to protect — the third column falls off the screen the
+     moment it is wider. */
+  check('the honours tiles span exactly one screen, less the gutters',
+        !!honours && honours.tiles !== null
+        && Math.abs(honours.tiles - (honours.vw - 2 * honours.gutter)) <= 1,
+        honours ? Math.round(honours.tiles) + 'px of tiles in a ' + honours.vw + 'px viewport, off a '
+          + honours.gutter + 'px gutter' : 'no honours room');
   /* The floor, and the whole reason a gallery is never narrower than a screen:
      a visitor is always standing inside one named gallery, not looking at two. */
   check('every gallery is at least one screen wide',
@@ -1115,6 +1130,62 @@ await section('One stand per screen', async () => {
     check('the gap between stands covers the wall beside a parked stand, at ' + w + 'x' + h,
           cover.minGap !== null && cover.minGap >= cover.need,
           'gap ' + cover.minGap + 'px against the ' + cover.need + 'px of wall beside ' + cover.at);
+  }
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+});
+
+/* -- The two gaps: siblings nearer than categories -----------------------
+   The walk measures two distances and they are not the same thing. Two stands
+   in one room are siblings — one category, one heading — and the wall between
+   them is a FRAME: the smallest gap that still leaves no neighbour in shot when
+   the walk parks. Two rooms are different categories, and the wall between them
+   is a THRESHOLD a visitor crosses: a band of bare mural, measured in screens.
+
+   They shipped the other way round, and this is the check that says so. At
+   1440x900 it measured 2,200px between two projects of the same room against
+   69px between two rooms — the category boundary was the smallest distance in
+   the walk. The gap between ROOMS is taken from box to box rather than between
+   the rooms' flex boxes, so the two numbers are the same measurement: bare wall
+   between one stand and the next, whichever side of a heading they fall.
+   `the gap between stands covers the wall beside a parked stand` above is the
+   floor on the sibling number; this is the ORDER of the two. */
+await section('The two gaps', async () => {
+  for (const [w, h] of [[1440, 900], [1536, 864], [1280, 704]]) {
+    await setViewport(w, h, false);
+    await goto(BASE);
+    await evaluate(`(async () => {
+      const imgs = [...document.querySelectorAll('#strip img')];
+      imgs.forEach(i => { i.loading = 'eager'; });
+      const deadline = Date.now() + 30000;
+      while (Date.now() < deadline && imgs.some(i => !i.complete)) {
+        await new Promise(r => setTimeout(r, 200));
+      }
+      await new Promise(r => setTimeout(r, 600));
+    })()`);
+    const gaps = await evaluate(`(() => {
+      const rooms = [...document.querySelectorAll('#strip .room')];
+      let sibling = Infinity, category = Infinity, from = null, to = null;
+      rooms.forEach(room => {
+        const gs = [...room.querySelectorAll('.group')].map(g => g.getBoundingClientRect());
+        for (let i = 1; i < gs.length; i++) {
+          sibling = Math.min(sibling, gs[i].left - gs[i - 1].right);
+        }
+      });
+      for (let i = 1; i < rooms.length; i++) {
+        const prev = [...rooms[i - 1].querySelectorAll('.group')].pop();
+        const next = rooms[i].querySelector('.group');
+        if (!prev || !next) continue;
+        const gap = next.getBoundingClientRect().left - prev.getBoundingClientRect().right;
+        if (gap < category) { category = gap; from = prev.dataset.entry; to = rooms[i].getAttribute('data-room'); }
+      }
+      return { sibling: sibling === Infinity ? null : Math.round(sibling),
+               category: category === Infinity ? null : Math.round(category), from, to };
+    })()`);
+    check('two projects of one room are nearer than two rooms, at ' + w + 'x' + h,
+      gaps.sibling !== null && gaps.category !== null && gaps.category > gaps.sibling,
+      'sibling gap ' + gaps.sibling + 'px against the ' + gaps.category
+      + 'px between rooms (' + gaps.from + ' -> ' + gaps.to + ')');
   }
   await setViewport(1440, 900, false);
   await goto(BASE);
