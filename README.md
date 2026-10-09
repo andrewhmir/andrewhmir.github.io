@@ -49,11 +49,12 @@ one, with the walk's progress drawn inside it as a track. Nothing is fixed over 
 each room's own heading carries `position: sticky` and travels with the walk, so the name on screen
 is the heading itself rather than a second, smaller copy of it.
 
-A **stand** is the unit that hangs: one project or one leadership post. Its photographs
-hang together in frames with mats — partitioned into columns by one of several **arrangements**,
-dealt from the stand's own key so neighbouring stands differ and a reload never reshuffles the wall —
-with a **legend** of one catalogue entry per photograph beneath them, and one **label** beside the
-whole cell carrying the record's own account, its awards and its team caption.
+A **stand** is the unit that hangs: one project or one leadership post. Its three frames hang
+stacked in one column, all the same size, with a **legend** of one catalogue entry per frame beneath
+them, and one **label** beside the whole cell carrying the record's own account, its awards and its
+team caption. A project's first frame is its **preview film**, which plays while the stand is in shot;
+the two photograph frames under it are the way into the record, because a button may not contain the
+controls a film needs.
 
 **The legend is the only place a visitor can find out what a photograph is**, and it stands under the
 photographs it names: an entry is the text for one picture, so a picture and its name are not in
@@ -69,15 +70,23 @@ every photograph still in that state, with its letter and its file, as a block t
 `js/data.js`. The line beneath is the file's own name, deliberately: a prettified stem like "Palad
 Team" reads like a description and is not one.
 
-Every stand hangs **three to six frames**. A record that declares fewer hangs empty gilt frames where
-its photographs will go, rather than one thin frame on a wide wall; a record that declares more hangs
-its first six. An awaited frame draws no picture at all — it is a reserved place on the wall — and the
-label names however many are awaited in a single line rather than repeating "Photograph awaited" for
-each.
+Every stand hangs **exactly three frames, all the same size**. For a project they are its preview
+film, its overview photograph and its team photograph; for a leadership post, its first three
+photographs. A record that declares fewer hangs a reserved frame where the photograph will go, rather
+than two frames on a wall built for three; one that declares more does not drop a photograph — a
+Leadership post's fourth is simply not hung, and stays reachable in the record's own dialog. An
+awaited frame draws no picture at all — it is a reserved place on the wall — and the label names
+however many are awaited in a single line rather than repeating "Photograph awaited" for each.
+
+One frame size for every stand means one SHAPE for every frame, and it is `--frame-ar` in
+`css/styles.css`: 16:9, cropped to fill with `object-fit: cover`. That is a reversal, and a
+considered one. While a frame followed its own photograph's proportions the two alternatives were
+rejected — `contain` left black bars (measured, 15 of 23 frames at 1536×864 were 63–77% bar) and
+`cover` cropped. One size for every frame is the design now, and of the two ways to put a photograph
+of one shape into a box of another, a crop is the one that still reads as a photograph.
 
 Because a gallery is exactly one viewport tall inside a hall with `overflow-y: hidden`, there is no
-vertical axis to overflow into: the single row is what makes the width work. A frame's width follows
-its own photograph, so nothing is ever cropped or letterboxed.
+vertical axis to overflow into: the single column is what makes the width work.
 
 **A stand is a row of two cells, and they are not equal.** The left cell holds the hang and the legend
 beneath it; the right cell is the label that reads the record. Each takes the stand's full height — the
@@ -88,15 +97,19 @@ last award 48px under the dock — 116px over at the spec's 1280×704 floor.
 
 `--label-col` is the right cell and it is a share of the viewport rather than a fixed width, so the
 proportion survives every screen: 634px at 1440, 669px at 1520, 676px at 1536 and 704px at 1600 (its
-720px ceiling binds at about 1640 and holds above that). The left cell takes what is left and it needs
-the larger share — a frame's width follows its photograph, so a narrow cell does not make its pictures
-smaller, it makes them narrower and taller until a 2.251-ratio photograph is squeezed to the 44px tap
-floor. Measured at a 317px wall: three frames of 44×691, which is a wall of lines. The stand is
-`clamp(1100px, 68vw, 1440px)`, so that leaves the hang cell 435px at 1440, 390px at 1536, 361px at 1600
-and 546px at 1920.
+720px ceiling binds at about 1640 and holds above that). The left cell takes what is left. It used to
+need the larger share because a frame followed its photograph's width, so a narrow cell made its
+pictures narrower and taller until a 2.251-ratio photograph was squeezed to the 44px tap floor —
+measured at a 317px wall, three frames of 44×691, a wall of lines. A frame is one box now, so the cell
+binds through the BAND the solve is allowed rather than through a frame's own proportions. The stand
+is `clamp(1100px, 68vw, 1440px)`, so that leaves the hang cell 435px at 1440, 390px at 1536, 361px at
+1600 and 546px at 1920.
 
-The legend is 62% of that cell's width, so it shares a left and a right edge with the hang above it; it
-is pinned to the cell's foot, which leaves the band of wall between the pictures and their names that a
+The legend is 62% of that cell's width and it shares the pictures' LEFT edge — the two no longer share a
+right edge, because a frame's width is the solved band times `--frame-ar` (331px in a 435px cell at
+1440×900) where 62% is 270px. Making the caption follow the pictures instead is a feedback loop, since
+this block's own height is part of what the band is solved around; `css/styles.css` records it. It is
+pinned to the cell's foot, which leaves the band of wall between the pictures and their names that a
 hang centred on a wall has. `--label-side` is the label's own interior split — 30% for the furniture
 (the summary, the awards, the team caption) beside the account's two columns. Both numbers are
 measured, not chosen: a narrower furniture column wraps the awards until *they* are the tall pole and
@@ -109,44 +122,48 @@ content came to 743px inside a 690px box at 1440×900, a scrollbar over copy a v
 for. The 1280×704 floor still scrolls, by 44px on its worst label where it used to scroll by 273px on
 six of them; a `max-height: 800px` query widens the label to buy back what width can, and nothing there
 is clipped either way — `ux-check` reports the scrolls as information and fails only on copy that is cut
-off. The loading floor is the other half of the same arithmetic: a frame is
-`(band − the column's gaps) / its rows` tall, so the floor a hang may not go under is
-`44 × rows + gap × (rows − 1)`, and a floor that forgets the gaps comes out at 39px on a frame whose
-bytes have not arrived.
+off.
 
-**How large a photograph reads is decided by the wall's band and its column's depth.** A column
-divides the band between its own frames, so a column of two stands tall and a column of three splits
-the same band three ways, and no arrangement can overrun the fold because the deepest column is the
-one that divides by the most. That is also why every arrangement keeps its columns at most three deep
-— a column of five would have hung five frames one-fifth of the band tall. Every arrangement is at
-most two rows deep, which is the deepest that keeps the narrowest frame above the 44px tap floor in
-a wall this wide.
+**How large a photograph reads is decided by the band, and the band is solved.** Every frame is one
+box, so a stand's shape is fixed: a column of three frames is `(band − gaps) / 3` tall each and 16:9
+times that wide. Two things bound the band — the cell's width, and the HEIGHT the cell has left after
+its legend — and for a stack of three landscape frames the height is the one that binds, because the
+column is taller than it is wide. `Site.bandFor` in `js/data.js` does that arithmetic (it is pure, and
+`tests/band.test.mjs` pins it to the pixel); `fitWall` in `js/main.js` measures the two numbers and
+`css/styles.css`'s `--wall-h` clamp is the band until it runs. The loading floor is part of the same
+solve: a band may not take the frames under the tap target, so the floor is `44 × rows + gap × (rows −
+1)` and a floor that forgets the gaps comes out at 39px on a frame.
 
-**A column the arrangement drops is held by the cell, not cut by it.** An arrangement offsets a
-column down by 14px so a stack never reads as one tall frame, and that offset is a margin — so the
-dropped column's outer box is 14px taller than the band, and the frame at its foot hangs that far
-below the cell. The cell's `overflow: hidden` is what stops a hang painting over its neighbour, so
-it cut the difference off: measured, 10 of the collection's 32 frames — one per stand — each lost
-exactly 14px, the gilt and the mat and, on six of them, part of the photograph itself. An awaited
-frame in that position is the shape a visitor reported: a black rectangle with no bottom edge, which
-is a hole rather than a reserved place. `--drop` is now the deepest offset the arrangement actually
-deals, written on the cluster by `renderCluster` and spent as the cell's own `padding-bottom` with
-`box-sizing: content-box`, so the room is added below the band instead of being taken out of it.
-`ux-check` measures every frame against its cell's padding box — the edge the clip really happens at
-— rather than against the stand, which is the looser box that let this ship.
+The solve no longer reads any photograph's aspect ratio, which is a simplification worth naming: it
+used to run again on every `load`, because a frame's width followed its photograph and there was no
+ratio to solve with until the bytes arrived. One ratio, one shape, and the solve is the same before and
+after a photograph loads.
 
-**The band is solved, not chosen.** A frame's width follows its photograph, so a hang needs
-`band × (the sum of its aspect ratios)` of wall. `fitWall` in `js/main.js` solves that for the band
-— `(wall − gaps) / SUM(column arSum / column rows)` — from the photographs themselves, on load, on
-resize and after the fonts settle; `css/styles.css`'s `--wall-h` clamp is the band until the first
-photograph arrives. Without that solve the frame is an arbitrary box and `object-fit` draws the
-photograph letterboxed inside it: measured, 15 of 23 frames at 1536×864 were 63–77% black bar
-before the solve existed, and `ux-check` now asserts no photograph is letterboxed by comparing each
-photograph's content box to its natural ratio.
+**A column an arrangement drops is held by the cell, not cut by it.** The one arrangement this walk
+deals — three frames in one column — publishes `drop: [0]`, because a single stack of one size is
+meant to read as a stack. The mechanism is kept and it is not decorative: it is the record of a fault
+that shipped once, and it is what a future arrangement offsets a column with. An arrangement offsets a
+column down by 14px, and that offset is a margin — so the dropped column's outer box is 14px taller
+than the band, and the frame at its foot hangs that far below the cell. The cell's `overflow: hidden`
+is what stops a hang painting over its neighbour, so it cut the difference off: measured, 10 of the
+collection's 32 frames — one per stand — each lost exactly 14px, the gilt and the mat and, on six of
+them, part of the photograph itself. An awaited frame in that position is the shape a visitor reported:
+a black rectangle with no bottom edge, which is a hole rather than a reserved place. `--drop` is the
+deepest offset the arrangement actually deals, written on the cluster by `renderCluster` and spent as
+the cell's own `padding-bottom` with `box-sizing: content-box`, so the room is added below the band
+instead of being taken out of it. `ux-check` measures every frame against its cell's padding box — the
+edge the clip really happens at — rather than against the stand, which is the looser box that let this
+ship.
 
-`--label-col` (the label's cell, which sets the wall's width) is the other dial. `--band-h`,
-`--frame-h`, `--max-panel-h` and `--label-w` are retired with the stacked shape they described.
-`tools/stand-fit.mjs`, `tools/avg-frame.mjs` and `tools/label-fit.mjs` measure what they produce.
+**The band is solved, not chosen** — `Site.bandFor` in `js/data.js` holds the arithmetic, `fitWall`
+in `js/main.js` does the measuring, and `tests/band.test.mjs` pins the numbers. The solve is run once
+on load, on resize and after the fonts settle; it no longer re-runs when a photograph arrives, because
+it no longer reads any photograph's ratio.
+
+`--label-col` (the label's cell, which sets the wall's width) and `--frame-ar` (the shape of every
+frame) are the two dials. `--band-h`, `--frame-h`, `--max-panel-h` and `--label-w` are retired with the
+stacked shape they described. `tools/stand-fit.mjs`, `tools/avg-frame.mjs` and `tools/label-fit.mjs`
+measure what they produce.
 
 **The label column scrolls when its content does not fit, and the suite can tell that apart from
 clipping.** The arithmetic does not always close: at the 1280×704 floor PALAD's label needs 530px of

@@ -263,10 +263,29 @@
      comment so the next search for it finds the reason it is gone. */
   --stand-w:        clamp(1100px, 68vw, 1440px);
   --col-gap:     clamp(  6px,  1.1vh,  10px);
-  /* Horizontal, so it is not part of the vertical budget the fold measures — but
-     the deepest arrangement puts three frames side by side and the four columns
-     of a six-piece stand at the widest, so it is 12px of a 1320px stand that
-     nothing else was using. */
+  /* ── The frame's one shape ────────────────────────────────────────────
+     Every frame on every stand is this box: one size, one shape, cropped to
+     fill. 16/9 because it is the shape of five of the six preview films and of
+     most of the photographs, and because it crops least — measured against the
+     collection's own files, a 16:9 box keeps ~93% of the average photograph's
+     area where a 3:2 box keeps ~79% and a 4:3 box ~73%.
+
+     It is written as the fraction it reads as, and `fitWall` in js/main.js
+     parses it from here rather than restating it: the band the solve computes
+     and the box the frame wears have to be the same number, and two copies of
+     it are how they drift. The one copy that does exist is `frameRatio`'s
+     last-resort literal, for a token that does not parse at all — see the note
+     there, and do not add a third.
+
+     What it costs, recorded rather than discovered: `object-fit: cover` trims
+     the edges of anything wider or taller than this, and the one file that
+     pays a lot is Focus Buddy's vertical preview still (960x1670, 0.57:1),
+     which reads as a band across the middle of the frame. */
+  --frame-ar:      16 / 9;
+  /* Horizontal, so it is not part of the vertical budget the fold measures.
+     It was 12px of a 1320px stand when a hang could be four columns wide; with
+     every stand one column of one size it is the gap the columns would share,
+     and it stays a token because the cluster is still a flex row. */
   --cluster-gap: 12px;
   /* ── The walk's two distances: the frame, and the threshold ───────────────
      Two stands in one room are SIBLINGS — the same category under the same
@@ -2343,7 +2362,20 @@ body {
 .hang-cell {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  /* ── Both blocks share the pictures' LEFT edge, and that is the change ──
+     `align-items: center` centred the legend in a cell the hang now fills:
+     a stack of one shape is as wide as its frames, and the legend is 62% of
+     the cell, so the two were 83px apart at 1440x900 — measured, the
+     catalogue starting at x=2853 under pictures starting at x=2770. A caption
+     that begins a third of the way across the thing it captions reads as a
+     fault, and the note on `.legend` has always said the two share an edge.
+
+     `flex-start` is what shares it. The frames are the block that decides
+     where that edge is: the cluster spans the cell and its column sits at the
+     cluster's head, so the pictures are at the cell's left edge and the
+     legend now meets them there. The room's own heading pins to the same
+     gutter, so the title, the pictures and their names read as one column. */
+  align-items: flex-start;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -2360,9 +2392,17 @@ body {
    Its width is a share of the WALL rather than the wall's full width, because
    the entries are prose and the label beside them is a reading column: at 62%
    of a 588px wall an entry is ~365px, which is a 45-character line, and the
-   remaining 38% is the air a caption needs to read as a caption. The same 62%
-   is what the hang is given, so the legend and the pictures it names share one
-   left edge and one right edge.
+   remaining 38% is the air a caption needs to read as a caption.
+
+   That share no longer matches the pictures above it — a frame's width is the
+   solved band times `--frame-ar`, which is 331px in a 435px cell at 1440x900
+   where 62% is 270px — so the two share a LEFT edge (see the note on
+   `.hang-cell`) and the caption stops short on the right. Making the caption
+   follow the pictures' width instead is the obvious next thought, and it is a
+   FEEDBACK LOOP: this block's height is part of what `fitWall` measures, and
+   its height depends on its own width, so the band would move every time the
+   legend rewrapped. Left-aligned at a share of the cell is the version that
+   settles.
 
    `flex: 0 0 auto` is load-bearing: the legend is the block whose natural
    height the cluster must not be allowed to spend, and a shrinkable legend
@@ -2419,29 +2459,21 @@ body {
   flex: 0 0 var(--wall-h);
   min-height: 0;
   /* ── The wall a hang stands on, which the columns divide ────────────────
-     A wall beside a label is narrower than a row of wide photographs wants,
-     measured at 330px at 1536x864 and 375px at 1440x900 — the label has the rest
-     of the stand. So the band is SOLVED for that wall rather than chosen.
+     Every frame is one box and the stand is one column of three, so the hang's
+     width is `frameHeight x --frame-ar` and the band is SOLVED rather than
+     chosen — see `fitWall` in js/main.js, which measures the cell and hands the
+     arithmetic to `Site.bandFor` in js/data.js. The two bounds are the cell's
+     width and the height the legend leaves, and for a stack of three landscape
+     frames it is the HEIGHT that binds: the column is taller than it is wide.
 
-     `--wall-h` below is the fallback, and the clamp is what a wall wears until
-     its photographs have loaded and their ratios are known. Then `fitWall` in
-     js/main.js overwrites it, inline, with
+     `--wall-h` below is the fallback a wall wears until that solve runs, and
+     the fallback has to leave the frames above the tap floor on its own: a
+     320px band is three 100px frames with the gaps, which clears 44 with room
+     to spare.
 
-         (wall − gaps) / SUM(column arSum / column rows)
-
-     — the tallest band at which the deepest column still fits the wall. A column
-     of `n` frames is `band / n` tall each, so it needs `band / n × arSum` of
-     wall, and the columns sum.
-
-     This is not a refinement; it is the difference between photographs and black
-     bars. A frame's width follows its photograph, so a frame standing in a box
-     the layout happened to leave — rather than in a box sized to the band the
-     solve chose — draws the photograph fitted inside the wrong shape. Measured
-     before the solve existed: 15 of 23 frames at 1536x864 were 63-77% black bar,
-     and the box was 0.489 wide per 1 of height against photographs of 1.78 to
-     2.25. Nothing is cropped and nothing is letterboxed, and `ux-check` asserts
-     the second of those by comparing each photograph's content box to its own
-     natural ratio. */
+     `fitWall` no longer reads any photograph's aspect ratio, so nothing here
+     depends on a picture's bytes: the solve is the same before and after an
+     image arrives, and there is no `load` listener re-solving the wall. */
   --wall-h:         clamp(150px, 22vh, 320px);
   /* Declared here as the shape a stand with no arrangement of its own wears —
      renderCluster overwrites it inline with the deepest drop the arrangement
@@ -2454,16 +2486,23 @@ body {
      the band. A height here would resolve against `100%` of a cell it shares
      with the legend and fight that basis. */
   /* ── The room an arrangement's drop spends, which the cell has to hold ───
-     An arrangement offsets a column down by writing an inline `margin-top` (see
-     HANG_LAYOUTS in js/data.js), and a margin adds to that column's OUTER box
-     without adding to the cell's. So the dropped column's last frame hung
-     exactly the drop below this box's bottom edge, and the `overflow: hidden`
-     below — which is here on purpose — cut that much off it: the gilt, the mat,
-     and on a hung frame part of the photograph. Measured as shipped at every
-     reference viewport: 10 of the collection's 32 frames, one per stand, each
-     losing exactly 14px, six of them real photographs. `ux-check` asserts the
-     cell's padding box against every frame's own box now, and this is the rule
-     that answers it.
+     INERT TODAY, and kept on purpose. The one arrangement the wall deals
+     stacks three frames in one column and publishes `drop: [0]`, so
+     `--drop` is 0px and these three declarations do nothing. What they are is
+     the fix for a fault that shipped, and the record of why a drop is not free
+     — an arrangement that offsets a column brings its own room the moment it
+     does.
+
+     The fault: an arrangement offsets a column down by writing an inline
+     `margin-top` (see HANG_LAYOUTS in js/data.js), and a margin adds to that
+     column's OUTER box without adding to the cell's. So the dropped column's
+     last frame hung exactly the drop below this box's bottom edge, and the
+     `overflow: hidden` below — which is here on purpose — cut that much off
+     it: the gilt, the mat, and on a hung frame part of the photograph.
+     Measured as shipped at every reference viewport: 10 of the collection's 32
+     frames, one per stand, each losing exactly 14px, six of them real
+     photographs. `ux-check` asserts the cell's padding box against every
+     frame's own box, and this is the rule that answers it.
 
      `content-box` is explicit and load-bearing, not tidiness. The page sets
      `border-box` globally, and under it this padding would come OUT of the
@@ -2491,10 +2530,15 @@ body {
    What is NOT here is a width budget. It was computed from the screen left over
    beside the label and spent as this rule's `max-width`; a stand is `--stand-w`
    wide whatever its hang is, and the label is a grid column of its own now, so
-   a frame has no column-shaped box to fit inside. Capping it would only stop it
-   following its photograph — the image's own `height: 100%` needs the frame to
-   have a definite height to resolve against, and a frame capped in width and
-   height at once bars the photograph inside it.
+   a frame has no column-shaped box to fit inside.
+
+   `flex: 0 0 auto` is the change the one-size frame made. It was `1 1 0` — a
+   share of the wall's WIDTH — which was right while a column's frames were
+   photographs of different widths and the column had to be told how much room
+   it had. Every frame is now the same box, and its width follows from its own
+   height (see `.cluster .piece` below), so the column's width IS its frames'
+   width: a flex-basis of 0 would leave the wall's own width to decide a column
+   that already knows it.
 
    `--col-count` and `--col-rows` are still written by renderCluster and are
    still what decides where a column breaks. Neither is read here: the wall is
@@ -2508,23 +2552,63 @@ body {
   min-width: 0;
   height: 100%;
   min-height: 0;
-  /* A column is one share of the wall's width, and it divides the wall's height
-     between its own frames. `flex: 1 1 0` is the width share; the frames inside
-     split the height. */
-  flex: 1 1 0;
+  flex: 0 0 auto;
   max-width: 100%;
   overflow: hidden;
 }
 
-/* A piece: a gold frame around a cream mat, drawn rather than loaded — no
-   image request, no asset. The frame takes the photograph's own proportions:
-   its WIDTH follows the photograph and its height is what its column gives it,
-   so nothing is cropped and nothing is barred.
+/* ── The frame is one box, and it is the only shape on the walk ──────────
+   Scoped to the cluster, and the scope is load-bearing: `.piece` is also what
+   About's portrait wears, and that is a photograph presented in its own
+   proportions rather than a frame in a stack. A rule on the bare class would
+   crop the portrait to 16:9 as well.
 
-   `flex: 1 1 0` is the wall's division, and it is the one thing here that is not
-   about the photograph: a column of three frames gives each of them a third of
-   the wall. `min-height: 0` is what allows that — without it a flex item
-   refuses to shrink below its content, and an image with a 6px mat has content. */
+   `aspect-ratio` with the column dividing the HEIGHT is what makes every frame
+   in the stack identical: the height comes from `flex: 1 1 0` above, and the
+   width follows from this ratio, so three frames of one band are three frames
+   of one size with no arithmetic anywhere else.
+
+   `object-fit: cover` is the fill, and it is a considered reversal. `contain`
+   was rejected when it was measured — 15 of 23 frames were 63-77% black bar
+   against a box of the wrong shape — and cropping was rejected with it while
+   every frame followed its own photograph's proportions. One size for every
+   frame is the design now, and of the two ways to put a photograph of one
+   shape into a box of another, bars are the one that reads as a fault: a
+   cropped photograph is still a photograph. */
+.cluster .piece {
+  aspect-ratio: var(--frame-ar);
+}
+
+.cluster .piece > img,
+.cluster .piece > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  /* The mat, drawn inside the box on the media itself: `border-box` keeps it
+     inside the frame's inner edge instead of growing the frame past its box. */
+  border: 6px solid #ece3d2;
+  box-sizing: border-box;
+}
+
+/* ── The film is a frame, not a control ───────────────────────────────────
+   The video frame carries no pointer cursor: pressing its picture does nothing,
+   because the picture is a film and the controls are the browser's. The two
+   photograph frames under it are the way into the record, and they keep the
+   cursor `.piece` gives them. */
+.cluster .piece--video {
+  cursor: default;
+}
+
+/* A piece: a gold frame around a cream mat, drawn rather than loaded — no
+   image request, no asset. Its WIDTH follows its content and its height is what
+   its column gives it.
+
+   `flex: 1 1 0` is the wall's division: a column of three frames gives each of
+   them a third of the wall. `min-height: 0` is what allows that — without it a
+   flex item refuses to shrink below its content, and an image with a 6px mat has
+   content. */
 .piece {
   display: block;
   /* A frame divides its column's height, and its width follows its photograph.
@@ -2564,19 +2648,16 @@ body {
   transition: filter .55s var(--ease-lit);
 }
 
-/* ── The loading floor, and why it is now a plain 44 ───────────────────
-   A photograph is fetched when the walk reaches it, so a frame can be on screen
-   before its bytes are. An unloaded frame used to collapse to the frame and the
-   mat alone — measured at 18x152 on a phone, far under the 44px tap floor, and
-   then it popped open when the photograph arrived.
+/* ── The tap floor, and where it is enforced now ───────────────────────
+   A frame must clear 44x44. It used to be enforced twice here, because a frame
+   collapsed when its photograph's bytes had not arrived — measured at 18x152 on
+   a phone — and popped open when they did.
 
-   The floor was `calc(var(--band-h) / 4)` — a quarter of the 156px band, which
-   is 39px plus the mat and gilt edge to a 44px frame. The band is gone, so the
-   floor is stated as what it was always FOR: 44px of frame. `min-width: 0` on
-   the same rule is what lets the column be the smaller of the two, and a frame
-   that is narrower than 44px once its photograph arrives is a frame whose column
-   is narrower than a tap target — a layout fault, not a floor to paper over.
-   `ux-check` measures the loaded minimum at both reference viewports. */
+   A stand's frame cannot collapse any more: its size is the band the solve
+   chose, divided by the column, and `Site.bandFor` refuses a band whose frames
+   would fall under 44px — gaps included. This rule is what remains for the
+   pieces that are NOT in a stand (About's portrait), and it costs nothing on
+   the stands: their frames are ~180px tall and ~320px wide. */
 .piece { min-width: 44px; }
 
 /* ── The lead has no rule, and that is the design ─────────────────────
@@ -2584,16 +2665,10 @@ body {
    with the column budget and its height with the row budget. Both budgets are
    gone, and nothing replaces them.
 
-   The lead is the stand's principal photograph because of where the arrangement
-   PUTS it, not because it is styled differently. Read off `HANG_LAYOUTS` in
-   js/data.js: eight of the ten arrangements give the lead a column of its own,
-   where it takes the whole band while the frames beside it divide theirs. The
-   other two — `two-two` at four pieces and `three-three` at six — put it at the
-   head of a shared column with the same `drop: 0` its neighbours get, so there
-   it reads as the first of a pair rather than as a dominant frame. That is the
-   arrangement's business and the arrangement is right to vary; what matters
-   here is that no `--frame-h`-shaped rule can express it, because a frame's
-   height is now its column's share of the band.
+   The lead is the HEAD of the stack, and it is not styled differently from the
+   frames under it: every frame in a stand is the same box at the same size,
+   which is the whole point of the shape. For a project the head is the film;
+   for a Leadership post it is the first photograph.
 
    The `piece--lead` class is still written on the element by renderCluster and
    still asserted by tests/renderer.test.mjs; it is a hook, not a style. Do not
@@ -2602,12 +2677,12 @@ body {
    budget. */
 
 /* An awaited photograph is a reserved place on the wall: the gilt frame and its
-   mat, and no picture. Unlike every other frame it has no photograph to take
-   its proportions from, so it is held at the 3:2 of the frame that will hang
-   there, and it takes the same share of its column that a hung frame would.
+   mat, and no picture. It is the SAME BOX as a hung frame — the ratio above —
+   because a reserved place that is a different size from the photograph that
+   will fill it is the reflow this whole shape exists to avoid.
 
    The mat is drawn as an inset shadow because a hung frame gets its mat from
-   the image's own 6px border and this frame has no image. The drop shadow is
+   the media's own 6px border and this frame has no media. The drop shadow is
    repeated here because box-shadow does not add across rules.
 
    ── And the opening is NOT the piece's black ground ───────────────────────
@@ -2626,7 +2701,7 @@ body {
    the time wears. */
 .piece--pending {
   width: auto;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: var(--frame-ar);
   cursor: default;
   background: #1e262c;
   box-shadow: 0 5px 14px rgba(0, 0, 0, .66),
@@ -2634,26 +2709,25 @@ body {
               inset 0 2px 9px 5px rgba(0, 0, 0, .55);
 }
 
-/* The photograph fills its frame's height and its width follows its own
-   proportions, so nothing is cropped and nothing is barred. `aspect-ratio:
-   auto` is what lets the height rule while the width stays intrinsic — without
-   it the `max-width` below would squash the photograph out of proportion.
+/* The media inside a frame that is NOT one of the walk's stands: About's
+   portrait, which is a photograph presented in its own proportions. A stand's
+   frames are the uniform box above, and they override the width and height
+   here with their own rule (`.cluster .piece > img`), which wins on
+   specificity.
 
-   `object-fit` is DELIBERATELY ABSENT, and its absence is the fix for a fault
-   that shipped in this change: with `contain` the photograph was fitted into
+   Its WIDTH follows its own proportions and its height is the frame's, so
+   nothing is cropped and nothing is barred. `aspect-ratio: auto` is what lets
+   the height rule while the width stays intrinsic — without it the `max-width`
+   below would squash the photograph out of proportion.
+
+   `object-fit` is DELIBERATELY ABSENT here, and its absence is the fix for a
+   fault that shipped once: with `contain` the photograph was fitted into
    whatever box the frame happened to have, so a frame whose box was taller than
    it was wide drew a landscape photograph letterboxed inside it. Measured at
-   1536x864 with `contain`: the box was 0.489 wide per 1 of height against
-   photographs of 1.78 to 2.25, so 15 of 23 frames were 63-77% black bar. A
-   photograph that is a quarter photograph is not a photograph.
-
-   Without it the drawn picture IS the box: the height is the column's share and
-   the width is that height times the photograph's own ratio, so there is no
-   leftover to bar. The `--wall-h` solve in js/main.js is what makes the frame
-   wide enough for that arithmetic to fit its wall; `max-width: none` is what
-   stops the frame's width being clipped back into a box of the wrong shape if a
-   future change gets that solve wrong — the photograph would overflow its column,
-   which is visible, rather than be silently letterboxed, which is not. */
+   1536x864 with `contain`: 15 of 23 frames were 63-77% black bar. A photograph
+   that is a quarter photograph is not a photograph. The stands pay for one
+   shape now and crop to fill it (see `.cluster .piece > img`); this frame does
+   not have a shape of its own to pay for. */
 .piece img {
   display: block;
   height: 100%;
@@ -2663,12 +2737,11 @@ body {
      frame collapses to a sliver and the wall reflows when it loads. The floor
      holds the frame open at the shape a landscape photograph will take.
 
-     38px, and a LENGTH rather than the 40% it was: the frame the deepest
-     arrangement gives is ~33px of content box, so 40% of it is 13px and the
-     rendered frame came out 39px wide — under the 44px tap floor. 38px of image
-     plus its 6px mat and the piece's 3px gilt edge either side is a 44px frame.
-     Measured at 1440x900: 38px gives minFrame 44x45 and no frame under the
-     floor; 36px gives 42x45 and one fails. */
+     38px, and a LENGTH rather than the 40% it was: 38px of image plus its 6px
+     mat and the piece's 3px gilt edge either side is a 44px frame. Measured at
+     1440x900: 38px gives minFrame 44x45 and no frame under the floor; 36px
+     gives 42x45 and one fails. A stand's frame needs none of this — its box is
+     the ratio above, so it cannot collapse. */
   min-width: 38px;
   max-width: none;
   border: 6px solid #ece3d2;

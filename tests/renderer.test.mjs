@@ -357,16 +357,74 @@ check('every room that hangs groups holds them in one row', () => {
   assert.match(honoursStrip, /<ul class="tiles">/, 'the honours room has no tile list');
 });
 
-check('every group hangs between three and six frames', () => {
+check('every stand hangs exactly three frames', () => {
   /* The budget is a data-layer rule; this is the same rule read off the wall,
      because a renderer that hung a different number than the data yields is
-     how a photograph goes missing without anything looking broken. */
+     how a photograph goes missing without anything looking broken. Every stand,
+     not a range: a project hangs its video and two photographs, a Leadership
+     post its first three photographs, and a record with fewer reserves the
+     rest. */
   const bad = [];
   strip.split('<div class="group"').slice(1).forEach((g, i) => {
     const body = g.split('<div class="group"')[0];
     const n = (body.match(/class="piece[" ]/g) || []).length;
-    if (n < Site.MIN_PIECES || n > Site.MAX_PIECES) bad.push('group ' + i + ': ' + n + ' frames');
+    if (n !== Site.MIN_PIECES) bad.push('group ' + i + ': ' + n + ' frames');
   });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('a stand hangs its three frames in one column, in piece order', () => {
+  /* "Stacked vertically" is a shape, so it is asserted as one: ONE column, and
+     the frames inside it in the order the data yields them. Two columns would
+     still hang three frames and would still pass the count above. */
+  const bad = [];
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const cluster = body.slice(body.indexOf('<div class="cluster"'), body.indexOf('<div class="legend"'));
+    if (!/data-hang="stack"/.test(cluster)) { bad.push('group ' + i + ': not dealt the stack'); return; }
+    const cols = (cluster.match(/<div class="col"/g) || []).length;
+    if (cols !== 1) { bad.push('group ' + i + ': ' + cols + ' columns'); return; }
+    const hung = [...cluster.matchAll(/class="piece[^"]*"[^>]*data-piece="(\d+)"/g)].map((m) => Number(m[1]));
+    if (JSON.stringify(hung) !== JSON.stringify([0, 1, 2])) {
+      bad.push('group ' + i + ': hung [' + hung + '] in one column');
+    }
+  });
+  assert.deepEqual(bad, [], bad.join(' | '));
+});
+
+check('a project stand opens with its video, and the video is not inside a button', () => {
+  /* Frame one is the project's own preview: muted and looping so it may play by
+     itself, and `controls` because moving content that starts on its own has to
+     be pausable. It is NOT a button — a control inside a button is invalid — so
+     the two photograph frames below it stay the way into the record. */
+  const bad = [];
+  let videos = 0;
+  strip.split('<div class="group"').slice(1).forEach((g, i) => {
+    const body = g.split('<div class="group"')[0];
+    const kind = (body.match(/data-kind="([^"]+)"/) || [])[1];
+    const cluster = body.slice(body.indexOf('<div class="cluster"'), body.indexOf('<div class="legend"'));
+    if (kind !== 'project') {
+      if (/piece--video/.test(cluster)) bad.push('group ' + i + ': a video hangs on a record stand');
+      return;
+    }
+    videos++;
+    const first = (cluster.match(/<div class="piece[^"]*"[^>]*>[\s\S]*?<\/div>/) || [])[0] || '';
+    if (!/class="piece[^"]*piece--video/.test(first)) {
+      bad.push('group ' + i + ': the first frame is not the video');
+      return;
+    }
+    if (/<button/.test(first)) bad.push('group ' + i + ': the video frame is a button');
+    ['controls', 'muted', 'loop', 'playsinline'].forEach((attr) => {
+      if (!new RegExp('\\b' + attr + '\\b').test(first)) bad.push('group ' + i + ': the video has no ' + attr);
+    });
+    if (!/preload="none"/.test(first)) bad.push('group ' + i + ': the video preloads before it is reached');
+    if (!/poster="files\/posters\/[^"]+"/.test(first)) bad.push('group ' + i + ': the video has no poster');
+    if (!/<source src="files\/[^"]+\.mp4" type="video\/mp4">/.test(first)) {
+      bad.push('group ' + i + ': the video has no source');
+    }
+    if (!/aria-label="[^"]+"/.test(first)) bad.push('group ' + i + ': the video has no accessible name');
+  });
+  assert.ok(videos > 0, 'no project stand rendered a video, so nothing above was checked');
   assert.deepEqual(bad, [], bad.join(' | '));
 });
 
@@ -436,8 +494,13 @@ check('no photograph is dropped or duplicated by grouping', () => {
      tile is pressed, so they are not on this wall by design and the tile suite
      — not this one — is what holds them to account. */
   const isPlaceholder = (s) => /PlaceHolder\.png$/.test(s);
-  const rendered = [...strip.matchAll(/<img src="([^"]+)"[^>]*loading="lazy"/g)]
-    .map((m) => m[1]).filter((s) => !isPlaceholder(s));
+  /* A frame's photograph is an `<img>` for every piece but the project's video,
+     whose picture arrives as the video's own poster. Both are counted, or the
+     six previews would read as six photographs missing from the wall. */
+  const rendered = [
+    ...strip.matchAll(/<img src="([^"]+)"[^>]*loading="lazy"/g),
+    ...strip.matchAll(/<source src="([^"]+)" type="video\/mp4">/g),
+  ].map((m) => m[1]).filter((s) => !isPlaceholder(s));
   const expected = [];
   const wanted = (rec, kind) => Site.groupPieces(rec, kind)
     .filter((p) => !p.awaited).forEach((p) => expected.push(p.src));

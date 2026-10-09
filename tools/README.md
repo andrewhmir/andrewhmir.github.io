@@ -42,6 +42,18 @@ piece as a click target, a piece being framed and named, gallery rows, modal
 focus containment, that the walk moves and settles, that lights come up and
 stay up per piece, that no piece hangs empty, and tap targets at 390×844.
 
+**The previews are checked here and nowhere else**, because the unit suites run
+under a DOM stub with no media, no layout and no `IntersectionObserver`: that
+every project hangs exactly one, that each is muted, looping, inline and
+pausable, that none preloads before the walk reaches it, that each hangs a
+poster, that nothing plays while the walk is still in About, that a preview
+plays once its stand is in shot and stops when the walk moves on, that it stops
+while the dialog covering it is open and resumes when that dialog closes, and
+that a pause the VISITOR made — the probe calls `v.pause()`, which is the same
+event a press on the control bar fires — survives walking away and back. That
+last one is the rule `data-paused` exists for, and it is the one a regression
+would silently break.
+
 It is also the only place the gallery's own geometry can be checked, because the
 DOM stub in `tests/` models no CSS: that no gallery is narrower than one screen,
 that every label is the same width, that the deepest arrangement stays inside
@@ -56,6 +68,14 @@ one screen wide,
 that its tiles land in three columns and no more than two rows, that none of
 them crosses the dock band or the fold at 1440×900 and at 1280×704, and that
 each one clears 44×44.
+
+**The frames themselves are measured here**: that every frame's box is
+`--frame-ar`, that the three frames of one stand are the same size as each other,
+that each picture is drawn `object-fit: cover` filling its frame's content box,
+and that no preview is a black rectangle. It prints the spread of frame sizes
+BETWEEN stands as information rather than as a check — the band is solved per
+stand against the room its own legend leaves, so a stand with a longer catalogue
+hangs slightly smaller frames, deliberately.
 
 No npm dependencies; uses Node's built-in `WebSocket` (Node 22+).
 
@@ -97,22 +117,26 @@ fetched, so an un-forced probe measures the loading floor rather than the wall.
 | Tool | Prints |
 |---|---|
 | `rooms.mjs [w] [h]` | Per room: group count, the gallery's width against one screen, the deepest column of each hang, title top, last group's bottom, dock top. Every row says `ok` or `FAIL` against the fold. The honours room reports no groups and exactly one screen, both by design. |
-| `stand-fit.mjs [w] [h]` | The band one stand may use, the resolved `--band-h` / `--max-panel-h` / `--label-w` tokens, and every stand in the Robotics gallery with its cluster's width, height and first frame. Also prints the band the room's own furniture IMPLIES, which is the number `--band-h` has to beat. |
+| `stand-fit.mjs [w] [h]` | The band one stand may use, the resolved `--wall-h` and `--frame-ar`, and every stand in the Robotics gallery with its cluster's width, height and first frame. Also prints the band the room's own furniture IMPLIES, which is the number the solve has to beat. |
 | `stand-gap.mjs [w] [h]` | Per room: the smallest gap between two stands, and — with each stand centred in the screen the way the snap parks it — how much of the screen it leaves bare and whether any neighbouring stand is in shot. This is the check that "one stand per screen" is a property of the wall. |
 | `stand-overflow.mjs [w] [h]` | Every stand wider than the screen it is being looked at on, worst first, with its arrangement, its column count and its first frame. A stand wider than the viewport is one a visitor cannot take in at a glance. |
 | `stand-boxes.mjs <entry> [w] [h]` | One stand, dissected: every column's inline style, resolved max-width and box, then every frame in it with its box, its computed width and height, and its photograph's box. This is how a frame that is not where its column puts it gets found. |
 | `label-fit.mjs [w] [h]` | How much of each label is actually visible, and whether frames from one stand paint over another's photographs — both overflow questions no rect-against-the-dock check can see. |
 | `caption-worklist.mjs [filter]` | Every record with no per-photograph captions, as a `pieces: [...]` block to paste into `js/data.js`, each entry carrying its letter and its file. The catalogue's text comes from `pieces[]` and nowhere else, so this is the list of photographs a visitor cannot be told about. |
 | `avg-frame.mjs [w] [h]` | Per room: the median, smallest and largest frame, the walk's length in screens, and the **photograph area per screen** — the one number for "how big do the pictures read". |
-| `pieces.mjs [room]` | Per frame in one room: its box, whether it is a lead or awaited, the image's box, its natural size, whether it loaded, and the resolved `--band-h` / `--max-panel-h` / `--panel-h`. |
+| `pieces.mjs [room]` | Per frame in one room: its box, whether it is the lead, a film or awaited, the media's box, its natural size, whether it loaded, and the resolved `--wall-h`. |
 | `widths.mjs [w] [h] [room]` | The gallery's width against one screen, then per group: its arrangement, its width, its cluster's width and its label's. |
 | `dock-check.mjs [w] [h]` | Every dock control's size and position, and which are outside the viewport. |
 
 There are no grid tracks to print any more: a gallery is one row as wide as its
-own hang, and each stand's width follows its arrangement and its photographs.
-A frame's height is its column's `--panel-h`, which the column computes from its
-own depth — so the number that moves when the hang is retuned is `--max-panel-h`
-and `--band-h` in `css/styles.css`, and these probes are how to see the effect.
+own hang, and one stand is three frames stacked in one column. A frame's box is
+`--frame-ar`, and the band its column divides is solved from the hang cell's
+width and the height its legend leaves — `Site.bandFor` in `js/data.js`, measured
+by `fitWall` in `js/main.js` and written to `--wall-h`. Those two tokens are the
+ones that move when the hang is retuned, and these probes are how to see the
+effect. `--band-h`, `--frame-h`, `--max-panel-h`, `--panel-h` and `--label-w` are
+RETIRED, with the stacked stand they described; no stylesheet rule declares them,
+and a probe that still reads one reports `undefined` rather than a number.
 
 `shot.mjs` and `shot-room.mjs` capture a screenshot of the walk or of one named
 room; `shot-url.mjs` captures any URL, which is how the design mockups under

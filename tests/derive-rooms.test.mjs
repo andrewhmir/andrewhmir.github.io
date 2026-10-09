@@ -59,20 +59,21 @@ check('blank entries in an images array are not hung as pieces', () => {
   assert.deepEqual(pieces.map(p => p.src), ['a.jpg', 'b.jpg', PLACEHOLDER]);
 });
 
-check('a project yields its overview and its team image', () => {
+check('a project leads with its video, then its overview, then its team', () => {
   const pieces = groupPieces({
     video: 'files/x.mp4', overview: { image: 'files/o.jpg' }, team: { image: 'files/t.jpg' }
   }, 'project');
-  assert.deepEqual(pieces.map(p => p.src), ['files/o.jpg', 'files/t.jpg', PLACEHOLDER]);
-  assert.deepEqual(pieces.map(p => p.awaited), [false, false, true]);
+  assert.deepEqual(pieces.map(p => p.src), ['files/x.mp4', 'files/o.jpg', 'files/t.jpg']);
+  assert.deepEqual(pieces.map(p => p.media), ['video', 'image', 'image']);
+  assert.equal(pieces[0].poster, 'files/posters/x.jpg');
+  assert.ok(pieces.every(p => !p.awaited), 'a frame with a photograph behind it is marked awaited');
 });
 
-check('a project with no still at all falls back to its poster frame', () => {
-  /* BiyaHey has a video and an overview, but a project whose overview image is
-     missing must still hang something: make-images.mjs generates a poster for
-     every video, so that is the still of last resort before the placeholder. */
+check('a project with no still hangs its video and reserves the other two frames', () => {
+  /* The poster frame is no longer the still of last resort — the video IS the
+     first frame now, and its own poster is what shows until it plays. */
   const pieces = groupPieces({ video: 'files/Thing.mp4' }, 'project');
-  assert.deepEqual(pieces.map(p => p.src), ['files/posters/Thing.jpg', PLACEHOLDER, PLACEHOLDER]);
+  assert.deepEqual(pieces.map(p => p.src), ['files/Thing.mp4', PLACEHOLDER, PLACEHOLDER]);
   assert.deepEqual(pieces.map(p => p.awaited), [false, true, true]);
 });
 

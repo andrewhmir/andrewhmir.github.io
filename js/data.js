@@ -65,7 +65,7 @@ const PORTFOLIO = {
       id: "project1",
         /* DRAFT COPY — review */
         summary: "A contactless palm scanner for retail and transit: RGB and near-infrared imaging, a Raspberry Pi 5 running the model locally, and a decision to keep the biometric data on the device.",
-        pieces: [{ title: "The palm scanner" }, { title: "The team" }],
+        pieces: [{ title: "The preview" }, { title: "The palm scanner" }, { title: "The team" }],
       title: "Project PALAD",
       tagline: "Contactless Palm Biometric Scanner for Retail & Transit",
       category: "Robotics",
@@ -98,7 +98,7 @@ const PORTFOLIO = {
       id: "project2",
         /* DRAFT COPY — review */
         summary: "An organization's documents, conversations and code, indexed so the organization can ask what it already knows. Answers carry citations back to the source, and permissions are respected.",
-        pieces: [{ title: "The product" }, { title: "The team — photograph awaited" }],
+        pieces: [{ title: "The preview" }, { title: "The product" }, { title: "The team — photograph awaited" }],
       title: "Hivemind",
       tagline: "AI-Native Organizational Memory",
       category: "Applications",
@@ -122,7 +122,7 @@ const PORTFOLIO = {
       id: "project3",
         /* DRAFT COPY — review */
         summary: "A fingerprint system for train fares and hospital records, built on a NodeMCU and a cloud database. Your identity should be enough — you should not need to carry another card.",
-        pieces: [{ title: "The reader" }, { title: "The team" }],
+        pieces: [{ title: "The preview" }, { title: "The reader" }, { title: "The team" }],
       title: "C.E.N.T.H.R.O.",
       tagline: "Fingerprint-Based Biometric System for Transit & Healthcare",
       category: "Robotics",
@@ -153,7 +153,7 @@ const PORTFOLIO = {
       id: "project4",
         /* DRAFT COPY — review */
         summary: "A desktop robot on a LEGO EV3 frame and an Arduino Uno. It moves around the desk, gives verbal reminders and shows progress on an LCD. Deliberately hard to ignore.",
-        pieces: [{ title: "The robot" }, { title: "The team" }],
+        pieces: [{ title: "The preview" }, { title: "The robot" }, { title: "The team" }],
       title: "Focus Buddy",
       tagline: "Desktop Robot Study Companion for ADHD Focus",
       category: "Robotics",
@@ -184,7 +184,7 @@ const PORTFOLIO = {
       id: "project5",
         /* DRAFT COPY — review */
         summary: "Over 3,000 SAT questions turned into a structured bank with OCR, then a practice-test generator with analytics on what keeps going wrong. Built so its author could study for the SAT.",
-        pieces: [{ title: "The platform" }, { title: "The team — photograph awaited" }],
+        pieces: [{ title: "The preview" }, { title: "The platform" }, { title: "The team — photograph awaited" }],
       title: "SATLearn",
       tagline: "AI-Powered SAT Practice with Personalized Analytics",
       category: "Applications",
@@ -208,7 +208,7 @@ const PORTFOLIO = {
       id: "project6",
         /* DRAFT COPY — review */
         summary: "A commute map for Metro Manila built from what regular commuters know: where to catch a particular jeep, which side of the road to wait on, which route is actually faster.",
-        pieces: [{ title: "The map" }, { title: "The team" }],
+        pieces: [{ title: "The preview" }, { title: "The map" }, { title: "The team" }],
       title: "BiyaHey!",
       tagline: "Community-Powered Commute Map for Metro Manila",
       category: "Applications",
@@ -309,106 +309,113 @@ const PORTFOLIO = {
   globalThis.Site.ROOM_TITLES = ROOM_TITLES;
   globalThis.Site.ROOM_ORDER = ROOM_ORDER;
 
-  /* ── The pieces of a group ──────────────────────────────────────────────
-     One record is one group; a group's pieces are its photographs, in the
-     order it declares them. A record with no photographs still hangs a full
-     composition: on a near-black wall a bare frame is a conspicuous hole, so
-     an awaited photograph is hung and labelled instead of nothing.
+  /* ── The pieces of a stand ──────────────────────────────────────────────
+     One record is one stand, and a stand hangs EXACTLY THREE frames in one
+     stacked column: for a project, its video, then its overview, then its team
+     photograph; for every other record, its first three photographs.
+
+     The slot order is the RECORD's, not the frame's. What a record has is
+     listed video → overview → team and then padded, so a project with no video
+     hangs its photographs from the first frame rather than opening on an empty
+     box with a real photograph waiting behind it.
+
+     A record with fewer than three still hangs a full composition: on a
+     near-black wall a bare frame is a conspicuous hole, so an awaited
+     photograph is hung and labelled instead of nothing.
 
      A piece carries whether its photograph has arrived. Resolving that here,
      once, is what stops every call site from re-deriving it by matching the
      placeholder path — and it is what lets the renderer draw an awaited frame
-     as a reserved place on the wall rather than as a grey picture. */
+     as a reserved place on the wall rather than as a grey picture.
+
+     It carries its MEDIA too, because the two hang differently: an image is
+     drawn inside the frame, and a video IS a player. Nothing else on the wall
+     needs to know which is which. */
   var PLACEHOLDER = 'files/PlaceHolder.png';
 
-  /* The budget. Three frames is the floor because a two-frame hang reads as an
-     accident on a wall this wide; six is the ceiling because a seventh stack
-     is taller than the band a room can give it. */
+  /* Three frames, and the same three everywhere: the count is what makes every
+     stand one size, which is the whole point of the shape. A stand is a video
+     and two photographs at most, so nothing is dropped for want of a frame
+     except a Leadership post's fourth photograph, which stays reachable in the
+     record's own dialog. */
   var MIN_PIECES = 3;
-  var MAX_PIECES = 6;
+  var MAX_PIECES = 3;
 
-  function asPiece(src) { return { src: src, awaited: src === PLACEHOLDER }; }
+  function asPiece(src) { return { src: src, awaited: src === PLACEHOLDER, media: 'image' }; }
 
-  /* Padding is appended rather than interleaved, so a group's lead frame is a
-     real photograph whenever the record has one. */
-  function fitPieces(srcs) {
-    var out = srcs.slice(0, MAX_PIECES).map(asPiece);
+  /* ── The poster frame, derived from the video ────────────────────────────
+     tools/make-images.mjs generates one still per video, and this is that
+     tool's rule restated once so the data cannot disagree with it. The rule, as
+     the tool actually implements it: it scans `.mp4` files directly in
+     `files/`, and writes `files/posters/<stem>.jpg` — FLAT, on the basename, so
+     a video in a subdirectory would land in the same flat folder rather than
+     mirroring it.
+
+     Anything the tool does not describe yields '' rather than a guess. A poster
+     path nothing generates is a request that 404s on every load, and an empty
+     `poster` is honest: the frame then shows the film's own first frame, which
+     is what a `<video>` with no poster does. */
+  function posterFor(video) {
+    var src = String(video == null ? '' : video);
+    var file = src.replace(/^.*\//, '');
+    if (!/^files\//.test(src) || !/\.mp4$/i.test(file)) return '';
+    return 'files/posters/' + file.replace(/\.mp4$/i, '.jpg');
+  }
+
+  function asVideoPiece(video) {
+    return { src: video, poster: posterFor(video), awaited: false, media: 'video' };
+  }
+
+  /* Padding is appended rather than interleaved, so a stand's real photographs
+     lead and its reserved frames trail. */
+  function fitPieces(pieces) {
+    var out = pieces.slice(0, MAX_PIECES);
     while (out.length < MIN_PIECES) out.push(asPiece(PLACEHOLDER));
     return out;
+  }
+
+  /* The three slots of a project, in the order they hang. */
+  function projectPieces(record) {
+    var out = [];
+    if (typeof record.video === 'string' && record.video) out.push(asVideoPiece(record.video));
+    if (record.overview && record.overview.image) out.push(asPiece(record.overview.image));
+    if (record.team && record.team.image) out.push(asPiece(record.team.image));
+    return fitPieces(out);
   }
 
   function groupPieces(record, kind) {
     /* A record that does not exist hangs nothing — there is no group. */
     if (!record) return [];
-    if (kind === 'project') {
-      var out = [];
-      if (record.overview && record.overview.image) out.push(record.overview.image);
-      if (record.team && record.team.image) out.push(record.team.image);
-      if (out.length) return fitPieces(out);
-      /* A project with no still falls back to the poster frame
-         tools/make-images.mjs generates for its video. */
-      if (typeof record.video === 'string' && record.video) {
-        return fitPieces([record.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg')]);
-      }
-      return fitPieces([PLACEHOLDER]);
-    }
+    if (kind === 'project') return projectPieces(record);
     var imgs = (Array.isArray(record.images) ? record.images : []).filter(Boolean);
-    return fitPieces(imgs.length ? imgs : [PLACEHOLDER]);
+    return fitPieces(imgs.map(asPiece));
   }
   globalThis.Site.groupPieces = groupPieces;
   globalThis.Site.PLACEHOLDER = PLACEHOLDER;
+  globalThis.Site.posterFor = posterFor;
   globalThis.Site.MIN_PIECES = MIN_PIECES;
   globalThis.Site.MAX_PIECES = MAX_PIECES;
 
   /* ── The arrangements ───────────────────────────────────────────────────
-     A stand is hung as a composition, not as a row: its photographs are
-     partitioned into columns, one of them is the lead, and a column may be
-     dropped a little so a stack never reads as one tall frame.
+     One arrangement, because there is one shape: three frames in a SINGLE
+     column, which is what makes every stand on this walk the same object at the
+     same size. The table is kept rather than deleted for two reasons — it is
+     still how the renderer is told which pieces share a column, and
+     `hangLayout` stays the one door to an arrangement, so a second one could be
+     added here and hung correctly without touching the renderer. What changed is
+     the design, not the machinery.
 
-     Every arrangement keeps its columns at most THREE deep. That is not a
-     constraint of taste: the stylesheet divides the room's band between a
-     column's own frames, so a column of five would have hung five frames
-     one-fifth of the band tall — measured at 96x54 on a 1536x864 screen, a row
-     of postage stamps under a wall of empty gilt. Depth is what decides how
-     large a photograph reads, so depth is what the arrangements are written
-     to bound. A fifth photograph therefore widens a stand rather than
-     deepening one, which is the trade this wall makes deliberately.
+     `lead` is 0: the head of the stack is the stand's principal frame, which is
+     the project's film where there is one.
 
-     Several arrangements per count, so neighbouring stands differ and the wall
-     reads as a hang rather than as a repeated cell. */
-  /* ── The arrangements, and why no column is deeper than two ───────────────
-     A column divides the band between its frames, so a column of three gives
-     each frame a third of it. That was affordable while the band was the wall's
-     full height; beside a label the wall is ~330px wide and the band is solved
-     from the hang's own aspect ratios (see `fitWall` in js/main.js), which puts
-     it at 60-110px. A third of 108px is 36px, and a 0.750-ratio portrait at 36px
-     tall is 27px wide — under the 44px tap floor, and measured exactly that on
-     the AGHAM Research Club stand before this cap.
-
-     Two rows is the deepest that clears the floor in every arrangement the data
-     actually deals. The alternative was to drop only the arrangements with a
-     three-row column, and the cap is the same thing stated once rather than
-     three times: every layout below has at most two pieces in any column. */
+     `drop` is published as 0. Three frames of one size in one column are MEANT
+     to read as one stack now, which is the opposite of what the drops were for
+     — they kept a two-row arrangement from reading as a single tall frame. The
+     mechanism stays, so an arrangement that offsets a column still brings its
+     own room and `renderCluster` still publishes it. */
   var HANG_LAYOUTS = {
     3: [
-      { name: 'lead-two',     columns: [[0], [1, 2]],         lead: 0, drop: [0, 14] },
-      { name: 'two-lead',     columns: [[1, 2], [0]],         lead: 0, drop: [14, 0] },
-      { name: 'three-across', columns: [[0], [1], [2]],       lead: 0, drop: [0, 14, 0] },
-    ],
-    4: [
-      { name: 'two-two',      columns: [[0, 1], [2, 3]],      lead: 0, drop: [0, 14] },
-      { name: 'two-two-b',    columns: [[2, 3], [0, 1]],      lead: 0, drop: [14, 0] },
-      { name: 'pair-lead-pair', columns: [[1, 2], [0, 3]],    lead: 0, drop: [0, 14] },
-    ],
-    5: [
-      { name: 'two-two-one',  columns: [[0, 1], [2, 3], [4]], lead: 0, drop: [0, 14, 0] },
-      { name: 'pair-trio-lead', columns: [[0, 1], [2, 3, 4]], lead: 0, drop: [0, 14] },
-      { name: 'trio-pair-lead', columns: [[0, 1, 2], [3, 4]], lead: 0, drop: [14, 0] },
-    ],
-    6: [
-      { name: 'pair-pair-pair', columns: [[0, 1], [2, 3], [4, 5]], lead: 0, drop: [0, 14, 0] },
-      { name: 'pair-pair-pair-b', columns: [[1, 2], [3, 4], [5, 0]], lead: 0, drop: [0, 14, 0] },
-      { name: 'lead-two-two-one', columns: [[0], [1, 2], [3, 4], [5]], lead: 0, drop: [0, 14, 0, 14] },
+      { name: 'stack', columns: [[0, 1, 2]], lead: 0, drop: [0] }
     ]
   };
 
@@ -557,6 +564,41 @@ const PORTFOLIO = {
     return null;
   }
   globalThis.Site.roomAtOffset = roomAtOffset;
+
+  /* ── The band a stand's hang stands on ──────────────────────────────────
+     Pure: the caller measures the stand's cell and reads the stylesheet's frame
+     ratio, and this decides how tall the hang may be. The arithmetic is pinned
+     to the pixel in tests/band.test.mjs.
+
+     Every frame is the same box now, so a stand's shape is fixed: a column of
+     `rows` frames is `(band - gaps) / rows` tall each, and `ratio` times that
+     wide. Two things bound the band and the answer is the smaller:
+
+       the wall   the column is as wide as ONE frame, so the band that exactly
+                  fills a wall of `width` is `(width / ratio) * rows + gaps`
+       the cell   the band cannot be taller than the room the hang was given
+
+     and neither may take the frames under `minFrame` — the 44px tap target —
+     gaps included. Three 44px frames need 152px with two 10px gaps, and a floor
+     that forgot the gaps gave 39px frames.
+
+     Total by construction: a geometry it cannot solve falls to the floor rather
+     than to NaN, because a NaN band is written to the DOM as a height nothing
+     can resolve and the wall collapses in silence. */
+  function bandFor(opt) {
+    var o = opt || {};
+    var rows = Math.max(1, Math.floor(Number(o.rows)) || 1);
+    var gap = Math.max(0, Number(o.gap) || 0);
+    var minFrame = Number(o.minFrame) > 0 ? Number(o.minFrame) : 44;
+    var ratio = Number(o.ratio);
+    var width = Number(o.width);
+    var height = Number(o.height);
+    var floor = minFrame * rows + gap * (rows - 1);
+    if (!(ratio > 0) || !(width > 0) || !(height > 0)) return floor;
+    var byWidth = (width / ratio) * rows + gap * (rows - 1);
+    return Math.max(floor, Math.round(Math.min(byWidth, height)));
+  }
+  globalThis.Site.bandFor = bandFor;
 
   var GALLERY_LISTS = {
     news: function () { return PORTFOLIO.news; },

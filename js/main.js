@@ -453,6 +453,9 @@
     $modalOverlay.classList.add('active');
     lockBodyScroll();
     setBackgroundInert(true);
+    /* The films the dialog now covers are not in shot any more, and the
+       observer cannot see an occlusion — see pausePreviews. */
+    pausePreviews();
     if ($modalCard) $modalCard.focus();
   }
 
@@ -528,6 +531,9 @@
     $modalOverlay.classList.remove('active');
     setBackgroundInert(false);
     unlockBodyScroll();
+    /* Only the stands that are in shot resume, and none of them if the visitor
+       had paused them — the same rule the observer keeps. */
+    resumePreviews();
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
     lastFocused = null;
   }
@@ -631,31 +637,128 @@
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   }
 
-  /* ── In-View Video Playback ──────────────────────────────────
-     Videos carry preload="none" and a poster, so nothing is fetched until a
-     card is actually on screen. Playback is skipped entirely when the visitor
-     has asked for reduced motion. */
-  function initVideoPlayback() {
-    var videos = document.querySelectorAll('.project-card video');
+  /* ── The previews: a project's film, playing while its stand is in shot ──
+     The first frame of every project is its preview. It is muted, looping and
+     `playsinline`, so a browser will let it start on its own; it carries
+     `controls`, so a visitor can stop it; and it is `preload="none"` with a
+     poster, so the walk fetches nothing until a stand is nearly reached.
+
+     Three rules, and each one is a fault it prevents:
+
+       reduced motion      a visitor who asked their system for less motion gets
+                           the poster and the controls, and nothing plays on its
+                           own. The branch returns before any observer is built,
+                           so there is exactly one place to read the decision.
+       a pause they made   is NOT undone. Scrolling a stand out of shot pauses
+                           the film, and that pause is OURS — it must not be
+                           mistaken for a visitor's, or a stand they come back
+                           to would silently refuse to play. A press on the
+                           control bar is theirs, and `data-paused` is the
+                           record of it: it survives the stand leaving and
+                           returning.
+       another window      a film left playing behind a hidden tab is battery
+                           for nothing.
+
+     Total by construction: no `IntersectionObserver` (an old engine, or the DOM
+     stub the renderer suite runs under) leaves the poster in place and the
+     controls working, which is a usable wall rather than a broken one. */
+  /* The controller's state, at module level so the dialog and the tab's own
+     visibility can reach it. */
+  var previews = { videos: [], inView: [], auto: new WeakSet(), play: null, stop: null, listening: false };
+
+  function initPreviews(root) {
+    var host = root || document;
+    /* Nothing is bound a second time, and a second call must not disturb what
+       the first one built. So the filter runs BEFORE the emptiness test — a
+       re-run that finds every film already bound returns without touching the
+       module state, rather than falling through and replacing the dialog's list
+       of films to stop with an empty one. */
+    var videos = [].slice.call(host.querySelectorAll('.piece--video video'))
+      .filter(function (v) { return !v.__previewBound; });
     if (!videos.length) return;
 
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || !('IntersectionObserver' in window)) return;
+    if (reduce || typeof IntersectionObserver !== 'function') return;
+
+    /* Appended, never replaced: a later call for a newly rendered stand must
+       not drop the films an earlier call is already driving. */
+    previews.videos = previews.videos.concat(videos);
+    var inView = previews.inView;
+    var autoPaused = previews.auto;
+
+    var play = function (v) {
+      if (v.hasAttribute('data-paused')) return;
+      var p = v.play();
+      /* autoplay can still be refused — the poster stays in place */
+      if (p && typeof p.catch === 'function') p.catch(function () {});
+    };
+    var stop = function (v) {
+      if (v.paused) return;
+      /* Marked as OURS, because `pause` fires asynchronously and a flag set
+         around the call would already be back to false by the time it does. */
+      autoPaused.add(v);
+      v.pause();
+    };
+    previews.stop = stop;
+    previews.play = play;
 
     var observer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         var v = entry.target;
+        var at = inView.indexOf(v);
         if (entry.isIntersecting) {
-          var p = v.play();
-          /* autoplay can still be refused — the poster stays in place */
-          if (p && typeof p.catch === 'function') p.catch(function () {});
-        } else if (!v.paused) {
-          v.pause();
+          if (at === -1) inView.push(v);
+          play(v);
+        } else {
+          if (at !== -1) inView.splice(at, 1);
+          stop(v);
         }
       });
-    }, { threshold: 0.25 });
+    }, { threshold: 0.35 });
 
-    Array.prototype.forEach.call(videos, function (v) { observer.observe(v); });
+    videos.forEach(function (v) {
+      v.__previewBound = true;
+      v.addEventListener('pause', function () {
+        if (autoPaused.has(v)) { autoPaused.delete(v); return; }
+        v.setAttribute('data-paused', '');
+      });
+      v.addEventListener('play', function () { v.removeAttribute('data-paused'); });
+      observer.observe(v);
+    });
+
+    /* Bound once, for the same reason: a second listener would pause and play
+       every film twice per tab switch. */
+    if (!previews.listening) {
+      previews.listening = true;
+      document.addEventListener('visibilitychange', function () {
+        /* Both directions go through the same two doors as the dialog's, so a
+           tab that comes back while a record is open does not restart the films
+           the dialog is covering — the observer cannot see an occlusion and
+           neither can `visibilitychange`. */
+        if (document.hidden) pausePreviews();
+        else resumePreviews();
+      });
+    }
+  }
+  Site.initPreviews = initPreviews;
+
+  /* ── The dialog stops the films it covers ────────────────────────────────
+     A preview behind an open dialog is still in the viewport, so the observer
+     never fires and the film would decode for nobody behind the overlay. It is
+     stopped on the way in and resumed on the way out, and it is stopped as
+     OURS, so a visitor who had paused it stays paused.
+
+     `resumePreviews` refuses while a record is open, and that guard is the
+     whole reason it is a door rather than a loop at the call site: a tab
+     coming back to the foreground is the OTHER way a covered film would
+     restart, and both routes have to answer the same question. */
+  function pausePreviews() {
+    if (previews.stop) previews.videos.forEach(previews.stop);
+  }
+  function resumePreviews() {
+    if (!previews.play) return;
+    if ($modalOverlay && $modalOverlay.classList.contains('active')) return;
+    previews.inView.forEach(previews.play);
   }
 
   /* ════════════════════════════════════════════════════════════════════
@@ -804,44 +907,66 @@
     return String.fromCharCode(65 + i);
   }
 
-  /* ── The cluster: how a group's photographs hang ────────────────────────
-     A group is one exhibit: its photographs hang together as one composition
-     rather than as N unrelated works.
+  /* ── The cluster: how a stand's three frames hang ───────────────────────
+     A stand is one record, and its frames hang together as one composition:
+     one column, stacked, every frame the same box.
 
-     A frame is given a HEIGHT and its width follows its photograph, so every
-     frame has its photograph's own proportions. The obvious alternative — a
-     fixed width and height per slot — gives the frame an aspect ratio of its
-     own, and then `object-fit: cover` crops a landscape photograph into a
-     strip: a 271x104 frame for a 1.72:1 photograph is a 2.6:1 letterbox, and
-     `contain` instead would leave black bars inside the mat. Neither is a
-     photograph hung on a wall, so the frame takes the photograph's shape.
+     ── The frame is one shape, and that shape is the stylesheet's ─────────
+     A frame used to be given a HEIGHT and let its width follow its own
+     photograph, so a stand's width was its photographs' business — the
+     alternative, a fixed width and height per slot, was rejected because
+     `object-fit: cover` then crops a landscape photograph into a strip and
+     `contain` letters the picture inside its own mat.
 
-     WHICH columns hang, and which piece is the lead, comes from an
-     arrangement — Site.hangLayout, dealt from the group's own key so
-     neighbouring groups differ and a reload never reshuffles the wall.
+     That trade is decided the other way now, deliberately and by request: one
+     size for every frame means one shape for every frame, and the shape is
+     `--frame-ar` in css/styles.css. `object-fit: cover` is what fills the box
+     — the measurement that rejected it (15 of 23 frames were 63-77% black bar
+     with `contain`) is exactly why the fill is a crop and not a letterbox. The
+     band the column divides is still solved rather than chosen; see `fitWall`
+     below, which now solves it from the wall and the cell instead of from each
+     photograph's own ratio.
 
-     The height a frame is given is `--band-h` under a `--max-panel-h` cap in
-     css/styles.css, divided per column into `--row-h`. It cannot live here as
-     `cqi`: a gallery is as wide as its contents, so sizing a stand from its own
-     width is circular, and the binding constraint on a single row is the room's
-     height. Nor can one height serve every arrangement — a column of three
-     hangs three frames in the band a column of two divides in two — which is
-     why renderCluster writes each column's depth and the stylesheet does the
-     division. (`--frame-h` is declared beside them as the single height this is
-     to become; nothing reads it yet.)
+     Which columns hang, and which frame is the lead, still comes from an
+     arrangement — Site.hangLayout. There is one arrangement now, and it puts
+     all three pieces in a single column, which is what "stacked vertically"
+     means to the renderer. Nothing here knows that: a second arrangement would
+     be hung by the same code.
 
-     Every frame clears 44x44 at every supported width, because the panel
-     height carries its own floor and the collection's photographs are wide. */
+     Every frame clears 44x44 at every supported width, because the solve
+     carries its own floor and `ux-check` measures it. */
 
-  /* A piece is a real focusable control: the whole frame opens the group's
+  /* A piece is a real focusable control: the whole frame opens the stand's
      dialog, and its accessible name says which photograph it is. A piece whose
-     photograph has not arrived is not a control at all — see the awaited
-     branch below. */
+     photograph has not arrived is not a control at all — see the awaited branch
+     below — and the first frame of a project is not one either: it is the film
+     itself. */
   function renderCluster(pieces, layout, record, kind, entryIndex) {
     var title = record.title || record.description || '';
     var piece = function (p, i) {
-      var open = groupOpener(kind, record, entryIndex, p);
       var lead = i === layout.lead;
+      /* ── The film is a player, not a control ──────────────────────────────
+         The first frame of a project is its preview, and it plays while the
+         stand is in shot (see initPreviews). It is NOT the way into the record:
+         a `<button>` may not contain a control, and this one needs `controls`,
+         because motion that starts by itself has to be pausable. The two
+         photograph frames under it are the way in.
+
+         `preload="none"` with a poster means the walk fetches nothing until the
+         film is about to be reached, and the poster is derived from the video in
+         js/data.js — so a frame is never empty and never a black rectangle. A
+         project with no video never reaches this branch: the slot is simply not
+         filled (see `projectPieces`). */
+      if (p.media === 'video') {
+        return '<div class="piece piece--video' + (lead ? ' piece--lead' : '') + '"'
+          + ' data-piece="' + i + '">'
+          + '<video controls muted loop playsinline preload="none"'
+          + ' poster="' + esc(p.poster || '') + '"'
+          + ' aria-label="' + esc(title + ' — preview video') + '">'
+          + '<source src="' + esc(p.src) + '" type="video/mp4">'
+          + '</video></div>';
+      }
+      var open = groupOpener(kind, record, entryIndex, p);
       var label = open.name || (title + ' — photograph ' + pieceLetter(i));
       /* The frame is the whole of a piece on the wall. A letter used to hang on
          it — the catalogue's index brought to the picture, in a box over the
@@ -898,100 +1023,99 @@
       + cols.join('') + '</div>';
   }
 
-  /* ── The band a hang stands on, solved from its photographs ──────────────
-     A frame's width follows its own photograph, so a hang's natural width is
-     `band x (sum of its pieces' aspect ratios)`. A wall narrower than that does
-     not shrink the photographs — it squeezes their columns, and then
-     `object-fit: contain` draws each one letterboxed inside a box of the wrong
-     shape. Measured before this existed, at 1536x864: the box was 0.489 wide for
-     every 1 of height while the photographs are 1.78 to 2.25, so 15 of 23 frames
-     were 63-77% black bar. A photograph that is 23% photograph is not a
-     photograph.
+  /* ── The band a stand's hang stands on, solved from the wall and the cell ─
+     The arithmetic is `Site.bandFor` in js/data.js, where it is pinned to the
+     pixel without a browser; this measures the two numbers it needs and writes
+     the answer.
 
-     So the band is DERIVED, not chosen: the tallest height at which the deepest
-     column still fits its wall. A column's frames divide the band between them,
-     so the deepest column needs `band / rows x arSum` and the wall needs the sum
-     of that across the columns. Solving:
+     ── What it used to solve, and why it no longer can ─────────────────────
+     A frame's width used to follow its own photograph, so a hang's natural
+     width was `band x (sum of its pieces' ratios)` and the band was solved from
+     the wall: `(wallWidth - gaps) / SUM(column arSum / column rows)`, with each
+     ratio read off a loaded `<img>`. That is why the solve ran again on every
+     `load` — before a photograph arrived there was no ratio to solve with.
 
-         band = (wallWidth - gaps) / SUM(column arSum / column rows)
+     There is one ratio now, and it is the stylesheet's `--frame-ar`: every frame
+     is the same box, so nothing here depends on a photograph's bytes and the
+     solve no longer needs a load event to be correct. What it needs instead is
+     the CELL's height, because a stack of three landscape frames is taller than
+     it is wide — the binding constraint is no longer the wall's width, and
+     without the height cap the third frame hangs under the dock.
 
-     This is the same solve the mockup's layout engine did (`fitRow` in
-     .superpowers/mockups/_gen.mjs`), and it is what makes `--wall-h` a measured
-     number rather than a guess. The aspect ratios come from the photographs
-     themselves, which is why this runs on `load`: before a photograph arrives
-     there is no ratio to solve with, and the stylesheet's clamp is the band until
-     then.
+     ── The two numbers, and why they are measured here ─────────────────────
+     `width` is the hang cell's own content box. NOT the cluster's: the cluster's
+     width is now the RESULT of the band (its frames are as wide as their height
+     times the ratio), so feeding it back in would be a loop that settles
+     wherever the last resize left it.
 
-     A wall that cannot fit its hang at any height above the tap floor is left at
-     the floor and clips, which is visible; letterboxing every photograph is not. */
+     `height` is what the cell has left after the legend. The legend is pinned
+     to the cell's foot with `margin-top: auto` and is as tall as its catalogue
+     is long, so the room the hang gets is the cell less that block — measured
+     here rather than derived, because it is prose and only the browser knows
+     how many lines it takes at this width.
+
+     `--col-gap` is read from the COLUMN's resolved style and not restated here.
+     A percent or `calc()` in a custom property does not serialise to something
+     `parseFloat` can read, so reading `--col-gap` itself gives 0 and the floor
+     silently loses the gaps — which is how this shipped once. The column is the
+     element the gap is applied to, so its computed row-gap is the number the
+     frames actually divide.
+
+     ── One column only, and that is stated rather than assumed ─────────────
+     `rows` is the DEPTH of the deepest column, and `bandFor` sizes the band as
+     though that column were the only one — which it is: there is one
+     arrangement and it stacks. A second arrangement with two columns side by
+     side would need the sum across columns here (`bandFor` takes one `rows`),
+     and this note is what a future reader gets instead of a quiet
+     half-solved stand. */
   function fitWall(cluster) {
-    /* The hang cell is the stand's first cell and it is the hang's own box now:
-       the legend is a sibling under the cluster, so the cell that holds both is
-       the width a hang has to fit. It used to be the cluster's PARENT, which was
-       the stand itself — the cluster was the only thing in the cell and the label
-       was its sibling. */
+    /* The hang cell is the stand's first cell, and it holds the hang and the
+       legend under it: the cell that holds both is what the band is solved
+       against. */
     var wall = cluster.parentElement;
     if (!wall) return;
     var cols = [].slice.call(cluster.querySelectorAll('.col'));
-    var ratio = 0;
-    var imgs0 = 0;
-    var solvable = cols.length > 0;
-    for (var i = 0; i < cols.length; i++) {
-      var imgs = [].slice.call(cols[i].querySelectorAll('.piece'));
-      if (!imgs.length) continue;
-      imgs0 += imgs.length;
-      var arSum = 0;
-      for (var j = 0; j < imgs.length; j++) {
-        var im = imgs[j].querySelector('img');
-        /* An awaited frame is held at 3/2 by `.piece--pending`; a photograph
-           whose bytes have not arrived contributes its pending shape and the
-           solve is repeated when it loads. */
-        if (im && im.naturalWidth) arSum += im.naturalWidth / im.naturalHeight;
-        else arSum += 1.5;
-      }
-      if (!arSum) { solvable = false; break; }
-      ratio += arSum / imgs.length;
-    }
-    /* `clientWidth` is the wall's own content box; the gaps are the cluster's.
-       A column's frames divide the band between them, so a column of `n` frames
-       needs `band / n x arSum` of wall — the deepest column is the one that
-       binds, and `ratio` has already summed `arSum / n` per column. */
-    var gaps = 12 * Math.max(0, cols.length - 1);
-    var available = cluster.clientWidth || wall.clientWidth;
-    if (!solvable || !available || !ratio) return;
-    var band = (available - gaps) / ratio;
-    /* ── The tap floor, per FRAME and not per band ─────────────────────────
-       A frame is `(band - this column's own gaps) / rows` tall, so the smallest
-       frame is the one in the deepest column. The floor is what that column needs
-       for every one of its frames to clear 44px, not a flat 44: a band of 44 in a
-       2-row column gives 22px frames, which is what the previous floor measured —
-       46x41, two pixels under the target.
-
-       The column's GAPS are part of that floor and they were missing from it.
-       `rows x 44` leaves the gap with nowhere to come from, so the frames pay for
-       it: with `--col-gap: 10px` a 3-row column of 44px frames needs 152px and the
-       old floor gave it 132px, which is 39.3px per frame. Measured with nothing
-       forced to load at 1440x900, a 3-row column came out 44 x 39.05 — 39px of the
-       44px tap target, on the frame a visitor sees before its bytes arrive.
-
-       `--col-gap` is read from the COLUMN's resolved style and not restated here.
-       A percent or `calc()` in a custom property does not serialise to something
-       `parseFloat` can read, so reading `--col-gap` itself gives 0 and the floor
-       silently loses the gaps again — which is how this shipped once. The column
-       is the element the gap is applied to, so its computed row-gap is the number
-       the frames actually divide. */
-    var deepest = 1;
+    if (!cols.length) return;
+    var rows = 0;
     for (var k = 0; k < cols.length; k++) {
-      deepest = Math.max(deepest, cols[k].querySelectorAll('.piece').length);
+      rows = Math.max(rows, cols[k].querySelectorAll('.piece').length);
     }
+    if (!rows) return;
+
+    var ccs = getComputedStyle(cluster);
+    var ratio = frameRatio(ccs.getPropertyValue('--frame-ar'));
     var colGap = 10;
-    if (cols.length) {
-      var ccs = getComputedStyle(cols[0]);
-      var gap = parseFloat(ccs.rowGap || ccs.gap);
-      if (isFinite(gap) && gap > 0) colGap = gap;
-    }
-    var floorH = 44 * deepest + colGap * Math.max(0, deepest - 1);
-    cluster.style.setProperty('--wall-h', Math.max(floorH, Math.round(band)) + 'px');
+    var colStyle = getComputedStyle(cols[0]);
+    var gap = parseFloat(colStyle.rowGap || colStyle.gap);
+    if (isFinite(gap) && gap > 0) colGap = gap;
+
+    /* The legend is the block the hang must not spend; a cell that holds no
+       legend leaves the whole height to the pictures. */
+    var legend = wall.querySelector('.legend');
+    var availH = wall.clientHeight - (legend ? legend.offsetHeight : 0);
+
+    cluster.style.setProperty('--wall-h', Site.bandFor({
+      width: wall.clientWidth,
+      height: availH,
+      rows: rows,
+      ratio: ratio,
+      gap: colGap
+    }) + 'px');
+  }
+
+  /* `--frame-ar` is written as a fraction — `16 / 9` — because that is how a
+     ratio reads in a stylesheet, and this reads THAT token rather than
+     restating it, so the box the solve assumes and the box the frame wears are
+     one number (see the note on the token). The literal here is a last resort
+     for a token that cannot be parsed at all: falling to 0 would hand
+     `bandFor` an unsolvable geometry and it would return the tap floor, which
+     is a wall of 44px frames rather than a wall with slightly wrong ones. */
+  function frameRatio(value) {
+    var parts = String(value == null ? '' : value).split('/');
+    var w = parseFloat(parts[0]);
+    var h = parseFloat(parts[1]);
+    if (isFinite(w) && isFinite(h) && w > 0 && h > 0) return w / h;
+    return 16 / 9;
   }
 
   function fitWalls(root) {
@@ -1825,30 +1949,22 @@
     renderDock();
     renderRooms();
 
-    /* ── The band each wall stands on, solved from its photographs ──────────
-       `renderRooms` writes the hang; the band is a measurement, not a choice,
-       so it is solved once here against whatever ratios are already available
-       (the awaited frames' 3/2, and any photograph the cache has), then again
-       whenever a photograph arrives. A photograph is fetched when the walk
-       reaches it, so an unsolved wall would draw its photographs letterboxed
-       until the visitor got there.
-
-       The listener is on the strip with capture, because `load` does not bubble
-       and the images are added by the renderer rather than by markup. */
+    /* ── The band each stand hangs on, solved from its cell ────────────────
+       `renderRooms` writes the hang; the band is a measurement, not a choice.
+       It is solved from the hang cell's width and the height the legend leaves
+       — not from any photograph's aspect ratio, which is why there is no `load`
+       listener here any more: every frame is the same box, so nothing about the
+       solve changes when a photograph's bytes arrive. What can change it is the
+       cell (a resize) and the LEGEND's own type: it is the block whose height
+       the band is solved around, and a webfont arriving re-lays it out. */
     fitWalls();
     initLabelFades();
-    var strip = document.getElementById('strip');
-    if (strip) {
-      strip.addEventListener('load', function (e) {
-        if (e.target && e.target.tagName === 'IMG') {
-          var cluster = e.target.closest && e.target.closest('.cluster');
-          if (cluster) fitWall(cluster); else fitWalls();
-        }
-      }, true);
-    }
     window.addEventListener('resize', function () { fitWalls(); });
-    /* The band follows a font-size change too: the label's height is set by its
-       own type, so a webfont arriving moves the wall's width. */
+    /* The same re-solve after the fonts settle, because the legend's height is
+       text and the text is measured once its face has arrived. The webfont is
+       real — index.html links Newsreader and Courier Prime — and before it
+       loads the legend is laid out in the fallback face, which is a different
+       height. Nothing else about the shell waits on a font. */
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(function () { fitWalls(); });
     }
@@ -1869,7 +1985,7 @@
     renderFooter();
 
     initRevealObserver();
-    initVideoPlayback();
+    initPreviews();
   }
 
   if (document.readyState === 'loading') {

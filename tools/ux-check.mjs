@@ -310,11 +310,18 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
        the same frame — but it is presentation rather than a record's
        photograph, and the data declares it separately.
        An awaited frame draws no picture, so it contributes no src: there is
-       nothing to compare and nothing to fetch. */
-    const srcs = [...document.querySelectorAll('#strip .group .piece img')]
-      .map(i => i.getAttribute('src'));
+       nothing to compare and nothing to fetch. A project's first frame is its
+       film, whose src is the video and whose picture is the poster, so both
+       are gathered: a preview that arrived without its poster would otherwise
+       read as a piece hung with nothing behind it. */
+    const srcs = [
+      ...document.querySelectorAll('#strip .group .piece img'),
+      ...document.querySelectorAll('#strip .group .piece--video source')
+    ].map(n => n.getAttribute('src'));
+    const posters = [...document.querySelectorAll('#strip .group .piece--video video')]
+      .map(v => v.getAttribute('poster'));
     const portrait = document.querySelector('#strip .room[data-room="About"] .piece img');
-    return { perKind, srcs, portrait: portrait ? portrait.getAttribute('src') : null,
+    return { perKind, srcs, posters, portrait: portrait ? portrait.getAttribute('src') : null,
              rooms: document.querySelectorAll('#strip .room').length,
              dock: document.querySelectorAll('.dock-link').length };
   })()`);
@@ -364,6 +371,13 @@ await section('Layout: nothing is clipped and nothing overlaps', async () => {
   check('the wall\'s photographs are exactly the data\'s, no more and no fewer',
         differing.length === 0,
         differing.slice(0, 5).map((k) => k + ' ' + (gotTally[k] || 0) + ' vs ' + (wantTally[k] || 0)).join(' | '));
+  /* The film's frame draws its poster until it plays, so a preview without one
+     is a black rectangle hanging on the wall — the fault the awaited-frame note
+     is about, arrived at from the other side. */
+  const noPoster = inventory.posters.filter((p) => !/^files\/posters\/.+\.(jpe?g|png|webp)$/i.test(p || ''));
+  check('every preview hangs a poster frame, not a black rectangle',
+        inventory.posters.length > 0 && noPoster.length === 0,
+        inventory.posters.length + ' previews, ' + noPoster.length + ' without a usable poster');
   check('the dock carries every room the walk does',
         inventory.dock === inventory.rooms,
         inventory.dock + ' dock entries for ' + inventory.rooms + ' rooms');
@@ -912,47 +926,88 @@ await section('The deepest hang stays inside the room', async () => {
     check('a scrolling label does not fade over its own last line at ' + w + 'x' + h,
           fade.length === 0, fade.slice(0, 3).join(' | '));
 
-    /* ── No photograph is letterboxed ───────────────────────────────────────
-       This is the assertion whose absence let a real fault ship. The check above
-       (a frame is as wide as its photograph) compares `.piece`'s width to its own
-       `<img>`'s width, which the layout sets to the frame's content width — so it
-       is true by construction and cannot fail however the picture is drawn inside
-       the box. The fault it missed: `object-fit: contain` fitted every photograph
-       into a box of whatever shape the frame happened to have, and a frame whose
-       box was 0.489 wide per 1 of height drew 1.78-2.25 photographs letterboxed —
-       15 of 23 frames, 63-77% black bar, measured.
+    /* ── Every frame is the one shape, and its picture fills it ─────────────
+       This assertion replaces the one that caught a real fault: with
+       `object-fit: contain` every photograph was fitted into a box of whatever
+       shape the frame happened to have, and 15 of 23 frames were 63-77% black
+       bar. It compared each photograph's content box to its own ratio, which
+       was right while a frame followed its photograph's proportions.
 
-       What can fail is the comparison of the photograph's CONTENT box — the
-       image box less its own mat, which is what the picture is drawn into — to
-       the photograph's ratio. With no `object-fit` the picture fills that box, so
-       the two must agree; a difference IS a bar. Measuring the border box instead
-       is what made this check's first version report 4-19% on frames whose
-       content box matched the photograph to three decimal places. 2% is the
-       allowance for sub-pixel layout, and a fraction of the smallest real bar
-       (32%). */
-    const barred = await evaluate(`(() => {
+       A frame is one box now — `--frame-ar`, 16:9, the same size for every
+       frame in a stand — so that comparison can only report the design. What
+       can still go wrong, and what is measured here:
+
+         1. the frame's own box drifts off the token, so stands stop matching
+         2. the three frames of one stand are not the SAME SIZE as each other,
+            which is the whole request this shape answers
+         3. the picture is not drawn FILLING its frame (`object-fit` anything
+            but `cover` draws bars, and bars are the fault this file already
+            shipped once)
+         4. the media element does not fill the frame's content box, which
+            leaves a strip of the frame's black ground beside the picture
+
+       `aspect-ratio` is applied to the BORDER box, so the ratio is read there;
+       the content box — the border box less the 3px gilt — is what the media
+       must fill. Measuring the content box against the token reports 1.817 for
+       a 16:9 frame, which is arithmetic and not a fault. */
+    const shape = await evaluate(`(() => {
       const out = [];
-      document.querySelectorAll('#strip .group .piece').forEach(p => {
-        const im = p.querySelector('img');
-        if (!im || !im.naturalWidth) return;
-        const id = p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
-        const cs = getComputedStyle(im);
-        const r = im.getBoundingClientRect();
-        const w = r.width - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth);
-        const h = r.height - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth);
-        if (!w || !h) return;
-        const boxAR = w / h;
-        const photoAR = im.naturalWidth / im.naturalHeight;
-        const diff = Math.abs(boxAR - photoAR) / photoAR;
-        if (diff > 0.02) {
-          out.push(id + ' box ' + boxAR.toFixed(3) + ' vs photo ' + photoAR.toFixed(3) +
-            ' (' + Math.round(diff * 100) + '% barred)');
-        }
+      const token = (() => {
+        const raw = getComputedStyle(document.documentElement).getPropertyValue('--frame-ar');
+        const parts = String(raw).split('/');
+        const w = parseFloat(parts[0]), h = parseFloat(parts[1]);
+        return (w > 0 && h > 0) ? w / h : 0;
+      })();
+      if (!token) { out.push('--frame-ar does not parse'); return { out, sizes: [] }; }
+      const sizes = [];
+      document.querySelectorAll('#strip .cluster').forEach(cl => {
+        const pieces = [...cl.querySelectorAll('.piece')];
+        if (!pieces.length) return;
+        let first = null;
+        pieces.forEach((p, i) => {
+          const id = p.closest('.room').getAttribute('data-room') + ':' + p.dataset.piece;
+          const pcs = getComputedStyle(p);
+          const pr = p.getBoundingClientRect();
+          if (!pr.width || !pr.height) { out.push(id + ' has no box'); return; }
+          const boxAR = pr.width / pr.height;
+          if (Math.abs(boxAR - token) / token > 0.02) {
+            out.push(id + ' frame ' + boxAR.toFixed(3) + ' vs token ' + token.toFixed(3));
+          }
+          if (!first) { first = { w: pr.width, h: pr.height, id: id }; sizes.push({ w: Math.round(pr.width), h: Math.round(pr.height) }); }
+          else if (Math.abs(pr.width - first.w) > 0.6 || Math.abs(pr.height - first.h) > 0.6) {
+            out.push(id + ' is ' + Math.round(pr.width) + 'x' + Math.round(pr.height)
+              + ', but ' + first.id + ' in the same stand is '
+              + Math.round(first.w) + 'x' + Math.round(first.h));
+          }
+          const media = p.querySelector('img, video');
+          if (!media) return;
+          const fit = getComputedStyle(media).objectFit;
+          if (fit !== 'cover') out.push(id + ' media is object-fit: ' + fit + ', not cover');
+          const cw = pr.width - parseFloat(pcs.borderLeftWidth) - parseFloat(pcs.borderRightWidth);
+          const ch = pr.height - parseFloat(pcs.borderTopWidth) - parseFloat(pcs.borderBottomWidth);
+          const mr = media.getBoundingClientRect();
+          if (Math.abs(mr.width - cw) > 1.5 || Math.abs(mr.height - ch) > 1.5) {
+            out.push(id + ' media ' + Math.round(mr.width) + 'x' + Math.round(mr.height)
+              + ' does not fill its frame ' + Math.round(cw) + 'x' + Math.round(ch));
+          }
+        });
       });
-      return out;
+      return { out, sizes };
     })()`);
-    check('no photograph is letterboxed at ' + w + 'x' + h,
-          barred.length === 0, barred.slice(0, 4).join(' | '));
+    check('every frame is the one shape and its picture fills it at ' + w + 'x' + h,
+          shape.out.length === 0, shape.out.slice(0, 4).join(' | '));
+    /* INFO, not a check: how much the frames differ BETWEEN stands. The band is
+       solved per stand against the room its own legend leaves, so a stand with
+       a longer catalogue hangs slightly smaller frames — deliberately, because
+       the alternative is sizing every stand to the worst legend on the walk.
+       Reported so the number is known rather than assumed. */
+    if (shape.sizes.length) {
+      const ws = shape.sizes.map((s) => s.w), hs = shape.sizes.map((s) => s.h);
+      const spread = (a) => Math.max(...a) - Math.min(...a);
+      console.log('  info  frame size across stands: '
+        + Math.min(...ws) + '-' + Math.max(...ws) + 'px wide (spread ' + spread(ws) + '), '
+        + Math.min(...hs) + '-' + Math.max(...hs) + 'px tall (spread ' + spread(hs) + ')');
+    }
 
     /* The letters belong to the label now, and a visitor reads them in the plan,
        which draws the hang box by box. That a frame carries none is a DOM
@@ -1218,8 +1273,13 @@ await section('Piece click targets', async () => {
     check(where + ' of the piece opens Overview', await modalOpen(), 'modal did not open');
   }
   await closeModal();
+  /* The frame that opens the record, not the film above it: a project's first
+     frame is a player with a default cursor, and asking for `.piece[data-piece]`
+     would now read THAT frame's cursor and fail on the design. Awaited frames
+     are excluded too — a reserved frame is `cursor: default` on purpose, and
+     taking the first match in document order would fail on a correct wall. */
   check('a piece shows a pointer cursor',
-    (await evaluate(`getComputedStyle(document.querySelector('.piece[data-piece]')).cursor`)) === 'pointer');
+    (await evaluate(`getComputedStyle(document.querySelector('.piece[data-piece]:not(.piece--video):not(.piece--pending)')).cursor`)) === 'pointer');
 });
 
 /* -- 2. A piece is reachable and named by keyboard -------------------- */
@@ -1235,6 +1295,18 @@ await section('Piece keyboard access', async () => {
   await evaluate(`document.querySelector('.piece[data-project]').focus()`);
   await pressEnter();
   check('Enter on a focused piece opens Overview', await modalOpen(), 'modal did not open');
+  /* The film frame is the walk's other kind of control and it is not a button,
+     so it is not reached by the sweep above: a `<video controls>` outside the
+     tab order is a film a keyboard visitor cannot pause. */
+  await closeModal();
+  const film = await evaluate(`(() => {
+    const v = document.querySelector('.piece--video video');
+    return v ? { tabIndex: v.tabIndex, name: (v.getAttribute('aria-label') || '').trim() } : null;
+  })()`);
+  check('the film frame is reachable by keyboard',
+    film && film.tabIndex >= 0, JSON.stringify(film));
+  check('the film frame is named for assistive tech',
+    film && film.name.length > 0, JSON.stringify(film));
 });
 
 /* -- 3. A piece reads as a control ------------------------------------ */
@@ -1565,6 +1637,103 @@ await section('Page weight', async () => {
   console.log('  info  whole walk:   ' + sum(isVideo).toFixed(2) + ' MB video / ' + sum(() => true).toFixed(2) + ' MB total');
 });
 
+/* -- 9b. The previews: a project's film plays while its stand is in shot --
+   The one part of this design no unit suite can hold: the renderer suite runs
+   under a DOM stub with no media, no layout and no observer, so "the film
+   plays on the wall" is only ever true or false here. */
+await section('Previews', async () => {
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+  await sleep(1200);
+  const attrs = await evaluate(`(() => {
+    const vs = [...document.querySelectorAll('#strip .piece--video video')];
+    return {
+      projects: globalThis.PORTFOLIO.projects.length,
+      count: vs.length,
+      uncovered: vs.filter(v => !v.controls).length,
+      loud: vs.filter(v => !v.muted || !v.loop || !v.playsInline).length,
+      eager: vs.filter(v => v.getAttribute('preload') !== 'none').length,
+      posterless: vs.filter(v => !v.getAttribute('poster')).length,
+      playing: vs.filter(v => !v.paused).length
+    };
+  })()`);
+  check('every project hangs exactly one preview',
+    attrs.count === attrs.projects, attrs.count + ' previews for ' + attrs.projects + ' projects');
+  check('every preview can be paused, and is muted, looping and inline',
+    attrs.uncovered === 0 && attrs.loud === 0,
+    attrs.uncovered + ' with no controls, ' + attrs.loud + ' not muted/looping/inline');
+  check('no preview loads before the walk reaches it', attrs.eager === 0, attrs.eager + ' eager');
+  check('every preview hangs a poster', attrs.posterless === 0, attrs.posterless + ' without');
+  check('nothing plays while the walk is still in the About room',
+    attrs.playing === 0, attrs.playing + ' playing before the first stand was reached');
+
+  /* Centred on a project, its own stand is in shot and its film runs. */
+  await centreWork('.piece[data-project]');
+  await sleep(1200);
+  const here = await evaluate(`(() => {
+    const v = document.querySelector('#strip .piece--video video');
+    return { paused: v.paused, currentSrc: v.currentSrc ? 1 : 0, ready: v.readyState };
+  })()`);
+  check('the preview plays once its stand is in shot',
+    here.paused === false, JSON.stringify(here));
+
+  /* A dialog covers the stand it was opened from, and an occluded film is still
+     "intersecting" — the observer cannot see an overlay — so the dialog stops
+     it on the way in and resumes it on the way out. */
+  const point = await evaluate(`(() => {
+    const p = document.querySelector('.piece[data-project]');
+    const r = p.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  })()`);
+  await click(point.x, point.y);
+  const behind = await evaluate(`(() => {
+    const v = document.querySelector('#strip .piece--video video');
+    return { open: !!document.querySelector('.modal-overlay.active'), paused: v.paused };
+  })()`);
+  check('a preview stops while the dialog that covers it is open',
+    behind.open && behind.paused === true, JSON.stringify(behind));
+  await closeModal();
+  await sleep(700);
+  const resumed = await evaluate(`document.querySelector('#strip .piece--video video').paused`);
+  check('the preview resumes when that dialog closes', resumed === false, 'paused=' + resumed);
+
+  /* Walk on, and it stops: six films all running behind the visitor is the
+     fault this rule prevents. */
+  const first = await evaluate(`document.querySelector('#strip .piece--video video').getAttribute('poster')`);
+  await scrollWalk(2200);
+  await sleep(900);
+  const away = await evaluate(`(() => {
+    const v = [...document.querySelectorAll('#strip .piece--video video')]
+      .find(x => x.getAttribute('poster') === ${JSON.stringify(first)});
+    return v ? v.paused : null;
+  })()`);
+  check('the preview stops when the walk moves on', away === true, 'paused=' + away);
+
+  /* A pause the VISITOR made is theirs. The walk scrolling a stand out and back
+     must not undo it, and `pause()` here is the same event the control bar
+     fires — the distinction between a visitor's pause and the observer's own is
+     the whole reason `data-paused` exists. */
+  await centreWork('.piece[data-project]');
+  await sleep(900);
+  await evaluate(`(() => {
+    const v = [...document.querySelectorAll('#strip .piece--video video')]
+      .find(x => x.getAttribute('poster') === ${JSON.stringify(first)});
+    v.pause();
+  })()`);
+  await sleep(300);
+  await scrollWalk(-2400);
+  await sleep(400);
+  await scrollWalk(2400);
+  await sleep(1400);
+  const kept = await evaluate(`(() => {
+    const v = [...document.querySelectorAll('#strip .piece--video video')]
+      .find(x => x.getAttribute('poster') === ${JSON.stringify(first)});
+    return v ? { paused: v.paused, mark: v.hasAttribute('data-paused') } : null;
+  })()`);
+  check('a pause the visitor made survives walking away and back',
+    kept && kept.paused === true && kept.mark === true, JSON.stringify(kept));
+});
+
 /* -- 10. Reduced motion: every work fully lit, nothing autoplays ------ */
 await section('Reduced motion', async () => {
   await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
@@ -1648,7 +1817,10 @@ await section('Mobile (390x844)', async () => {
       }
       return { w: ownW, h: ownH };
     };
-    const elements = [...document.querySelectorAll('a[href], button, [data-gallery]')];
+    /* The sweep covers the walks' controls AND the new one: a project's first
+       frame is a video element with controls rather than a button, and a control
+       that is not in this list is a control nothing measures. */
+    const elements = [...document.querySelectorAll('a[href], button, [data-gallery], .piece--video video')];
     const pips = elements.filter(el => el.classList.contains('dock-link'));
     const small = elements.filter(el => {
       if (el.offsetWidth < 1 || el.offsetHeight < 1) return false;
@@ -2014,13 +2186,21 @@ await section('No piece hangs empty', async () => {
      placeholder, so a frame is never a conspicuous hole on a near-black
      wall. An awaited frame is not empty for want of a picture — it is a
      reserved place, and it is drawn as one — so only frames that can hold a
-     photograph are counted here. */
+     picture are counted here, and a project's first frame holds a FILM rather
+     than a photograph. */
   const empty = await evaluate(
     `[...document.querySelectorAll('.piece')]
-       .filter(w => !w.classList.contains('piece--pending') && !w.querySelector('img')).length`);
+       .filter(w => !w.classList.contains('piece--pending')
+                 && !w.querySelector('img, video')).length`);
   check('every frame that has a photograph renders it', empty === 0, empty + ' empty frames');
+  /* The film's frame draws its poster until it plays, so a preview with neither
+     a poster nor a decoded frame is a black rectangle hanging on the wall. */
+  const dark = await evaluate(
+    `[...document.querySelectorAll('.piece--video video')]
+       .filter(v => !v.getAttribute('poster') && !(v.readyState > 0 && v.videoWidth > 0)).length`);
+  check('every preview draws a poster or a decoded frame', dark === 0, dark + ' black frames');
   const awaited = await evaluate(
-    `[...document.querySelectorAll('.piece--pending')].filter(w => w.querySelector('img')).length`);
+    `[...document.querySelectorAll('.piece--pending')].filter(w => w.querySelector('img, video')).length`);
   check('no awaited frame loads a picture', awaited === 0, awaited + ' awaited frames draw an image');
   const broken = await evaluate(
     `[...document.querySelectorAll('.piece img')].filter(i => i.complete && i.naturalWidth === 0).length`);

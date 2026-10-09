@@ -47,10 +47,13 @@ nearest one — the anchors are the shortest path to the surrounding code.
 | Add per-photograph titles or captions | `js/data.js` | the record's `pieces:` array |
 | Bio, social links, news items | `js/data.js` | `bio: [`, `social: [`, `news: [` |
 | Which rooms exist, their order, their titles | `js/data.js` | `function deriveRooms(`, then `ROOM_TITLES`, `ROOM_ORDER` |
-| How many frames hang, and how they are arranged | `js/data.js` | `MIN_PIECES`, `MAX_PIECES`, `HANG_LAYOUTS` |
+| How many frames hang, and how they are arranged | `js/data.js` | `MIN_PIECES`, `MAX_PIECES`, `HANG_LAYOUTS` — three, in one stacked column |
+| Which three pieces a record hangs | `js/data.js` | `function groupPieces(`, `function projectPieces(`, `function posterFor(` |
+| A project's preview film | `js/main.js` + `css/styles.css` | `function initPreviews(`; `The film is a frame, not a control` |
+| The frame's one shape | `css/styles.css` | `--frame-ar:` — the token with its colon |
 | Which honours belong to a project | `js/data.js` | `function honoursSplit(`, and the `from: 'project` field on an honour |
 | An award's photographs, in the dialog | `js/data.js` | `function awardPhotos(` |
-| How a frame is sized — the band | `js/main.js` + `css/styles.css` | `function fitWall(`; `The wall: one budget` |
+| How a frame is sized — the band | `js/main.js` + `js/data.js` + `css/styles.css` | `function fitWall(`; `function bandFor(`; `The frame is one box` |
 | A single column's frame height | `css/styles.css` | `A column's one budget` |
 | The stand — the hang cell vs the label cell | `css/styles.css` | `The stand: the wall, and the label beside it`, `The hang cell` |
 | The legend under the hang — the catalogue | `js/main.js` + `css/styles.css` | `function renderLegend(`, `function renderCatalogue(`; `── The legend` |
@@ -76,13 +79,14 @@ thing. These are not synonyms:
 | **room** | One leg of the walk — Robotics, Applications, Leadership, Honours, About, Contact | `renderRooms` |
 | **gallery** | A room's row of stands, as wide as its own hang | `.groups` |
 | **stand** | The unit that hangs: **one record**, being a hang plus its legend plus its label. Not a *group* | `renderGroup`, `.group` |
-| **cluster** | The photographs of one stand | `renderCluster`, `.cluster` |
+| **cluster** | The three frames of one stand, stacked in one column | `renderCluster`, `.cluster` |
 | **hang cell** | The stand's LEFT cell — it holds the cluster and the legend under it. Named `.hang-cell`, NOT `.wall`, which is reserved for the forbidden mural layer | `.hang-cell` |
 | **legend** | The catalogue under the hang — one entry per photograph, in the hang cell | `renderLegend`, `.legend` |
 | **catalogue** | The legend's list of entries | `renderCatalogue`, `.cat` |
 | **label** | The stand's RIGHT cell — the record's own account, its awards, its team caption | `renderLabel`, `.label` |
-| **piece** | One framed photograph on the wall | `.piece` |
-| **lead** | The piece that opens the record when pressed | `.piece--lead` |
+| **piece** | One frame on the stand: a photograph, or a project's preview film | `.piece` |
+| **preview** | A project's film, in the stand's first frame. Plays while the stand is in shot, and it is a player rather than a control, so it does NOT open the record | `.piece--video`, `initPreviews` |
+| **lead** | The head frame of the stack — the film for a project, the first photograph otherwise | `.piece--lead` |
 | **awaited** | A reserved frame with no photograph behind it yet | `.piece--pending` |
 
 "A gallery is one screen tall" and "a stand is one screen wide" are both load
@@ -91,7 +95,7 @@ bearing, and confusing the two is how a layout edit goes wrong.
 ## Run and verify
 
 ```powershell
-npm test                            # all nine unit suites, in order
+npm test                            # all ten unit suites, in order
 node tests/renderer.test.mjs        # one suite, while iterating
 node tools/serve.mjs 3333           # static server for the browser checks
 ```
@@ -103,8 +107,9 @@ exits non-zero on any failure; `npm test` stops at the first failing file.
 | Suite | Covers |
 |---|---|
 | `tests/shell-check.mjs` | Markup structure, the exact palette, CSS brace/`var()` balance, and the hard constraints — statically |
-| `tests/derive-rooms.test.mjs` | Room derivation, group pieces, the honours partition |
-| `tests/hang.test.mjs` | The 3–6 photograph budget and the hang arrangements |
+| `tests/derive-rooms.test.mjs` | Room derivation, the pieces of a record, the honours partition |
+| `tests/hang.test.mjs` | The three-frame contract, the poster frame, and the one stacked arrangement |
+| `tests/band.test.mjs` | The band arithmetic — the wall, the cell and the tap floor, pinned to the pixel |
 | `tests/renderer.test.mjs` | The rendered DOM contract, under a DOM stub |
 | `tests/lights.test.mjs` · `light.test.mjs` | The lighting controller's contract and the falloff maths |
 | `tests/delegation.test.mjs` | Every control in the walk does something |
@@ -138,8 +143,19 @@ once:
   must still read as lit — not a void. `shell-check.mjs` asserts both halves.
 - **Tap targets are 44×44.** Frames are measured against their cell's padding
   box, not the stand: the cell is the box that clips.
-- **A stand hangs 3 to 6 frames.** Fewer hangs empty gilt frames; more hangs the
-  first six.
+- **A stand hangs exactly three frames, one size, stacked.** A project's first
+  frame is its preview film, then the overview photograph, then the team
+  photograph; every other record hangs its first three photographs and reserves
+  a frame for one that has not arrived. All three are the same box at
+  `--frame-ar` (16:9), cropped to fill, which is why a stand has one shape
+  whichever record it carries. `hang.test.mjs` and `renderer.test.mjs` assert the
+  count and the stack; `ux-check.mjs` asserts the box. A fourth photograph is
+  not dropped — it is not hung, and stays reachable in the record's dialog.
+- **A preview is a player, not a control.** A `<button>` may not contain a
+  control and a preview needs one, so the film frame does NOT open the record:
+  the two photograph frames under it are the way in. `ux-check.mjs` asserts the
+  film is muted, looping, inline, pausable, and that a pause the visitor made is
+  not undone by walking away and back.
 - **Siblings are nearer than categories.** Two stands of one room are separated by
   `--group-gap`, a frame: the smallest gap that still leaves no neighbour in shot
   when the walk parks, derived from `(100vw − stand) / 2` and floored at a
@@ -177,8 +193,11 @@ once:
   lines at a fractional device pixel ratio.
 - **No native CSS scroll-snap.** It re-snaps when the position is set
   programmatically and fights Lenis.
-- **`--band-h`, `--frame-h`, `--max-panel-h` and `--label-w` are retired**, with
-  the stacked stand they described. Only comments name them now.
+- **`--band-h`, `--frame-h`, `--max-panel-h`, `--panel-h` and `--label-w` are
+  retired**, with the stacked stand they described. Only comments and the probe
+  docs name them now — no stylesheet rule declares them, and a probe that reads
+  one reports the empty string. The live pair is `--frame-ar` (the shape of every
+  frame) and `--wall-h` (the band its column divides, written by `fitWall`).
 - **Everything is `border-radius: 0`.** There is no radius token.
 
 ## Gotchas
