@@ -147,10 +147,13 @@ ok('modal stays a child of .content-layer',
 ok('the walk is focusable', /<main[^>]*id="hall"[^>]*tabindex="0"/.test(html),
   '#hall has no tabindex="0"');
 
-/* ---- HTML: script order — data, vendored, then main ---- */
+/* ---- HTML: script order — data, vendored, then main ----
+   Lenis is the only vendored script. `lenis-snap.min.js` was the second, and it
+   is gone: the walk's snap went with it, so an entry reappearing here means a
+   file that does not exist is being loaded. */
 const order = [...html.matchAll(/<script src="([^"]+)"/g)].map(x => x[1]);
 ok('script order is data → vendor → main',
-  JSON.stringify(order) === JSON.stringify(['js/data.js', 'js/vendor/lenis.min.js', 'js/vendor/lenis-snap.min.js', 'js/main.js']),
+  JSON.stringify(order) === JSON.stringify(['js/data.js', 'js/vendor/lenis.min.js', 'js/main.js']),
   order.join(' → '));
 
 /* ---- CSS: braces balance ---- */
@@ -604,29 +607,44 @@ ok('--lit is written only to work elements',
   !/(strip|hall|documentElement|body)\.style\.setProperty\('--lit'/.test(main),
   'a subtree root receives --lit');
 
-/* ---- JS: the walk's configuration, against the spec §5 block ---- */
+/* ---- JS: the walk's configuration ----
+   Against the spec §5 block, minus the four `Snap` options it also listed. The
+   snap is gone (see the guards below), so those four assertions would be asking
+   for a plugin that no longer exists. */
 const walkRequired = [
   [/orientation:\s*'horizontal'/, "orientation: 'horizontal'"],
   [/lerp:\s*0\.1\b/, 'lerp: 0.1'],
   [/autoRaf:\s*true/, 'autoRaf: true'],
   [/anchors:\s*true/, 'anchors: true — without it in-page links stop working'],
   [/prevent:[\s\S]{0,120}closest\('\.modal-overlay'\)/, "prevent → closest('.modal-overlay')"],
-  [/new Snap\(lenis,\s*\{/, 'new Snap(lenis, …)'],
-  [/type:\s*'proximity'/, "type: 'proximity'"],
-  [/distanceThreshold:\s*'35%'/, "distanceThreshold: '35%'"],
-  [/debounce:\s*150\b/, 'debounce: 150'],
   [/wrapper:\s*hall/, 'wrapper: hall'],
   [/content:\s*strip/, 'content: strip'],
 ];
 for (const [re, label] of walkRequired) ok('walk config: ' + label, re.test(main), 'not found');
 
 ok('walk is exposed as Site.walk', /Site\.walk\s*=\s*initWalk\(\)/.test(main), 'not wired into init()');
-ok('walk exposes goToRoom/stop/start/resize/registerTargets',
-  ['goToRoom', 'registerTargets', 'resize', 'stop', 'start', 'lenis', 'snap'].every(k => new RegExp('\\b' + k + ':').test(main)),
+ok('walk exposes goToRoom/stop/start/resize',
+  ['goToRoom', 'resize', 'stop', 'start', 'lenis'].every(k => new RegExp('\\b' + k + ':').test(main)),
   'missing a key');
-ok('snap targets come from [data-snap]', /querySelectorAll\('\[data-snap\]'\)/.test(main), 'not found');
-ok('snap targets are registered on strip mutation',
-  /MutationObserver[\s\S]{0,160}childList: true/.test(main), 'not found');
+
+/* ---- JS: the snap is gone, and it stays gone ----
+   The walk parked, first on each room's centre and then on each stand's, through
+   the vendored `lenis-snap` plugin. All of it was removed in one change: the
+   plugin file and its script tag, `data-snap` on the stands and on the About and
+   Contact rooms, the walk's `snap` key, and the MutationObserver that existed
+   only to register the targets as the rooms appeared. These four are the guard —
+   "no snap" is a decision, and a decision with no test behind it comes back.
+
+   They read CODE with the comments stripped, and that is not fussiness: main.js
+   records the removal in prose, and the note says "no `data-snap` here", so a
+   raw scan of the file finds the attribute in the sentence denying it. The
+   `mainCode` defined near the top of this file is that stripped source. */
+ok('no Snap is constructed', !/new Snap\b/.test(mainCode), 'initWalk builds a Snap again');
+ok('the deleted snap plugin is not loaded',
+  !/lenis-snap/.test(withoutComments), 'index.html loads a script whose file is gone');
+ok('nothing is marked as a snap target', !/data-snap/.test(mainCode), 'a data-snap attribute survives');
+ok('the walk no longer observes #strip',
+  !/MutationObserver/.test(mainCode), 'the observer that only fed the snap is back');
 
 /* ---- JS: no delegated handler may be bound to the deleted hosts ---- */
 ok('delegation is bound to document, not to a deleted host',

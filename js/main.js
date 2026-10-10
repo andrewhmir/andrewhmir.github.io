@@ -812,8 +812,8 @@
      ancestor, which is .room (it is position: relative), not the strip. Reading
      it directly compares a room-local number against a viewport-global one, so
      each room ends up lighting whichever of its works is furthest right, and
-     works fade again as you walk past them. offsetParent is walked instead, the
-     way lenis-snap itself does. */
+     works fade again as you walk past them. offsetParent is walked instead,
+     accumulating each step's own offsetLeft until it reaches the body. */
   function pageX(el) {
     var x = 0;
     for (var n = el; n; n = n.offsetParent) {
@@ -828,12 +828,18 @@
   }
 
   /* ════════════════════════════════════════════════════════════════════
-     THE WALK — Lenis smooth horizontal scrolling + proximity snap
+     THE WALK — Lenis smooth horizontal scrolling, and no snap
      ════════════════════════════════════════════════════════════════════ */
 
-  /* Native CSS scroll-snap is deliberately off: it re-snaps whenever the
-     scroll position is set programmatically, so it fights every Lenis
-     animation. lenis/snap replaces it and handles wheel, touch and keys. */
+  /* The walk is FREE. Lenis smooths the journey and nothing latches it onto a
+     stand: it used to park on each room's centre and then on each stand's,
+     through the vendored `lenis/snap` plugin, and both are gone — the plugin
+     with them. Whoever stops reading mid-stand stays where they stopped.
+
+     Native CSS scroll-snap stays off, and that half is NOT optional: a CSS snap
+     container re-snaps whenever the scroll position is set programmatically, so
+     it fights every animation Lenis performs — including the dock's own
+     goToRoom(). See the note on #hall in the stylesheet. */
   function initWalk() {
     var hall = document.getElementById('hall');
     var strip = document.getElementById('strip');
@@ -851,32 +857,6 @@
       }
     });
 
-    var snap = null;
-    if (typeof Snap !== 'undefined') {
-      snap = new Snap(lenis, {
-        type: 'proximity',
-        distanceThreshold: '35%',
-        debounce: 150        /* the 500ms default feels sluggish */
-      });
-    }
-
-    function registerTargets() {
-      if (!snap) return;
-      snap.stop();
-      var els = strip.querySelectorAll('[data-snap]');
-      Array.prototype.forEach.call(els, function (el) {
-        snap.addElement(el, { align: 'center' });
-      });
-      snap.start();
-    }
-
-    /* Rooms are rendered after this runs, so register snap targets when they
-       appear rather than depending on a call-order contract with the renderer. */
-    if ('MutationObserver' in window) {
-      var mo = new MutationObserver(function () { registerTargets(); });
-      mo.observe(strip, { childList: true });
-    }
-
     function goToRoom(key) {
       var room = strip.querySelector('[data-room="' + key + '"]');
       if (room) lenis.scrollTo(room, { offset: 0 });
@@ -884,12 +864,10 @@
 
     return {
       lenis: lenis,
-      snap: snap,
       goToRoom: goToRoom,
-      registerTargets: registerTargets,
-      resize: function () { lenis.resize(); if (snap) snap.resize(); },
-      stop: function () { lenis.stop(); if (snap) snap.stop(); },
-      start: function () { lenis.start(); if (snap) snap.start(); }
+      resize: function () { lenis.resize(); },
+      stop: function () { lenis.stop(); },
+      start: function () { lenis.start(); }
     };
   }
 
@@ -1186,19 +1164,18 @@
     /* The arrangement is dealt from the entry key, so two neighbouring groups
        almost never hang the same way and neither of them changes on reload. */
     var layout = Site.hangLayout(entryKey, pieces.length);
-    /* The stand is the snap target, not the room. A room holds two or three
-       projects, and parking a room's centre leaves the visitor between two
-       stands: the walk still snaps to the room for About and Contact, which
-       are single compositions, but a project room's own data-snap only ever
-       fired once per room before this.
+    /* No `data-snap` here, and none anywhere: the walk is free. Each stand used
+       to carry one so the walk parked on a project's centre, and the About and
+       Contact rooms carried one each. All of it went with the plugin — a snap
+       decides where the visitor stops, and this walk is the visitor's to stop
+       in. Lenis alone smooths it now; see initWalk.
 
-       `data-snap` goes AFTER the entry key rather than beside `data-group`,
-       because that is where the renderer suite reads the group's own kind and
-       key from: it matches `data-group data-kind="…" data-entry="…"` as one
-       run, so an attribute inserted in the middle of it reads as a group that
-       is not there. */
+       The attribute ORDER below is load-bearing in its own right: the renderer
+       suite reads a group's kind and key by matching
+       `data-group data-kind="…" data-entry="…"` as one run, so a new attribute
+       goes AFTER the entry key, never between them. */
     return '<div class="group" data-group data-kind="' + esc(kind) + '"'
-      + ' data-entry="' + esc(entryKey) + '" data-snap>'
+      + ' data-entry="' + esc(entryKey) + '">'
       /* ── The stand's first cell is the HANG CELL, and it holds two blocks ──
          The hang, and the legend that names it. They are one cell because they
          are one thing looked at together: a frame is a photograph and the entry
@@ -1625,7 +1602,7 @@
        unstyled — and because neither element ever received a `--lit` write, the
        brightness they still read left the portrait permanently at 60% while
        every other work lit up. */
-    html += '<section class="room" data-room="About" data-snap tabindex="-1">'
+    html += '<section class="room" data-room="About" tabindex="-1">'
       + '<h2 class="room-title"><span class="t">About</span>'
       + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
       + '<div class="hang"><figure class="piece piece--portrait">'
@@ -1667,7 +1644,7 @@
     html += renderHonoursRoom();
 
     /* Contact */
-    html += '<section class="room" data-room="Contact" data-snap tabindex="-1">'
+    html += '<section class="room" data-room="Contact" tabindex="-1">'
       + '<h2 class="room-title"><span class="t">Contact</span>'
       + '<span class="sub">Thanks for walking the collection</span></h2>'
       + '<p class="note">Let&rsquo;s build something together.</p>'
@@ -1940,8 +1917,9 @@
      ════════════════════════════════════════════════════════════════════ */
 
   function init() {
-    /* The walk first: the renderer below fills #strip, and the MutationObserver
-       in initWalk registers the snap targets as the rooms appear.
+    /* The walk first, so its Lenis instance exists before anything measure-
+       dependent runs. It no longer needs to observe #strip: the observer that
+       registered snap targets as the rooms appeared went with the snap.
        The rooms are built from PORTFOLIO, so the gallery cannot drift from the
        data; the directory is the same list. */
     Site.walk = initWalk();

@@ -66,7 +66,7 @@ nearest one — the anchors are the shortest path to the surrounding code.
 | The palette and text contrast | `css/styles.css` | `1. Custom Properties` |
 | The lighting as a work arrives | `js/main.js` | `initLights`, or the banner `LIGHTING —` |
 | The dialog, its focus trap, the carousel | `js/main.js` + `css/styles.css` | `openModal`, `trapFocus`; the banner `MODAL (single` |
-| The horizontal walk and its snap | `js/main.js` | `initWalk`, or the banner `THE WALK —` |
+| The horizontal walk — free scrolling, and no snap | `js/main.js` | `initWalk`, or the banner `THE WALK —` |
 
 ## Vocabulary — the code names things precisely
 
@@ -158,8 +158,10 @@ once:
   not undone by walking away and back.
 - **Siblings are nearer than categories.** Two stands of one room are separated by
   `--group-gap`, a frame: the smallest gap that still leaves no neighbour in shot
-  when the walk parks, derived from `(100vw − stand) / 2` and floored at a
-  quarter of a stand. Two rooms are separated by `--room-gap`, a threshold spent
+  with a stand centred on the screen — the frame the deleted snap used to park
+  on, and the one a hand scroll reads a stand in — derived from
+  `(100vw − stand) / 2` and floored at a quarter of a stand. Two rooms are
+  separated by `--room-gap`, a threshold spent
   as a room's own **right padding** — the room being left (`.room:not(:last-child)`)
   — and never as a gap in `#strip` nor as the arriving room's left padding: a
   flex gap is bare hall, which renders 1.41× brighter than the rooms it separates
@@ -192,8 +194,19 @@ once:
   the fault, not the fix.
 - **No sub-pixel dot grid.** A dot under one pixel quantises into hard vertical
   lines at a fractional device pixel ratio.
-- **No native CSS scroll-snap.** It re-snaps when the position is set
-  programmatically and fights Lenis.
+- **The walk is free, and no native CSS scroll-snap may come back.** Lenis
+  smooths the journey and nothing latches it onto a stand: the JS snap
+  (`lenis/snap`, `data-snap`, the walk's `snap` key and its `MutationObserver`)
+  was removed whole, so `new Snap(…)` or a `data-snap` attribute is a
+  regression, and `shell-check.mjs` fails on both. `ux-check.mjs` asserts the
+  behaviour behind it — a real 200px **wheel** gesture from a stand's centre
+  leaves the walk 200px from the nearest centre, where the tree that had the
+  snap moved 0px and stayed on the centre. Note that the snap listened on
+  Lenis's `virtual-scroll` event, so a programmatic `scrollLeft` write — what
+  `scrollWalk` does — never exercised it and cannot detect its return. Native
+  `scroll-snap` stays off for the other half of the reason it always did — a CSS
+  snap container re-snaps when the position is set programmatically and fights
+  Lenis, the dock's `goToRoom()` included.
 - **`--band-h`, `--frame-h`, `--max-panel-h`, `--panel-h` and `--label-w` are
   retired**, with the stacked stand they described. Only comments and the probe
   docs name them now — no stylesheet rule declares them, and a probe that reads

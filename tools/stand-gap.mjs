@@ -43,9 +43,10 @@ await send('Runtime.evaluate', {
   })()`, awaitPromise: true, returnByValue: true
 }, sessionId);
 
-/* A stand is centred in the screen the way the walk parks it — lenis-snap
-   aligns a stand's centre with the viewport's — so "what is beside it" is
-   measured from the stand's centre, not from its left edge. */
+/* A stand is measured where a visitor reads it: its centre on the screen's
+   centre, which is the frame the snap used to settle on and the one a hand
+   scroll lands on. So "what is beside it" is measured from the stand's centre,
+   not from its left edge. */
 const expr = `(() => {
   const out = [];
   document.querySelectorAll('#strip .room').forEach(room => {

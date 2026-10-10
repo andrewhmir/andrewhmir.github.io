@@ -1682,9 +1682,11 @@ button.record-item {
 
 /* ==========================================================================
    20. Hall — the horizontal walk
-   One axis only. Native CSS scroll-snap stays off: a CSS snap container
-   re-snaps whenever the scroll position is set programmatically, so it fights
-   every Lenis animation. lenis/snap replaces it.
+   One axis only. Native CSS scroll-snap stays off, and that is not the same
+   statement as "the walk does not snap": the walk is free — the JS snap that
+   used to park it was removed, plugin and all — but a CSS snap container
+   re-snaps whenever the scroll position is set programmatically, so it would
+   fight every Lenis animation, including the dock's own goToRoom().
    ========================================================================== */
 #hall {
   overflow-x: auto;

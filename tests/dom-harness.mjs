@@ -258,7 +258,6 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   stripEl.querySelectorAll = (sel) => {
     if (sel === '[data-piece]' || sel === '[data-work]') return workEls;
     if (sel === '[data-room]') return roomEls;
-    if (sel === '[data-snap]') return roomEls;   /* rooms carry data-snap */
     return [];
   };
   /* A room's title, as renderRooms emits it. */
@@ -319,12 +318,11 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
   globalThis.requestAnimationFrame = globalThis.window.requestAnimationFrame;
   globalThis.cancelAnimationFrame = globalThis.window.cancelAnimationFrame;
 
-  /* Stubbed so the walk module runs without the vendored bundles. */
+  /* Stubbed so the walk module runs without the vendored bundle. Lenis is the
+     only one it needs now: the `Snap` stub that sat beside it went with the
+     snap, and a `Snap` global here would hide a regression that reached for it. */
   globalThis.Lenis = function Lenis() {
     return { scrollTo() {}, resize() {}, stop() {}, start() {}, raf() {} };
-  };
-  globalThis.Snap = function Snap() {
-    return { addElement() {}, resize() {}, stop() {}, start() {} };
   };
 
   /* data.js first, exactly as index.html loads it before main.js. */

@@ -122,6 +122,20 @@ const scrollWalk = async (px) => {
   })()`);
   await sleep(700);
 };
+/* A REAL wheel gesture, over CDP — the input path a visitor actually uses.
+   `scrollWalk` above writes `scrollLeft` directly, and the two are NOT the same
+   thing: Lenis emits its `virtual-scroll` event only for real input, and
+   `lenis/snap` hooked exactly that event — `this.lenis.on('virtual-scroll', …)`
+   — so a programmatic write was never a snap and never tested one. Measured, not
+   assumed: a 200px move written straight into `scrollLeft` on the tree that
+   still had the snap left the walk exactly where it was written. Anything that
+   asks what a visitor's GESTURE does has to come through here. */
+const wheelWalk = async (deltaY) => {
+  await cdp.send('Input.dispatchMouseEvent', {
+    type: 'mouseWheel', x: 720, y: 400, buttons: 0, deltaX: 0, deltaY
+  });
+  await sleep(1900);   /* its 150ms debounce + its animation + Lenis's lerp */
+};
 /* Centre a work (or the first one matching a selector) on the hall's axis. */
 const centreWork = async (selector) => {
   await evaluate(`(() => {
@@ -1114,10 +1128,13 @@ await section('The deepest hang stays inside the room', async () => {
 });
 
 /* -- One stand per screen ------------------------------------------------
-   The property the wall is hung for: when the walk parks on a stand, no other
-   stand is in shot. lenis-snap aligns a stand's CENTRE with the viewport's
-   (see initWalk), so "what is beside it" is measured from the stand's centre
-   — not from its left edge, which is what a naive check would measure and
+   The property the wall is hung for: a stand centred on the screen has no other
+   stand in shot. The walk no longer parks itself — the snap that used to centre
+   a stand went (see initWalk) — so a stand's centre is now the measuring
+   convention rather than something the walk does on its own, and it is exactly
+   the frame a visitor gets by scrolling a stand in by hand or following the
+   dock. "What is beside it" is therefore measured from the stand's CENTRE —
+   not from its left edge, which is what a naive check would measure and
    would pass on a stand that is mostly off screen. */
 await section('One stand per screen', async () => {
   for (const [w, h] of [[1440, 900], [1536, 864], [1280, 704]]) {
@@ -1860,13 +1877,70 @@ await section('The walk is horizontal', async () => {
   check('it never scrolls vertically', (await hallScrollTop()) === 0);
 });
 
-/* -- 13. Snap settles on a work --------------------------------------- */
-await section('Snap settles on a work', async () => {
+/* -- The walk comes to rest -------------------------------------------- */
+await section('The walk comes to rest when the visitor stops', async () => {
+  /* This one moves the walk by writing `scrollLeft` (see `scrollWalk`), which is
+     the one path the deleted snap never handled, so it says nothing about
+     snapping either way — the section below is the one that does. What this asks
+     is whether Lenis's own lerp brings the walk to a halt rather than leaving it
+     drifting, because everything that reads the walk's position — the dock's
+     progress bar, the room heading's pin, the lighting — is only settled once it
+     is. */
   await scrollWalk(430);
   const a = await hallScrollLeft();
   await sleep(900);
   const b = await hallScrollLeft();
   check('the walk comes to rest', Math.abs(a - b) < 2, `still moving: ${a} -> ${b}`);
+});
+
+/* -- The walk keeps the position the visitor chose ----------------------
+   This is the check removing the snap is actually worth, and it is NOT the one
+   above: "it comes to rest" passes either way. A stand is centred, the walk is
+   then wheeled 200px by a real gesture — the small correction a visitor makes
+   while reading — and it has to stay where the gesture left it.
+
+   Measured on both trees at 1440x900, and the two lines are what this asserts:
+   with `lenis/snap` at HEAD the walk moved 0px and settled 0px from the stand's
+   centre — a 200px wheel inside its `distanceThreshold: '35%'` (504px here) was
+   pulled straight back; with the snap removed it moved 200px and settled 200px
+   from the nearest centre. So this check fails on the tree that had the snap,
+   which is the only thing that makes it worth having. */
+await section('The walk keeps the position the visitor chose', async () => {
+  await setViewport(1440, 900, false);
+  await goto(BASE);
+  const parked = await evaluate(`(async () => {
+    const h = document.getElementById('hall');
+    const g = document.querySelector('#strip .group');
+    if (!g) return null;
+    const hr = h.getBoundingClientRect(), gr = g.getBoundingClientRect();
+    h.scrollLeft += (gr.left + gr.width / 2) - (hr.left + h.clientWidth / 2);
+    await new Promise(r => setTimeout(r, 1200));   /* let Lenis finish arriving */
+    return h.scrollLeft;
+  })()`);
+  check('a stand can be centred to measure from', parked !== null, 'no .group in the strip');
+  if (parked === null) return;
+
+  await wheelWalk(200);
+
+  /* How far the walk ended from the nearest stand centre, in the same frame as
+     `scrollLeft`: each stand's centred scroll position, against where it is. */
+  const out = await evaluate(`(() => {
+    const h = document.getElementById('hall');
+    const hr = h.getBoundingClientRect();
+    const centres = [...document.querySelectorAll('#strip .group')].map(g => {
+      const r = g.getBoundingClientRect();
+      return h.scrollLeft + (r.left + r.width / 2) - (hr.left + h.clientWidth / 2);
+    });
+    const after = h.scrollLeft;
+    return { after, nearest: Math.round(Math.min(...centres.map(c => Math.abs(after - c)))) };
+  })()`);
+
+  const moved = Math.round(out.after - parked);
+  check('the wheel gesture moves the walk', moved >= 100,
+        `moved ${moved}px of the 200px wheeled`);
+  check('the walk holds where the gesture left it, not at a stand centre',
+        out.nearest > 40,
+        `${out.nearest}px from the nearest stand centre — something snapped it back`);
 });
 
 /* -- The dock, and the heading that names the walk --------------------- */
@@ -2102,7 +2176,7 @@ await section('The walk scrolls without a native scrollbar', async () => {
      section's two checks and the mobile section's three fail on roughly one run
      in two — measured on the same tree: one run 137 passed / 0 failed, the next
      135 / 2 with `the arrow keys move the walk back -> 40 -> 40`. The walk had
-     moved once and then held, because Lenis's snap was still animating from the
+     moved once and then held, because Lenis was still animating from the
      ArrowRight above and swallowed the ArrowLeft. Moving out and back are two
      presses, so they are two journeys, and each needs the walk to have arrived
      before the next key is sent. The note above this block already records the

@@ -65,8 +65,9 @@
     </nav>
 
     <!-- The walk. Nine rooms sit side by side in one strip; Lenis smooths the
-         journey and lenis/snap settles it. Rooms are rendered by JS from
-         PORTFOLIO + Site.deriveRooms + Site.honoursSplit.
+         journey, and nothing latches it onto a stand — the snap this comment
+         used to promise was removed, plugin and all. Rooms are rendered by JS
+         from PORTFOLIO + Site.deriveRooms + Site.honoursSplit.
 
          The mural is this hall's own background, with
          `background-attachment: local` so the browser carries it with the
@@ -122,9 +123,10 @@
   <!-- Data -->
   <script src="js/data.js"></script>
 
-  <!-- Vendored: Lenis 1.3.26 (MIT). Provenance and pinned hashes: js/vendor/README.md -->
+  <!-- Vendored: Lenis 1.3.26 (MIT). Provenance and pinned hashes: js/vendor/README.md
+       Lenis is the only vendored script: `lenis-snap` used to sit here, and the
+       walk's snap went with it. -->
   <script src="js/vendor/lenis.min.js"></script>
-  <script src="js/vendor/lenis-snap.min.js"></script>
 
   <!-- Core Script -->
   <script src="js/main.js"></script>

@@ -11,15 +11,14 @@ Do not edit these files. They are copied verbatim from published packages.
 | File | Bytes | SHA-256 (first 16) |
 |---|---|---|
 | `lenis.min.js` | 18722 | `53195c9797e7ce7b` |
-| `lenis-snap.min.js` | 5844 | `510e75108ec32d5f` |
 | `lenis.css` | 513 | `2f668ae84a668327` |
 
-Both scripts are classic (IIFE) builds: `lenis.min.js` sets `globalThis.Lenis`,
-`lenis-snap.min.js` sets `globalThis.Snap`.
+`lenis.min.js` is a classic (IIFE) build: it sets `globalThis.Lenis`. It is the
+site's only vendored script. `lenis-snap.min.js` (5844 bytes,
+`510e75108ec32d5f`) sat beside it and set `globalThis.Snap`; it was deleted when
+the walk's snap was removed, and `js/main.js` no longer constructs `Snap`.
 
 ## Upgrading
 
 Re-run the download, update the sizes and hashes above, then re-run
-`tools/ux-check.mjs`. `lenis-snap` switching on `isHorizontal` is load-bearing
-for this project — confirm it still reads `isHorizontal` before accepting a
-newer build.
+`tools/ux-check.mjs`.

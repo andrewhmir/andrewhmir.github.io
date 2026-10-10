@@ -181,13 +181,12 @@ globalThis.cancelAnimationFrame = globalThis.window.cancelAnimationFrame;
 /* navigator already exists on Node 22+ and is getter-only; its clipboard is
    absent, which is the path copyToClipboard already falls back from. */
 
-/* Lenis and Snap are stubbed so the walk module runs without the vendored
-   bundles; this file tests the renderer, not the scroll engine. */
+/* Lenis is stubbed so the walk module runs without the vendored bundle; this
+   file tests the renderer, not the scroll engine. Only Lenis — the `Snap` stub
+   went with the snap, and stubbing it here would keep a `new Snap(...)` from
+   failing the way it should. */
 globalThis.Lenis = function Lenis() {
   return { scrollTo() {}, resize() {}, stop() {}, start() {}, raf() {} };
-};
-globalThis.Snap = function Snap() {
-  return { addElement() {}, resize() {}, stop() {}, start() {} };
 };
 
 /* data.js first, exactly as index.html loads it before main.js. */
@@ -335,14 +334,11 @@ check('every record hangs as exactly one group', () => {
     'two groups share an entry key');
 });
 
-check('the About and Contact rooms are snap targets themselves', () => {
-  assert.ok(/data-room="About" data-snap/.test(strip), 'About is not a snap target');
-  assert.ok(/data-room="Contact" data-snap/.test(strip), 'Contact is not a snap target');
-});
-
-check('work rooms are not snap targets', () => {
-  assert.ok(!/data-room="Robotics" data-snap/.test(strip),
-    'a work room carries data-snap, which would fight its groups');
+check('nothing the renderer emits is a snap target', () => {
+  /* The walk used to park: on the About and Contact rooms' own centres, and on
+     each stand's. Both went, and this is the assertion that says so where it can
+     be seen — in the rendered markup, not only in the source. */
+  assert.ok(!/data-snap/.test(strip), 'the walk still has a snap target to park on');
 });
 
 check('every room that hangs groups holds them in one row', () => {
