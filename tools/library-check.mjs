@@ -167,12 +167,15 @@ function v1() {
     if (!exists(link)) throw new Error(`README.md links ${link}, which does not exist`);
   }
   // Every cross-link between library files must resolve too, not just README's.
+  // A heading fragment (`dialog.md#traps`) is part of the URL, not the path.
   for (const file of libraryFiles()) {
     const dir = path.posix.dirname(clean(file));
     for (const m of read(file).matchAll(/\]\(([^)\s]+)\)/g)) {
       const target = m[1];
       if (/^(https?:|#|mailto:)/.test(target)) continue;
-      const resolved = clean(path.posix.join(dir, target));
+      const bare = target.split('#')[0];
+      if (!bare) continue;
+      const resolved = clean(path.posix.join(dir, bare));
       if (!exists(resolved)) throw new Error(`${file}: link ${target} does not resolve to ${resolved}`);
     }
   }
@@ -245,7 +248,7 @@ function v4(pageOnly) {
           const t = token.trim();
           if (!t) continue;
           try { resolveDataToken(P, S, t); }
-          catch (e) { throw new Error(`${file}: ${e.message}`); }
+          catch (e) { throw new Error(`${file}: Data path "${t}" — ${e.message} (source: js/data.js)`); }
         }
       }
     }
@@ -258,14 +261,13 @@ function v5() {
   // Strip comments and url(...) payloads: a stylesheet comment may name retired
   // classes and an image URL ends in .jpg, neither of which is a class selector.
   const css = stripCssComments(read('css/styles.css')).replace(/url\([^)]*\)/g, 'url()');
-  const declared = new Set([...css.matchAll(/\.([a-z][a-z0-9-]{2,})/g)].map((m) => m[1]));
+  const declared = new Set([...css.matchAll(/\.([a-z][a-z0-9_-]{2,})/g)].map((m) => m[1]));
   const docs = libraryText();
   const missing = [...declared].filter((c) => !mentions(docs, '.' + c)).sort();
-  if (missing.length) throw new Error(`CSS classes documented nowhere: ${missing.join(' ')}`);
+  if (missing.length) throw new Error(`CSS classes declared in css/styles.css but documented nowhere: ${missing.join(' ')}`);
 
   if (exists(LIB + '/selectors.md')) {
     const runtime = RUNTIME_FILES.map((f) => read(f)).join('\n');
-    const emitted = new Set([...runtime.matchAll(/\b([a-z][a-z0-9]*--?[a-z0-9_-]*)\b/g)].map((m) => m[1]));
     for (const line of linesOf(LIB + '/selectors.md')) {
       const t = line.trim();
       if (!t.startsWith('|')) continue;
@@ -284,7 +286,6 @@ function v5() {
         }
       }
     }
-    void emitted;
   }
 }
 
@@ -316,14 +317,19 @@ function v6() {
   const classAttr = /class="([^"'<>]*)/g;
   for (const m of html.matchAll(classAttr)) addClasses(m[1]);
   for (const m of js.matchAll(classAttr)) addClasses(m[1]);
+  // A ternary modifier lives outside the class="..." literal, e.g.
+  // class="copy' + (o.center ? ' copy--center' : ''); scan BEM tokens directly.
+  // The lookbehind stops `honour-row__year` from also yielding `row__year`.
+  const bem = /(?<![a-z0-9_-])([a-z][a-z0-9]*(?:--[a-z0-9-]+|__[a-z0-9-]+))(?![a-z0-9_-])/g;
+  for (const m of (js + '\n' + html).matchAll(bem)) emitted.add(m[1]);
   for (const m of js.matchAll(/className\s*=\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/cls:\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/classList\.(?:add|remove|toggle)\('([^']+)'/g)) addClasses(m[1]);
 
-  const missIds = [...ids].filter((id) => !docs.includes('#' + id)).sort();
+  const missIds = [...ids].filter((id) => !mentions(docs, '#' + id)).sort();
   if (missIds.length) throw new Error(`shell ids documented nowhere: ${missIds.map((i) => '#' + i).join(' ')}`);
 
-  const missAttrs = [...attrs].filter((a) => !docs.includes(a)).sort();
+  const missAttrs = [...attrs].filter((a) => !mentions(docs, a)).sort();
   if (missAttrs.length) throw new Error(`data attributes documented nowhere: ${missAttrs.join(' ')}`);
 
   const missClasses = [...emitted].filter((c) => !mentions(docs, '.' + c)).sort();
@@ -348,7 +354,9 @@ function v7() {
     for (const rec of records) for (const k of Object.keys(rec || {})) union.add(k);
     const missing = [...union].filter((k) =>
       ![...tokens].some((t) => t === coll + '[]' + '.' + k || t.startsWith(coll + '[]' + '.' + k + '.')));
-    if (missing.length) throw new Error(`${coll} fields missing from data.md: ${missing.join(' ')}`);
+    if (missing.length) {
+      throw new Error(`${coll}: data.md has no row for ${missing.map((k) => '`' + coll + '[].' + k + '`').join(' ')}`);
+    }
   }
 
   // Every data-like token in data.md must resolve (invented fields fail).
@@ -372,6 +380,7 @@ function v7() {
     if (!cells.length) continue;
     const hm = (cells[0] || '').match(/`Site\.([A-Za-z0-9_]+)`/);
     if (!hm) continue;
+    if (classified.has(hm[1])) throw new Error(`data.md: Site.${hm[1]} is classified more than once`);
     const flag = (cells[1] || '').toLowerCase();
     if (flag !== 'yes' && flag !== 'no') {
       throw new Error(`data.md: Site.${hm[1]} must be classified "yes" or "no" (found "${cells[1] || ''}")`);
@@ -395,6 +404,9 @@ function v8() {
   if (!read('AGENTS.md').includes('docs/library/README.md')) {
     throw new Error('AGENTS.md does not point at docs/library/README.md');
   }
+  const hasDocsRow = read('AGENTS.md').split(/\r?\n/)
+    .some((l) => l.trim().startsWith('|') && l.includes('docs/library/README.md'));
+  if (!hasDocsRow) throw new Error('AGENTS.md Docs map has no row pointing at docs/library/README.md');
   if (!read('tools/README.md').includes('library-check.mjs')) {
     throw new Error('tools/README.md does not list library-check.mjs');
   }
@@ -406,7 +418,7 @@ function v9(pageOnly) {
   requirePages(pageOnly);
   const files = pageOnly ? [clean(pageOnly)] : libraryFiles();
   for (const file of files) {
-    const m = read(file).match(/[\w./-]+\.(?:js|css|html|mjs):\d+/);
+    const m = read(file).match(/[\w./\\-]+\.(?:js|css|html|mjs):\d+/);
     if (m) throw new Error(`${file}: cites a line number ("${m[0]}") — use a grep anchor instead`);
   }
 }
@@ -414,9 +426,10 @@ function v9(pageOnly) {
 /* ── V10: cited files exist ────────────────────────────────────────── */
 
 function v10() {
-  const text = libraryText();
-  for (const m of text.matchAll(/\b(?:tests|tools)\/[A-Za-z0-9_.-]+\.(?:mjs|js)\b/g)) {
-    if (!exists(m[0])) throw new Error(`the library cites ${m[0]}, which does not exist`);
+  for (const file of libraryFiles()) {
+    for (const m of read(file).matchAll(/\b(?:tests|tools)\/[A-Za-z0-9_.-]+\.(?:mjs|js)\b/g)) {
+      if (!exists(m[0])) throw new Error(`${file}: cites ${m[0]}, which does not exist`);
+    }
   }
 }
 

@@ -13,7 +13,7 @@ per-component depth behind it.
 | The record dialog's size, player, gallery or focus trap | [components/dialog.md](components/dialog.md) |
 | The hero name, title, sentence or actions | [components/hero.md](components/hero.md) |
 | The palette, a radius, a font family or a gutter | [primitives/tokens.md](primitives/tokens.md) |
-| Add a seventh project, or change where its art pan comes from | [components/project.md](components/project.md) (the crop table is on the panel page) |
+| Add a seventh project, or change where its art pan comes from | [components/project.md](components/project.md) (the crop table is on [components/panel.md](components/panel.md)) |
 | A film still, team photograph or awaited frame | [components/frames.md](components/frames.md) |
 
 ## Lookups
@@ -101,12 +101,13 @@ Rules:
 
 `tools/library-check.mjs` runs as the last suite in `npm test` and fails when:
 
-- the index and the page files disagree, or a page is missing (V1);
-- a page's shape drifts or an anchor no longer resolves in its file (V2, V3);
+- the index, a cross-link or a page file is missing or dangling, or a page's
+  shape or 40–90 line budget drifts (V1, V2);
+- an anchor no longer resolves in its file (V3);
 - a `Data` path does not exist in `PORTFOLIO` (V4);
 - a CSS class, shell id, `data-*` attribute, emitted class, `PORTFOLIO` key,
   record field or `Site.*` helper is documented nowhere (V5–V7);
-- the suite or the `AGENTS.md` pointer is unwired (V8);
+- the suite, the `AGENTS.md` pointer or its Docs map row is unwired (V8);
 - a page cites a line number or a non-existent test/tool file (V9, V10).
 
 ```powershell

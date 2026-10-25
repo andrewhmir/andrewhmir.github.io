@@ -36,8 +36,8 @@ unhides the dialog. `closeDialog()` reverses it. The opening buttons carry
 
 | Want to change | Change here | Verify with |
 |---|---|---|
-| Card width, height or scroll | `.dialog__card` (`max-width`, `max-height`, `overflow`) | screenshot at 1280×704 and 390×844; no clipped controls |
-| Card radius | `--panel-radius:` and `.dialog__card` | `npm test` (the token is pinned) |
+| Card width, height or scroll | `.dialog__card` (`width: min(760px, 100%)`, `max-height`, `overflow`) | screenshot at 1280×704 and 390×844; no clipped controls |
+| Card radius | `.dialog__card` (`border-radius`, hard-coded — `--panel-radius` does not reach it) | screenshot; `npm test` does not pin this one |
 | Video player behaviour | the `.dialog__video` template inside `openRecord` (`controls muted loop playsinline`) | open a project record; controls reachable |
 | Gallery grid | `.dialog__gallery` | open an honour with photographs |
 | Trap, Escape, overlay close, focus restore | `closeDialog(` and the `keydown` handler | manual Tab / Escape walk; focus returns to the opener |

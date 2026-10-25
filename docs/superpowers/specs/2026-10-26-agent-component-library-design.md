@@ -273,6 +273,26 @@ Every check is independently reported; the CLI prints `ok`/`FAIL` per check and
 exits non-zero if any fails. `--page` runs V2–V4 and V9 for one page only, for
 writer self-checks.
 
+### Hardening after adversarial review (2026-10-26)
+
+Reviewer 2 found gaps between this table and the implementation; all are closed
+and each has a regression case in the mutation harness:
+
+- **V1** also resolves every cross-link inside the library (not only the
+  README's), stripping `#fragment` before path resolution.
+- **V2** also enforces the page-length budget (40–90 lines).
+- **V5** parses full class names including BEM `__` suffixes, not only the base
+  class, so a CSS-only element class cannot be covered by its parent.
+- **V6** also scans the BEM modifier tokens emitted by ternaries outside a
+  `class="…"` literal, and matches ids / `data-*` on token boundaries rather
+  than substrings.
+- **V7** rejects a duplicate `Site.*` classification row (a contradictory row
+  can no longer be hidden by a later one).
+- **V8** requires a Docs-map table row in `AGENTS.md`, not any mention of the
+  path.
+- **V9** also catches Windows-backslash paths.
+- **V10** names the citing file in its failure message.
+
 ## Execution shape
 
 - **Branch:** `docs/agent-navigation-map` (reset to `main`; already done).
