@@ -1,2153 +1,428 @@
 /* ==========================================================================
-   Portfolio Engine — Renders all content from data.js · Handles all UX
-   No Bootstrap · No jQuery · Vanilla JS
+   main.js — renders the Long Field profile page from PORTFOLIO
+   POLISH PASS: reveals, film badges, full record dialog, journey rail.
    ========================================================================== */
-
 (function () {
   'use strict';
 
-  /* ── DOM References ─────────────────────────────────────────────── */
-  const $heroPhoto  = document.getElementById('heroPhoto');
-  const $heroBio    = document.getElementById('heroBio');
-  const $heroEmail  = document.getElementById('heroEmail');
-  const $heroLinks  = document.getElementById('heroLinks');
-  const $newsTimeline = document.getElementById('newsTimeline');
-  const $projectList  = document.getElementById('projectList');
-  const $leadershipList = document.getElementById('leadershipList');
-  const $honorsList     = document.getElementById('honorsList');
-  const $modalOverlay   = document.getElementById('modalOverlay');
-  const $modalCard      = document.getElementById('modalCard');
-  const $modalClose     = document.getElementById('modalClose');
-  const $modalHeader    = document.getElementById('modalHeader');
-  const $modalImage     = document.getElementById('modalImage');
-  const $modalBody      = document.getElementById('modalBody');
-  const $footerYear     = document.getElementById('currentYear');
-  const $footerEmail    = document.getElementById('footerEmail');
+  var P = window.PORTFOLIO;
+  var S = window.Site;
+  if (!P || !S) return;
 
-  /* ── Guard ──────────────────────────────────────────────────────── */
-  if (typeof PORTFOLIO === 'undefined') {
-    console.warn('PORTFOLIO data not loaded. Make sure js/data.js is included.');
-    return;
+  var PLACEHOLDER = 'files/PlaceHolder.png';
+  var FALLBACK = ' onerror="this.onerror=null;this.src=\'' + PLACEHOLDER + '\'"';
+
+  /* The pan: one crop of one painting per stop, in page order. */
+  var PAN = [
+    { art: 'rice', pos: '50% 58%' },    /* hero */
+    { art: 'harvest', pos: '48% 52%' }, /* about */
+    { art: 'rice', pos: '18% 56%' },    /* project 1 */
+    { art: 'harvest', pos: '78% 44%' }, /* project 2 */
+    { art: 'rice', pos: '76% 50%' },    /* project 3 */
+    { art: 'harvest', pos: '22% 66%' }, /* project 4 */
+    { art: 'rice', pos: '44% 22%' },    /* project 5 */
+    { art: 'harvest', pos: '56% 50%' }, /* project 6 */
+    { art: 'rice', pos: '8% 44%' },     /* leadership */
+    { art: 'harvest', pos: '88% 36%' }, /* honours */
+    { art: 'rice', pos: '50% 88%' }     /* contact */
+  ];
+
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
-  /* ════════════════════════════════════════════════════════════════════
-     RENDER
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* ── Hero ──────────────────────────────────────────────────── */
-
-  /* Sync photo height to match bio text box (desktop only).
-     flexbox stretch is unreliable on replaced <img> elements, so we
-     explicitly set height from the bio container's computed height. */
-  var MOBILE_BP = 768;
-  function syncPhotoHeight() {
-    if (!$heroPhoto || !$heroBio) return;
-    if (window.innerWidth <= MOBILE_BP) {
-      /* Mobile: CSS handles fixed 100×100 — reset inline styles */
-      $heroPhoto.style.height = '';
-      $heroPhoto.style.width  = '';
-      return;
-    }
-    var bioH = $heroBio.offsetHeight;
-    if (bioH > 0) {
-      $heroPhoto.style.height = bioH + 'px';
-      $heroPhoto.style.width  = 'auto';
-    }
+  function paragraphs(text) {
+    return String(text == null ? '' : text)
+      .split(/\n{2,}/)
+      .map(function (t) { return '<p>' + esc(t) + '</p>'; })
+      .join('');
   }
 
-  var _resizeTimer;
-  function onResize() {
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(syncPhotoHeight, 80);
+  /* One painted panel. copy and media are trusted HTML built above. */
+  function panel(o) {
+    var s = document.createElement('section');
+    s.className = 'stop art--' + o.art + (o.cls ? ' ' + o.cls : '');
+    s.id = o.id;
+    s.dataset.side = o.side;
+    s.style.setProperty('--pos', o.pos);
+    s.innerHTML =
+      '<div class="stop-in">' +
+        '<div class="copy' + (o.center ? ' copy--center' : '') + '" data-reveal>' + o.copy + '</div>' +
+        (o.media ? '<div class="media" data-reveal>' + o.media + '</div>' : '') +
+      '</div>' +
+      (o.cue ? '<span class="hero-cue" aria-hidden="true">Scroll — the field goes on</span>' : '');
+    return s;
   }
 
-  function renderHero() {
-    if ($heroPhoto) {
-      $heroPhoto.src = PORTFOLIO.profileImage;
-      /* Sync once image loads so we have correct intrinsic dimensions */
-      $heroPhoto.addEventListener('load', syncPhotoHeight, { once: true });
+  function isAwaited(src) { return !src || src === PLACEHOLDER; }
+
+  function frame(o) {
+    if (isAwaited(o.src)) {
+      return '<div class="frame frame--awaited">' +
+        '<div class="frame__inner">Awaiting photograph</div>' +
+        '<span class="frame__label">' + esc(o.label) + '</span>' +
+      '</div>';
     }
-    if ($heroBio) {
-      $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
-    }
-    if ($heroEmail) {
-      const obfuscated = PORTFOLIO.email.replace('.', ' [dot] ').replace('@', ' [at] ').replace('.', ' [dot] ');
-      $heroEmail.innerHTML = `<span style="margin-right:7px;">${Site.icon('envelope')}</span>${obfuscated}`;
-      $heroEmail.dataset.copy = PORTFOLIO.email;
-    }
-    if ($heroLinks) {
-      $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
-        if (item.copy) {
-          return `<button class="pill" data-action="copy" data-copy="${item.copy}" aria-label="Copy ${item.label.toLowerCase()}">
-            ${Site.icon(item.icon)} ${item.label}
-          </button>`;
-        }
-        return `<a class="pill" href="${item.url}" target="_blank" rel="noopener">
-          ${Site.icon(item.icon)} ${item.label}
-        </a>`;
-      }).join('');
-    }
-    /* Initial sync + listen for resize */
-    syncPhotoHeight();
-    window.addEventListener('resize', onResize);
+    return '<button class="frame' + (o.lead ? ' frame--lead' : '') + '" type="button" ' +
+      'data-kind="project" data-index="' + o.index + '">' +
+      '<img src="' + esc(o.src) + '" alt="' + esc(o.alt || o.label) + '" loading="lazy"' + FALLBACK + '>' +
+      (o.label === 'Film' ? '<span class="frame__play" aria-hidden="true">▶</span>' : '') +
+      '<span class="frame__label">' + esc(o.label) + '</span>' +
+    '</button>';
   }
 
-  /* ── News Timeline ──────────────────────────────────────────── */
-  function renderNews() {
-    if (!$newsTimeline) return;
-    $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) => {
-      const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-      const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true">' + Site.icon('images') + '</span>' : '';
-      const inner = `<span class="timeline-date">${item.date}</span>
-        <p class="timeline-text">${item.text}${hint}</p>`;
-      const delay = `style="--reveal-delay: ${i * 60}ms"`;
-
-      if (!hasGallery) {
-        return `<div class="timeline-item reveal" ${delay}>${inner}</div>`;
-      }
-      /* data-entry carries the real index in the unfiltered list; indices are
-         never re-derived from a filtered loop. */
-      return `<button type="button" class="timeline-item timeline-item--gallery reveal" ${delay}
-        data-gallery="news" data-entry="${i}"
-        aria-label="View photos: ${item.text}">${inner}</button>`;
-    }).join('');
+  function projectMedia(p, i) {
+    var poster = S.posterFor(p.video);
+    return '<div class="stack">' +
+      frame({ src: p.overview && p.overview.image, label: 'Overview', lead: true, index: i, alt: p.title + ' — overview' }) +
+      frame({ src: poster, label: 'Film', index: i, alt: p.title + ' — film still' }) +
+      frame({ src: p.team && p.team.image, label: 'Team', index: i, alt: p.title + ' — team' }) +
+    '</div>';
   }
 
-  /* ── Projects ──────────────────────────────────────────────── */
-  function renderProjectCard(p, i) {
-    const isSolo = !p.authors.includes(',');
-    const soloClass = isSolo ? ' project-card--solo' : '';
-    const isImg = isImage(p.video);
-    const links = [
-      { label: 'Overview', icon: 'eye', action: 'overview' },
-      ...(!isSolo ? [{ label: 'Team', icon: 'users', action: 'team' }] : []),
-      ...(p.awards && p.awards.length ? [{ label: 'Awards', icon: 'trophy', action: 'awards' }] : []),
-      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'file-pdf', action: 'report' }] : []),
-      ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
-    ];
-
-    const sourceBadge = p.source
-      ? `<span class="project-source project-source--${p.source}">${p.source === 'open' ? 'Open Source' : 'Closed Source'}${p.sourceNote ? ' · ' + p.sourceNote : ''}</span>`
+  function projectCopy(p, i) {
+    var awards = (p.awards && p.awards.length)
+      ? '<ul class="awards">' + p.awards.map(function (a) {
+          return '<li>' + esc(a.description) + ' — ' + esc(a.year) + '</li>';
+        }).join('') + '</ul>'
       : '';
-
-    const pills = links.map(l => {
-      if (l.url) {
-        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener">${Site.icon(l.icon)} ${l.label}</a>`;
-      }
-      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}">${Site.icon(l.icon)} ${l.label}</button>`;
-    }).join('');
-
-    return `
-      <article class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
-        <div class="project-media">
-          ${isImg
-            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-            : `<video class="project-thumb" playsinline loop muted preload="none"
-                     poster="${p.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg')}">
-                <source src="${p.video}" type="video/mp4">
-               </video>`
-          }
-          <div class="project-cue" aria-hidden="true">
-            <span class="project-cue-icon">${Site.icon('eye')}</span>
-            <span class="project-cue-label">View project</span>
-          </div>
-        </div>
-        <div class="project-info">
-          <h3 class="project-title">
-            <button type="button" class="project-hit" data-action="modal" data-project="${p.id}" data-tab="overview">${p.title}</button>${sourceBadge}
-          </h3>
-          ${p.tagline ? `<p class="project-tagline">${p.tagline}</p>` : ''}
-          <p class="project-authors">${p.authors}</p>
-          <span class="project-venue">${p.venue}</span>
-          <div class="project-links">${pills}</div>
-        </div>
-      </article>`;
+    return '<p class="eyebrow">' + esc(p.category) + ' · ' + esc(p.venue) + '</p>' +
+      '<h2>' + esc(p.title) + '</h2>' +
+      '<p class="lede">' + esc(p.tagline) + '</p>' +
+      '<p class="body">' + esc(p.summary) + '</p>' +
+      awards +
+      '<button class="btn" type="button" data-kind="project" data-index="' + i + '">Open the record →</button>';
   }
 
-  function renderProjects() {
-    if (!$projectList) return;
+  /* ── the page ───────────────────────────────────────────────────── */
 
-    // Group projects by category, preserving category order
-    var cats = [];
-    var groups = {};
-    PORTFOLIO.projects.forEach(function (p) {
-      var cat = p.category || '';
-      if (!groups[cat]) {
-        groups[cat] = [];
-        cats.push(cat);
-      }
-      groups[cat].push(p);
+  function render() {
+    var page = document.getElementById('page');
+    if (!page) return;
+
+    var out = [];
+
+    /* 0 — hero */
+    out.push(panel({
+      id: 'top',
+      cls: 'stop--hero',
+      side: 'center',
+      art: PAN[0].art,
+      pos: PAN[0].pos,
+      cue: true,
+      copy:
+        '<h1>' + esc(P.name) + '</h1>' +
+        '<p class="hero-title">' + esc(P.title) + '</p>' +
+        '<p class="hero-line">' + esc(P.bio[3] || P.bio[2] || '') + '</p>' +
+        '<div class="actions">' +
+          '<a class="btn btn--solid" href="#work">See the work →</a>' +
+          '<a class="btn" href="' + esc((P.social[0] && P.social[0].url) || '#') + '">Resume ↗</a>' +
+        '</div>'
+    }));
+
+    /* 1 — about */
+    out.push(panel({
+      id: 'about',
+      side: 'left',
+      art: PAN[1].art,
+      pos: PAN[1].pos,
+      copy:
+        '<p class="eyebrow">01 · About</p>' +
+        '<h2>A record of the pursuit.</h2>' +
+        '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
+        '<div class="actions">' + P.social.map(function (s) {
+          return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';
+        }).join('') + '</div>',
+      media:
+        '<figure class="portrait">' +
+          '<img src="files/profile.jpg" alt="Portrait of Andrew Alangcao" width="585" height="766" loading="lazy">' +
+          '<figcaption>Andrew Alangcao · Muntinlupa</figcaption>' +
+        '</figure>'
+    }));
+
+    /* 2 — work (six project panels, wrapped so #work lands on the first) */
+    var work = document.createElement('div');
+    work.className = 'work';
+    work.id = 'work';
+    P.projects.forEach(function (p, i) {
+      work.appendChild(panel({
+        id: p.id,
+        cls: 'stop--project',
+        side: i % 2 === 0 ? 'left' : 'right',
+        art: PAN[2 + i].art,
+        pos: PAN[2 + i].pos,
+        copy: projectCopy(p, i),
+        media: projectMedia(p, i)
+      }));
     });
+    out.push(work);
 
-    // Reorder: Applications first, then Robotics, then any uncategorized
-    var order = ['Applications', 'Robotics'];
-    var ordered = [];
-    order.forEach(function (cat) {
-      if (groups[cat]) {
-        ordered.push({ category: cat, projects: groups[cat] });
-        delete groups[cat];
-      }
-    });
-    // Append any remaining categories not in the explicit order
-    cats.forEach(function (cat) {
-      if (groups[cat]) {
-        ordered.push({ category: cat, projects: groups[cat] });
-      }
-    });
+    /* 3 — leadership */
+    out.push(panel({
+      id: 'leadership',
+      side: 'left',
+      art: PAN[8].art,
+      pos: PAN[8].pos,
+      copy:
+        '<p class="eyebrow">04 · Leadership</p>' +
+        '<h2>Running things.</h2>' +
+        '<p class="body">Four committees and clubs between 2023 and 2026: a research club founded from nothing, a student-council seat held for two years, the school’s events week run twice, and the media team that covered all of it.</p>',
+      media: '<div class="leaders">' + P.leadership.map(function (r, i) {
+        var thumb = (r.images && r.images[0]) || PLACEHOLDER;
+        var thumbHtml = isAwaited(thumb)
+          ? '<span class="leader__thumb leader__thumb--empty" aria-hidden="true">no photo</span>'
+          : '<img class="leader__thumb" src="' + esc(thumb) + '" alt="' + esc(r.description) + '" loading="lazy"' + FALLBACK + '>';
+        return '<button class="leader" type="button" data-kind="leadership" data-index="' + i + '">' +
+          thumbHtml +
+          '<span class="leader__body">' +
+            '<span class="leader__year">' + esc(r.year) + '</span>' +
+            '<span class="leader__text">' + esc(r.description) + '</span>' +
+          '</span>' +
+        '</button>';
+      }).join('') + '</div>'
+    }));
 
-    var cardIndex = 0;
-    var html = '';
-    ordered.forEach(function (group) {
-      html += '<h3 class="project-subheading">' + group.category + '</h3>';
-      group.projects.forEach(function (p) {
-        html += renderProjectCard(p, cardIndex++);
-      });
-    });
-    $projectList.innerHTML = html;
+    /* 4 — honours */
+    var tiles = S.honoursTiles(P.honors).tiles;
+    out.push(panel({
+      id: 'honours',
+      cls: 'stop--list',
+      side: 'left',
+      art: PAN[9].art,
+      pos: PAN[9].pos,
+      copy:
+        '<p class="eyebrow">05 · Honours</p>' +
+        '<h2>Recognised here and abroad.</h2>' +
+        '<p class="body">The standalone honours, newest first. Awards a project won hang on that project’s own panel — they are not repeated here.</p>',
+      media: '<ol class="honours">' + tiles.map(function (t) {
+        var r = t.record;
+        var hasPhotos = !!(r.images && r.images.length);
+        return '<li><button class="honour-row" type="button" data-kind="honors" data-index="' + t.index + '"' +
+          (hasPhotos ? '' : ' disabled') + '>' +
+          '<span class="honour-row__year">' + esc(r.year) + '</span>' +
+          '<span class="honour-row__text">' + esc(r.description) + '</span>' +
+          '<span class="honour-row__mark" aria-hidden="true">' + (hasPhotos ? '◦' : '') + '</span>' +
+        '</button></li>';
+      }).join('') + '</ol>'
+    }));
+
+    /* 5 — contact */
+    out.push(panel({
+      id: 'contact',
+      cls: 'stop--contact',
+      side: 'center',
+      art: PAN[10].art,
+      pos: PAN[10].pos,
+      center: true,
+      copy:
+        '<p class="eyebrow">06 · Contact</p>' +
+        '<h2>Let’s build something.</h2>' +
+        '<p class="lede">Open to work, research, and collaborations that make everyday life a little easier.</p>' +
+        '<a class="contact-mail" href="mailto:' + esc(P.email) + '">' + esc(P.email) + '</a>' +
+        '<div class="contact-links">' + P.social.map(function (s) {
+          return '<a href="' + esc(s.url) + '">' + esc(s.label) + '</a>';
+        }).join('') + '</div>'
+    }));
+
+    page.innerHTML = '';
+    out.forEach(function (node) { page.appendChild(node); });
   }
 
-  /* ── Leadership ─────────────────────────────────────────────── */
-  /* `entryIndex` is the item's real index in the unfiltered list, passed in by
-     the caller — never the position within a filtered subset. It is what
-     Site.galleryFor resolves against, so a row opens its own entry. */
-  function renderRecordItem(item, entryIndex, kind, step) {
-    const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-    const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true">' + Site.icon('images') + '</span>' : '';
-    const inner = `<span class="record-desc">${item.description}${hint}</span>
-      <span class="record-year">${item.year}</span>`;
-    const delay = `style="--reveal-delay: ${entryIndex * step}ms"`;
+  /* ── the dialog ─────────────────────────────────────────────────── */
 
-    if (!hasGallery) {
-      return `<div class="record-item reveal" ${delay}>${inner}</div>`;
-    }
-    return `<button type="button" class="record-item record-item--gallery reveal" ${delay}
-      data-gallery="${kind}" data-entry="${entryIndex}"
-      aria-label="View photos: ${item.description}">${inner}</button>`;
+  var dialog = document.getElementById('dialog');
+  var dialogTitle = document.getElementById('dialogTitle');
+  var dialogMeta = document.getElementById('dialogMeta');
+  var dialogBody = document.getElementById('dialogBody');
+  var dialogClose = document.getElementById('dialogClose');
+  var dialogCard = dialog && dialog.querySelector('.dialog__card');
+  var lastFocus = null;
+
+  function gallery(images, title) {
+    var list = (images || []).filter(function (src) { return src && src !== PLACEHOLDER; });
+    if (!list.length) return '';
+    return '<div class="dialog__gallery">' + list.map(function (src, i) {
+      return '<img src="' + esc(src) + '" alt="' + esc(title) + ' — photograph ' + (i + 1) + '" loading="lazy"' + FALLBACK + '>';
+    }).join('') + '</div>';
   }
 
-  function renderLeadership() {
-    if (!$leadershipList) return;
-    $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
-      renderRecordItem(item, i, 'leadership', 50)
-    ).join('');
-  }
+  function openRecord(kind, index) {
+    if (!dialog) return;
+    var title = '';
+    var meta = '';
+    var body = '';
+    var images = [];
+    var videoHtml = '';
 
-  /* ── Honors ─────────────────────────────────────────────────── */
-  function renderHonors() {
-    if (!$honorsList) return;
-    $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
-      renderRecordItem(item, i, 'honors', 40)
-    ).join('');
-  }
-
-  /* ── Footer ─────────────────────────────────────────────────── */
-  function renderFooter() {
-    if ($footerYear) {
-      $footerYear.textContent = new Date().getFullYear();
-    }
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     MODAL (single shared instance)
-     ════════════════════════════════════════════════════════════════════ */
-
-  function lockBodyScroll() {
-    var w = window.innerWidth - document.documentElement.clientWidth;
-    document.documentElement.style.setProperty('--scrollbar-w', w + 'px');
-    document.body.style.paddingRight = w + 'px';
-    document.body.style.overflow = 'hidden';
-  }
-
-  function unlockBodyScroll() {
-    document.documentElement.style.removeProperty('--scrollbar-w');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  }
-
-  /* ── Gallery (slow auto-scrolling photo carousel — Leadership / Honors / News) ── */
-
-  const galleryState = {
-    images: [],
-    current: 0
-  };
-
-  const GALLERY_LABELS = { news: 'News', leadership: 'Leadership', honors: 'Honors' };
-  const GALLERY_SPEED = 40; // px per second — slow, consistent glide
-
-  let galleryDriftId = null;
-  let galleryLastTick = null;
-
-  /* The carousel's markup, unchanged apart from taking its inputs as
-     parameters so openGallery can drive it from Site.galleryFor. */
-  function buildGalleryMarkup(images, title) {
-    const multi = images.length > 1;
-    return `
-      <div class="gallery" id="gallery">
-        <div class="gallery-track" id="galleryTrack">
-          ${images.concat(images).map((src, i) => `
-            <figure class="gallery-slide">
-              <img src="${src}" alt="${title} — photo ${(i % images.length) + 1}"
-                   onerror="this.closest('.gallery-slide').classList.add('is-placeholder');this.onerror=null;this.src='files/PlaceHolder.png';">
-            </figure>`).join('')}
-        </div>
-        ${multi ? `
-          <button class="gallery-arrow gallery-arrow--prev" id="galleryPrev" aria-label="Previous photo">${Site.icon('chevron-left')}</button>
-          <button class="gallery-arrow gallery-arrow--next" id="galleryNext" aria-label="Next photo">${Site.icon('chevron-right')}</button>
-          <div class="gallery-dots" id="galleryDots">
-            ${images.map((_, i) => `<button class="gallery-dot${i === 0 ? ' active' : ''}" data-slide="${i}" aria-label="Go to photo ${i + 1}"></button>`).join('')}
-          </div>
-          <div class="gallery-counter" id="galleryCounter">1 / ${images.length}</div>
-        ` : ''}
-      </div>`;
-  }
-
-  /* The data-gallery / data-entry pair a piece carries is now scoped by the
-     array the record lives in (`honors:3`), because both record arrays start
-     their indices at 0 and a bare index would collide across rooms. This
-     splits it back into the two arguments `Site.galleryFor` takes, and is
-     total: anything that is not a scoped key opens nothing rather than
-     falling through to a neighbour's photographs. */
-  function openGalleryRef(ref) {
-    var at = String(ref == null ? '' : ref).indexOf(':');
-    if (at < 1) return;
-    var kind = ref.slice(0, at);
-    var index = Number(ref.slice(at + 1));
-    if (!Number.isInteger(index) || index < 0) return;
-    openGallery(kind, index);
-  }
-
-  /* ── The record's own label, read in the dialog ───────────────────────────
-     This is the other half of the narrow stand. Above 900px the label is the
-     stand's right cell and this function is never reached; at or below it the
-     cell has left the walk (see the `@media (max-width: 900px)` block in
-     css/styles.css) and `renderLabelOpen`'s control is the only way to read the
-     record.
-
-     The ref is the stand's entry key, which the control carries as
-     `data-label` and which its own `.group` ALREADY carries as `data-entry` —
-     the scoping convention the pieces use, where both record arrays can start
-     at 0 because the key names the array too. So the lookup reuses the key
-     rather than adding a second way to name a record, and the label is then
-     found as a child of that stand. Nothing here builds a selector out of the
-     key: nothing about a record's name belongs in a query string.
-
-     CLONE, do not move. The original label stays where it is, in the stand, for
-     two reasons that each produce a different fault: widening the window back
-     above 900px has to restore the two-cell stand with NO re-render (a moved
-     node would leave the stand with no label at all), and the walk's own
-     `initLabelFades` bound its scroll listener to that node.
-
-     Cloning is safe because `renderLabel` emits no `id`: the dialog's own
-     `#modalTitle` is the only id in this subtree, and a duplicate would make
-     `aria-labelledby` resolve to whichever copy came first. Verified — the
-     renderer suite can clone a label as often as it likes.
-
-     The cloned label keeps `tabindex="0"` and `role="region"`, which is right
-     inside a dialog: it is still a named region a visitor can focus and scroll.
-     Its `aria-label` ("<record> — exhibition label") is what names it, and the
-     header says the same thing in words.
-
-     `$modalImage` is hidden exactly as the awards path hides it: this dialog is
-     copy, not photographs, and an empty 16:9 well above the text would be a
-     picture frame with nothing in it. */
-  function openLabelRef(ref) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    var key = String(ref == null ? '' : ref);
-    if (!key) return;
-
-    /* The stand that owns this key. Total by construction: a key that matches no
-       stand opens nothing, rather than falling through to a neighbour's label —
-       the same rule `openGalleryRef` keeps for photographs. */
-    var group = null;
-    var groups = document.querySelectorAll('[data-group]');
-    for (var i = 0; i < groups.length; i++) {
-      if (groups[i].getAttribute('data-entry') === key) { group = groups[i]; break; }
-    }
-    if (!group) return;
-
-    var label = group.querySelector('.label');
-    if (!label) return;
-
-    var title = label.querySelector('.narr-title');
-    $modalHeader.innerHTML = '<h3 id="modalTitle">'
-      + (title ? title.innerHTML : esc(key)) + '</h3>'
-      + '<p class="modal-subtitle">Exhibition label</p>';
-
-    $modalImage.style.display = 'none';
-    $modalImage.innerHTML = '';
-
-    $modalBody.innerHTML = '';
-    $modalBody.appendChild(label.cloneNode(true));
-
-    /* `openDialog` and nothing else: the focus trap, the background-inert walk,
-       the body-scroll lock and the `lastFocused` restore are all its, and the
-       control that opened this is `document.activeElement` when it runs — so
-       closing the dialog returns focus to the `.label-open` button that was
-       pressed, with no code of ours. */
-    openDialog();
-  }
-
-  function openGallery(kind, entryIndex) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    /* Site.galleryFor is total: it resolves the entry by its real index in the
-       unfiltered list and always yields an images array. A row with no photos
-       therefore opens nothing — it never falls through to a neighbour's. */
-    var data = Site.galleryFor(kind, entryIndex);
-    if (!data.images.length) return;   /* nothing to show — do not open */
-
-    galleryState.images = data.images;
-    galleryState.current = 0;
-
-    var label = GALLERY_LABELS[kind] || '';
-    $modalHeader.innerHTML = '<h3 id="modalTitle">' + data.title + '</h3>'
-      + '<p class="modal-subtitle">' + label + (data.meta ? ' · ' + data.meta : '') + '</p>';
-
-    $modalImage.style.display = '';
-    $modalImage.innerHTML = buildGalleryMarkup(data.images, data.title);
-    $modalBody.innerHTML = '';
-    bindGalleryControls();
-    updateGalleryUI();
-    openDialog();
-    startGalleryDrift();
-  }
-
-  function bindGalleryControls() {
-    const $track = document.getElementById('galleryTrack');
-    const $prev = document.getElementById('galleryPrev');
-    const $next = document.getElementById('galleryNext');
-    const $gallery = document.getElementById('gallery');
-
-    if ($prev) $prev.addEventListener('click', () => goToSlide(galleryState.current - 1));
-    if ($next) $next.addEventListener('click', () => goToSlide(galleryState.current + 1));
-
-    document.querySelectorAll('#galleryDots .gallery-dot').forEach(dot => {
-      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide, 10)));
-    });
-
-    if ($track) {
-      $track.addEventListener('scroll', () => updateGalleryUI(), { passive: true });
-    }
-
-    if ($gallery) {
-      $gallery.addEventListener('mouseenter', stopGalleryDrift);
-      $gallery.addEventListener('mouseleave', startGalleryDrift);
-      $gallery.addEventListener('focusin', stopGalleryDrift);
-      $gallery.addEventListener('focusout', startGalleryDrift);
-    }
-  }
-
-  function goToSlide(n) {
-    const total = galleryState.images.length;
-    if (!total) return;
-    galleryState.current = ((n % total) + total) % total;
-
-    const $track = document.getElementById('galleryTrack');
-    if ($track) {
-      $track.scrollLeft = galleryState.current * $track.clientWidth;
-    }
-    updateGalleryUI();
-  }
-
-  function updateGalleryUI() {
-    const $track = document.getElementById('galleryTrack');
-    const total = galleryState.images.length;
-
-    if ($track && total && $track.clientWidth > 0) {
-      galleryState.current = Math.round($track.scrollLeft / $track.clientWidth) % total;
-    }
-
-    document.querySelectorAll('#galleryDots .gallery-dot').forEach((dot, i) => {
-      dot.classList.toggle('active', i === galleryState.current);
-    });
-    const $counter = document.getElementById('galleryCounter');
-    if ($counter) {
-      $counter.textContent = `${galleryState.current + 1} / ${total}`;
-    }
-  }
-
-  function startGalleryDrift() {
-    stopGalleryDrift();
-    if (galleryState.images.length < 2) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    galleryLastTick = null;
-    galleryDriftId = requestAnimationFrame(driftTick);
-  }
-
-  function stopGalleryDrift() {
-    if (galleryDriftId) {
-      cancelAnimationFrame(galleryDriftId);
-      galleryDriftId = null;
-    }
-  }
-
-  function driftTick(now) {
-    const $track = document.getElementById('galleryTrack');
-    if (!$track) { galleryDriftId = null; return; }
-
-    if (galleryLastTick == null) galleryLastTick = now;
-    const dt = (now - galleryLastTick) / 1000;
-    galleryLastTick = now;
-
-    const total = galleryState.images.length;
-    const setWidth = $track.clientWidth * total;
-
-    if (setWidth > 0) {
-      $track.scrollLeft += GALLERY_SPEED * dt;
-      if ($track.scrollLeft >= setWidth) {
-        $track.scrollLeft -= setWidth;
-      }
-      updateGalleryUI();
-    }
-
-    galleryDriftId = requestAnimationFrame(driftTick);
-  }
-
-  /* ── Dialog focus management ─────────────────────────────────── */
-
-  var lastFocused = null;
-
-  /* Make every sibling of the overlay inert: removes them from the tab
-     order and from the accessibility tree while the dialog is open. */
-  function setBackgroundInert(on) {
-    var layer = document.querySelector('.content-layer');
-    if (!layer) return;
-    Array.prototype.forEach.call(layer.children, function (el) {
-      if (el === $modalOverlay) return;
-      if (on) el.setAttribute('inert', '');
-      else el.removeAttribute('inert');
-    });
-  }
-
-  function openDialog() {
-    lastFocused = document.activeElement;
-    $modalOverlay.classList.add('active');
-    lockBodyScroll();
-    setBackgroundInert(true);
-    /* The films the dialog now covers are not in shot any more, and the
-       observer cannot see an occlusion — see pausePreviews. */
-    pausePreviews();
-    if ($modalCard) $modalCard.focus();
-  }
-
-  /* Wrap Tab/Shift+Tab inside the dialog. `inert` already handles assistive
-     tech and hit-testing; this keeps keyboard cycling deterministic. */
-  function trapFocus(e) {
-    if (e.key !== 'Tab') return;
-    if (!$modalOverlay.classList.contains('active') || !$modalCard) return;
-    var items = $modalCard.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    items = Array.prototype.filter.call(items, function (el) { return el.offsetParent !== null; });
-    if (!items.length) return;
-    var first = items[0];
-    var last = items[items.length - 1];
-    if (e.shiftKey && (document.activeElement === first || document.activeElement === $modalCard)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-
-  document.addEventListener('keydown', trapFocus);
-
-  function openModal(projectId, tab) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    const proj = PORTFOLIO.projects.find(p => p.id === projectId);
-    if (!proj) return;
-
-    const isTeam   = (tab === 'team');
-    const isReport = (tab === 'report');
-    const isAwards = (tab === 'awards');
-    const data = isReport ? proj.report : (isTeam ? proj.team : (isAwards ? proj.awards : proj.overview));
-    const title = isReport ? `${proj.title} — Technical Report`
-      : (isTeam ? `${proj.title} — Team`
-      : (isAwards ? `${proj.title} — Awards`
-      : `${proj.title} — Overview`));
-
-    $modalHeader.innerHTML = `
-      <h3 id="modalTitle">${title}</h3>
-      <p class="modal-subtitle">${proj.venue}</p>`;
-
-    if (isAwards) {
-      $modalImage.innerHTML = '';
-      $modalImage.style.display = 'none';
-      $modalBody.innerHTML = '<div class="record-list">'
-        + data.map((a, i) =>
-            `<div class="record-item">
-              <span class="record-desc">${a.description}</span>
-              <span class="record-year">${a.year}</span>
-            </div>`
-          ).join('')
-        + '</div>';
-    } else {
-      $modalImage.style.display = '';
-      $modalImage.innerHTML = `<img src="${data.image}" alt="${title}">`;
-      if (isTeam && Array.isArray(data.text)) {
-        $modalBody.innerHTML = data.text.map(t => `<p>${t}</p>`).join('');
-      } else {
-        $modalBody.innerHTML = `<p>${data.text}</p>`;
-      }
-    }
-
-    openDialog();
-  }
-
-  function closeModal() {
-    stopGalleryDrift();
-    if (!$modalOverlay) return;
-    $modalOverlay.classList.remove('active');
-    setBackgroundInert(false);
-    unlockBodyScroll();
-    /* Only the stands that are in shot resume, and none of them if the visitor
-       had paused them — the same rule the observer keeps. */
-    resumePreviews();
-    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
-    lastFocused = null;
-  }
-
-  if ($modalClose) {
-    $modalClose.addEventListener('click', closeModal);
-  }
-
-  if ($modalOverlay) {
-    $modalOverlay.addEventListener('click', function (e) {
-      if (e.target === $modalOverlay) closeModal();
-    });
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && $modalOverlay && $modalOverlay.classList.contains('active')) {
-      closeModal();
-    }
-  });
-
-  /* ── Event Delegation: the walk's controls ────────────────────────
-     These are bound to `document`, not to a host element. The rooms are
-     rendered into #strip after this file runs, and the host elements the old
-     build used (#projectList, #honorsList, #leadershipList, #newsTimeline,
-     #heroLinks) no longer exist — a handler bound to one of them would never
-     fire, and every work, gallery row and email button would be inert. */
-  document.addEventListener('click', function (e) {
-    var t = e.target;
-    if (!t || !t.closest) return;
-
-    var modalBtn = t.closest('[data-action="modal"]');
-    if (modalBtn) { openModal(modalBtn.dataset.project, modalBtn.dataset.tab); return; }
-
-    var galleryBtn = t.closest('[data-gallery]');
-    if (galleryBtn) { openGalleryRef(galleryBtn.dataset.entry); return; }
-
-    /* The narrow stand's control, dispatched here rather than by a listener of
-       its own: this is the one document-level click handler the walk's controls
-       use, and the rooms are rendered after this file runs, so a handler bound
-       to the control itself would never fire. It is asked AFTER `data-gallery`,
-       which the control does not carry — the two never match the same element. */
-    var labelBtn = t.closest('[data-label]');
-    if (labelBtn) { openLabelRef(labelBtn.dataset.label); return; }
-
-    var copyBtn = t.closest('[data-action="copy"]');
-    if (copyBtn) { copyToClipboard(copyBtn.dataset.copy, copyBtn); }
-  });
-
-  /* Host-bound gallery lists, kept for the containers that still exist. */
-  function bindGalleryList($el) {
-    if (!$el) return;
-    $el.addEventListener('click', function (e) {
-      const item = e.target.closest('[data-gallery]');
-      if (!item) return;
-      openGalleryRef(item.dataset.entry);
-    });
-  }
-  bindGalleryList($leadershipList);
-  bindGalleryList($honorsList);
-  bindGalleryList($newsTimeline);
-
-  /* ── Event Delegation: Copy-to-clipboard buttons ──────────────── */
-  document.addEventListener('click', function (e) {
-    var go = e.target.closest('[data-goto]');
-    if (go && Site.walk) { Site.walk.goToRoom(go.dataset.goto); }
-  });
-
-  if ($heroLinks) {
-    $heroLinks.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-action="copy"]');
-      if (!btn) return;
-      copyToClipboard(btn.dataset.copy, btn);
-    });
-  }
-
-  /* Email click-to-copy */
-  if ($heroEmail) {
-    $heroEmail.addEventListener('click', function () {
-      copyToClipboard($heroEmail.dataset.copy, $heroEmail);
-    });
-  }
-
-  if ($footerEmail) {
-    $footerEmail.addEventListener('click', function () {
-      copyToClipboard($footerEmail.dataset.copy, $footerEmail);
-    });
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     INTERACTIONS
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* ── Scroll-Triggered Reveal ────────────────────────────────── */
-  function initRevealObserver() {
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
-      return;
-    }
-
-    const observer = new IntersectionObserver(function (entries) {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-  }
-
-  /* ── The previews: a project's film, playing while its stand is in shot ──
-     The first frame of every project is its preview. It is muted, looping and
-     `playsinline`, so a browser will let it start on its own; it carries
-     `controls`, so a visitor can stop it; and it is `preload="none"` with a
-     poster, so the walk fetches nothing until a stand is nearly reached.
-
-     Three rules, and each one is a fault it prevents:
-
-       reduced motion      a visitor who asked their system for less motion gets
-                           the poster and the controls, and nothing plays on its
-                           own. The branch returns before any observer is built,
-                           so there is exactly one place to read the decision.
-       a pause they made   is NOT undone. Scrolling a stand out of shot pauses
-                           the film, and that pause is OURS — it must not be
-                           mistaken for a visitor's, or a stand they come back
-                           to would silently refuse to play. A press on the
-                           control bar is theirs, and `data-paused` is the
-                           record of it: it survives the stand leaving and
-                           returning.
-       another window      a film left playing behind a hidden tab is battery
-                           for nothing.
-
-     Total by construction: no `IntersectionObserver` (an old engine, or the DOM
-     stub the renderer suite runs under) leaves the poster in place and the
-     controls working, which is a usable wall rather than a broken one. */
-  /* The controller's state, at module level so the dialog and the tab's own
-     visibility can reach it. */
-  var previews = { videos: [], inView: [], auto: new WeakSet(), play: null, stop: null, listening: false };
-
-  function initPreviews(root) {
-    var host = root || document;
-    /* Nothing is bound a second time, and a second call must not disturb what
-       the first one built. So the filter runs BEFORE the emptiness test — a
-       re-run that finds every film already bound returns without touching the
-       module state, rather than falling through and replacing the dialog's list
-       of films to stop with an empty one. */
-    var videos = [].slice.call(host.querySelectorAll('.piece--video video'))
-      .filter(function (v) { return !v.__previewBound; });
-    if (!videos.length) return;
-
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || typeof IntersectionObserver !== 'function') return;
-
-    /* Appended, never replaced: a later call for a newly rendered stand must
-       not drop the films an earlier call is already driving. */
-    previews.videos = previews.videos.concat(videos);
-    var inView = previews.inView;
-    var autoPaused = previews.auto;
-
-    var play = function (v) {
-      if (v.hasAttribute('data-paused')) return;
-      var p = v.play();
-      /* autoplay can still be refused — the poster stays in place */
-      if (p && typeof p.catch === 'function') p.catch(function () {});
-    };
-    var stop = function (v) {
-      if (v.paused) return;
-      /* Marked as OURS, because `pause` fires asynchronously and a flag set
-         around the call would already be back to false by the time it does. */
-      autoPaused.add(v);
-      v.pause();
-    };
-    previews.stop = stop;
-    previews.play = play;
-
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        var v = entry.target;
-        var at = inView.indexOf(v);
-        if (entry.isIntersecting) {
-          if (at === -1) inView.push(v);
-          play(v);
-        } else {
-          if (at !== -1) inView.splice(at, 1);
-          stop(v);
-        }
-      });
-    }, { threshold: 0.35 });
-
-    videos.forEach(function (v) {
-      v.__previewBound = true;
-      v.addEventListener('pause', function () {
-        if (autoPaused.has(v)) { autoPaused.delete(v); return; }
-        v.setAttribute('data-paused', '');
-      });
-      v.addEventListener('play', function () { v.removeAttribute('data-paused'); });
-      observer.observe(v);
-    });
-
-    /* Bound once, for the same reason: a second listener would pause and play
-       every film twice per tab switch. */
-    if (!previews.listening) {
-      previews.listening = true;
-      document.addEventListener('visibilitychange', function () {
-        /* Both directions go through the same two doors as the dialog's, so a
-           tab that comes back while a record is open does not restart the films
-           the dialog is covering — the observer cannot see an occlusion and
-           neither can `visibilitychange`. */
-        if (document.hidden) pausePreviews();
-        else resumePreviews();
-      });
-    }
-  }
-  Site.initPreviews = initPreviews;
-
-  /* ── The dialog stops the films it covers ────────────────────────────────
-     A preview behind an open dialog is still in the viewport, so the observer
-     never fires and the film would decode for nobody behind the overlay. It is
-     stopped on the way in and resumed on the way out, and it is stopped as
-     OURS, so a visitor who had paused it stays paused.
-
-     `resumePreviews` refuses while a record is open, and that guard is the
-     whole reason it is a door rather than a loop at the call site: a tab
-     coming back to the foreground is the OTHER way a covered film would
-     restart, and both routes have to answer the same question. */
-  function pausePreviews() {
-    if (previews.stop) previews.videos.forEach(previews.stop);
-  }
-  function resumePreviews() {
-    if (!previews.play) return;
-    if ($modalOverlay && $modalOverlay.classList.contains('active')) return;
-    previews.inView.forEach(previews.play);
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     CLIPBOARD
-     ════════════════════════════════════════════════════════════════════ */
-
-  function copyToClipboard(text, el) {
-    const showToast = (msg, isError) => {
-      const toast = document.createElement('div');
-      toast.className = 'toast' + (isError ? ' toast--error' : '');
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.style.opacity = '0'; }, 1800);
-      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2200);
-    };
-
-    if (el) {
-      el.style.transform = 'scale(0.96)';
-      setTimeout(() => { if (el) el.style.transform = ''; }, 150);
-    }
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => showToast('Email copied — reach out anytime!')).catch(() => showToast('Could not copy', true));
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        showToast('Email copied — reach out anytime!');
-      } catch (e) {
-        showToast('Could not copy', true);
-      }
-      document.body.removeChild(ta);
-    }
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     HELPERS
-     ════════════════════════════════════════════════════════════════════ */
-
-  function isImage(src) {
-    return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(src);
-  }
-
-  /* A work's centre in PAGE coordinates — the same frame as hall.scrollLeft.
-     `offsetLeft` alone is not that: it resolves against the nearest POSITIONED
-     ancestor, which is .room (it is position: relative), not the strip. Reading
-     it directly compares a room-local number against a viewport-global one, so
-     each room ends up lighting whichever of its works is furthest right, and
-     works fade again as you walk past them. offsetParent is walked instead,
-     accumulating each step's own offsetLeft until it reaches the body. */
-  function pageX(el) {
-    var x = 0;
-    for (var n = el; n; n = n.offsetParent) {
-      x += n.offsetLeft || 0;
-      if (n.offsetParent === n) break;      /* detached or body: stop */
-    }
-    return x;
-  }
-
-  function centreX(el) {
-    return pageX(el) + el.offsetWidth / 2;
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     THE WALK — Lenis smooth horizontal scrolling, and no snap
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* The walk is FREE. Lenis smooths the journey and nothing latches it onto a
-     stand: it used to park on each room's centre and then on each stand's,
-     through the vendored `lenis/snap` plugin, and both are gone — the plugin
-     with them. Whoever stops reading mid-stand stays where they stopped.
-
-     Native CSS scroll-snap stays off, and that half is NOT optional: a CSS snap
-     container re-snaps whenever the scroll position is set programmatically, so
-     it fights every animation Lenis performs — including the dock's own
-     goToRoom(). See the note on #hall in the stylesheet. */
-  function initWalk() {
-    var hall = document.getElementById('hall');
-    var strip = document.getElementById('strip');
-    if (!hall || !strip || typeof Lenis === 'undefined') return null;
-
-    var lenis = new Lenis({
-      wrapper: hall,
-      content: strip,
-      orientation: 'horizontal',
-      lerp: 0.1,
-      autoRaf: true,
-      anchors: true,          /* without this, in-page links stop working */
-      prevent: function (node) {
-        return !!(node.closest && node.closest('.modal-overlay'));
-      }
-    });
-
-    function goToRoom(key) {
-      var room = strip.querySelector('[data-room="' + key + '"]');
-      if (room) lenis.scrollTo(room, { offset: 0 });
-    }
-
-    return {
-      lenis: lenis,
-      goToRoom: goToRoom,
-      resize: function () { lenis.resize(); },
-      stop: function () { lenis.stop(); },
-      start: function () { lenis.start(); }
-    };
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     THE ROOMS — every string on a wall is sourced from PORTFOLIO
-     ════════════════════════════════════════════════════════════════════ */
-
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  function pieceLetter(i) {
-    return String.fromCharCode(65 + i);
-  }
-
-  /* ── The cluster: how a stand's three frames hang ───────────────────────
-     A stand is one record, and its frames hang together as one composition:
-     one column, stacked, every frame the same box.
-
-     ── The frame is one shape, and that shape is the stylesheet's ─────────
-     A frame used to be given a HEIGHT and let its width follow its own
-     photograph, so a stand's width was its photographs' business — the
-     alternative, a fixed width and height per slot, was rejected because
-     `object-fit: cover` then crops a landscape photograph into a strip and
-     `contain` letters the picture inside its own mat.
-
-     That trade is decided the other way now, deliberately and by request: one
-     size for every frame means one shape for every frame, and the shape is
-     `--frame-ar` in css/styles.css. `object-fit: cover` is what fills the box
-     — the measurement that rejected it (15 of 23 frames were 63-77% black bar
-     with `contain`) is exactly why the fill is a crop and not a letterbox. The
-     band the column divides is still solved rather than chosen; see `fitWall`
-     below, which now solves it from the wall and the cell instead of from each
-     photograph's own ratio.
-
-     Which columns hang, and which frame is the lead, still comes from an
-     arrangement — Site.hangLayout. There is one arrangement now, and it puts
-     all three pieces in a single column, which is what "stacked vertically"
-     means to the renderer. Nothing here knows that: a second arrangement would
-     be hung by the same code.
-
-     Every frame clears 44x44 at every supported width, because the solve
-     carries its own floor and `ux-check` measures it. */
-
-  /* A piece is a real focusable control: the whole frame opens the stand's
-     dialog, and its accessible name says which photograph it is. A piece whose
-     photograph has not arrived is not a control at all — see the awaited branch
-     below — and the first frame of a project is not one either: it is the film
-     itself. */
-  function renderCluster(pieces, layout, record, kind, entryIndex) {
-    var title = record.title || record.description || '';
-    var piece = function (p, i) {
-      var lead = i === layout.lead;
-      /* ── The film is a player, not a control ──────────────────────────────
-         The first frame of a project is its preview, and it plays while the
-         stand is in shot (see initPreviews). It is NOT the way into the record:
-         a `<button>` may not contain a control, and this one needs `controls`,
-         because motion that starts by itself has to be pausable. The two
-         photograph frames under it are the way in.
-
-         `preload="none"` with a poster means the walk fetches nothing until the
-         film is about to be reached, and the poster is derived from the video in
-         js/data.js — so a frame is never empty and never a black rectangle. A
-         project with no video never reaches this branch: the slot is simply not
-         filled (see `projectPieces`). */
-      if (p.media === 'video') {
-        return '<div class="piece piece--video' + (lead ? ' piece--lead' : '') + '"'
-          + ' data-piece="' + i + '">'
-          + '<video controls muted loop playsinline preload="none"'
-          + ' poster="' + esc(p.poster || '') + '"'
-          + ' aria-label="' + esc(title + ' — preview video') + '">'
-          + '<source src="' + esc(p.src) + '" type="video/mp4">'
-          + '</video></div>';
-      }
-      var open = groupOpener(kind, record, entryIndex, p);
-      var label = open.name || (title + ' — photograph ' + pieceLetter(i));
-      /* The frame is the whole of a piece on the wall. A letter used to hang on
-         it — the catalogue's index brought to the picture, in a box over the
-         frame's bottom-left corner — and it is gone: a mark in the corner of a
-         work reads as part of the work. The letters are still read in the
-         label, in the column beside each catalogue entry, so nothing on the
-         wall is unaccounted for by taking them off. */
-      var frame;
-      /* A photograph still waiting for its file has nothing to open, so it is
-         not a button: a focusable control that does nothing when activated is
-         worse than a frame that plainly is not one. */
-      if (open.inert) {
-        frame = '<span class="piece piece--pending' + (lead ? ' piece--lead' : '') + '"'
-          + ' data-piece="' + i + '"'
-          + ' role="img" aria-label="' + esc(label + ' — photograph awaited') + '"></span>';
-      } else {
-        frame = '<button type="button" class="piece' + (lead ? ' piece--lead' : '') + '"'
-          + ' data-piece="' + i + '"' + open.attrs
-          + ' aria-label="' + esc(label) + '"><img src="' + esc(p.src) + '" alt="" loading="lazy"'
-          + ' onerror="this.onerror=null;this.src=\'files/PlaceHolder.png\';"></button>';
-      }
-      return frame;
-    };
-    /* An index the arrangement names but the pieces array does not hold is not
-       hung as `undefined`: a malformed arrangement hangs fewer frames rather
-       than a broken one.
-
-       `--col-rows` is the column's DEPTH, and the stylesheet divides the
-       room's band by it to get the height of this column's frames. Writing it
-       here rather than in the stylesheet is what lets a stand of two frames
-       hang them tall and a stand of three hang them smaller, without the
-       stylesheet having to know every arrangement that exists.
-
-       The drop is a margin, not padding: padding belongs to the column's own
-       box, so a padded column would report itself taller than its frames and
-       the band budget would be spent twice.
-
-       And because it IS a margin, the dropped column's outer box is taller than
-       the band by exactly the drop — which is why the arrangement publishes its
-       deepest drop on the cluster as `--drop`. The drop has to live somewhere,
-       and the cell is what has to hold it: see the note on `.cluster`'s
-       `padding-bottom` in css/styles.css. */
-    var dropMax = layout.drop.reduce(function (a, d) { return d > a ? d : a; }, 0);
-    var cols = layout.columns.map(function (indices, ci) {
-      var hung = indices.filter(function (i) { return pieces[i]; })
-        .map(function (i) { return piece(pieces[i], i); }).join('');
-      var rows = indices.filter(function (i) { return pieces[i]; }).length;
-      var drop = layout.drop[ci] || 0;
-      return '<div class="col" style="--col-rows:' + rows + ';margin-top:' + drop + 'px">'
-        + hung + '</div>';
-    });
-    return '<div class="cluster" data-hang="' + esc(layout.name) + '"'
-      + ' style="--col-count:' + layout.columns.length + ';--drop:' + dropMax + 'px">'
-      + cols.join('') + '</div>';
-  }
-
-  /* ── The band a stand's hang stands on, solved from the wall and the cell ─
-     The arithmetic is `Site.bandFor` in js/data.js, where it is pinned to the
-     pixel without a browser; this measures the two numbers it needs and writes
-     the answer.
-
-     ── What it used to solve, and why it no longer can ─────────────────────
-     A frame's width used to follow its own photograph, so a hang's natural
-     width was `band x (sum of its pieces' ratios)` and the band was solved from
-     the wall: `(wallWidth - gaps) / SUM(column arSum / column rows)`, with each
-     ratio read off a loaded `<img>`. That is why the solve ran again on every
-     `load` — before a photograph arrived there was no ratio to solve with.
-
-     There is one ratio now, and it is the stylesheet's `--frame-ar`: every frame
-     is the same box, so nothing here depends on a photograph's bytes and the
-     solve no longer needs a load event to be correct. What it needs instead is
-     the CELL's height, because a stack of three landscape frames is taller than
-     it is wide — the binding constraint is no longer the wall's width, and
-     without the height cap the third frame hangs under the dock.
-
-     ── The two numbers, and why they are measured here ─────────────────────
-     `width` is the hang cell's own content box. NOT the cluster's: the cluster's
-     width is now the RESULT of the band (its frames are as wide as their height
-     times the ratio), so feeding it back in would be a loop that settles
-     wherever the last resize left it.
-
-     `height` is what the cell has left after the legend. The legend is pinned
-     to the cell's foot with `margin-top: auto` and is as tall as its catalogue
-     is long, so the room the hang gets is the cell less that block — measured
-     here rather than derived, because it is prose and only the browser knows
-     how many lines it takes at this width.
-
-     `--col-gap` is read from the COLUMN's resolved style and not restated here.
-     A percent or `calc()` in a custom property does not serialise to something
-     `parseFloat` can read, so reading `--col-gap` itself gives 0 and the floor
-     silently loses the gaps — which is how this shipped once. The column is the
-     element the gap is applied to, so its computed row-gap is the number the
-     frames actually divide.
-
-     ── One column only, and that is stated rather than assumed ─────────────
-     `rows` is the DEPTH of the deepest column, and `bandFor` sizes the band as
-     though that column were the only one — which it is: there is one
-     arrangement and it stacks. A second arrangement with two columns side by
-     side would need the sum across columns here (`bandFor` takes one `rows`),
-     and this note is what a future reader gets instead of a quiet
-     half-solved stand. */
-  function fitWall(cluster) {
-    /* The hang cell is the stand's first cell, and it holds the hang and the
-       legend under it: the cell that holds both is what the band is solved
-       against. */
-    var wall = cluster.parentElement;
-    if (!wall) return;
-    var cols = [].slice.call(cluster.querySelectorAll('.col'));
-    if (!cols.length) return;
-    var rows = 0;
-    for (var k = 0; k < cols.length; k++) {
-      rows = Math.max(rows, cols[k].querySelectorAll('.piece').length);
-    }
-    if (!rows) return;
-
-    var ccs = getComputedStyle(cluster);
-    var ratio = frameRatio(ccs.getPropertyValue('--frame-ar'));
-    var colGap = 10;
-    var colStyle = getComputedStyle(cols[0]);
-    var gap = parseFloat(colStyle.rowGap || colStyle.gap);
-    if (isFinite(gap) && gap > 0) colGap = gap;
-
-    /* ── The cell's other blocks are what the hang must not spend ─────────────
-       The band is solved against the height the CLUSTER can have, so every
-       other block in this cell has to come out of it first. This named the
-       legend, and the legend was the cell's only other block; the narrow stand
-       added a second (`.label-open`, the control that opens the record, present
-       at every width and shown under 900px), and a solve that reserved the
-       legend alone would have over-estimated the band by the control's height
-       and let the stand overflow — silently, because `overflow: hidden` on the
-       cell is what would absorb it.
-
-       So it is generalised rather than extended: every child of the cell that
-       is not the cluster is reserved, at its own height plus the margins that
-       are REAL SPACE. One block today, two under 900px, and a third would need
-       no change here.
-
-       ── An `auto` margin is slack, and reserving it inverts the solve ───────
-       The legend is pinned to the foot of the cell by an `auto` margin, which
-       the browser resolves to whatever room is left over — so it is a function
-       of the very number this solve produces, and reserving it is a feedback
-       loop. Measured at 1440x900 while that margin sat on `.legend`: the legend
-       is 112px of text and its resolved margin was 383px of slack, so `reserved`
-       came to 496px of a 691px cell, `availH` fell to 195px and the band
-       collapsed to the tap floor — three 104x58 frames in a cell left with
-       380px of bare wall under them. The original code never had this fault
-       because it reserved `legend.offsetHeight` and nothing else; a solve that
-       reads the slack back is one that has already spent it.
-
-       AN `auto` MARGIN CANNOT BE DETECTED HERE, and that is why the guard is a
-       PLACEMENT rather than a branch. CSSOM special-cases the margin
-       properties: `getComputedStyle(block).marginTop` returns the resolved used
-       value — a pixel length, never the string `auto` — so no test on it can
-       tell slack from space. The pinning margin therefore lives on `.cluster`,
-       which this loop skips by construction (see the note on `.cluster`'s
-       `margin-bottom` in css/styles.css), and `tests/shell-check.mjs` asserts
-       where it lives. Do NOT move it back onto `.legend`: `parseFloat('auto')`
-       is NaN and would be read as 0, so nothing here would catch it and the
-       band would collapse in silence — invisible at 1440x900, where the token's
-       own fallback (`22vh` = 198px) sits near the correct 579px band, and
-       grossly wrong on a phone.
-
-       Cheap and loop-free, as the solve must stay. It is one pass over the
-       cell's direct children, and it runs once per solve — at init, on resize
-       and when the fonts settle — not per frame.
-
-       Nothing else here may depend on `--wall-h`: the reserved blocks are the
-       legend (whose height is its own text, wrapped at 62% of the cell's width)
-       and the control (a fixed 52px), and neither reads the band. A block whose
-       height DID depend on it would make this solve chase its own tail. */
-    var reserved = 0;
-    var children = wall.children;
-    for (var bi = 0; bi < children.length; bi++) {
-      var block = children[bi];
-      if (block === cluster) continue;
-      /* A block that is not laid out — `display: none`, which is the control's
-         state at every width above 900px — has no height and no margins of its
-         own to reserve. Its computed margins are still real lengths, so the
-         check is on the box and not on the style. */
-      if (!block.offsetHeight) continue;
-      var bcs = getComputedStyle(block);
-      reserved += block.offsetHeight
-        + (parseFloat(bcs.marginTop) || 0)
-        + (parseFloat(bcs.marginBottom) || 0);
-    }
-    var availH = wall.clientHeight - reserved;
-
-    cluster.style.setProperty('--wall-h', Site.bandFor({
-      width: wall.clientWidth,
-      height: availH,
-      rows: rows,
-      ratio: ratio,
-      gap: colGap
-    }) + 'px');
-  }
-
-  /* `--frame-ar` is written as a fraction — `16 / 9` — because that is how a
-     ratio reads in a stylesheet, and this reads THAT token rather than
-     restating it, so the box the solve assumes and the box the frame wears are
-     one number (see the note on the token). The literal here is a last resort
-     for a token that cannot be parsed at all: falling to 0 would hand
-     `bandFor` an unsolvable geometry and it would return the tap floor, which
-     is a wall of 44px frames rather than a wall with slightly wrong ones. */
-  function frameRatio(value) {
-    var parts = String(value == null ? '' : value).split('/');
-    var w = parseFloat(parts[0]);
-    var h = parseFloat(parts[1]);
-    if (isFinite(w) && isFinite(h) && w > 0 && h > 0) return w / h;
-    return 16 / 9;
-  }
-
-  function fitWalls(root) {
-    [].slice.call((root || document).querySelectorAll('.cluster')).forEach(fitWall);
-  }
-  Site.fitWalls = fitWalls;
-
-  /* ── The label's fade, which must retire at the end of its scroll ────────
-     The mask in css/styles.css is a cue that there is more below. Drawn on the
-     scrollport it also sits over the LAST line at the end of the scroll, where
-     there is nothing left to cue and the copy is instead unreadable — measured,
-     the last paragraph's bottom edge landed 26px inside a band that fades to
-     fully transparent.
-
-     So a label whose scroll has reached its end is marked, and the stylesheet
-     drops the mask there. The mark is recomputed on every scroll, which is one
-     comparison per event on a handful of labels. */
-  function markLabelScrollEnd(label) {
-    var atEnd = label.scrollTop + label.clientHeight >= label.scrollHeight - 1;
-    if (atEnd) label.setAttribute('data-scroll-end', '');
-    else label.removeAttribute('data-scroll-end');
-  }
-
-  function initLabelFades(root) {
-    [].slice.call((root || document).querySelectorAll('.label')).forEach(function (label) {
-      if (label.__fadeBound) return;
-      label.__fadeBound = true;
-      label.addEventListener('scroll', function () { markLabelScrollEnd(label); }, { passive: true });
-      markLabelScrollEnd(label);
-    });
-  }
-  Site.initLabelFades = initLabelFades;
-
-  /* What a piece does when activated. A project piece opens that project's
-     dialog; a record piece opens the record's photographs. The gallery index
-     is the record's own position in its array, so a record with no
-     photographs can never open a neighbour's gallery — it has no handler at
-     all, because there is nothing for it to open.
-
-     The question is asked of the PIECE, not the record: a record with some
-     photographs and some padding has real frames to open and empty ones that
-     have nothing behind them, and both hang on the same wall. */
-  function groupOpener(kind, record, entryIndex, piece) {
-    if (piece && piece.awaited) return { attrs: '', name: '', inert: true };
     if (kind === 'project') {
-      return {
-        attrs: ' data-action="modal" data-project="' + esc(record.id) + '" data-tab="overview"',
-        name: 'Open ' + (record.title || 'project')
-      };
+      var p = P.projects[index];
+      if (!p) return;
+      title = p.title;
+      meta = [p.category, p.venue].filter(Boolean).join(' · ');
+      if (p.video) {
+        videoHtml = '<video class="dialog__video" src="' + esc(p.video) + '" poster="' +
+          esc(S.posterFor(p.video)) + '" controls muted loop playsinline preload="metadata"></video>';
+      }
+      body += '<p>' + esc(p.summary) + '</p>';
+      body += paragraphs(p.overview && p.overview.text);
+      if (p.team && p.team.text && p.team.text.length) {
+        body += '<h4>The team</h4>' + p.team.text.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('');
+      }
+      if (p.awards && p.awards.length) {
+        body += '<h4>Awards</h4><ul>' + p.awards.map(function (a) {
+          return '<li>' + esc(a.description) + ' — ' + esc(a.year) + '</li>';
+        }).join('') + '</ul>';
+      }
+      if (p.links && p.links.length) {
+        body += '<h4>Links</h4><ul>' + p.links.map(function (l) {
+          return '<li><a href="' + esc(l.url) + '">' + esc(l.label) + ' ↗</a></li>';
+        }).join('') + '</ul>';
+      }
+      images = [p.overview && p.overview.image, S.posterFor(p.video), p.team && p.team.image];
+    } else if (kind === 'leadership') {
+      var r = P.leadership[index];
+      if (!r) return;
+      title = r.description;
+      meta = r.year;
+      body = paragraphs(r.summary);
+      images = r.images || [];
+    } else {
+      var h = P.honors[index];
+      if (!h) return;
+      title = h.description;
+      meta = h.year;
+      body = paragraphs(h.summary);
+      images = h.images || [];
     }
-    var hasPhotos = Array.isArray(record.images) && record.images.length > 0;
-    if (!hasPhotos) return { attrs: '', name: '', inert: true };
-    return {
-      attrs: ' data-gallery="' + esc(kind) + '" data-entry="' + esc(entryIndex) + '"',
-      name: ''
-    };
+
+    dialogTitle.textContent = title;
+    dialogMeta.textContent = meta;
+    dialogBody.innerHTML = videoHtml + body + (images.length ? '<h4>Photographs</h4>' + gallery(images, title) : '');
+
+    lastFocus = document.activeElement;
+    dialog.hidden = false;
+    document.body.style.overflow = 'hidden';
+    if (dialogCard) dialogCard.focus();
   }
 
-  function renderGroup(kind, index, record, roomKey) {
-    var pieces = Site.groupPieces(record, kind);
-    /* The entry key is scoped by room and by array. Project indices restart in
-       every project room, and leadership and honors each start at 0, so a bare
-       index would have rows on different walls claiming to be the same entry.
-       For a gallery room the room key and the data array name are the same. */
-    var entryKey = kind === 'project'
-      ? roomKey + ':' + index
-      : kind + ':' + index;
-    /* The arrangement is dealt from the entry key, so two neighbouring groups
-       almost never hang the same way and neither of them changes on reload. */
-    var layout = Site.hangLayout(entryKey, pieces.length);
-    /* No `data-snap` here, and none anywhere: the walk is free. Each stand used
-       to carry one so the walk parked on a project's centre, and the About and
-       Contact rooms carried one each. All of it went with the plugin — a snap
-       decides where the visitor stops, and this walk is the visitor's to stop
-       in. Lenis alone smooths it now; see initWalk.
-
-       The attribute ORDER below is load-bearing in its own right: the renderer
-       suite reads a group's kind and key by matching
-       `data-group data-kind="…" data-entry="…"` as one run, so a new attribute
-       goes AFTER the entry key, never between them. */
-    return '<div class="group" data-group data-kind="' + esc(kind) + '"'
-      + ' data-entry="' + esc(entryKey) + '">'
-      /* ── The stand's first cell is the HANG CELL, and it holds two blocks ──
-         The hang, and the legend that names it. They are one cell because they
-         are one thing looked at together: a frame is a photograph and the entry
-         under it is that photograph's own name, so the two do not belong in
-         different columns of the stand.
-         It is a named element rather than a bare cluster because a flex item
-         cannot be two blocks: the cluster takes the height the legend leaves,
-         and `fitWall` measures the cell this hang was given.
-
-         It is NOT called `.wall`. That name is reserved by this repo for the
-         mural layer that must never exist — `#hall` carries the mural as its own
-         background, and `tests/shell-check.mjs` fails on any top-level `.wall`
-         rule. The vocabulary table in AGENTS.md calls this box the wall CELL;
-         the element is named for what it holds. */
-      + '<div class="hang-cell">'
-      + renderCluster(pieces, layout, record, kind, entryKey)
-      + renderLegend(record, pieces)
-      /* ── And the way into the record, for a stand that is one column ──────
-         Under 900px the label cell leaves the walk and this is what replaces
-         it: the cluster and the legend still hang, and the record is read in
-         the dialog. It sits AFTER the legend because it is the last block of
-         the cell — `fitWall` reserves the outer height of everything in this
-         cell that is not the cluster, and both of these blocks are what the
-         band is solved around.
-
-         It is rendered at every width and hidden above the breakpoint by CSS,
-         so a desktop visitor's stand is byte-for-byte the same three blocks it
-         was — the fourth is there, and it is `display: none`. */
-      + renderLabelOpen(record, entryKey)
-      + '</div>'
-      + renderLabel(record, pieces)
-      + '</div>';
+  function closeDialog() {
+    if (!dialog || dialog.hidden) return;
+    dialog.hidden = true;
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
   }
 
-  /* ── The exhibition label ───────────────────────────────────────────────
-     One label per group, and it is where every photograph gets its text. The
-     shape is the reference wall's: the record's own account, its awards and its
-     team caption, then a catalogue entry per photograph. The plan of the hang
-     used to stand at its head; the catalogue's letters are what tie an entry to
-     a photograph now.
-
-     Every level falls back rather than rendering an empty box, because the
-     owner will not have written copy for every group on day one: a group with
-     no `overview` accounts for itself in its summary and then in its own
-     description, and a piece with no title is named for its position. */
-  function labelTitle(record) {
-    return record.title || record.description || '';
-  }
-
-  function labelMeta(record) {
-    return record.venue || record.year || '';
-  }
-
-  /* The account is the record's own words, paragraph for paragraph. This is the
-     one field with the real story, and until now nothing on the walk rendered
-     it: labelNarrative() returned `summary` and stopped.
-
-     It reports WHICH source it read, because the caller has to know, and the
-     two branches are not interchangeable:
-
-       'overview' — the record's own story. `summary` is a separate line and is
-                    ALSO rendered, as the opening lead above the account.
-       'summary' / 'description' — a fallback, where the account IS that one
-                    line. The caller must NOT render it a second time as the
-                    lead: on every one of the four Leadership posts the label
-                    would print the same sentence twice, one line apart, which
-                    is what this return value exists to prevent. (Honours never
-                    reach here: they render as tiles, not as groups, and a tile
-                    has no label. The blast radius is Leadership alone.)
-                    Decided by SOURCE, never by comparing the strings — a text
-                    predicate cannot tell a genuine repetition from a record
-                    whose two fields happen to agree, and this build has been
-                    bitten by string predicates before.
-
-     The fallback is the record's own DESCRIPTION, not its title, and the
-     difference is the whole safety net: a record added without copy must still
-     say what it is, where its account would go. Reproduced by the title, it
-     would render a second copy of the line already above it and read as a
-     finished label rather than as a missing one. */
-  function labelAccount(record) {
-    var text = record && record.overview && record.overview.text;
-    if (typeof text === 'string' && text.trim()) {
-      var paras = text.split('\n\n').map(function (t) { return t.trim(); }).filter(Boolean);
-      if (paras.length) return { paragraphs: paras, from: 'overview' };
-    }
-    if (record && record.summary) return { paragraphs: [record.summary], from: 'summary' };
-    if (record && record.description) return { paragraphs: [record.description], from: 'description' };
-    return { paragraphs: [], from: 'none' };
-  }
-
-  /* The technical line is derived, never authored, and it names the FILE the
-     photograph came from. It is deliberately the file's own name rather than
-     words made out of it: "Palad Team" reads like a description of the
-     photograph and is not one, so a visitor takes it for the only explanation
-     on offer. A filename says plainly that this is provenance and not a
-     caption — and it is true, where a prettified stem can be nonsense.
-     The placeholder is not a photograph a visitor can go and look at, so it is
-     named for what it is rather than for its file. */
-  function techLine(src) {
-    var file = String(src || '').replace(/^.*\//, '');
-    if (/^PlaceHolder\./i.test(file)) return 'Photograph awaited';
-    return 'File · ' + file;
-  }
-
-  /* One entry per photograph that exists, then a single line for however many
-     are still awaited. A group whose photographs are all awaited would
-     otherwise print "Photograph awaited" three times over, which is not a
-     catalogue, it is a stutter. */
-  var AWAITED_WORDS = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six'];
-
-  function awaitedNote(n) {
-    return '<p class="ca-note">' + (AWAITED_WORDS[n] || String(n))
-      + ' photograph' + (n === 1 ? '' : 's') + ' awaited</p>';
-  }
-
-  function renderCatalogue(record, pieces) {
-    var authored = Array.isArray(record.pieces) ? record.pieces : [];
-    var list = Array.isArray(pieces) ? pieces : [];
-    var out = '';
-    var awaited = 0;
-    list.forEach(function (piece, i) {
-      if (piece.awaited) { awaited++; return; }
-      var p = authored[i] || {};
-      var letter = pieceLetter(i);
-      /* The entry is a two-column grid: the letter in the first column, and
-         everything said about the photograph in the second. The text has to be
-         its OWN element for that to work — a bare text node beside the letter
-         is not a grid item, so the column gap never applied and the title ran
-         into its own letter ("AThe palm scanner"). */
-      out += '<div class="cat-entry" data-piece="' + i + '">'
-        + (list.length > 1
-            ? '<span class="ce-key" data-piece="' + i + '">' + letter + '</span>' : '')
-        + '<div class="ce-body">'
-        + '<p class="ce-title">' + esc(p.title || ('Photograph ' + letter)) + '</p>'
-        + (p.caption ? '<p class="ce-cap">' + esc(p.caption) + '</p>' : '')
-        + '<p class="ce-tech">' + esc(techLine(piece.src)) + '</p>'
-        + '</div></div>';
+  if (dialog) {
+    dialogClose.addEventListener('click', closeDialog);
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) closeDialog(); });
+    document.addEventListener('keydown', function (e) {
+      if (dialog.hidden) return;
+      if (e.key === 'Escape') { closeDialog(); return; }
+      if (e.key !== 'Tab' || !dialogCard) return;
+      var f = dialogCard.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0];
+      var last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     });
-    return out + (awaited ? awaitedNote(awaited) : '');
   }
 
-  /* A project's awards, read on the wall. They used to be a button into a
-     dialog, which made eight awards invisible to a visitor who did not press
-     it. An award that has photographs is a real control opening them in the
-     photograph carousel — those honours are excluded from the Honours room, so
-     without this their six photographs would be unreachable. One without is
-     plain text, as a photo-less honours tile already is.
+  /* ── rail, masthead, progress, reveals ──────────────────────────── */
 
-     WHICH award carries the control is decided per award, by Site.awardPhotos,
-     and it has to be: a project's wins are separate honours and only some of
-     them hang photographs. Asked once for the whole project, the March 2025
-     honour's three photographs would be handed to the May 2025 award too — a
-     control that opens a different win's gallery, which is worse than no
-     control at all.
-
-     The control carries the same data-gallery/data-entry pair every other
-     control on the walk carries, rather than a handle of its own: the
-     document-level delegation already resolves that pair, and a second way in
-     would be a second path to keep working. `data-open-award-year` rides along
-     because the pair alone does not say WHICH of the project's awards this row
-     is, and a later reader (the dialog's own handlers) has to be able to
-     re-resolve the award from a click.
-
-     The row is a real `<button>`, exactly as a hung frame is, and NOT an `<li>`
-     wearing `role="button" tabindex="0"`. The walk's delegation is bound to
-     `click` alone, so a role on an `<li>` is focusable and still does nothing
-     when Enter is pressed — a control that cannot be activated is the defect
-     this file already refuses to ship for the frames and the honours tiles. */
-  function awardGalleryRef(projectId, award) {
-    var honors = Array.isArray(PORTFOLIO.honors) ? PORTFOLIO.honors : [];
-    var year = award && award.year;
-    for (var i = 0; i < honors.length; i++) {
-      var h = honors[i];
-      if (h && h.from === projectId && String(h.year) === String(year)) {
-        return 'honors:' + i;
-      }
-    }
-    return '';
-  }
-
-  function renderAwards(record) {
-    if (!record || !Array.isArray(record.awards) || !record.awards.length) return '';
-    var items = record.awards.map(function (a) {
-      var photos = (typeof Site.awardPhotos === 'function')
-        ? Site.awardPhotos(record.id, PORTFOLIO.honors, a) : [];
-      var ref = photos.length ? awardGalleryRef(record.id, a) : '';
-      var year = a.year ? '<span class="award-year">' + esc(a.year) + '</span>' : '';
-      var body = '<span class="award-desc">' + esc(a.description || '') + '</span>' + year;
-      var row;
-      if (ref) {
-        /* The accessible name carries the year as well as the award, exactly as
-           a tile's does: a screen reader hearing only "Open the photographs of
-           11th Philippine Robothon" cannot tell which year's win it is opening,
-           and a project may hold two Robothon awards. */
-        var named = (a.description || 'this award') + (a.year ? ' — ' + a.year : '');
-        row = '<button type="button" class="award-open"'
-          + ' data-gallery="honors" data-entry="' + esc(ref) + '"'
-          + ' data-open-award-year="' + esc(a.year || '') + '"'
-          + ' aria-label="' + esc('Open the photographs of ' + named) + '">'
-          + body + '</button>';
-      } else {
-        /* Nothing to open, so it is not a control and does not look like one. */
-        row = '<span class="award-text">' + body + '</span>';
-      }
-      return '<li class="award"'
-        + (ref ? '' : ' data-open-award-year="' + esc(a.year || '') + '"') + '>'
-        + row + '</li>';
+  function buildRail() {
+    var rail = document.getElementById('rail');
+    if (!rail) return;
+    var labels = [{ id: 'about', label: 'About' }];
+    P.projects.forEach(function (p) { labels.push({ id: p.id, label: p.title }); });
+    labels.push({ id: 'leadership', label: 'Leadership' });
+    labels.push({ id: 'honours', label: 'Honours' });
+    labels.push({ id: 'contact', label: 'Contact' });
+    rail.innerHTML = labels.map(function (s) {
+      return '<a class="rail__stop" href="#' + esc(s.id) + '" data-stop="' + esc(s.id) + '"><span>' +
+        esc(s.label) + '</span></a>';
     }).join('');
-    return '<div class="awards">'
-      + '<p class="awards-head">Awards · ' + record.awards.length + '</p>'
-      + '<ul class="award-list">' + items + '</ul></div>';
+
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        var id = entry.target.id;
+        rail.querySelectorAll('.rail__stop').forEach(function (a) {
+          a.classList.toggle('is-active', a.getAttribute('data-stop') === id);
+        });
+      });
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    document.querySelectorAll('.stop[id]').forEach(function (s) { io.observe(s); });
   }
 
-  /* The team photo's caption is the only thing on the walk that names who is in
-     the picture, and it was behind a button. */
-  function renderTeam(record) {
-    var t = record && record.team;
-    if (!t || !Array.isArray(t.text) || !t.text.length) return '';
-    return '<div class="team"><p class="team-head">Team</p>'
-      + t.text.map(function (line) {
-          return '<p class="team-line">' + esc(line) + '</p>';
-        }).join('')
-      + '</div>';
-  }
-
-  /* One label per group, and it is where the group's own account is read: the
-     title, the lead line that frames it, the record's words paragraph by
-     paragraph, its awards, its team caption and then a catalogue entry per
-     photograph. `kind` and `index` used to be parameters here and neither was
-     ever read; `layout` joined them and went the same way, because the plan it
-     drew is gone — the catalogue's letters are what tie an entry to a
-     photograph now.
-
-     The account block is omitted entirely when there are no words for it, and
-     the opening lead is rendered ONLY when the account came from
-     `overview.text`. On the fallback path the account IS the summary, so
-     rendering the lead as well prints the record's one sentence twice — which is
-     what all four Leadership posts did. Honours are not in this path: they hang
-     as tiles, not as groups, so they have no label at all. */
-  /* ── The account's two columns, dealt in ORDER ──────────────────────────
-     CSS was the obvious place for this and it does not work here: a
-     `repeat(2, minmax(0, 1fr))` grid inside the label's own grid resolved its
-     tracks to 151px inside a 324px cell and ignored the declaration even when it
-     was forced inline — measured, with the CSSOM confirming the rule was applied
-     — and a `columns: 2` multicol box either spills its remainder into a third
-     column that paints off the screen, or balances the columns so that the
-     reading order stops matching the document order.
-
-     Splitting here keeps the paragraphs in the record's own order, which is what
-     `tests/renderer.test.mjs` pins ("the account is the record's own overview,
-     paragraph for paragraph"), and it keeps the split measurable. The break is
-     placed at the paragraph where the running character count first passes half
-     the total, so the two columns finish as close to level as an in-order split
-     allows: for PALAD, seven paragraphs of 97/268/48/299/42/200/274 characters
-     break after the fourth, for 712 against 516. An out-of-order deal balances
-     better — 717 against 510 — and reorders the prose to do it, which is not a
-     trade this should make to save 8% of a column's height. */
-  function accountColumns(paragraphs) {
-    var total = paragraphs.reduce(function (a, t) { return a + t.length; }, 0);
-    var cut = paragraphs.length;
-    var seen = 0;
-    for (var i = 0; i < paragraphs.length; i++) {
-      seen += paragraphs[i].length;
-      if (seen >= total / 2) { cut = i + 1; break; }
-    }
-    return [paragraphs.slice(0, cut), paragraphs.slice(cut)].map(function (col) {
-      return '<div class="acct-col">' + col.map(function (t) {
-        return '<p class="acct-p">' + esc(t) + '</p>';
-      }).join('') + '</div>';
-    }).join('');
-  }
-
-  /* ── The legend: the catalogue, and where it stands ─────────────────────
-     The legend is the text for the HANG, so it stands under the hang and not
-     in the label's reading column. It was the last block of the label's side
-     column, which put a photograph's own name in a different cell from the
-     photograph and, because it was the tallest thing in that column, is part of
-     what made the label taller than its cell: measured at 1440x900 the
-     Applications label held 743px in a 690px box and scrolled.
-
-     It is emitted by its own function because it is no longer part of the
-     label's markup: `renderGroup` hangs it in the wall cell, under the cluster.
-     `Site.renderLabel` therefore no longer contains the catalogue, and the
-     checks that count its entries read it from `.legend` instead.
-
-     It is a block of its own rather than a bare list because the wall cell has
-     to be able to keep it out of the hang's way: the cluster takes the leftover
-     height, and the legend is what it leaves over. */
-  function renderLegend(record, pieces) {
-    return '<div class="legend">'
-      + '<div class="cat">' + renderCatalogue(record, pieces) + '</div>'
-      + '</div>';
-  }
-  Site.renderLegend = renderLegend;
-
-  /* ── The label's control, and the narrow stand ────────────────────────────
-     Under 900px a stand is ONE screen wide and ONE column: the hang cell takes
-     the whole width and the whole height, the label column leaves the walk (see
-     the `@media (max-width: 900px)` block in css/styles.css), and the record is
-     READ IN THE DIALOG instead.
-
-     So the control goes in the HANG CELL, after the legend — the cell that is
-     still on the screen — and not in the label, which is the cell that has
-     gone. It is rendered at EVERY width: the desktop visitor's copy is simply
-     hidden by CSS, so there is one code path, one delegated handler, and
-     nothing that renders the control only on a phone and cannot be tested at
-     all.
-
-     Its reference is the stand's entry key, as `data-entry`, and the stand
-     already carries that same key on `.group` — `openLabelRef` in this file
-     resolves one from the other. That is the convention the pieces use (the
-     `data-gallery` / `data-entry` pair, scoped by the array the record lives in
-     so both record arrays can start at 0), followed rather than reinvented: no
-     new naming scheme, and no second index to fall out of step with the first.
-
-     The name says what it OPENS, and it names the RECORD: pressed, this reveals
-     the label, which is the record's own account. */
-  function renderLabelOpen(record, entryKey) {
-    var title = labelTitle(record);
-    return '<button type="button" class="label-open"'
-      + ' data-label="' + esc(entryKey) + '" data-entry="' + esc(entryKey) + '"'
-      + ' aria-label="' + esc('Read the label — ' + title) + '">'
-      + esc('Read the label')
-      + '</button>';
-  }
-  Site.renderLabelOpen = renderLabelOpen;
-
-  function renderLabel(record, pieces) {
-    var list = Array.isArray(pieces) ? pieces : [];
-    /* A frame is not a photograph. The count is the photographs that exist, not
-       the frames hung: padding fills a group up to the floor, so a record with
-       none at all used to read "3 photographs" three lines above "Three
-       photographs awaited". */
-    var photographs = list.filter(function (p) { return !p.awaited; }).length;
-    var title = labelTitle(record);
-    var meta = labelMeta(record);
-    var account = labelAccount(record);
-    var lead = record.summary && account.from === 'overview'
-      ? '<p class="narr-lead">' + esc(record.summary) + '</p>' : '';
-    /* ── The label is one column of blocks, and the prose is a cell ────────
-       It was a 1.8fr/1fr grid with `grid-area`s: the account and the awards at
-       the left, the team caption and the catalogue at the right, across the
-       stand's full width. The label is a cell BESIDE the hang now, so it is a
-       column — and a column needs no areas, only order.
-
-       The account is the block that decides whether a stand fits, so it is the
-       one block with an interior layout of its own: it takes the label's full
-       width in two columns, and the furniture that is SET BESIDE it (the
-       summary, the awards, the team caption, the catalogue) stacks in a column
-       to its right. That is what buys the height — the account is 1,228
-       characters for the densest record, and as a full-width single column at
-       this cell's width it measured 750px inside a 690px cell.
-
-       `.narr` keeps the title and the meta only. The summary is furniture, not
-       part of the narrative, and it lives with the awards where it can be read
-       as a caption to the stand. */
-    /* `tabindex="0"` on the label, and it is not decoration. The label column
-       scrolls when its content does not fit (see the note on `.label` in
-       css/styles.css), and a scrollable box with no focusable descendant is
-       content a keyboard-only visitor cannot reach at all — measured: the
-       Applications label held 775px in a 502px box with `descendantsFocusable:
-       0`, and the simplest record there has no award control to focus. The
-       hall's own axis is horizontal, so the keyboard has no other way into it.
-
-       A region with a name is what makes the new focus stop announce itself
-       rather than reading as a bare focus ring, so it is labelled with the
-       record's own name. */
-    /* `tabindex="0"` on the label, and it is not decoration. The label column
-       scrolls when its content does not fit (see the note on `.label` in
-       css/styles.css), and a scrollable box with no focusable descendant is
-       content a keyboard-only visitor cannot reach at all — measured: the
-       Applications label held 775px in a 502px box with `descendantsFocusable:
-       0`, and the simplest record there has no award control to focus. The
-       hall's own axis is horizontal, so the keyboard has no other way into it.
-
-       A region with a name is what makes the new focus stop announce itself
-       rather than reading as a bare focus ring, so it is labelled with the
-       record's own name. */
-    return '<div class="label" tabindex="0" role="region"'
-      + ' aria-label="' + esc(title + ' — exhibition label') + '">'
-      + '<div class="narr">'
-      + '<p class="narr-title">' + esc(title) + '</p>'
-      + (meta ? '<p class="narr-meta">' + esc(meta)
-          + (photographs
-              ? ' · ' + photographs + ' photograph' + (photographs === 1 ? '' : 's')
-              : '') + '</p>' : '')
-      + '</div>'
-      + '<div class="label-body">'
-      + (account.paragraphs.length
-          ? '<div class="label-account">' + accountColumns(account.paragraphs) + '</div>'
-          : '')
-      + '<div class="label-side">'
-      + lead
-      + renderAwards(record)
-      + '<div class="label-aside">' + renderTeam(record) + '</div>'
-      + '</div>'
-      + '</div>'
-      + '</div>';
-  }
-  Site.renderLabel = renderLabel;
-
-  /* ── The honours room: a list of tiles, not a hang ──────────────────────
-     An honour that IS a project's award hangs on that project's card, under
-     Awards, and not here: the card is where its project is explained, and the
-     award twice over is the duplication this room was rebuilt to end. What is
-     left is the honours that stand alone, and they are drawn as an accession
-     list in three columns rather than as paintings in gilt frames.
-
-     `Site.honoursTiles` is what decides which is which, and it hands back each
-     record's TRUE index into PORTFOLIO.honors — not its position in the
-     filtered list — because that is what Site.galleryFor resolves against. A
-     filtered position is the defect that once opened a neighbour's photographs
-     and it is not reintroduced here. */
-  function honoursSection() {
-    var split = Site.honoursTiles(PORTFOLIO.honors);
-    return { key: 'Honours', records: split.tiles };
-  }
-
-  function tileCount(record) {
-    var images = (record && Array.isArray(record.images)) ? record.images.filter(Boolean) : [];
-    return images.length;
-  }
-
-  /* A tile is the honour's accession card: what it is, when it was conferred,
-     and whether there are photographs behind it. A tile with photographs is a
-     real control and says what it opens, which also makes the tile visibly
-     different from the ones that have nothing to show yet — a list where one
-     row silently does nothing when pressed is worse than one that says so. */
-  function renderTile(entry) {
-    var h = entry.record;
-    var n = tileCount(h);
-    var cls = 'tile' + (n ? ' tile--open' : '');
-    var attrs = n
-      ? ' data-tile="' + entry.index + '" data-gallery="honors" data-entry="honors:' + entry.index + '"'
-        + ' aria-label="' + esc('Open ' + h.description + (h.year ? ', ' + h.year : '')
-            + ' — ' + n + ' photograph' + (n === 1 ? '' : 's')) + '"'
-      : ' data-tile="' + entry.index + '"';
-    return '<li><button type="button" class="' + cls + '"' + attrs + '>'
-      + '<span class="tile-year">' + esc(h.year || '') + '</span>'
-      + '<span class="tile-desc">' + esc(h.description || '') + '</span>'
-      + '<span class="' + (n ? 'tile-open' : 'tile-awaited') + '">'
-      + (n ? n + ' photograph' + (n === 1 ? '' : 's') : 'Photographs awaited')
-      + '</span>'
-      + '</button></li>';
-  }
-
-  function renderHonoursRoom() {
-    var section = honoursSection();
-    var list = section.records;
-    return '<section class="room" data-room="' + esc(section.key) + '" tabindex="-1">'
-      + '<h2 class="room-title"><span class="t">Honours</span>'
-      + '<span class="sub">Competitions, conferences and citations'
-      + '<span class="count">' + list.length + ' HONOUR'
-      + (list.length === 1 ? '' : 'S') + '</span></span></h2>'
-      + '<ul class="tiles">' + list.map(renderTile).join('') + '</ul></section>';
-  }
-
-  function renderRooms() {
-    var strip = document.getElementById('strip');
-    if (!strip) return;
-    var rooms = Site.deriveRooms(PORTFOLIO.projects);
-    var html = '';
-
-    /* Room 1 — About. Not a group: a portrait, the bio and the ways to
-       reach him, hung as one composition.
-       The portrait hangs in the same frame as everything else on the walk. It
-       used to carry `.pool` and `.canvas`, whose rules are gone, so it was
-       unstyled — and because neither element ever received a `--lit` write, the
-       brightness they still read left the portrait permanently at 60% while
-       every other work lit up. */
-    html += '<section class="room" data-room="About" tabindex="-1">'
-      + '<h2 class="room-title"><span class="t">About</span>'
-      + '<span class="sub">' + esc(PORTFOLIO.title) + '</span></h2>'
-      + '<div class="hang"><figure class="piece piece--portrait">'
-      + '<img src="' + esc(PORTFOLIO.profileImage) + '" alt="' + esc(PORTFOLIO.name) + '">'
-      + '</figure><div class="about-copy">'
-      + PORTFOLIO.bio.map(function (p) { return '<p class="note">' + esc(p) + '</p>'; }).join('')
-      + '<div class="about-links">'
-      + PORTFOLIO.social.map(function (s) {
-          return '<a class="plate-link" href="' + esc(s.url) + '" target="_blank" rel="noopener">'
-            + esc(s.label) + '</a>';
-        }).join('')
-      + '<button type="button" class="plate-link lit" data-action="copy" data-copy="'
-      + esc(PORTFOLIO.email) + '">' + esc(PORTFOLIO.email) + '</button>'
-      + '</div></div></div></section>';
-
-    /* Rooms 2..N — one per derived category. One project is one group. */
-    rooms.forEach(function (room, ri) {
-      var groups = room.projects.map(function (p, i) {
-        return renderGroup('project', i, p, room.key);
-      }).join('');
-      html += '<section class="room" data-room="' + esc(room.key) + '" tabindex="-1">'
-        + '<h2 class="room-title"><span class="t">' + esc(room.title) + '</span>'
-        + '<span class="sub">' + room.projects.length + ' projects'
-        + '<span class="count">' + esc(room.key.toUpperCase()) + '</span></span></h2>'
-        + '<div class="groups">' + groups + '</div></section>';
-    });
-
-    /* Leadership — one post is one group. */
-    html += '<section class="room" data-room="Leadership" tabindex="-1">'
-      + '<h2 class="room-title"><span class="t">Leadership</span>'
-      + '<span class="sub">Posts held<span class="count">' + PORTFOLIO.leadership.length
-      + ' POSTS</span></span></h2>'
-      + '<div class="groups">'
-      + PORTFOLIO.leadership.map(function (l, i) {
-          return renderGroup('leadership', i, l, 'Leadership');
-        }).join('')
-      + '</div></section>';
-
-    html += renderHonoursRoom();
-
-    /* Contact */
-    html += '<section class="room" data-room="Contact" tabindex="-1">'
-      + '<h2 class="room-title"><span class="t">Contact</span>'
-      + '<span class="sub">Thanks for walking the collection</span></h2>'
-      + '<p class="note">Let&rsquo;s build something together.</p>'
-      + '<button type="button" class="plate-link lit" data-action="copy" data-copy="'
-      + esc(PORTFOLIO.email) + '">' + esc(PORTFOLIO.email) + '</button></section>';
-
-    strip.innerHTML = html;
-  }
-
-  /* ── The dock: the walk's directory, at its foot ────────────────────
-     The dock shows a short name; the room heading keeps the full title, and
-     the full title plus its count is the control's accessible name, so the
-     shortened label is never what a screen reader reads. The short name comes
-     from walkRooms() — the same source that names the rooms, so the two cannot
-     drift. It used to come from a ROOM_SHORT table beside this comment, which
-     is exactly the second source the comment claimed did not exist. */
-
-  /* The rooms the walk carries, in walk order — one source, so the dock and
-     the walk cannot drift apart. The honours count is the tiles' count, taken
-     from the same derivation the room renders from: counting PORTFOLIO.honors
-     would name eight awards the room does not hold. */
-  function walkRooms() {
-    var rooms = [{ key: 'About', note: 'bio & contact' }];
-    Site.deriveRooms(PORTFOLIO.projects).forEach(function (r) {
-      rooms.push({ key: r.key, note: r.projects.length + ' projects' });
-    });
-    rooms.push({ key: 'Leadership', note: PORTFOLIO.leadership.length + ' groups' });
-    var honours = honoursSection();
-    rooms.push({
-      key: honours.key,
-      note: honours.records.length + ' honour' + (honours.records.length === 1 ? '' : 's')
-    });
-    rooms.push({ key: 'Contact', note: '—' });
-    return rooms;
-  }
-
-  function dockItems() {
-    return walkRooms().map(function (r) {
-      return { key: r.key, short: r.short, note: r.note };
-    });
-  }
-
-  /* Pure: given the dock's room keys and the room the walk is in, which entry
-     is current. Separated from the DOM write so a test can pin the marking
-     without a layout engine. */
-  function currentRoomMarkup(keys, current) {
-    return (keys || []).map(function (key) {
-      return { key: key, current: !!current && key === current };
-    });
-  }
-  Site.currentRoomMarkup = currentRoomMarkup;
-
-  function markCurrentRoom(key) {
-    Site.currentRoom = key || null;
-    var links = document.querySelectorAll('#directory .dock-link');
-    var keys = [];
-    for (var i = 0; i < links.length; i++) keys.push(links[i].getAttribute('data-goto'));
-    var marked = currentRoomMarkup(keys, Site.currentRoom);
-    var live = document.getElementById('dockCurrent');
-    for (var j = 0; j < links.length; j++) {
-      links[j].setAttribute('aria-current', marked[j].current ? 'true' : 'false');
-      /* The narrow dock's live name is read from the control that owns it, so
-         the short name has one source and the two cannot drift. */
-      if (marked[j].current && live) {
-        var dt = links[j].querySelector('.dt');
-        live.textContent = (dt && dt.textContent) || Site.currentRoom || '';
-      }
-    }
-  }
-  Site.markCurrentRoom = markCurrentRoom;
-
-  function renderDock() {
-    var dir = document.getElementById('directory');
-    if (!dir) return;
-    var items = dockItems();
-    dir.innerHTML = '<ol>'
-      + items.map(function (it, i) {
-          var acc = (it.key === 'Contact') ? '&mdash;' : String(i + 1);
-          var short = it.short || it.key;
-          var name = 'Room ' + (i + 1) + ' — ' + it.key + ', ' + it.note;
-          return '<li><button type="button" class="dock-link" data-goto="' + esc(it.key) + '"'
-            + ' aria-label="' + esc(name) + '">'
-            + '<span class="dn">' + acc + '</span>'
-            + '<span class="dt">' + esc(short) + '</span></button></li>';
-        }).join('')
-      + '</ol>'
-      /* The narrow dock's live name. It is a span beside the pips, so the
-         current room stays named when the labels collapse — the alternative,
-         scrolling the dock to find the aria-current control, is what shipped
-         before and left five of eight rooms unnamed on a phone. */
-      + '<span class="dock-live" id="dockCurrent" aria-hidden="true"></span>';
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     LIGHTING — a work's light rises as it arrives and never goes back out
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* `--lit` is written to the .work element itself (a leaf-ish node), and it is
-     registered `inherits: false` in css/styles.css. Never write an inherited
-     custom property on a large subtree per frame: measured at 503ms of
-     RecalcStyleDuration per 3s of scroll in a prior project. */
-  function initLights() {
-    var strip = document.getElementById('strip');
-    var hall = document.getElementById('hall');
-    if (!strip || !hall) return;
-
-    /* The live region that names the room the walk is in (spec §9) and the
-       dock's progress track. Both are set up before the lighting's early
-       returns: naming the room and drawing how far along the walk is are
-       independent of whether any work is currently lit, so a room of plates
-       still names itself and still advances the bar. The announcer is written
-       only when the room changes, so scrolling does not spam a screen reader —
-       or the DOM — with the same name dozens of times a second; the bar is one
-       property write per frame.
-
-       The name on SCREEN is not written here at all. It is the room's own
-       `h2.room-title`, which carries `position: sticky` and travels with the
-       walk; `writeRail()` and the `#roomRail` element it filled are deleted.
-       The live region is what is left needing a write. */
-    var announcer = document.getElementById('announcer');
-    var dockProgress = document.getElementById('dockProgress');
-    var lastRoom = null;
-
-    /* Which room the middle of the viewport is standing in. The interval test
-       is not repeated here: Site.roomAtOffset owns it, so the announcer and the
-       dock cannot drift from the walk's own rule for where a boundary falls.
-       This measures the geometry; that decides. */
-    function roomAt() {
-      var rooms = strip.querySelectorAll('[data-room]');
-      var boxes = [];
-      for (var i = 0; i < rooms.length; i++) {
-        var b = { el: rooms[i], left: pageX(rooms[i]), width: rooms[i].offsetWidth };
-        boxes.push(b);
-      }
-      var box = Site.roomAtOffset(hall.scrollLeft, hall.clientWidth, boxes);
-      return box ? box.el : null;
-    }
-
-    /* `writeRail()` and its `textRuns()` helper lived here. Both are deleted
-       with the rail they served, and neither has another caller: `textRuns`
-       existed only to keep `.sub`'s nested `<span class="count">` from reading
-       as "3 projectsROBOTICS" once it was copied into a second element, and
-       nothing copies `.sub` anywhere now that the heading names itself. The
-       live region reads `.t`, which carries no nested run to glue. */
-
-    function announceRoom() {
-      var r = roomAt();
-      if (!r) return '';
-      /* The name is the heading's own words, and the fallback is the room's key.
-         It is ANNOUNCED here and nowhere else: the name on screen needs no
-         write, because the heading it belongs to is the element doing the
-         sticking. */
-      var titleEl = r.querySelector('.room-title .t');
-      var name = (titleEl && titleEl.textContent) || r.getAttribute('data-room') || '';
-      if (name && name !== lastRoom) {
-        lastRoom = name;
-        if (announcer) announcer.textContent = 'Room: ' + name;
-        /* The dock follows the walk. Keyed on data-room, not the display
-           title: the two differ where the dock shortens a name. */
-        markCurrentRoom(r.getAttribute('data-room'));
-      }
-      return name;
-    }
-    Site.announceRoom = announceRoom;
-
-    /* The walk's progress, inside the dock. It replaced #rail, which drew the
-       same fraction as a line along the screen's own edge. The element is the
-       TRACK; its ::after is the filled part, so the fraction is written as a
-       custom property rather than sizing the element itself — sizing the track
-       would make the bar shrink out from under its own background. The partial
-       fill it paints is Task 5's CSS; here it is a value on an element. */
-    function updateProgress() {
-      if (!dockProgress) return;
-      var v = Site.progressFraction(hall.scrollLeft, hall.scrollWidth, hall.clientWidth);
-      dockProgress.style.setProperty('--walk-progress', (v * 100) + '%');
-    }
-    Site.updateProgress = updateProgress;
-
-    /* The rail and the live region are not motion: they still have to work
-       under `prefers-reduced-motion`. This is what the early return below
-       falls back to, and it is what the lighting path calls once per frame. */
-    function trackScroll() {
-      announceRoom();
-      updateProgress();
-    }
-
-    function bindTracking() {
-      /* Frame-throttled, like the lighting path: a scroll handler that writes
-         two elements per event would do it dozens of times a frame. */
-      var queued = false;
-      var flush = function () {
-        queued = false;
-        trackScroll();
-      };
-      var onScrollTracking = function () {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(flush);
-      };
-      hall.addEventListener('scroll', onScrollTracking, { passive: true });
-      window.addEventListener('resize', flush);
-      trackScroll();
-    }
-
-    var works = Array.prototype.slice.call(strip.querySelectorAll('[data-piece]'));
-
-    var reduce = window.matchMedia
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    /* Reduced motion removes the light falloff, not the walk's bookkeeping:
-       returning here without binding was a real defect — under reduced motion
-       the rail stayed empty and the dock never followed the walk, while the
-       spec requires the live region to keep announcing and the rail to still
-       be set. */
-    if (reduce || !works.length) {
-      works.forEach(function (w) { w.style.setProperty('--lit', '1'); });
-      bindTracking();
+  function wireReveals() {
+    var nodes = document.querySelectorAll('[data-reveal]');
+    if (!nodes.length) return;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || !('IntersectionObserver' in window)) {
+      nodes.forEach(function (n) { n.classList.add('is-in'); });
       return;
     }
-
-    /* Restored mid-walk on load: mark everything already passed as seen so the
-       lighting does not sweep across the whole strip on the first frame. */
-    var startMid = hall.scrollLeft + hall.clientWidth / 2;
-    works.forEach(function (w) {
-      if (centreX(w) < startMid) w.dataset.seen = '1';
-    });
-
-    var ticking = false;
-    function update() {
-      var vw = hall.clientWidth;
-      var mid = hall.scrollLeft + vw / 2;
-      var centres = works.map(centreX);
-      var active = Site.visibleWork(hall.scrollLeft, vw, centres);
-
-      works.forEach(function (w, i) {
-        var c = centres[i];
-        var d = Math.abs(c - mid) / (vw * 0.62);
-        var v = Math.max(0, 1 - d);
-        v = v * v * (3 - 2 * v);                  /* smoothstep */
-        if (i === active) v = 1;
-        if (v > 0.5) w.dataset.seen = '1';
-        var lit = (w.dataset.seen === '1') ? Math.max(v, 0.72) : v * 0.62;
-        w.style.setProperty('--lit', lit.toFixed(3));
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-in');
+        io.unobserve(entry.target);
       });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    nodes.forEach(function (n) { io.observe(n); });
+  }
 
-      trackScroll();
+  function wireChrome() {
+    var resume = document.getElementById('resumeLink');
+    var resumeLink = P.social.filter(function (s) { return s.label === 'Resume'; })[0] || P.social[0];
+    if (resume && resumeLink) resume.href = resumeLink.url;
+
+    var masthead = document.getElementById('masthead');
+    var progress = document.getElementById('progress');
+    var hero = document.getElementById('top');
+    var ticking = false;
+
+    function update() {
+      ticking = false;
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      var heroH = hero ? hero.offsetHeight : 0;
+      if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, heroH - 72));
+      if (progress) {
+        var max = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.width = (max > 0 ? Math.min(100, (y / max) * 100) : 0) + '%';
+      }
     }
-
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(function () { update(); ticking = false; });
-    }
-
-    hall.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    /* Images carry loading="lazy" and no intrinsic size, so the strip's offsets
-       shift as they arrive. Re-measure once everything has loaded; the scroll
-       and resize paths keep it current after that. */
-    window.addEventListener('load', function () { update(); }, { once: true });
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
     update();
   }
 
-  /* Exposed so a test can re-run the controller against a seeded DOM, and so
-     the renderer can relight after a re-render. */
-  Site.initLights = initLights;
-
-  /* ════════════════════════════════════════════════════════════════════
-     INIT
-     ════════════════════════════════════════════════════════════════════ */
+  function wireDelegation() {
+    var page = document.getElementById('page');
+    if (!page) return;
+    page.addEventListener('click', function (e) {
+      var t = e.target.closest ? e.target.closest('[data-kind][data-index]') : null;
+      if (!t || t.disabled) return;
+      openRecord(t.getAttribute('data-kind'), Number(t.getAttribute('data-index')));
+    });
+  }
 
   function init() {
-    /* The walk first, so its Lenis instance exists before anything measure-
-       dependent runs. It no longer needs to observe #strip: the observer that
-       registered snap targets as the rooms appeared went with the snap.
-       The rooms are built from PORTFOLIO, so the gallery cannot drift from the
-       data; the directory is the same list. */
-    Site.walk = initWalk();
-
-    renderDock();
-    renderRooms();
-
-    /* ── The band each stand hangs on, solved from its cell ────────────────
-       `renderRooms` writes the hang; the band is a measurement, not a choice.
-       It is solved from the hang cell's width and the height the legend leaves
-       — not from any photograph's aspect ratio, which is why there is no `load`
-       listener here any more: every frame is the same box, so nothing about the
-       solve changes when a photograph's bytes arrive. What can change it is the
-       cell (a resize) and the LEGEND's own type: it is the block whose height
-       the band is solved around, and a webfont arriving re-lays it out. */
-    fitWalls();
-    initLabelFades();
-    window.addEventListener('resize', function () { fitWalls(); });
-    /* The same re-solve after the fonts settle, because the legend's height is
-       text and the text is measured once its face has arrived. The webfont is
-       real — index.html links Newsreader and Courier Prime — and before it
-       loads the legend is laid out in the fallback face, which is a different
-       height. Nothing else about the shell waits on a font. */
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(function () { fitWalls(); });
-    }
-
-    /* After the walk and the rooms, so the first update() sees real geometry:
-       Lenis has measured the strip and every work has an offsetLeft. */
-    initLights();
-
-    /* The walk has not scrolled yet, so the first room is the current one. */
-    var firstRoom = document.querySelector('#strip .room');
-    if (firstRoom) markCurrentRoom(firstRoom.getAttribute('data-room'));
-
-    renderHero();
-    renderNews();
-    renderProjects();
-    renderLeadership();
-    renderHonors();
-    renderFooter();
-
-    initRevealObserver();
-    initPreviews();
+    render();
+    buildRail();
+    wireReveals();
+    wireChrome();
+    wireDelegation();
   }
 
   if (document.readyState === 'loading') {
@@ -2156,4 +431,6 @@
     init();
   }
 
+  /* Published for the eventual guard suite and for manual probing. */
+  window.Profile = { render: render, openRecord: openRecord, closeDialog: closeDialog };
 })();

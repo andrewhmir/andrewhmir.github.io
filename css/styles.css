@@ -1,3338 +1,623 @@
 /* ==========================================================================
-   Portfolio Styles — Warm Dark · Earthy · Serif
+   styles.css — the Long Field profile page
+   A vertical profile page: painted panels panned from two Amorsolo paintings.
+   POLISH PASS.
    ========================================================================== */
 
-/*
-   Table of Contents
-   ─────────────────
-   Search by NAME, not by line — line numbers move on every edit.
-
-   19. Responsive
-   20. Hall — the horizontal walk
-   21. Room — one leg of the walk
-
-   The tail below 21 is the walk's interior, unnumbered. Its headings in file
-   order: `The dock:` · `The walk's progress` · `The narrow dock` ·
-   `The room heading is the walk's sticky sign` · `Room furniture:` ·
-   `The groups:` · `The stand:` ·
-   `The hang cell:` · `The legend:` · `The wall: one budget` ·
-   `A column's one budget` · `The loading floor` ·
-   `The lead has no rule` · `The label column scrolls` · `The exhibition label` ·
-   `The label's interior` · `The account:` · `The awards,` · `The team caption` ·
-   `The honours room:`
-
-    1. Custom Properties (the palette)   8. Hero           DELETED
-    2. Reset & Base                      9. Pills          LIVE
-                                         9b. Icons         LIVE
-    3. Typography                       10. Project Cards  LIVE
-    4. Atmosphere (layer removed)       11. News Bulletin  LIVE
-    5. Layout                           12. Records        LIVE
-    6. Scroll Progress  DELETED         13. Footer         DELETED
-    7. Navigation       DELETED         14. Scroll-to-Top  DELETED
-                                        15. Modal          LIVE
-                                        15b. Gallery carousel LIVE
-                                        16. Fade-in Reveal LIVE
-                                        17. Screen Reader Only LIVE
-                                        18. Reduced Motion LIVE
-
-   Sections 6, 8, 13 and 14, `7. Navigation` and the dead `.project-list` in
-   section 10 were the vertical document this site replaced; all of them are
-   DELETED and are NOT where a change to the walk belongs. Do not re-add them.
-   ========================================================================== */
-
-/* ── 1. Custom Properties ────────────────────────────────────────── */
 :root {
-  /* Night Gallery palette. Two solid text tiers and an accent — there is no
-     third tier. #6d6559 measured 3.17:1 and failed WCAG AA, and a tier built
-     from opacity or color-mix() is not covered by the spec's measured ratios,
-     which hold for solid colours only.
+  color-scheme: dark;
 
-     The walls are COOL because the mural is. The palette was warm brown
-     (#0d0c0b / #131211 / #171513); it is now a deep blue-slate taken from the
-     mouth of the mural's own range — which tools/wall-import.mjs prints, and
-     which measured a mean luminance of 54/255, or 21% of white. The wall is
-     therefore already darker than it reads, and needs no pre-darkened asset:
-     the scrim above it is what sets how loud it is, so retuning the mural is a
-     stylesheet change rather than a re-encode.
+  --night: #080c0e;
+  --text: #ece2cf;
+  --text-strong: #f9f4e8;
+  --text-quiet: #9a9384;
+  --accent: #d4b06a;
+  --border: rgba(236, 226, 207, .14);
 
-     The two TEXT tiers and the accent stay warm on purpose. Warm light on cool
-     stone is the one contrast the page is built on; cooling the text too would
-     leave the accent nothing to play against. The text tiers are unchanged and
-     still carry their measured ratios — a cool ground only raises them, because
-     it is darker than the warm brown it replaces. Note the clean upside: the
-     halo is now warm against cold, so a piece's light separates from the wall
-     instead of blending into it.
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --mono: 'Courier Prime', ui-monospace, Consolas, monospace;
+  --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-     ── Retuned once, by the brighten pass ("option C — brighten the room") ──
-     The page read as too dark in use, and the measurements said why: the wall
-     crown sat at 1.18% of white and --text-quiet at 4.54:1, which is AA by
-     0.04 — a tier that technically passes and is genuinely hard to read. So two
-     things moved together, because they are a single constraint:
-
-       token          was        now        role
-       --text         #e8dcc6    #ece2cf    labels, body
-       --text-strong  #f6efe0    #f9f4e8    room titles
-       --text-quiet   #8c8375    #9a9384    metadata, dates, provenance
-       --accent       #c9a45c    #d4b06a    accession numbers, active room
-
-     The three wall tokens are UNCHANGED. The wall is opened by its scrim alphas
-     instead (see --wall-scrim and .room), because the mural is a picture and a
-     picture dimmed by its veil keeps its own colour, where a picture dimmed by
-     repainting its ground does not. */
-  --night:        #080c0e;
-  --room:         #101519;
-  --room-warm:    #141b20;
-  --text:         #ece2cf;
-  --text-strong:  #f9f4e8;
-  --text-quiet:   #9a9384;
-  --accent:       #d4b06a;
-
-  /* ── The mural ────────────────────────────────────────────────────────
-     The mural is an element inside the walk (.wall), not a background on the
-     hall, because a background on a scroll container does not travel with the
-     scroll — see the note on .wall. Being content, it is carried at exactly the
-     scroll rate with no JS, no parallax maths and nothing that can desync.
-
-     ── Sizing: how big the loop is, and why it is a range ────────────────
-     Three things have to hold at once, and each pair of them fights:
-
-       1. The WHOLE picture must be on the wall. A tile is always narrower than
-          the infinite scroll, so this is not about width at all: it is the
-          `auto` that scales the image to the tile while keeping its 3.59:1
-          proportions, instead of stretching it to fit. A tile never crops; only
-          a fixed second value would distort.
-       2. The loop must be VISIBLE. If the tile is wider than the window you
-          only ever see one copy, and the mural reads as a single image cut
-          short instead of a wall that repeats.
-       3. It must still read as a MURAL, not wallpaper. Shrinking the tile to
-          guarantee (2) at every size turns the frieze into texture: at 50vw
-          there are four copies across and four down, and the dragons become
-          pattern.
-
-     So the tile is tied to the window but bounded, and the bound is what keeps
-     it a picture:
-
-       --wall-tile   tile at 1547px   copies across   copies down   scale
-       50vw          774px            2.0             4.0           0.48x
-       1200px        1200px           1.3             2.6           0.75x
-       clamp(...)    1021px           1.5             3.1           0.64x
-
-     `clamp(900px, 66vw, 1500px)` holds at least one full copy in shot from a
-     2300px monitor down to a phone, and stops the tile growing so large on a
-     wide screen that the repeat disappears. tools/wall-compare.mjs prints this
-     table for any candidate. */
-  --wall:         url('../files/wall-mushoku.webp');
-  --wall-tile:    clamp(900px, 66vw, 1500px) auto;
-  /* The scrim over the mural — the "very low opacity" dial. Low on purpose: the
-     mural is dark on average (and peak-targeted at import — see
-     tools/wall-import.mjs), so this layer is a veil for consistency rather than
-     the thing doing the dimming. The room scrims above it are what carry the
-     text contrast, and tests/shell-check.mjs derives the floor from the shipped
-     asset's peak.
-
-     The brighten pass took this from 0.42 to 0.32. It is the cleanest of the
-     available dials because a veil dims the mural and leaves its colour alone:
-     the wall keeps the mural's own slate, which is what "the wall is the
-     picture" means, whereas repainting --room lighter would have washed that
-     colour out. Opening it is only affordable because --text-quiet was raised
-     in the same pass — see the palette note above, and .room's crown, which is
-     the stop that actually bounds the text. */
-  --wall-scrim:   rgba(8, 12, 14, 0.32);
-
-  --edge:         rgba(214, 232, 240, 0.16);
-  --edge-soft:    rgba(214, 232, 240, 0.07);
-
-  --font-heading: 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-body:    Georgia, 'Times New Roman', serif;
-  --font-mono:    'Courier Prime', 'Courier New', monospace;
-
-  /* ── The stand ────────────────────────────────────────────────────────
-     A gallery is as wide as its contents and a room is exactly one screen
-     tall, and one STAND is that screen: it is sized so that when the walk
-     parks on it, nothing of its neighbours is in shot.
-
-     A stand is where the reading happens, so what has to FIT is the HEIGHT.
-
-     ── The shape: two cells side by side, not two bands stacked ──────────
-     A stand is a ROW of two full-height cells — the hang, and the label that
-     reads it. This replaces a column of two stacked bands: a picture band fixed
-     at 156px with the label at the stand's full width beneath it. That shape
-     measured 765.7px inside a 724px band at 1536x864, so the stand was centred
-     on a line that did not exist: the room title was drawn at y = -14.7 and the
-     last award at y = 829 against a dock top of 781. At the spec's 1280x704
-     floor it was 116px over. The fault was invisible at 1440x900 only because
-     its 21px overrun fitted inside the room's 42px head padding.
-
-     HEIGHT is spent in two places and neither is a constant now:
-
-       the WALL   is the left cell. A column of two or three frames DIVIDES it
-                  rather than stacking it — see `.cluster` and `.col`.
-       the LABEL  is the right cell, sized by --label-col, and it is the account
-                  inside it that the copy length decides.
-
-     The old --band-h was a FIXED pixel height, and it was fixed for a reason
-     that has not survived: the deepest arrangement is a 3-row column, and 156px
-     was the smallest band in which three frames and their two gaps still left
-     each frame above the 44x44 tap floor. That constraint belongs to a COLUMN,
-     and a column now divides the STAND — at the floor the stand's band is 466px,
-     so a 3-row column gives 148px frames, three times the tap floor. The
-     constant and its argument retire together.
-
-     `--col-count` and `--col-rows` are written by renderCluster — one per
-     cluster, one per column — and are unitless divisors. They decide where a
-     column breaks; neither is read by any rule, because a column is divided by
-     flexbox instead (a re-derived divisor in the stylesheet is how the written
-     one and the read one drift apart).
-
-     The tokens below are the stand's dials. `--label-col` is a VIEWPORT share
-     rather than a fixed width, so the proportion survives every supported
-     screen: 614px at 1536 (588px of inner measure) and 512px at 1280 (486px),
-     and the wall takes what is left. `--stand-w` is the stand's own width, and
-     it is what stops a wider label making the walk longer. */
-  /* ── The two cells, and why the label is the SMALLER one ──────────────
-     The wall is the wider cell, and that is not a preference — it is what the
-     photographs require. A frame's width follows its own photograph, so a wall
-     has to be wide enough to lay a whole hang side by side at the height it is
-     given. Narrow the wall and the frames do not shrink: their columns do,
-     until a 2.251-ratio photograph is squeezed to the 44px tap floor and the
-     wall becomes a row of slivers. Measured on the three-across hang: 317px of
-     wall gave three 44x691 frames, which is a wall of lines, and the walk's
-     photograph area fell to 62,124 px² a screen.
-
-     56% of the stand is where a hang fits as pictures rather than slivers. The
-     label then gets 691px at 1440 and 614px at 1280 — enough for the account in
-     two columns at 12.5px, which is the size the owner chose.
-
-     ── Both numbers were retuned when the legend moved under the hang ────────
-     The label is a VIEWPORT SHARE again rather than a fixed cell, and the stand
-     is wider than it was. The catalogue left this column for the wall (see
-     `── The legend` below), so the label has one block fewer to hold and the
-     account is the only thing that decides whether it fits. Measured at
-     1440x900: the label's own content was 743px in the 44vw/634px cell it had,
-     which scrolled, and the same record fits with room to spare once the
-     catalogue is out of it.
-
-     It has to be a SHARE and not a fixed width, and that is measured rather than
-     assumed: a 560px cell fits every record at 1440x900 and overflows by 91px at
-     1536x864, because the label's type is a share of the viewport and its cell
-     was not. The column has to grow with the type it holds. */
-  --label-col:      clamp(520px, 44vw, 720px);
-  /* ── The furniture column inside the label — the summary, the awards and the
-     team caption. It was 42%, sized when the catalogue was its fourth block; the
-     catalogue is on the wall now, and the three blocks that remain are wider
-     than they are tall, so the account takes the share the catalogue gave up.
-     A share of the label rather than a fixed width, so the two interior columns
-     keep their proportion at every screen.
-
-     This is a floor as well as a preference, and the measurement is the reason:
-     at 26% the awards block wraps to 684px inside a 650px cell at 1536x864, so
-     the FURNITURE becomes the tall pole and the label scrolls; at 36% the
-     account loses the width it needs and the PROSE becomes one. 30% is where
-     both columns are shorter than the cell they share at every viewport the
-     suite measures. */
-  --label-side:     30%;
-  --group-col-gap:  clamp(24px, 2.2vw, 40px);
-  /* ── The room's gutter ────────────────────────────────────────────────
-     The one number the room's side padding and the sticky heading's pin offset
-     both read. They were two: the padding carried a literal 34px, and the rail
-     that the heading replaced carried a `clamp(18px, 2.4vw, 34px)` offset of
-     its own — equal at a wide viewport, and drifting apart below 1400px. The
-     pinned heading has to sit on the same edge as the stands it heads, so the
-     pin reads this token and so does the padding. */
-  --room-gutter:    34px;
-  /* The room title's block, which is what a stand's band has to give up.
-     DERIVED from the title's own type rather than measured per viewport, so
-     the two cannot drift: `.room-title`'s font size is one line tall (1.15),
-     the `.sub` line beneath it adds a 0.68rem mono line plus its 8px margin,
-     and the rule carries 6px of margin-bottom. Measured against the sum at
-     five viewports — 1440x900 69px, 1536x864 72, 1280x704 63, 1920x1080 76,
-     390x844 52 — and this expression reproduces each within 0.6px.
-
-     The 48px ceiling is `.room-title`'s own clamp maximum; it is repeated here
-     so this expression cannot run away on a very wide screen, and `--room-title-type`
-     is the single definition both read. */
-  --room-title-type: clamp(1.7rem, 2.9vw, 3rem);
-  --room-title-h:    calc(var(--room-title-type) * 1.65 + 6px);
-  /* ── `--label-measure` is RETIRED, with the two rules that read it ────────
-     It was 56ch: the measure for the label's one-line blocks, the narrative's
-     opening line and each team caption. The narrative reads the label's width
-     now and the team caption sits in the 30% furniture column, which is
-     narrower than any cap a `ch` measure would impose — and a `ch` in Georgia,
-     the caption's own family, is wide enough that 56ch would have run past the
-     column rather than capping it. Nothing reads this name; it is kept as a
-     comment so the next search for it finds the reason it is gone. */
-  /* ── The stand is one screen wide, and the cap says so ────────────────────
-     `min()` against `100vw`, and the second term is the whole ordering fix. A
-     stand may never be WIDER than the window, and the clamp alone does not say
-     that: below a 1100px viewport it sits on its 1100px floor and a stand is
-     1100px inside a 390px screen.
-
-     That floor is what inverted the walk's two distances. `--group-gap` reads
-     `max(0.25 * stand, (100vw - stand) / 2)`, so with the stand pinned at
-     1100px the sibling gap floors at 275px while `--room-gap` is `45vw` and
-     keeps shrinking with the screen. The two crossed at 611px, and narrower
-     than that two projects of one ROOM were further apart than two different
-     rooms: at 390x844 the sibling gap was 275px against a 175px category gap,
-     which is the inverse of the rule the walk exists to hold.
-
-     Capping the stand at the window ends it. Below 1100px `(100vw - stand) / 2`
-     is zero and the sibling gap falls back to its other term, `0.25 * stand`,
-     which with `stand = 100vw` is `0.25vw` — against a category gap of `0.45vw`
-     at every width. A constant ratio has no crossing: family (b) is the larger
-     at every screen, and 390x844 now reads 97px between siblings against 175px
-     between rooms.
-
-     AT AND ABOVE 1100px THIS IS INERT, which is why the three viewports ux-check
-     measures cannot move: the clamp already returns 1100px or less there, so
-     `min()` picks that same value and drops the `100vw` term. At 1100x704 it is
-     `min(1100, 1100)`; at 1280x704 `min(1100, 1280)`; at 1440x900
-     `min(1100, 1440)`; at 1536x864 `min(1100, 1536)` — 1100px in all four, and
-     `--group-gap` still resolves to 275px, the same number it did before. */
-  --stand-w:        min(clamp(1100px, 68vw, 1440px), 100vw);
-  --col-gap:     clamp(  6px,  1.1vh,  10px);
-  /* ── The frame's one shape ────────────────────────────────────────────
-     Every frame on every stand is this box: one size, one shape, cropped to
-     fill. 16/9 because it is the shape of five of the six preview films and of
-     most of the photographs, and because it crops least — measured against the
-     collection's own files, a 16:9 box keeps ~93% of the average photograph's
-     area where a 3:2 box keeps ~79% and a 4:3 box ~73%.
-
-     It is written as the fraction it reads as, and `fitWall` in js/main.js
-     parses it from here rather than restating it: the band the solve computes
-     and the box the frame wears have to be the same number, and two copies of
-     it are how they drift. The one copy that does exist is `frameRatio`'s
-     last-resort literal, for a token that does not parse at all — see the note
-     there, and do not add a third.
-
-     What it costs, recorded rather than discovered: `object-fit: cover` trims
-     the edges of anything wider or taller than this, and the one file that
-     pays a lot is Focus Buddy's vertical preview still (960x1670, 0.57:1),
-     which reads as a band across the middle of the frame. */
-  --frame-ar:      16 / 9;
-  /* Horizontal, so it is not part of the vertical budget the fold measures.
-     It was 12px of a 1320px stand when a hang could be four columns wide; with
-     every stand one column of one size it is the gap the columns would share,
-     and it stays a token because the cluster is still a flex row. */
-  --cluster-gap: 12px;
-  /* ── The walk's two distances: the frame, and the threshold ───────────────
-     Two stands in one room are SIBLINGS — the same category under the same
-     heading — and two rooms are different categories under different headings.
-     Those are two different distances, and they are deliberately not the same
-     size. They were, and this pair of tokens is the record of which way round
-     they now go.
-
-     `--group-gap` is the SIBLING distance, and it is a frame: the smallest gap
-     that keeps the property the wall is hung for. A stand parks with its CENTRE
-     on the screen's centre (see `initWalk`), so the bare wall beside a parked
-     stand is `(100vw - stand) / 2` — 170px at 1440x900, 218 at 1536x864, 90 at
-     1280x704 — and a gap at least that wide leaves no neighbour in shot.
-     `max()` of that term and a quarter of a stand is that criterion written
-     down once, so the gap cannot be retuned below the property it buys, at the
-     three viewports tools/ux-check.mjs measures or at any other: 275px at all
-     three, against the 170 / 218 / 90px they need. The share is 0.25 rather
-     than 0.2 so the 1536x864 window keeps 57px of margin over its own floor
-     rather than 2px.
-
-     It was `calc(2 * var(--stand-w))` — 2,200px, two screens of bare wall
-     between two projects of the same room — while two ROOMS were separated by
-     nothing but their own 34px gutters and the 1px recess, 69px measured at
-     1440x900. The category boundary was the smallest distance in the walk and
-     the sibling gap was the largest, which is the pair the wrong way round.
-
-     `--room-gap` is the CATEGORY distance, and it is a threshold rather than a
-     frame: a band of wall a visitor walks through on the way from one room to
-     the next. That is why it is a share of the SCREEN and not of the stand —
-     half a screen of wall is what makes the next room a different place rather
-     than the next exhibit, and it is also the stretch the walk's sticky heading
-     hands over across. It is spent as the LEAVING room's own right padding
-     (see `.room:not(:last-child)`), not as a gap in `#strip` and not as the
-     arriving room's left padding, and both halves of that are measured: the
-     same 1,000px of wall reads 28.91 as a gap and 20.44 as a room's padding at
-     1440x900 — 1.41x brighter, against 20.93 for the room's own wall between
-     two stands, which is the ground the projects are already hung on — and
-     padding-left on the arriving room delays its heading's pin by a whole band,
-     which ux-check caught at 1250 against 550. See the notes on `#strip` and on
-     `.room:not(:last-child)`. MEASURED at 1440x900: 717px between the last
-     stand of one room and the first of the next — 648px of band, the two 34px
-     gutters and the 1px recess — against 275px between two stands of one room,
-     where those same two distances were 69px and 2,200px before it.
-     tools/ux-check.mjs asserts the ORDER of the pair, since that is the
-     property the eye reads.
-
-     It was 90vw and it is 45vw — halved. The floor `shell-check.mjs` asserts on
-     this token came down with it, from 50vw to 45vw, because the property that
-     matters is the ORDER above and the old floor made the token's own value the
-     only thing anyone was reading: at 45vw the crossing is 717px against a
-     275px sibling gap at 1440x900 — 2.6x, and 2.3x at the 1280x704 floor. The
-     floor is still a floor and not a target: the smallest value it admits has to
-     keep reading as a change of place, or the category boundary has become a
-     sibling gap wearing a threshold's name. */
-  --group-gap:   max(calc(0.25 * var(--stand-w)), calc((100vw - var(--stand-w)) / 2));
-  --room-gap:    45vw;
-
-  --lit:          0;
-  --ease-lit:     cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ── Legacy aliases ───────────────────────────────────────────────
-     Rules for the dialog, carousel, toast and nav still reference these
-     names, as does index.html's <noscript>. They now resolve to the palette
-     above; nothing new should use them. */
-  --bg-root:       var(--night);
-  --surface-1:     rgba(214, 232, 240, 0.03);
-  --surface-2:     rgba(214, 232, 240, 0.06);
-  --surface-solid: #141a1e;
-  --border-1:      rgba(214, 232, 240, 0.08);
-  --border-2:      rgba(214, 232, 240, 0.14);
-  --text-bright:   var(--text-strong);
-  --text-body:     var(--text);
-  --text-muted:    var(--text-quiet);
-  --accent-2:      #a47c48;
-  --danger:        #d14b3c;
-
-  --space-xs:  4px;
-  --space-sm:  8px;
-  --space-md:  16px;
-  --space-lg:  24px;
-  --space-xl:  32px;
-  --space-2xl: 48px;
-  --space-3xl: 64px;
-  --space-4xl: 96px;
-  --space-5xl: 140px;
-
-  /* Border radius is zero everywhere. */
-  --radius-sm: 0;
-  --radius-md: 0;
-
-  --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
-
-  /* --ease-out carries the walk's easing curve as well as the old chrome's. */
-  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
-  --transition-fast:  150ms ease;
-  --transition-base:  220ms ease;
-}
-/* ── 1b. --lit, registered so it does NOT inherit ──────────────────────
-   Each work carries its own light value, written on the work element every
-   frame the walk moves. An inherited custom property written on a large
-   subtree invalidates style for the whole subtree; that is the documented
-   cause of a measured 503ms of RecalcStyleDuration per 3s of scrolling in the
-   owner's prior project. Registered `inherits: false` and written only to the
-   few elements that read it, so an update touches one element, not a room. */
-@property --lit {
-  syntax: '<number>';
-  inherits: false;
-  initial-value: 0;
+  --gutter: 16px;
+  --panel-radius: 16px;
+  --frame-radius: 10px;
+  --masthead-h: 62px;
+  --max: 1440px;
 }
 
-/* ── 2. Reset & Base ──────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+* { box-sizing: border-box; }
 
 html {
   scroll-behavior: smooth;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  font-family: var(--font-body);
-  font-size: 1.05rem;
-  line-height: 1.75;
-  color: var(--text-body);
-  background: var(--bg-root);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-img, video {
-  display: block;
-  max-width: 100%;
-}
-
-::selection {
-  background: var(--accent);
-  color: #fff;
-}
-
-/* ── 3. Typography ────────────────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  color: var(--text-bright);
-  line-height: 1.15;
-  font-weight: 400;
-}
-
-a {
-  color: var(--accent);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-a:hover {
-  color: var(--accent-2);
-}
-
-b, strong {
-  font-weight: 600;
-  color: var(--text-bright);
-}
-
-p {
-  margin-bottom: 1em;
-}
-
-p:last-child {
-  margin-bottom: 0;
-}
-
-/* ── 4. Atmosphere ──────────────────────────────────────────────────
-   The fixed painting-and-grain layer is gone. The gallery's walls are the
-   light: the hall, the rooms and the works carry their own backgrounds, and a
-   fixed layer above them dimmed every room toward the old warm palette and
-   added the one texture the spec rules out — film grain lifts the blacks on
-   near-black and reads as dirt. The base of the walk is --night. */
-
-/* Content sits above the page base.
-   NOTE: no z-index here — a stacking context would trap the fixed dock and
-   the modal/toast below it. Positioned z-index:auto children paint in DOM
-   order, so layering is preserved without one. */
-.content-layer {
-  position: relative;
-}
-
-/* ── 5. Layout ──────────────────────────────────────────────────── */
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 var(--space-xl);
-}
-
-.section {
-  padding: 100px 0;
-}
-
-/* 6. Scroll Progress - DELETED with the vertical document. See the Table of
-   Contents. */
-
-/* 8. Hero — DELETED. The retired opening stage, its signature, its down
-   cue, its intro band and its bio block all belonged to the vertical
-   document. The 2 MB `files/painting-hero.jpg` went with `.bg-painting`, the
-   rule that named it. See the Table of Contents. */
-
-/* ── 9. Pills — warm, papery, not glass ─────────────────────────── */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 18px;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  color: var(--text-body);
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  cursor: pointer;
-  transition: all var(--transition-base);
-  line-height: 1.4;
-}
-
-.pill .icon {
-  font-size: 0.75rem;
-  color: var(--accent);
-}
-
-.pill:hover {
-  color: var(--text-bright);
-  border-color: var(--accent);
-  background: var(--surface-2);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-card);
-}
-
-.pill:hover .icon {
-  color: var(--accent);
-}
-
-/* ── 9b. Icons — the inlined glyphs, and their one box ────────────────
-   Twelve glyphs used to arrive as Font Awesome's stylesheet plus a webfont.
-   They are inline SVG in the generated `js/icons.js` now, and `Site.icon()`
-   is the only reader; this is the rule that gives those `<svg>` elements a
-   size, because they arrive with none.
-
-   Three of the declarations are load-bearing rather than tidy:
-
-   `height: 1em; width: auto` — NOT a square box, and this is the one that
-   would fail loudly. Every glyph carries its own `viewBox` and they are not
-   square: the chevrons are 320x512, `users` is 640x512, most of the rest are
-   448, 512 or 576 wide against 512 tall. An SVG with a `viewBox` has an
-   intrinsic aspect RATIO, so `height: 1em` with `width: auto` lets each glyph
-   work out its own width — a 320-wide chevron comes out narrow, a 640-wide
-   `users` comes out wide. A forced `1em x 1em` box letterboxes both: the
-   chevron floats in a wide box and `users` is squeezed. And the rule cannot be
-   left out at all: a bare `<svg>` with a `viewBox` and no width or height
-   falls back to the replaced-element default of 300x150, which blows the pills
-   and the gallery arrows apart.
-
-   `fill: currentColor` — a glyph introduces no colour of its own. The palette
-   in section 1 is measured and every text tier's contrast against the wall is
-   asserted by tools/ux-check.mjs, so a glyph painting a colour of its own
-   would be a colour nobody measured, on a ground nobody measured it against.
-   `currentColor` makes it take the text it sits in, which is also what keeps
-   a pill's glyph on `--accent` (see `.pill .icon` in section 9).
-
-   `vertical-align: -0.125em` is Font Awesome's own optical baseline offset,
-   kept so the glyph sits against the text exactly where the `<i>` it replaces
-   sat. `flex: 0 0 auto` is for the pills, which are `inline-flex` rows: an
-   `auto`-width item is otherwise free to shrink and the glyph would go with
-   it. */
-.icon {
-  display: inline-block;
-  height: 1em;
-  width: auto;
-  fill: currentColor;
-  vertical-align: -0.125em;
-  flex: 0 0 auto;
-}
-
-/* ── 10. Project Cards ──────────────────────────────────────────── */
-.project-card {
-  position: relative;               /* containing block for .project-hit::after */
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-lg);
-  background: var(--surface-1);
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: background var(--transition-base),
-              border-color var(--transition-base),
-              transform var(--transition-base),
-              box-shadow var(--transition-base);
-}
-
-.project-card:hover {
-  background: var(--surface-2);
-  border-color: var(--border-2);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card);
-}
-
-/* Solo projects get a subtle warm tint */
-.project-card--solo {
-  border-left: 2px solid var(--accent);
-}
-
-.project-media {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-1);
-  background: rgba(0, 0, 0, 0.2);
-  transition: border-color var(--transition-base);
-}
-
-.project-card:hover .project-media {
-  border-color: var(--border-2);
-}
-
-.project-thumb {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  transition: transform 400ms var(--ease-out);
-}
-
-.project-card:hover .project-thumb {
-  transform: scale(1.04);
-}
-
-.project-thumb.img-fallback {
-  object-fit: contain;
-}
-
-/* `.project-hit` is the card's single control; its ::after covers the whole
-   card, so a click anywhere activates the primary action. */
-.project-hit {
-  appearance: none;
-  -webkit-appearance: none;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid transparent;
-  border-radius: 0;
-  padding: 0;
-  margin: 0;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--transition-base);
-}
-
-.project-hit::after {
-  content: '';
-  position: absolute;
-  inset: 0;                 /* resolves against .project-card */
-  z-index: 1;               /* above the media, below the pills */
-  border-radius: var(--radius-md);
-}
-
-.project-hit:hover,
-.project-hit:focus-visible {
-  border-bottom-color: var(--accent);
-}
-
-.project-hit:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-}
-
-/* Pills sit above the full-card overlay so they stay individually clickable */
-.project-links {
-  position: relative;
-  z-index: 2;
-}
-
-/* View cue — hover/focus affordance naming the action */
-.project-cue {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  background: rgba(20, 16, 13, 0.62);
-  opacity: 0;
-  transition: opacity var(--transition-base);
-  pointer-events: none;     /* clicks fall through to the card overlay */
-}
-
-.project-cue-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Square and 44×44: the rule is radius zero everywhere, and this is the one
-     control in the cue. */
-  width: 44px;
-  height: 44px;
-  border-radius: 0;
-  border: 1px solid var(--accent);
-  background: rgba(200, 137, 46, 0.12);
-  color: var(--accent);
-  font-size: 0.78rem;
-}
-
-.project-cue-label {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-bright);
-}
-
-/* Touch devices have no hover — the cue would only flash on tap, so limit
-   the pointer-driven reveal to hover-capable devices. Keyboard still gets it
-   via :focus-within below. */
-@media (hover: hover) {
-  .project-card:hover .project-cue { opacity: 1; }
-}
-
-.project-card:focus-within .project-cue { opacity: 1; }
-
-.project-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.project-title {
-  font-family: var(--font-heading);
-  font-size: 1.4rem;
-  font-weight: 400;
-  color: var(--text-bright);
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.project-tagline {
-  font-size: 0.9rem;
-  color: var(--text-body);
-  margin: 0 0 10px 0;
-  line-height: 1.5;
-}
-
-.project-source {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  vertical-align: middle;
-  margin-left: 10px;
-  padding: 2px 8px;
-  border-radius: 0;
-  line-height: 1.6;
-}
-
-.project-authors {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  line-height: 1.6;
-}
-
-.project-venue {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
-
-.project-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: auto;
-}
-
-.project-links .pill {
-  font-size: 0.75rem;
-  padding: 5px 12px;
-}
-
-/* ── 11. News Bulletin ────────────────────────────────────────────── */
-.timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-/* Gallery rows are <button> elements — reset UA styling but keep the
-   existing grid/flex row layout from .timeline-item / .record-item.
-   No width is set: both list containers are flex columns, so the rows
-   stretch to the same width as the inert <div> rows (including the
-   margin-left offset they already carry). */
-button.timeline-item,
-button.record-item {
-  appearance: none;
-  -webkit-appearance: none;
-  background: none;
-  border: 0;
-  border-left: 1px solid var(--border-1);
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.timeline-item:focus-visible,
-.record-item:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-  border-radius: var(--radius-sm);
-}
-
-.timeline-item {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: var(--space-lg);
-  padding: 14px var(--space-lg);
-  border-left: 1px solid var(--border-1);
-  margin-left: 4px;
-  align-items: baseline;
-}
-
-.timeline-date {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-  text-align: right;
-}
-
-.timeline-text {
-  font-size: 0.95rem;
-  color: var(--text-body);
-  line-height: 1.7;
-}
-
-/* ── 12. Records (Leadership & Honors combined) ─────────────────── */
-.record-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.record-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 20px;
-  padding: 12px var(--space-lg);
-  border-left: 1px solid var(--border-1);
-  margin-left: 4px;
-  transition: border-color var(--transition-fast),
-              color var(--transition-fast);
-}
-
-.record-item:hover {
-  border-left-color: var(--accent);
-}
-
-.record-desc {
-  font-size: 0.95rem;
-  color: var(--text-body);
-  line-height: 1.7;
-  flex: 1;
-}
-
-.record-item:hover .record-desc {
-  color: var(--text-bright);
-}
-
-.record-year {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* Subheading separating project categories — spans the full grid */
-.project-subheading {
-  grid-column: 1 / -1;
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 400;
-  color: var(--text-bright);
-  margin-bottom: var(--space-sm);
-}
-
-.project-subheading:not(:first-child) {
-  margin-top: var(--space-xl);
-}
-
-/* 13. Footer, and 14. Scroll-to-Top - DELETED. The page footer and the fixed
-   back-to-top control both belonged to the vertical document, which had a
-   bottom to return to. See the Table of Contents. */
-
-/* ── Toast (email-copy feedback) ────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3000;
-  padding: 10px 20px;
-  background: var(--surface-solid);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-sm);
-  color: var(--text-bright);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  opacity: 1;
-  pointer-events: none;
-  transition: opacity 300ms ease;
-  /* main.js fades it out via inline opacity before removing */
-}
-
-.toast--error {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-/* ── 15. Modal ──────────────────────────────────────── */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 220ms ease;
-}
-
-.modal-overlay.active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.modal-card {
-  background: var(--surface-solid);
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-md);
-  max-width: 680px;
-  width: 94%;
-  max-height: 82vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
-  transform: scale(0.96) translateY(12px);
-  transition: transform 280ms var(--ease-out);
-}
-
-.modal-overlay.active .modal-card {
-  transform: scale(1) translateY(0);
-}
-
-/* The dialog itself receives focus when it opens; a ring around the whole
-   card would be noise. Interactive children keep their own focus styles. */
-.modal-card:focus {
-  outline: none;
-}
-
-.modal-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 10;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  /* Square, radius zero like everything else, and 44×44 so it is a legal tap
-     target on a phone. */
-  width: 44px;
-  height: 44px;
-  border-radius: 0;
-  font-size: 1.3rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color var(--transition-fast);
-}
-
-.modal-close:hover {
-  color: var(--danger);
-}
-
-.modal-header {
-  padding: 28px 32px 0;
-}
-
-.modal-header h3 {
-  font-family: var(--font-heading);
-  font-size: 1.3rem;
-  font-weight: 400;
-  color: var(--text-bright);
-  letter-spacing: -0.01em;
-  margin-bottom: 4px;
-}
-
-.modal-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--accent);
-  margin-bottom: 8px;
-}
-
-.modal-scroll {
-  overflow-y: auto;
-  padding: 20px 32px 32px;
-  flex: 1;
-}
-
-.modal-image-wrap {
-  margin-bottom: 24px;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  border: 1px solid var(--border-1);
-}
-
-.modal-image-wrap img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  display: block;
-}
-
-.modal-body p {
-  margin-bottom: 16px;
-  line-height: 1.8;
-  color: var(--text-body);
-  font-size: 0.95rem;
-}
-
-/* ── 15b. Clickable gallery lines + rotating carousel ──────────── */
-
-.record-item--gallery,
-.timeline-item--gallery {
-  cursor: pointer;
-}
-
-.timeline-item--gallery:hover .timeline-text {
-  color: var(--text-bright);
-}
-
-.gallery-hint {
-  margin-left: 8px;
-  color: var(--text-muted);
-  font-size: 0.72em;
-  opacity: 0.65;
-  transition: color var(--transition-fast), opacity var(--transition-fast);
-}
-
-.record-item--gallery:hover .gallery-hint,
-.timeline-item--gallery:hover .gallery-hint {
-  color: var(--accent);
-  opacity: 1;
-}
-
-.gallery {
-  position: relative;
-}
-
-.gallery-track {
-  display: flex;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.gallery-track::-webkit-scrollbar {
-  display: none;
-}
-
-.gallery-slide {
-  position: relative;      /* anchors the placeholder caption */
-  flex: 0 0 100%;
-  margin: 0;
-}
-
-.gallery-slide img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  display: block;
-}
-
-/* The owner has chosen to keep these rows clickable while the photos are
-   still being collected, so label the placeholder instead of showing a
-   bare grey box. */
-.gallery-slide.is-placeholder::after {
-  content: 'Photos coming soon';
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 10px 14px;
-  background: rgba(20, 16, 13, 0.72);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
-.gallery-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 44px;
-  height: 44px;
-  border-radius: 0;
-  border: 1px solid var(--border-2);
-  background: rgba(20, 18, 16, 0.55);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  color: var(--text-bright);
-  font-size: 0.85rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
-}
-
-.gallery-arrow:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.gallery-arrow--prev {
-  left: 12px;
-}
-
-.gallery-arrow--next {
-  right: 12px;
-}
-
-.gallery-dots {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  display: flex;
-  gap: 7px;
-}
-
-/* The dot is the indicator; the button is the 44×44 tap target around it. */
-.gallery-dot {
-  position: relative;
-  width: 44px;
-  height: 44px;
-  border-radius: 0;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.gallery-dot::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 7px;
-  height: 7px;
-  margin: -3.5px 0 0 -3.5px;
-  background: rgba(255, 248, 240, 0.35);
-  transition: background var(--transition-fast);
-}
-
-.gallery-dot.active::before {
-  background: var(--accent);
-}
-
-.gallery-counter {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
-  color: var(--text-bright);
-  background: rgba(20, 18, 16, 0.55);
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-}
-
-/* ── 16. Fade-in Reveal ─────────────────────────────── */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-/* Fire-and-forget: an animation (not a transition) so the inline
-   --reveal-delay never lingers as a permanent hover transition-delay */
-.reveal.visible {
-  animation: revealIn 600ms var(--ease-out) forwards;
-  animation-delay: var(--reveal-delay, 0ms);
-}
-
-@keyframes revealIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── 17. Utility: Screen Reader Only ────────────────── */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ── 18. Reduced Motion ─────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-/* ==========================================================================
-   19. Responsive
-   ========================================================================== */
-
-/* Tablet */
-@media (max-width: 900px) {
-  .container {
-    padding: 0 var(--space-lg);
-  }
-
-  .section {
-    padding: 60px 0;
-  }
-
-  .project-thumb {
-    max-height: 260px;
-  }
-
-  .timeline-item {
-    grid-template-columns: 80px 1fr;
-    gap: var(--space-md);
-    padding: 12px var(--space-md);
-  }
-
-  .timeline-date {
-    text-align: left;
-    font-size: 0.68rem;
-  }
-}
-
-/* Small tablet / large phone */
-@media (max-width: 768px) {
-  .record-item {
-    flex-direction: column;
-    gap: 2px;
-    padding: 10px var(--space-md);
-  }
-
-  .record-desc {
-    font-size: 0.88rem;
-  }
-
-  .modal-card {
-    width: 100%;
-    max-height: 90vh;
-    border-radius: 0;
-  }
-
-  .modal-header {
-    padding: 20px 40px 0 20px;
-  }
-
-  .modal-scroll {
-    padding: 16px 20px 20px;
-  }
-
-  /* Comfortable touch targets — Apple/Google guidance is 44x44 */
-
-  .pill {
-    min-height: 44px;
-    padding: 11px 15px;
-  }
-
-  .modal-close {
-    width: 44px;
-    height: 44px;
-  }
-}
-
-/* Small mobile */
-@media (max-width: 480px) {
-  :root {
-    --space-xl: 20px;
-    --space-2xl: 32px;
-    --space-3xl: 48px;
-    --space-4xl: 64px;
-    --space-5xl: 80px;
-  }
-
-  .section {
-    padding: 40px 0;
-  }
-
-  .pill {
-    font-size: 0.78rem;
-    padding: 6px 14px;
-  }
-
-  .project-card {
-    padding: var(--space-md);
-  }
-
-  .project-title {
-    font-size: 1.2rem;
-  }
-
-  .timeline-item {
-    grid-template-columns: 1fr;
-    gap: 2px;
-    padding: 10px var(--space-md);
-    border-left: none;
-    margin-left: 0;
-    border-bottom: 1px solid var(--border-1);
-  }
-
-  .timeline-date {
-    text-align: left;
-  }
-
-  .record-item {
-    padding: 8px var(--space-md);
-    border-left: none;
-    margin-left: 0;
-    border-bottom: 1px solid var(--border-1);
-  }
-}
-
-/* ==========================================================================
-   20. Hall — the horizontal walk
-   One axis only. Native CSS scroll-snap stays off, and that is not the same
-   statement as "the walk does not snap": the walk is free — the JS snap that
-   used to park it was removed, plugin and all — but a CSS snap container
-   re-snaps whenever the scroll position is set programmatically, so it would
-   fight every Lenis animation, including the dock's own goToRoom().
-   ========================================================================== */
-#hall {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: none;       /* Lenis forbids native snap; see the spec §5 */
-  overscroll-behavior-x: contain;
-  /* `position: relative` keeps the hall the containing block for the rooms'
-     own layers, and `z-index: 0` makes it a stacking context so the rooms paint
-     above its background rather than under `body { background }`.
-     `overflow: auto` does NOT create a stacking context — that is the trap. */
-  position: relative;
-  z-index: 0;
-  background-color: var(--night);
-
-  /* ── The mural ──────────────────────────────────────────────────────────────
-     The mural is the HALL'S OWN BACKGROUND, with `background-attachment: local`
-     on both layers. That pair is the whole feature, and every other arrangement
-     fails in a way that a glance at the first screen will not catch.
-
-     WHY `local`. A background on a scroll container is painted on the
-     container's box and pinned to it by default, so the wall sits perfectly
-     still while the rooms slide past. `local` binds the painting to the SCROLLED
-     CONTENT instead, so the browser carries the mural across the walk at
-     exactly the scroll rate — no JS, no parallax maths, nothing to desync.
-     Measured frame-to-frame over nine 45px scroll steps: `local` 5.16, `scroll`
-     0.00, `fixed` 0.00. The pinned modes re-render byte-identical frames.
-
-     WHY NOT A `.wall` ELEMENT, which is what this used to be. An absolutely
-     positioned layer resolves `inset: 0` against the hall's padding box, and
-     that box is one VIEWPORT: #hall and #strip both measure 987px inside a
-     32227px scroll. A `.wall` layer was therefore 987px wide backing a 30601px
-     walk — a 29614px shortfall. The mural's fill area ended at x=987 and a
-     visitor who scrolled past the first screen landed on bare --night; at
-     scrollLeft 8000 the rendered band was perfectly flat (spread 0.0) where the
-     mural should be. Nothing inside this walk has a layout box that spans it:
-     the rooms overflow #strip, they do not widen it. Only the scroll container
-     can paint the scrollable area, which is why the mural moved here.
-
-     LAYER ORDER is the scrim first, then the image, because the first layer in
-     `background-image` paints on top. The scrim is `no-repeat`: it is a veil,
-     and a tiled vertical gradient would band once per viewport. The image
-     repeats on BOTH axes — across the collection, and down the wall, because
-     one frieze at 1080x301 leaves the wall bare below 301px. */
-  background-image:
-    linear-gradient(var(--wall-scrim), var(--wall-scrim)),
-    var(--wall);
-  background-repeat: no-repeat, repeat;
-  background-size: auto, var(--wall-tile);
-  background-position: 0 0, 0 0;
-  background-attachment: local, local;
-}
-
-#strip {
-  position: relative;
-  z-index: 1;                   /* the rooms hang ON the wall */
-  display: flex;
-  align-items: stretch;
-  /* ── Where the gap between two rooms is NOT spent ────────────────────────
-     The walk's larger distance separates two rooms — and it is deliberately
-     not a `gap` here. A flex gap is bare hall: it carries the mural at the
-     hall's own 32% scrim with no room gradient over it, and neither room's
-     ground reaches a gap. MEASURED at 1440x900, the same 1,000px of wall reads
-     28.91 as a gap and 20.44 as the room's own padding — 1.41x brighter, one
-     flat lit screen of mural in the middle of a dim walk, and
-     worse at the 1280x704 floor, where it is 645px of it. For scale, the
-     room's own wall between two stands reads 20.93, so the gap version was
-     nearly half again as bright as the ground the projects hang on.
-
-     The threshold is `.room`'s own padding instead — see `.room:not(:last-child)`
-     below, and `--room-gap` in the token block for the measurement that pair
-     replaces. Padding is inside the box a background paints, so the band is the
-     same lit ground as the wall the projects hang on, and the two rooms read as
-     one wall with a joint in it rather than as two panels with a light on
-     between them. It is the LEAVING room's padding-RIGHT: on the arriving room
-     the same band pushes that room's content box a whole band to the right, and
-     its heading then cannot reach its pin until the band has gone by. */
-  /* The strip is exactly the hall's height, so each room's `height: 100%`
-     resolves to one viewport rather than to the strip's content height. */
-  height: 100%;
-}
-
-/* ==========================================================================
-   21. Room — one leg of the walk
-   ========================================================================== */
-.room {
-  position: relative;
-  flex: 0 0 auto;
-  /* The gallery is as wide as its own contents: padding, every group's natural
-     width, and the gaps between them. The floor is one screen, so a short
-     gallery is never narrower than the window — a visitor is always standing
-     inside one named gallery rather than looking at two at once — and above
-     that the width simply follows the hang. The 860px floor this replaces
-     existed only so a two-column grid of 408px cells kept every frame above
-     the 44px tap floor; frames are 76-165px tall now, whatever the width. */
-  width: max-content;
-  min-width: 100vw;
-  /* No min-height. The hall already sizes the room; a second `100vh`
-     constraint made the box 704 + 70 = 774px tall inside a 704px hall at the
-     spec's floor, which pushed the densest rooms past the fold. */
-  display: flex;
-  flex-direction: column;
-  /* ── The room stacks from the top, and it does NOT centre ───────────────
-     This was `justify-content: center`, and centring is what let the flaw hide:
-     a stand taller than the room was centred on a line that did not exist, so
-     half the overflow went ABOVE the top edge and took the room title with it —
-     measured at a title top of -83 at the spec's 1280x704 floor.
-
-     Now the stack starts at the head padding and the stand is given exactly the
-     band that is left (see `.groups`). A stand that still does not fit is
-     clipped at the foot, under the dock, where at least the fault is visible as
-     a missing last line rather than as a missing room title. */
-  justify-content: flex-start;
-  /* The room is exactly one hall tall. Without this the room is only as tall
-     as its content plus its padding, so its band is measured against a box
-     that does not match the fold: content runs under the dock. */
-  height: 100%;
-  /* 100px at the foot reserves the dock (58px) plus breathing room. Content is
-     centred in what is left, so no room is top-heavy. It was 124px; the 24
-     reclaimed are 24px of frame height on every wall, and 100 still clears the
-     dock's top edge by a measured 48px at the spec's 1280x704 floor.
-
-     Both ends were re-measured against the chrome that is actually there rather
-     than against the estimates. The head is 42px: it reserved the rail's 35px
-     plus the 7px clearance the tallest room title (Honours) had at 1920x1080.
-     The rail is deleted — the room's own heading is the sticky sign now, and it
-     sits BELOW this padding rather than under a fixed bar — so the 42px is
-     headroom the heading does not need and nothing else claims. It is left
-     exactly as it was on purpose: giving it back to the pictures moves every
-     number below, and that is its own change with its own measurements, not a
-     side effect of removing a piece of chrome.
-     The foot is 92px, not 100: the dock's own box is 65px and it sits 18px off
-     the bottom, so it reaches 83px up — and the 9px left over is the gap a room
-     wants between its last line and the dock's edge. Measured, these two numbers
-     and the rail's own 20px come to 20px more usable band at 1536x864 (729 ->
-     749) and 19px at 1440x900 (767 -> 786). */
-  padding: 42px var(--room-gutter) 92px;
-  /* ── The room is a scrim over the mural, not a wall of its own ──────────
-     This was an OPAQUE gradient, and an opaque room hides the mural completely
-     — which is the whole job of these alphas. Each stop keeps its old role
-     (lightest at the head, near-black at the foot) and only gains transparency,
-     so the lit-wall look survives and the palette opens up to the mural behind
-     it.
-
-     The ramp is what makes the wall read as a wall. The crown is the clearest
-     point, which is where the room title and the top of the hang sit; it closes
-     toward the foot, which is the band under the pictures and behind the dock.
-     The base colour under the alphas is `transparent`, so the gradient adds
-     atmosphere instead of repainting the wall it is meant to reveal.
-
-     These alphas are the text-contrast floor, and they are not free: the crown
-     is the brightest ground any tier can meet. It shipped at 0.58, which is as
-     clear as the wall could be while --text-quiet still cleared WCAG AA over
-     the mural's brightest pixel — and it cleared it by 0.04, which is not a
-     margin, it is a coincidence. The brighten pass spent the two together: the
-     crown came down to 0.46 and --text-quiet went up to #9a9384, so the tier
-     now clears AA by 0.76 at the same time as the wall gets lighter. The model
-     in tests/shell-check.mjs re-derives the bound from the shipped asset, and
-     it also asserts a FLOOR on the crown's luminance, so the wall can be opened
-     further but cannot quietly be closed again.
-
-     The foot did not open this far on purpose. It is 0.90 in the shipped build
-     because the dock and the captions sit on it, and it is the one band where
-     near-black is doing a job: it is the shadow under the pictures. 0.78 keeps
-     that role — the band is still markedly darker than the crown — while taking
-     the black off the foot of every room. */
-  background:
-    radial-gradient(74% 42% at 50% -10%, rgba(255,240,214,.06), transparent 74%),
-    linear-gradient(180deg,
-      rgba(16,21,25,.46)  0%,
-      rgba(13,17,21,.62) 58%,
-      rgba(10,14,18,.78) 100%);
-  /* ── The room's edge is a SHADOW in the wall, not a lit hairline ──────────
-     This was `1px solid var(--edge-soft)` — a cool white at 7%, which is a
-     light line. On a flat black wall that read as a soft division; over the
-     mural it reads as a drawn vertical line, because the eye finds a bright
-     hairline far more easily against texture than against a void. Measured at
-     scrollLeft 500 on the About/Robotics boundary: the bright border put a
-     +13.9/-7.0 luminance step on one column (21.49 across the three columns),
-     and removing it dropped that to 0.73 — the boundary was the 8th largest
-     deviation of 983 columns on the whole wall.
-
-     A dark recess is the same division with the opposite sign, and it is what
-     a joint in stone actually looks like: the rooms stay separate, and the
-     wall stops having a bright line drawn on it. */
-  border-right: 1px solid rgba(8, 12, 14, 0.55);
-}
-
-/* ── The threshold between two categories, which is the room's own ground ───
-   The walk's larger distance. Two stands of one room are separated by
-   `--group-gap`, a frame; two ROOMS are separated by this, and it is the
-   LEAVING room's own RIGHT PADDING rather than a gap in the strip. That choice
-   is measured, not stylistic: a flex `gap` is bare hall — the mural at the
-   hall's 32% scrim with no room gradient over it — so a band spent there
-   rendered 1.41x brighter than the rooms either side of it (see the note on
-   `#strip`, which is where the numbers live). Padding is inside the box a
-   background paints, so this band is the same lit ground as the wall the
-   projects hang on.
-
-   ── Why the band belongs to the room being LEFT and not the one arriving ───
-   The band was the FOLLOWING room's left padding first, and `ux-check` threw it
-   out. Padding-left pushes that room's content box a whole band to the right,
-   and a sticky heading travels inside its containing block: the arriving room's
-   heading could not reach its pin until the band had gone by, so the two
-   samples 700px apart that must read the same read 1250 and 550 instead — a
-   heading travelling with the content, which is the exact failure `align-self`
-   exists to prevent. On the room being left, the heading is already pinned and
-   stays pinned across the whole band, and the band carries the ground whose
-   name is on screen. So the direction of the band is load-bearing, and
-   `shell-check` asserts `padding-right` rather than either.
-
-   `.room:not(:last-child)` and not `.room`: the last room in the walk has
-   nothing after it to separate from, and the selector is what says so.
-
-   What it costs the two fixed-width rooms is paid in their own rules below.
-   `padding` on a border-box box comes out of the width, and Honours and About
-   are each exactly one screen wide by construction, so both add the band back
-   to their width and keep the content box they had. Every other room is
-   `width: max-content`, whose intrinsic contribution includes its padding, so
-   the band grows the room without touching the hang inside it — measured: the
-   stands are still 1,100px and the crossing 717px at 1440x900.
-
-   The recess stays where it was, at the END of the room the visitor is leaving,
-   so it falls at the far edge of the band. That is the reading the walk wants:
-   the band is this room's wall, and the joint is the door into the next. */
-.room:not(:last-child) {
-  padding-right: calc(var(--room-gutter) + var(--room-gap));
-}
-
-/* Wall nap — REMOVED. It was two offset dot grids on a 4px period, drawn at
-   0.5px and 0.6px, as a stand-in for wall texture. Three reasons it is gone:
-
-   1. It drew vertical lines. A sub-pixel dot inside a `radial-gradient` is
-      antialiased against the pixel grid, and on a wide viewport at a non-integer
-      device pixel ratio that quantises into hard vertical columns running the
-      whole height of the room. Measured at 1917x1078 dpr 2, one column sat
-      darker than its neighbours on 97.4% of rows (mean -3.3); removing this
-      layer dropped that to 18.9%. It survived removing the border, the scrims
-      AND the mural — the wall nap was the only layer that explained it.
-   2. It has nothing left to do. It existed to give a flat, empty wall a
-      surface; the wall is now the mural, which has real texture of its own.
-   3. Film grain was already rejected for the same family of reason — on
-      near-black it lifts the blacks and reads as dirt — and the shell check
-      still forbids it.
-
-   `pointer-events: none` was load-bearing while this existed: the layer covered
-   the whole room and would otherwise have swallowed the click on every control
-   inside it. Keyboard access still worked, which is why the delegation suite
-   never caught it. With the layer gone there is nothing to swallow clicks, and
-   the delegation suite still covers the behaviour.
-
-   Do not reintroduce a sub-pixel dot grid here. If a surface is wanted, the
-   mural is the surface. */
-/* Everything a room holds paints above the wall. */
-.room > * { position: relative; }
-
-/* ── The walk fills the viewport, so the horizontal axis is the only one.
-      No vertical page axis exists: the hall is the document's one scroll
-      container.
-      `scrollbar-width: none` is not cosmetic: the hall's own horizontal
-      scrollbar consumed 15px of its box, so every room lost its last 15px to
-      a strip no room could scroll back to. The rail carries position now. ── */
-body {
-  background: var(--night);
-  overflow: hidden;
-}
-
-.content-layer {
-  height: 100vh;
-  height: 100dvh;
-}
-
-#hall {
-  height: 100vh;
-  height: 100dvh;
-  scroll-behavior: auto;   /* Lenis owns the scrolling; CSS smoothing would fight it */
-  scrollbar-width: none;   /* the rail replaces it */
-}
-
-#hall::-webkit-scrollbar {
-  display: none;
-}
-
-/* ── The dock: the walk's directory, gathered at its foot ──
-   The 94px band this replaces sat at the top of the walk and covered the
-   room title; 84 of its pixels were empty gradient. At the foot it spends
-   only wall no room was using, and the top edge belongs to the room.
-
-   It is also where the walk's position is drawn now. `.rail` used to draw the
-   same fraction as a 2px hairline along the screen's own bottom edge, and that
-   rule is deleted rather than left here: it styled an element the shell no
-   longer has, and a live rule for a deleted element is documentation that lies.
-   The fraction is `.dock-track::after`, inside the dock's own box. */
-.dock {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 900;
-  display: flex;
-  /* Was a single flex row of controls. It is a COLUMN now: the links, then the
-     track. The row behaviour did not move to a different rule so much as to a
-     different element — `.dock-links` is what `.dock` used to be. */
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-  max-width: calc(100vw - 40px);
-  padding: 6px 10px;
-  /* The dock was rgba(13,12,11,.94) — the WARM brown-black of the palette this
-     build replaced, which had been left behind when the walls went to cool
-     slate. It read as the one warm-grey chip on a cool page and, on a wall that
-     has just been opened up, as a heavier band than it needs to be. It is now
-     the wall's own colour, so the dock belongs to the room behind it; the alpha
-     stays at .94 because the dock's job is to be readable over whatever it
-     crosses. */
-  background: rgba(16, 22, 27, .94);
-  border: 1px solid var(--edge);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, .6);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-/* The row of room controls, which is what `.dock` used to be. It scrolls
-   sideways on its own rather than making the whole dock do it, so the track
-   below spans the dock's full width whatever the links do. */
-.dock-links {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.dock-links::-webkit-scrollbar { display: none; }
-
-.dock-links ol {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* ── The walk's progress, inside the dock ────────────────────────────────
-   It replaced #rail, which drew the same fraction as a hairline along the
-   screen's own edge, outside this box. Filling from the dock's left edge on
-   total walk progress means it sits about halfway across the Robotics button
-   when the walk is halfway through Robotics. It is NOT one bar per button:
-   the buttons are sized by their labels, not by how much walk each area
-   occupies, so a per-button bar would misreport total progress. */
-/* #dockProgress is itself the track: the filled part is its ::after, whose
-   width is the --walk-progress initLights() writes on the element. Without
-   the ::after the property is inert and the bar is invisible, which is how
-   this ships between the walk writing it and the track reading it. */
-.dock-track {
-  display: block;
-  height: 2px;
-  margin-top: 5px;
-  background: var(--edge-soft);
-  position: relative;
-}
-
-.dock-track::after {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--walk-progress, 0%);
-  background: var(--accent);
-}
-
-.dock::-webkit-scrollbar {
-  display: none;
-}
-
-.dock .dock-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;             /* tap target, at every width */
-  min-width: 44px;
-  padding: 0 12px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: none;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color var(--transition-fast);
-}
-
-.dock .dn {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
-  color: var(--text-quiet);
-}
-
-.dock .dt {
-  font-family: var(--font-heading);
-  font-size: 0.9rem;
-  color: var(--text-quiet);
-}
-
-.dock .dock-link:hover .dt,
-.dock .dock-link:focus-visible .dt {
-  color: var(--text);
-}
-
-.dock .dock-link[aria-current="true"] {
-  border-bottom-color: var(--accent);
-}
-
-.dock .dock-link[aria-current="true"] .dt {
-  color: var(--text-strong);
-}
-
-.dock .dock-link[aria-current="true"] .dn {
-  color: var(--accent);
-}
-
-/* The live name is the narrow dock's, so it is not shown when the labels are. */
-.dock .dock-live {
-  display: none;
-  font-family: var(--font-heading);
-  font-size: 0.88rem;
-  color: var(--text-strong);
-  white-space: nowrap;
-  padding: 0 2px 0 8px;
-  border-left: 1px solid var(--edge-soft);
-  align-self: center;
-}
-
-/* ── The narrow dock ──
-   Six rooms and their names still do not fit a phone, and before this the dock
-   simply overflowed: it held 836px of controls in a 348px box with the
-   scrollbar hidden, so six of the eight rooms were off-screen with nothing to
-   say so, and the aria-current control was outside the box from the fourth room
-   onward — the dock had stopped naming the room the visitor was standing in.
-
-   Collapsed to pips, every room is a 44x44 target that is always on screen,
-   and the current room's name is carried beside them in words. */
-@media (max-width: 560px) {
-  /* The dock KEEPS the column stacking here, and the row behaviour moves down
-     to `.dock-links` below — which is the element that has carried it since the
-     dock stopped being a single row. Re-declaring `.dock` as a row in this block
-     would put the progress bar BESIDE the pips instead of under them, which is
-     the one arrangement a phone cannot afford. */
-  .dock {
-    padding: 5px 4px;
-    gap: 0;
-    max-width: calc(100vw - 8px);
-  }
-
-  .dock-links ol {
-    gap: 0;
-  }
-
-  /* Six rooms as pips: 6 x 44 = 264px, comfortably inside a 390px screen. The
-     pip used to be 41px wide — one step under the 44x44 floor — because nine
-     rooms at a full 44 came to 396px and would not fit. One Honours gallery
-     instead of four is what buys the floor back. Collapsing the labels is what
-     the spec's "narrow case" asks for; the current room stays named by the live
-     region, which announces every change and is the signal a screen reader here
-     always used. */
-  .dock .dock-link {
-    padding: 0;
-    min-width: 44px;
-    width: 44px;
-    justify-content: center;
-  }
-
-  .dock .dock-link .dt {
-    display: none;
-  }
-
-  .dock .dock-live {
-    display: none;
-  }
-}
-
-/* ── The room heading is the walk's sticky sign ───────────────────────────
-   It names the area the walk is standing in, and it does that as ITSELF: the
-   room's own `h2.room-title`, at its own 27-48px, travelling with the walk.
-   There is no second element and no second copy of the name.
-
-   It replaced `.room-rail`, a `position: fixed` bar at the head of the screen
-   holding a 15-19px duplicate of the current room's title and subtitle, which
-   `writeRail()` refilled on every boundary crossed. That element had been
-   argued for on the grounds that a title pinned over a hang would be a second
-   copy of a heading already on the wall — and the argument was right about the
-   fault and wrong about the fix: it answered a duplicate by making one. The
-   real heading pins itself now, so nothing is duplicated, and the rail's
-   markup, its rules, its `--rail-h` token and its write path are all deleted
-   rather than left here — a live rule for a deleted element is documentation
-   that lies.
-
-   ── Why `.room > .room-title` and not a bare `.room-title` ────────────────
-   `.room > * { position: relative }` is specificity 0-1-1 and a bare class is
-   0-1-0, so a bare rule loses to it and the heading silently stops sticking.
-   The extra class in the selector is load-bearing, not stylistic.
-
-   ── Why `align-self` is the whole trick ──────────────────────────────────
-   Sticky travels only through the DISTANCE between the element's own size and
-   its containing block's. `.room` is a column flex container, so `stretch` —
-   the default — makes the heading exactly as wide as the room, leaving that
-   distance at zero: `position: sticky` would be correct, present, and inert.
-   `align-self: flex-start` gives the heading its own text width, which is the
-   slack it travels through.
-
-   `max-width: 100%` is the safety on the other side of that. Shrinking to
-   max-content means a long subtitle — Honours is "Competitions, conferences and
-   citations · 5 HONOURS" — would stop wrapping and paint over the neighbouring
-   room, since nothing between here and `#hall` clips. Capping it at its room
-   restores the wrap exactly where the text needs the whole width, and that is
-   also the only case where the heading has no slack to travel through — which
-   is the Honours, About and Contact rooms, each exactly one screen wide, where
-   there is nothing to travel across in the first place. */
-.room > .room-title {
-  position: sticky;
-  left: var(--room-gutter);
-  align-self: flex-start;
-  max-width: 100%;
-}
-
-/* ── Room furniture: the title ──
-   The sign row that used to sit above it is gone: the dock names the room
-   now, and the sign was the element the old navigation bar covered. */
-.room-title {
-  /* No top margin: the 34px it carried was the gap under the room's sign row,
-     which is gone — the dock names the room now. The bottom margin is 6px, not
-     the 14px it was: at 1536x864 the stand is taller than the room can hold, so
-     this is 8px measured rather than inherited. 6px still separates the title
-     from the picture band it heads. */
-  margin: 0 0 6px;
-  font-family: var(--font-heading);
-  font-weight: 400;
-  /* The token exists so `--room-title-h` can be derived from this very value:
-     the title's block height is this line, plus its `.sub` line, plus its
-     own margin-bottom. Change the size here and the band a stand gets follows. */
-  font-size: var(--room-title-type);
-  line-height: 1.15;
-  color: var(--text-strong);
-}
-
-.room-title .t { display: block; }
-
-.room-title .sub {
-  display: block;
-  margin-top: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-quiet);
-}
-
-.room-title .sub .count {
-  display: inline-block;
-  margin-left: 10px;
-  color: var(--accent);
-}
-
-/* ── The groups: one record is one stand, one stand is one screen ─────
-   A room is exactly one viewport tall inside a hall that is exactly one
-   viewport tall with overflow-y hidden, so a room cannot scroll: whatever
-   does not fit is clipped AND unreachable, and there is no vertical axis to
-   rescue it.
-
-   A gallery runs as far sideways as its own hang needs, so its groups are one
-   ROW rather than a grid of two columns by two rows. That grid was what fixed
-   a gallery at four exhibits, and it is the whole reason thirteen honours were
-   cut into four galleries all called Honours. A row has no such limit.
-
-   The row's gap is the frame around the exhibit — the gilt frame's opposite
-   number, and now one of TWO distances in the walk rather than the only one:
-   it is the wall between two projects of this room, and the much longer wall
-   between one room and the next is the leaving room's own right padding. See
-   `--group-gap` in the token block, where both are derived and measured, and
-   the check in tools/ux-check.mjs that asserts the order of the two.
-
-   The Honours room is NOT one of these. It hangs no group and holds no row; it
-   is the three-column list of tiles further down this file.
-
-   ── The band, which the stands now divide ──────────────────────────────
-   A stand is a GRID of two cells that divide its height, so unlike the stacked
-   shape it cannot be allowed to grow past the room and let `overflow: hidden`
-   clip the surplus: a grid row grows to its tallest cell, which pushed the
-   room's own content down and under the dock — measured at a group bottom of
-   963px against a 621px dock top at the spec's floor.
-
-   So the row names the band, and a stand fills it. The band is a room's height
-   less the chrome at both ends and less the room title that heads the stack:
-   42px at the head, 92px at the foot, and `--room-title-h` for the title block.
-   Both padding figures are `.room`'s own, and the head one is already the
-   rail's reserve — `.room`'s note records it as "42px at the head (the rail is
-   35px tall, and 7px is the clearance)" — so the rail is NOT subtracted here a
-   second time. That double subtraction is exactly the fault this line first
-   shipped with: the row came out 731px inside a 766px band, and the stand,
-   centred in a band it no longer filled, ran 11px past the dock.
-
-   With the band right, the arithmetic lands where `.room`'s note says it
-   should: at 1440x900 the title occupies 69px, so the row is 697px, the stand
-   fills it from y=111 to y=808, and the dock's top edge is 817 — a 9px gap,
-   which is the clearance that note names. `dvh` follows the address bar on a
-   phone; the `vh` line above it is the fallback for engines without it.
-
-   Writing it HERE and not on `.group` is load-bearing. `.groups` is a flex item
-   of the room, and a `height: calc()` on a flex item resolves; the same
-   declaration on the stand inside it does not, because the stand's containing
-   block is the row and the row had no definite height. */
-.groups {
-  display: flex;
-  align-items: stretch;
-  gap: var(--group-gap);
-  position: relative;
-  flex: 0 0 auto;
-  height: calc(100vh - 42px - 92px - var(--room-title-h));
-  height: calc(100dvh - 42px - 92px - var(--room-title-h));
-  min-height: 0;
-}
-
-/* ── The stand: the wall, and the label beside it ───────────────────────
-   This was two stacked bands — the pictures above, the label beneath at the
-   stand's full width. It is a grid now, because the two things a stand holds
-   are not a stack: the hang is looked at and the label is read, side by side,
-   and each gets the stand's full height to do it in.
-
-   The width is the stand's own (--stand-w) and not its hang's: the label is a
-   column of its own now, so a width that followed the content would make a
-   wordier record a longer walk, and two stands on one screen. `min-height: 0`
-   is what lets the cells share a stand that is shorter than its contents
-   instead of the label pushing the wall off the top.
-
-   `overflow: hidden` stays, and it is doing the same job it did when this was a
-   row: a hang wider than --stand-w would otherwise paint over the neighbouring
-   exhibit. Making the stand a fixed width is what makes that possible — a hang
-   of six wide frames is now clipped to its own stand rather than spilling into
-   the next one. */
-.group {
-  /* ── The stand is two cells: the wall, and the label beside it ──────────
-     This was a flex COLUMN of two stacked bands, and that shape is what the
-     rest of this file's notes call the museum-label shape. It is a grid now:
-     the wall takes what the label's fixed column leaves, and both cells are the
-     stand's full height.
-
-     `align-items: stretch` is what gives the wall and the label their height
-     without either naming one: the grid row is the stand's own height, so a
-     column inside the wall can divide it and the label can lay its blocks out
-     against it.
-
-     `overflow: hidden` stays, and its job is unchanged: a hang wider than its
-     cell would otherwise paint over the neighbouring exhibit. What changes is
-     that the cell is now the wall rather than the whole stand, so the clip
-     happens at a boundary a visitor can see the reason for. */
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--label-col);
-  column-gap: var(--group-col-gap);
-  align-items: stretch;
-  width: var(--stand-w);
-  max-width: var(--stand-w);
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-/* ── The hang cell: the hang, and the legend under it ──────────────────────
-   The stand's first cell, and it holds TWO blocks: the cluster, and the legend
-   that names each photograph. It is a flex column with the legend pinned to its
-   foot, which is what makes the cell's height the thing the legend is measured
-   against: a legend anywhere in the middle would sit on top of the hang the
-   moment the two together were taller than the cell.
-
-   ── The pinning margin is on the CLUSTER, and it has to be ────────────────
-   The legend is pinned to the cell's foot by an `auto` margin, and it is
-   `margin-bottom: auto` on the CLUSTER rather than `margin-top: auto` on the
-   legend. Both read the same way — the slack lands between the pictures and
-   their names — but only one of them can be solved around.
-
-   `fitWall` reserves the height of every block in this cell that is not the
-   cluster, and it reads that height through `getComputedStyle`, which reports an
-   `auto` margin as its RESOLVED USED VALUE. On the legend that is the slack
-   itself — 303.547px in the settled 390x844 layout — so the solve subtracted the
-   very space it was about to create and the band collapsed to the tap floor:
-   183px of a 659px cell, three 98x55 frames, 303px of bare wall. On the cluster
-   the margin is invisible to that loop by construction. shell-check asserts the
-   placement, because the failure is invisible at 1440x900 — `22vh` happens to
-   sit near the correct band there.
-
-   The cluster takes what is left. That is the shape the hang wants: a short
-   arrangement leaves a band of wall between the pictures and their names,
-   exactly as a hang centred on a wall does, and a tall one closes the gap
-   rather than pushing its own legend out of the cell.
-
-   It is a BOX that clips — `overflow: hidden`, exactly as the stand had before
-   this element existed — so a legend that could not fit would be cut off
-   silently, which is the one fault this shape can produce that nothing else
-   would notice. `ux-check` measures every legend against this cell for that
-   reason, and the heights here are chosen so it never happens.
-
-   Named `.hang-cell` and NOT `.wall`: the vocabulary calls this box the wall
-   CELL, but `.wall` is reserved for the mural layer this repo forbids — see the
-   `WHY NOT A .wall ELEMENT` note under the walk, and shell-check's guard. */
-.hang-cell {
-  display: flex;
-  flex-direction: column;
-  /* ── Both blocks share the pictures' LEFT edge, and that is the change ──
-     `align-items: center` centred the legend in a cell the hang now fills:
-     a stack of one shape is as wide as its frames, and the legend is 62% of
-     the cell, so the two were 83px apart at 1440x900 — measured, the
-     catalogue starting at x=2853 under pictures starting at x=2770. A caption
-     that begins a third of the way across the thing it captions reads as a
-     fault, and the note on `.legend` has always said the two share an edge.
-
-     `flex-start` is what shares it. The frames are the block that decides
-     where that edge is: the cluster spans the cell and its column sits at the
-     cluster's head, so the pictures are at the cell's left edge and the
-     legend now meets them there. The room's own heading pins to the same
-     gutter, so the title, the pictures and their names read as one column. */
-  align-items: flex-start;
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* ── The legend: the catalogue, under the hang ─────────────────────────────
-   It was the label's side column. It is here because it is text about the
-   HANG — one entry per photograph, keyed by the letter the arrangement hung —
-   and a photograph's own name belongs under the photograph rather than in the
-   cell beside it. Moving it is also what let the label stop scrolling: it was
-   the tallest of the label's side blocks.
-
-   Its width is a share of the WALL rather than the wall's full width, because
-   the entries are prose and the label beside them is a reading column: at 62%
-   of a 588px wall an entry is ~365px, which is a 45-character line, and the
-   remaining 38% is the air a caption needs to read as a caption.
-
-   That share no longer matches the pictures above it — a frame's width is the
-   solved band times `--frame-ar`, which is 331px in a 435px cell at 1440x900
-   where 62% is 270px — so the two share a LEFT edge (see the note on
-   `.hang-cell`) and the caption stops short on the right. Making the caption
-   follow the pictures' width instead is the obvious next thought, and it is a
-   FEEDBACK LOOP: this block's height is part of what `fitWall` measures, and
-   its height depends on its own width, so the band would move every time the
-   legend rewrapped. Left-aligned at a share of the cell is the version that
-   settles.
-
-   `flex: 0 0 auto` is load-bearing: the legend is the block whose natural
-   height the cluster must not be allowed to spend, and a shrinkable legend
-   would be squeezed to nothing before the cluster gave up any of its height.
-
-   ── The pinning margin is on the CLUSTER, not here ─────────────────────────
-   This carried `margin-top: auto`, which is the same distich read the other way
-   round — the slack lands between the pictures and their names either way — and
-   it moved for a reason that is not cosmetic. `fitWall` reserves the height of
-   every block in this cell that is not the cluster, and it reads that height
-   through `getComputedStyle`, which reports an `auto` margin as its RESOLVED
-   USED VALUE: the slack itself, 303.547px in the settled 390x844 layout. So the
-   solve subtracted the very space it was about to create, `availH` fell to 183px
-   of a 659px cell and the band collapsed to the tap floor — three 98x55 frames
-   with 303px of bare wall under them.
-
-   On `.cluster` the margin is invisible to that loop by construction, so the
-   reservation is well defined for every block it does count. See the note on
-   `.cluster`'s `margin-bottom` below, and `fitWall` in js/main.js. */
-.legend {
-  flex: 0 0 auto;
-  width: 62%;
-  min-width: 0;
-}
-
-/* ── The columns of the hang, in flow, so each frame takes its own photograph's
-   width. How many columns there are, and which pieces sit in each, is the
-   arrangement's business; the drop that keeps a stack from reading as one tall
-   frame is written inline per column.
-
-   `align-items: flex-start` is load-bearing, not cosmetic. A flex column
-   stretches its children to the widest one by default, which draws the widest
-   frame's width around every other photograph in that column and leaves the
-   piece's black ground showing beside the narrow ones — measured at 135px of
-   ground on the honours wall, and invisible to every other check because the
-   frame still collides with nothing and still clears the tap floor. */
-/* ── The wall: one budget, shared by every column ─────────────────────
-   The wall is the stand's LEFT CELL and it is the stand's full height. A column
-   of two or three frames must DIVIDE that height rather than stack it, and that
-   division is the whole reason this rule has a height at all: without it a
-   3-row column (the deepest arrangement the data deals) measured 390px at
-   1920x1080 against a 150px budget, and the picture band, not the prose, was
-   what ran past the dock.
-
-   What changed is the dividend, not the division. This was `height: var(--band-h)`
-   — a fixed 156px, sized so that a 3-row column's frames still cleared the 44x44
-   tap floor. The dividend is now the stand, so at the 1280x704 floor a 3-row
-   column gives 148px frames: three times the floor, and three times the picture.
-
-   The division is done by flexbox rather than by arithmetic, and that is
-   deliberate. `flex: 1 1 0` on the frames splits whatever height the column
-   has, so a column of one gives its frame the wall, a column of two gives half
-   each and a column of three a third — and the same arithmetic holds when the
-   gaps change, which a `calc((band - gaps) / rows)` re-derivation in the
-   stylesheet would not. `--col-rows` is still written by renderCluster and is
-   read by nothing: the header of this file says why a divisor that is written
-   on the DOM and re-derived in the stylesheet is how the two drift. */
-.cluster {
-  display: flex;
-  align-items: stretch;
-  gap: var(--cluster-gap);
-  /* The hang is a block of the wall ABOVE its legend, so it is sized but does
-     not grow: it takes the band `fitWall` solved for it and no more. It was
-     `flex: 0 0 auto` with `height: min(100%, var(--wall-h))` when it was the
-     wall's only child; a basis is what lets it keep that height while sharing
-     the cell with the legend. `min-height: 0` lets it be shorter than its
-     contents rather than pushing the legend out of the cell. */
-  flex: 0 0 var(--wall-h);
-  min-height: 0;
-  /* ── The pinning margin, and it is on THIS block on purpose ───────────────
-     The legend is pinned to the foot of the cell, so the slack between the
-     pictures and their names has to live on one side or the other of the two
-     blocks. It lives here, and that is load-bearing rather than tidy: `fitWall`
-     reserves the height of every block in this cell that is not the cluster, and
-     an `auto` margin read back through `getComputedStyle` is its resolved used
-     value — the slack — so a solve that reserved it would subtract the space it
-     was about to create and collapse the band to the tap floor. Measured when
-     this margin was on `.legend`: a 183px band in a 659px cell at 390x844, three
-     98x55 frames and 303px of bare wall. On the cluster the margin is invisible
-     to that loop by construction. */
-  margin-bottom: auto;
-  /* ── The wall a hang stands on, which the columns divide ────────────────
-     Every frame is one box and the stand is one column of three, so the hang's
-     width is `frameHeight x --frame-ar` and the band is SOLVED rather than
-     chosen — see `fitWall` in js/main.js, which measures the cell and hands the
-     arithmetic to `Site.bandFor` in js/data.js. The two bounds are the cell's
-     width and the height the legend leaves, and for a stack of three landscape
-     frames it is the HEIGHT that binds: the column is taller than it is wide.
-
-     `--wall-h` below is the fallback a wall wears until that solve runs, and
-     the fallback has to leave the frames above the tap floor on its own: a
-     320px band is three 100px frames with the gaps, which clears 44 with room
-     to spare.
-
-     `fitWall` no longer reads any photograph's aspect ratio, so nothing here
-     depends on a picture's bytes: the solve is the same before and after an
-     image arrives, and there is no `load` listener re-solving the wall. */
-  --wall-h:         clamp(150px, 22vh, 320px);
-  /* Declared here as the shape a stand with no arrangement of its own wears —
-     renderCluster overwrites it inline with the deepest drop the arrangement
-     actually deals, so the two cannot drift: one that starts dropping a column
-     further brings its own room, and one that stops dropping takes it away. */
-  --drop:           0px;
-  /* No `height` here. This was `height: min(100%, var(--wall-h))` while the
-     cluster was the wall's only child and the only thing to size; the wall is a
-     flex column now and the cluster's own `flex-basis` above is what gives it
-     the band. A height here would resolve against `100%` of a cell it shares
-     with the legend and fight that basis. */
-  /* ── The room an arrangement's drop spends, which the cell has to hold ───
-     INERT TODAY, and kept on purpose. The one arrangement the wall deals
-     stacks three frames in one column and publishes `drop: [0]`, so
-     `--drop` is 0px and these three declarations do nothing. What they are is
-     the fix for a fault that shipped, and the record of why a drop is not free
-     — an arrangement that offsets a column brings its own room the moment it
-     does.
-
-     The fault: an arrangement offsets a column down by writing an inline
-     `margin-top` (see HANG_LAYOUTS in js/data.js), and a margin adds to that
-     column's OUTER box without adding to the cell's. So the dropped column's
-     last frame hung exactly the drop below this box's bottom edge, and the
-     `overflow: hidden` below — which is here on purpose — cut that much off
-     it: the gilt, the mat, and on a hung frame part of the photograph.
-     Measured as shipped at every reference viewport: 10 of the collection's 32
-     frames, one per stand, each losing exactly 14px, six of them real
-     photographs. `ux-check` asserts the cell's padding box against every
-     frame's own box, and this is the rule that answers it.
-
-     `content-box` is explicit and load-bearing, not tidiness. The page sets
-     `border-box` globally, and under it this padding would come OUT of the
-     height above instead of adding to it — the columns divide the content box,
-     so every frame in a dropped arrangement would have lost half the drop, and
-     the 44px tap floor with it. With `content-box` the height stays the band the
-     solve chose, and the drop hangs in the room below it. */
-  box-sizing: content-box;
-  padding-bottom: var(--drop);
-  /* The wall is bounded by its cell, and that bound is visible: a grid item
-     whose content is wider than its track overflows the track by default, so a
-     hang wider than the stand paints past `overflow: hidden`'s clip edge —
-     measured at 428px past the stand before this. The min/max pair is what
-     keeps a wide hang inside the cell it was given. */
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* ── A column's one budget ────────────────────────────────────────────
-   A column is one stack inside the wall, so its height is the wall's and it
-   spends that height on its own frames: `align-items: stretch` in the cluster
-   is what gives it the wall, and each frame takes an equal share of it.
-
-   What is NOT here is a width budget. It was computed from the screen left over
-   beside the label and spent as this rule's `max-width`; a stand is `--stand-w`
-   wide whatever its hang is, and the label is a grid column of its own now, so
-   a frame has no column-shaped box to fit inside.
-
-   `flex: 0 0 auto` is the change the one-size frame made. It was `1 1 0` — a
-   share of the wall's WIDTH — which was right while a column's frames were
-   photographs of different widths and the column had to be told how much room
-   it had. Every frame is now the same box, and its width follows from its own
-   height (see `.cluster .piece` below), so the column's width IS its frames'
-   width: a flex-basis of 0 would leave the wall's own width to decide a column
-   that already knows it.
-
-   `--col-count` and `--col-rows` are still written by renderCluster and are
-   still what decides where a column breaks. Neither is read here: the wall is
-   divided by the flexbox below, not by a re-derived divisor. */
-.col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: var(--col-gap);
-  min-width: 0;
-  height: 100%;
-  min-height: 0;
-  flex: 0 0 auto;
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* ── The frame is one box, and it is the only shape on the walk ──────────
-   Scoped to the cluster, and the scope is load-bearing: `.piece` is also what
-   About's portrait wears, and that is a photograph presented in its own
-   proportions rather than a frame in a stack. A rule on the bare class would
-   crop the portrait to 16:9 as well.
-
-   `aspect-ratio` with the column dividing the HEIGHT is what makes every frame
-   in the stack identical: the height comes from `flex: 1 1 0` above, and the
-   width follows from this ratio, so three frames of one band are three frames
-   of one size with no arithmetic anywhere else.
-
-   `object-fit: cover` is the fill, and it is a considered reversal. `contain`
-   was rejected when it was measured — 15 of 23 frames were 63-77% black bar
-   against a box of the wrong shape — and cropping was rejected with it while
-   every frame followed its own photograph's proportions. One size for every
-   frame is the design now, and of the two ways to put a photograph of one
-   shape into a box of another, bars are the one that reads as a fault: a
-   cropped photograph is still a photograph. */
-.cluster .piece {
-  aspect-ratio: var(--frame-ar);
-}
-
-.cluster .piece > img,
-.cluster .piece > video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #000;
-  /* The mat, drawn inside the box on the media itself: `border-box` keeps it
-     inside the frame's inner edge instead of growing the frame past its box. */
-  border: 6px solid #ece3d2;
-  box-sizing: border-box;
-}
-
-/* ── The film is a frame, not a control ───────────────────────────────────
-   The video frame carries no pointer cursor: pressing its picture does nothing,
-   because the picture is a film and the controls are the browser's. The two
-   photograph frames under it are the way into the record, and they keep the
-   cursor `.piece` gives them. */
-.cluster .piece--video {
-  cursor: default;
-}
-
-/* A piece: a gold frame around a cream mat, drawn rather than loaded — no
-   image request, no asset. Its WIDTH follows its content and its height is what
-   its column gives it.
-
-   `flex: 1 1 0` is the wall's division: a column of three frames gives each of
-   them a third of the wall. `min-height: 0` is what allows that — without it a
-   flex item refuses to shrink below its content, and an image with a 6px mat has
-   content. */
-.piece {
-  display: block;
-  /* A frame divides its column's height, and its width follows its photograph.
-     `flex: 1 1 0` is that division: a column of three frames gives each of them
-     a third of the wall. `min-height: 0` is what allows it — without it a flex
-     item refuses to shrink below its content, and an image with a 6px mat has
-     content. */
-  flex: 1 1 0;
-  min-height: 0;
-  /* ── A frame fits the column that holds it ─────────────────────────────
-     `min-width: auto` is a flex item's default, and it is what let a frame grow
-     past its column: a 2.251-ratio photograph measured 1037px inside a 432px
-     wall, and painted 428px past its own stand. `0` lets the frame take the
-     column's width; `max-width: 100%` holds it there. The photograph inside then
-     follows its own proportions within that box. */
-  min-width: 0;
-  max-width: 100%;
-  padding: 0;
-  border: 3px solid transparent;
-  border-image: linear-gradient(150deg, #e0c078 0%, #96702f 30%, #6d5122 55%, #c9a45c 82%, #8a6a2f 100%) 1;
-  background: #000;
-  cursor: pointer;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .66);
-  /* Its own light, exactly as a work carried one. Registered
-     `inherits: false`, so writing it touches one element, not a room.
-
-     The RESTING value is 0.9, not the 0.6 it shipped with, and that is the
-     brighten pass's main change to how a work reads. At 0.6 a photograph was
-     held at 60% until the walk lit it, so a wall a visitor had NOT yet reached
-     was a wall of dark pictures — which is most of the wall most of the time,
-     and is exactly what "the site feels too dark" describes. The light still
-     does something: 0.9 -> 1.0 is the last tenth, and it arrives together with
-     the pool behind the work, so reaching a stand still reads as the light
-     coming up. It is a smaller gesture than the old 0.4 lift, deliberately:
-     the alternative was to make the whole effect a transition again. */
-  filter: brightness(calc(.9 + .1 * var(--lit)));
-  transition: filter .55s var(--ease-lit);
-}
-
-/* ── The tap floor, and where it is enforced now ───────────────────────
-   A frame must clear 44x44. It used to be enforced twice here, because a frame
-   collapsed when its photograph's bytes had not arrived — measured at 18x152 on
-   a phone — and popped open when they did.
-
-   A stand's frame cannot collapse any more: its size is the band the solve
-   chose, divided by the column, and `Site.bandFor` refuses a band whose frames
-   would fall under 44px — gaps included. This rule is what remains for the
-   pieces that are NOT in a stand (About's portrait), and it costs nothing on
-   the stands: their frames are ~180px tall and ~320px wide. */
-.piece { min-width: 44px; }
-
-/* ── The lead has no rule, and that is the design ─────────────────────
-   A standalone `piece--lead` block used to live here, capping the lead's width
-   with the column budget and its height with the row budget. Both budgets are
-   gone, and nothing replaces them.
-
-   The lead is the HEAD of the stack, and it is not styled differently from the
-   frames under it: every frame in a stand is the same box at the same size,
-   which is the whole point of the shape. For a project the head is the film;
-   for a Leadership post it is the first photograph.
-
-   The `piece--lead` class is still written on the element by renderCluster and
-   still asserted by tests/renderer.test.mjs; it is a hook, not a style. Do not
-   add a height rule here — a per-frame height is what makes the band stack
-   instead of divide, and that fault measured 390px of band against a 150px
-   budget. */
-
-/* An awaited photograph is a reserved place on the wall: the gilt frame and its
-   mat, and no picture. It is the SAME BOX as a hung frame — the ratio above —
-   because a reserved place that is a different size from the photograph that
-   will fill it is the reflow this whole shape exists to avoid.
-
-   The mat is drawn as an inset shadow because a hung frame gets its mat from
-   the media's own 6px border and this frame has no media. The drop shadow is
-   repeated here because box-shadow does not add across rules.
-
-   ── And the opening is NOT the piece's black ground ───────────────────────
-   That was the fault a visitor reported on the Robotics wall: a frame whose
-   opening was #000 read as a hole punched in the wall rather than as a place
-   kept for a photograph. Measured on the shipped page around Project PALAD's
-   awaited frame, the wall a visitor sees beside it is rgb(15,22,26) to
-   rgb(18,27,31) — so the black opening was DARKER than the wall it hung on,
-   which is what made it read as a void.
-
-   The opening is a slate a step LIGHTER than that wall, shaded inward from its
-   top edge, so the frame reads as an opening with nothing in it: plainly not a
-   photograph, and not a hole either. #1e262c is that step — rgb(30,38,44)
-   against the wall's rgb(15,22,26) — and it stays a step lighter under the
-   piece's own unlit brightness of .9, which is what most of the wall most of
-   the time wears. */
-.piece--pending {
-  width: auto;
-  aspect-ratio: var(--frame-ar);
-  cursor: default;
-  background: #1e262c;
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .66),
-              inset 0 0 0 6px #ece3d2,
-              inset 0 2px 9px 5px rgba(0, 0, 0, .55);
-}
-
-/* The media inside a frame that is NOT one of the walk's stands: About's
-   portrait, which is a photograph presented in its own proportions. A stand's
-   frames are the uniform box above, and they override the width and height
-   here with their own rule (`.cluster .piece > img`), which wins on
-   specificity.
-
-   Its WIDTH follows its own proportions and its height is the frame's, so
-   nothing is cropped and nothing is barred. `aspect-ratio: auto` is what lets
-   the height rule while the width stays intrinsic — without it the `max-width`
-   below would squash the photograph out of proportion.
-
-   `object-fit` is DELIBERATELY ABSENT here, and its absence is the fix for a
-   fault that shipped once: with `contain` the photograph was fitted into
-   whatever box the frame happened to have, so a frame whose box was taller than
-   it was wide drew a landscape photograph letterboxed inside it. Measured at
-   1536x864 with `contain`: 15 of 23 frames were 63-77% black bar. A photograph
-   that is a quarter photograph is not a photograph. The stands pay for one
-   shape now and crop to fill it (see `.cluster .piece > img`); this frame does
-   not have a shape of its own to pay for. */
-.piece img {
-  display: block;
-  height: 100%;
-  width: auto;
-  aspect-ratio: auto;
-  /* A photograph whose bytes have not arrived has no intrinsic width, so the
-     frame collapses to a sliver and the wall reflows when it loads. The floor
-     holds the frame open at the shape a landscape photograph will take.
-
-     38px, and a LENGTH rather than the 40% it was: 38px of image plus its 6px
-     mat and the piece's 3px gilt edge either side is a 44px frame. Measured at
-     1440x900: 38px gives minFrame 44x45 and no frame under the floor; 36px
-     gives 42x45 and one fails. A stand's frame needs none of this — its box is
-     the ratio above, so it cannot collapse. */
-  min-width: 38px;
-  max-width: none;
-  border: 6px solid #ece3d2;
-  box-sizing: border-box;
-}
-
-/* ── A short viewport needs a wider label, and it is a HEIGHT query ───────
-   The label's height is the stand's, which is the viewport less the room title,
-   the chrome and the dock — so a short screen is a short label. The label's TYPE,
-   though, is a share of the viewport's WIDTH, so it does not shrink with it. A
-   wide, short window therefore has the worst of both: the same amount of text,
-   set at the same size, in the least room.
-
-   Measured at 1280x704, where 44vw gives a 563px cell: four labels scroll, the
-   worst by 163px. The same geometry at 1366x768 scrolls three, and at 1440x900
-   none. The fix is width, because the account is in two columns and column
-   WIDTH is what its height is made of: at 1366x768 the label needs 620px of cell
-   to fit and `44vw` gives it 601px, so this rule buys the 20px where the margin
-   is thin. It is a `max-height` query rather than a `max-width` one because the
-   deficit is the label's HEIGHT, and a 1920x700 window needs this rule as much
-   as a 1280x704 one does. */
-@media (max-height: 800px) {
-  :root {
-    --label-col: clamp(600px, calc(48vw + 90px), 760px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .piece { transition: none; filter: none; }
-}
-
-/* ── The label column scrolls when its content does not fit ───────────────
-   The arithmetic does not always close, and the numbers are worth recording
-   because they are the reason this rule is unconditional rather than a
-   short-viewport exception.
-
-   At the spec's 1280x704 floor the label cell is 502px and PALAD needs 530px of
-   it, BiyaHey! 617px. At 1536x864 the cell is 650px and Hivemind — 1,369
-   characters, the longest account in the collection — needs 741px, 91px over. So
-   the fault is not confined to the floor: it is any record whose account is long
-   enough, at any viewport, and `tools/label-fit.mjs` finds Hivemind's at
-   1536x864 even though the suite's own fold checks are green there.
-
-   What is NOT available: an account below the 12.5px floor the owner accepted, a
-   hung frame whose column is narrower than a photograph, or a clipped paragraph
-   that stays invisible until someone reads to the bottom. A label column a
-   visitor can scroll to the end of is the only one of those that keeps every
-   word readable.
-
-   The gradient is the cue: without it a label that ends mid-sentence looks like
-   a label that ends. `overscroll-behavior: contain` stops the wheel handing off
-   to the hall, which is the document's one scrolling axis and stays horizontal.
-
-   This is also why `ux-check` reads `overflow-y` rather than a boolean when it
-   asks whether a label is clipped: `hidden` is copy a visitor cannot reach,
-   `auto` is copy they can.
-
-   ── The fade retires when there is nothing left to cue ────────────────────
-   The gradient is drawn on the scrollport, so it sits at the bottom of the box
-   whatever the scroll position — including at the END of the scroll, where the
-   last line of the copy lands in a strip that fades to fully transparent. That
-   is copy a visitor cannot finish reading, which is the fault this whole rule
-   exists to avoid. Measured: at the scroll end the last paragraph's bottom edge
-   sat exactly on the label's bottom edge, 26px inside the band.
-
-   `js/main.js` marks a label whose scroll has reached its end, and the mask is
-   dropped there. The mark is a class and not a style, so the fade stays the
-   stylesheet's business. */
-.label {
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  scrollbar-color: rgba(236, 226, 207, .22) var(--night);
   scrollbar-width: thin;
-  scrollbar-color: var(--edge) transparent;
-  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
-  mask-image: linear-gradient(180deg, #000 calc(100% - 26px), transparent 100%);
 }
 
-.label[data-scroll-end] {
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-/* ── The exhibition label ─────────────────────────────────────────────
-   One per stand: the record's own account, its awards and its team caption.
-   This is where a record is read, and with the catalogue under the hang it is
-   the reading half of the stand — the wall carries the name of every individual
-   photograph, and this carries the record's own words.
-
-   Type scale. The sizes this replaces were 7.4-11.5px — measured, the meta
-   line was 7.4px and the narrative 9.3px, which is not small print but
-   illegible print. Every size here is a share of the VIEWPORT rather than a
-   fixed rem, so the label scales with the wall it is hung on.
-
-   The label is the stand's RIGHT CELL, and it is one COLUMN of blocks rather
-   than a grid of areas. The grid it replaces laid the copy and the catalogue
-   side by side across the stand's full width, because the label WAS the stand's
-   full width and had a whole band to fill beneath the pictures. Beside the hang
-   it has a cell of its own, 560px at every viewport above the floor, and a
-   column is what that cell is: the narrative heads it, and the account, the
-   awards and the team caption follow.
-
-   The cell's height is the stand's, so the label's own content is what has to
-   fit inside it — see the `.label-account` note for the one size that moved to
-   make that true, and `ux-check`'s "the label's own content fits its cell",
-   which is the assertion that measures it. */
-.label {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  height: 100%;
-  min-height: 0;
-  border-top: 1px solid var(--edge);
-  /* No padding-top. It was 6px, and 6px is exactly the difference between
-     1440x900 clipping its last award year and not clipping it — measured with
-     everything else held: label 591px with the padding, 585px without, 1 clipped
-     against 0. The separation it bought under the rule above is bought instead by
-     the rule's own 1px edge and the label's first line box. */
-  padding-top: 0;
-}
-
-/* ── The label's interior: the prose, and the furniture beside it ─────────
-   The account is the block that decides whether a stand fits, so it is the one
-   block with a layout of its own — the label's full width, in two columns. The
-   summary, the awards and the team caption are furniture: they are SET BESIDE
-   the prose in a single column, which is what buys the height. The CATALOGUE was
-   the fourth of those blocks and it is not one any more — it stands under the
-   hang it describes, in the wall cell, so this column lost its tallest block and
-   the account took the width back (see `--label-side`).
-
-   Measured at 1440x900 with the account as a full-width single column and the
-   furniture beneath it: 750px of label inside a 690px cell. In this shape the
-   account is 236px and the taller of the two cells is the prose, not the sum.
-   At the 1280x704 floor the label cell is 502px and the same arithmetic lands
-   at ~500px — which is the whole margin there is, and the reason the account's
-   own type floor is 12px rather than the 13px the old full-width label used. */
-.label-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--label-side);
-  column-gap: clamp(14px, 1.4vw, 24px);
-  align-items: start;
-  min-height: 0;
-  margin-top: 6px;
-  min-width: 0;
-}
-
-.label-side {  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-/* The label's blocks all shrink rather than push: a flex or grid item refuses to
-   go below its content otherwise, and a long word would run the prose out of the
-   cell rather than wrap it. `.cat` is not in this list any more: it is inside
-   `.legend`, in the wall cell, and `.legend` carries the same floor. */
-.label-aside { min-width: 0; }
-
-/* The narrative: the stand's own name, its venue or year, and the opening line
-   that frames the account below it. It is a block of the label's column rather
-   than a band of a flex stack, so its height is its contents' and `min-width: 0`
-   is what lets a long word wrap inside the column instead of running the prose
-   out of the stand. Nothing here is clamped: the clamp is what hid the very copy
-   this build exists to show. */
-.narr { min-width: 0; }
-
-.narr-title {
-  font-family: var(--font-heading);
-  font-size: clamp(17px, 1.15vw, 21px);
-  line-height: 1.15;
-  color: var(--text-strong);
+body {
   margin: 0;
-  /* A title WRAPS and is not clamped. It was, on the argument that a truncated
-     name loses no reading because the same name is on the room heading and in
-     the rail — and that argument is false: the room headings carry the DERIVED
-     room titles and the rail copies the room heading, while this line carries
-     the RECORD's own name. The record's name has no second home, so a clamp here
-     hides the only place it is written. It is a short heading; it wraps. */
-}
-
-.narr-meta {
-  font-family: var(--font-mono);
-  font-size: clamp(10px, 0.62vw, 11.5px);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 3px 0 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.narr-lead {
-  font-size: clamp(13px, 0.9vw, 15px);
-  line-height: 1.4;
-  color: var(--text-strong);
-  margin: 6px 0 0;
-  /* 62ch, and it is a MEASURE rather than a clamp. This block is the one place
-     the label's summary is written, and `tests/renderer.test.mjs` pins that
-     nothing in the label is line-clamped — the four-line clamp this build
-     replaced is exactly the fault that check exists for, so a two-line clamp
-     here is not available however much height it would save. The measure is how
-     the block is kept to two lines instead: at the 1280x704 floor 62ch wraps
-     PALAD's summary in two, where the label's own width gave it three. */
-  max-width: 62ch;
-}
-
-/* ── The account: two columns, and why that is not a reversal ────────────
-   The label is a cell beside the hang now, not a band across the stand, so it
-   is narrower than it was and every block in it competes for the same 690px of
-   height at 1440x900. PALAD's account is 1,228 characters; measured as one
-   576px column at 13px it was 792px of label inside a 690px cell, and dropping
-   the type far enough to fit cost more legibility than the width is worth.
-
-   So the account takes TWO columns inside the cell. That is the same move the
-   old full-width label made with its 1.8fr/1fr grid — a long prose block gets
-   the width it needs by being split — applied one level down, because the width
-   is no longer the stand's.
-
-   Each column is ~269px, which is a 40-character line at 13px: narrower than
-   the 55-70 characters the one-column layout gave, and a deliberate trade
-   against the type size. The prose is not clamped and not truncated; it is
-   wrapped in two balanced columns.
-
-   The paragraphs are `min-width: 0` because a grid item refuses to shrink below
-   its content otherwise, and a long word would run the prose out of the stand
-   rather than wrap it. */
-.label-account {
-  /* Two columns, dealt by `accountColumns` in js/main.js — see the note there
-     for why this is not a CSS grid or a multicol box. `flex: 1 1 0` gives each
-     column half the account's width and `min-width: 0` lets the paragraphs wrap
-     inside it rather than setting a content floor the row cannot go below. */
-  display: flex;
-  align-items: flex-start;
-  column-gap: clamp(14px, 1.5vw, 22px);
-  min-width: 0;
-  width: 100%;
-}
-.acct-col { flex: 1 1 0; min-width: 0; }
-
-.acct-p {
-  /* The account's floor is 12px, and it is the ONE size in the label that moved:
-     the title stays 21px, the lead 13.5px, the meta 10.5px, the awards 11.5px.
-     It moved for this cell's width, not by preference — see the note above.
-
-     `line-height: 1.28` is tighter than the 1.45 the full-width label used, and
-     the same reason applies: this is the block that decides whether the stand
-     fits, and at the spec's 1280x704 floor the label has 502px to hold a
-     1,228-character account. A looser leading there costs lines the cell does
-     not have. */
-  font-size: clamp(12.5px, 0.85vw, 13.5px);
-  line-height: 1.26;
+  background: var(--night);
   color: var(--text);
-  margin: 0 0 5px;
-  min-width: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-.acct-p:last-child { margin-bottom: 0; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+::selection { background: rgba(212, 176, 106, .32); color: var(--text-strong); }
 
-/* ── The awards, read on the project's own label ──────────────────────────
-   They used to be a button into a dialog, which left eight awards invisible to
-   a visitor who did not press it. Each one is a row here, with its year beside
-   it, and the row is a panel rather than a gilt frame because it is furniture
-   on the label and not a work on the wall.
-
-   Only a row that resolves to photographs is a control, and the control is a
-   real `<button>` — not an `<li>` wearing `role="button"`. The walk's
-   delegation is bound to `click` alone, so a role on an `<li>` is focusable and
-   still does nothing when Enter is pressed; the frames and the honours tiles
-   are buttons for the same reason. The photo-less row keeps the row's own
-   layout as a plain span, so the two read as the same list.
-
-   The accent edge is the same cue a tile with photographs carries, and it is
-   the only thing telling a visitor that one row is pressable and the next is
-   not. It is the ROW's own left edge, not a second edge drawn inside it: the
-   button fills the row, so an accent on the button would sit a couple of pixels
-   in from the row's soft edge and the two would read as a doubled border. The
-   row that carries a control is therefore the one whose edge turns accent, and
-   `:has()` is what lets the edge be decided by its contents. Where `:has()` is
-   unsupported the row keeps its soft edge and the button keeps its pointer
-   cursor, so the cue degrades rather than disappearing.
-
-   The row clears the 44px tap floor by min-height rather than by padding:
-   it is dense text in a column, and padding to reach the floor would space the
-   list out until it stopped reading as a list.
-
-   It is a block of the label's furniture column, beside the account, and it
-   needs no flex basis: the column is as tall as its own blocks. */
-.awards {
-  min-width: 0;
-  margin-top: 8px;
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-.awards-head {
-  font-family: var(--font-mono);
-  font-size: clamp(10px, 0.62vw, 11.5px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  /* 4px, not 7. The awards block sits at the foot of the copy column, which is
-     the cell that decides the label's height, so this margin is spent directly
-     against the fold. */
-  margin: 0 0 4px;
+.skip {
+  position: absolute; left: 16px; top: -60px; z-index: 100;
+  padding: 10px 16px; background: var(--text-strong); color: var(--night);
+  border-radius: 8px; text-decoration: none; font-weight: 600;
+}
+.skip:focus { top: 12px; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ── Masthead ─────────────────────────────────────────────────────── */
+
+.masthead {
+  position: fixed; inset: 0 0 auto 0; z-index: 40;
+  height: var(--masthead-h);
+  display: flex; align-items: center; gap: 28px;
+  padding: 0 clamp(16px, 2.4vw, 34px);
+  background: linear-gradient(180deg, rgba(8, 12, 14, .86), rgba(8, 12, 14, .3) 68%, transparent);
+  transition: background .25s ease, border-color .25s ease;
+  border-bottom: 1px solid transparent;
+}
+.masthead.is-stuck {
+  background: rgba(8, 12, 14, .8);
+  -webkit-backdrop-filter: blur(16px) saturate(115%);
+  backdrop-filter: blur(16px) saturate(115%);
+  border-bottom-color: var(--border);
 }
 
-/* The gap is what keeps two awards from reading as one row with two years. The
-   row's own floor is 30px — the tap target belongs to the CONTROL inside it —
-   so 3px is what separates the rows while the densest stand's three awards
-   still read as a list and not as a paragraph. */
-.award-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-
-.award {
-  /* 28px, and the tap target is the CONTROL inside it, not the row: `.award-open`
-     fills the row and carries its own 44px floor, so a row that is a bare span
-     costs 28px and a row a visitor can press still clears 44. The row's own
-     min-height was 44 for both, which spent 16px per award on a list the label
-     has to fit — and the densest stand carries three. */
-  min-height: 28px;
-  border-left: 2px solid var(--edge-soft);
-  padding: 2px 0 2px 8px;
+.brand {
+  font-family: var(--serif); font-weight: 400; font-size: 19px; letter-spacing: -.015em;
+  color: var(--text-strong); text-decoration: none; white-space: nowrap;
+  text-shadow: 0 1px 18px rgba(8, 12, 14, .5);
 }
 
-/* The lit edge the tile precedent uses: it belongs to the row, so the accent
-   IS the row's outer edge and there is only ever one border to look at. */
-.award:has(> .award-open) {
-  border-left-color: var(--accent);
+.menu { display: flex; gap: clamp(14px, 2vw, 30px); margin-left: auto; }
+.menu a {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-quiet); text-decoration: none; padding: 8px 2px;
+  transition: color .2s ease;
+}
+.menu a:hover { color: var(--text-strong); }
+
+.resume {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
+  color: var(--text); text-decoration: none;
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 14px; white-space: nowrap;
+  background: rgba(8, 12, 14, .32);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: border-color .2s ease, color .2s ease, background .2s ease;
+}
+.resume:hover { border-color: var(--accent); color: var(--text-strong); background: rgba(8, 12, 14, .55); }
+
+.progress {
+  position: absolute; left: 0; bottom: 0; height: 1px; width: 0;
+  background: var(--accent); opacity: .85;
 }
 
-.award-open {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  width: 100%;
-  min-height: 44px;
-  padding: 5px 8px;
-  /* A button brings its own font, colour, border and background, so every one
-     of them is reset here: without this the row renders in the platform's UI
-     font, with the platform's button chrome, inside a museum label. */
-  border: 0;
-  background: var(--surface-1);
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: color var(--transition-fast), background var(--transition-fast);
+/* ── The left shade, so the rail reads over a bright crop ────────── */
+
+.rail-shade {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 108px; z-index: 29;
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(8, 12, 14, .82) 0%,
+    rgba(8, 12, 14, .58) 34%,
+    rgba(8, 12, 14, .2) 70%,
+    rgba(8, 12, 14, 0) 100%);
 }
 
-.award-open:hover,
-.award-open:focus-visible {
-  color: var(--text-strong);
-  background: var(--surface-2);
+/* ── Journey rail ─────────────────────────────────────────────────── */
+
+.rail {
+  position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 30;
+  display: none; flex-direction: column; gap: 0; padding-left: 14px;
 }
-
-.award-text {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  padding: 5px 8px;
+.rail::before {
+  content: ""; position: absolute; left: 3px; top: 9px; bottom: 9px; width: 1px;
+  background: linear-gradient(transparent, rgba(236, 226, 207, .26) 12%, rgba(236, 226, 207, .26) 88%, transparent);
 }
-
-.award-desc {
-  flex: 1 1 auto;
-  min-width: 0;
-  font-size: clamp(12px, 0.8vw, 13.5px);
-  line-height: 1.3;
-  color: var(--text);
-}
-
-.award-year {
-  flex: 0 0 auto;
-  font-family: var(--font-mono);
-  font-size: clamp(9.5px, 0.6vw, 11px);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-quiet);
-}
-
-/* ── The team caption ─────────────────────────────────────────────────────
-   The only thing on the walk that names who is in the team photograph, and it
-   was behind a button. It reads as a caption and not as prose: a heading and
-   one line per line of the authored caption, so a caption that arrives as three
-   lines stays three lines. It is the label's right-hand column now, beside the
-   account rather than under it, and `min-width: 0` is what keeps a long line
-   wrapping inside that column. */
-.team { min-width: 0; }
-
-.team-head {
-  font-family: var(--font-mono);
-  font-size: clamp(10px, 0.62vw, 11.5px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 0 0 7px;
-}
-
-.team-line {
-  font-size: clamp(11.5px, 0.78vw, 13px);
-  line-height: 1.35;
-  color: var(--text-quiet);
-  margin: 0 0 5px;
-  /* No measure cap. `var(--label-measure, 56ch)` was here while the team caption
-     shared the label's full width; it is in the 30% furniture column now, which
-     is 168px at 1440x900 — narrower than any cap a ch measure would impose, and
-     Georgia's `ch` is wide enough that 56ch would have run past the column. The
-     column IS the measure. */
-}
-
-.team-line:last-child { margin-bottom: 0; }
-
-/* ── The catalogue: one entry per photograph that exists, each with its letter.
-   It was two columns of a strip ninety pixels wide, which is where every entry's
-   title ended in an ellipsis; it then became the label's right-hand column. It
-   is the LEGEND now — the block under the hang, inside the wall cell — because
-   an entry is the text for one photograph and belongs under the photographs it
-   names rather than in the reading column beside them.
-
-   Its width is the legend's own 62% of the wall (see `.legend`), so an entry is
-   ~330px at 1440x900: one line for the title and one for the file, which is what
-   the letters and the two-column entry below are laid out for. */
-.cat {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.cat-entry {
-  flex: 0 0 auto;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 9px;
-}
-
-/* The entry's letter is its own column, so every title on the wall starts at
-   the same left edge and the letters read as one list down the label. */
-.ce-key {
-  font-family: var(--font-mono);
-  font-size: clamp(12px, 0.78vw, 13.5px);
-  line-height: 1.25;
-  color: var(--accent);
-}
-
-/* Everything said about one photograph, in the entry's second column: what it
-   shows, what the photograph is, and its file. */
-.ce-body { min-width: 0; }
-
-/* However many photographs a stand is still waiting for, said once. A stand
-   with no photographs at all would otherwise print "Photograph awaited" as many
-   times as it hangs frames. */
-.ca-note {
-  grid-column: 2;
-  font-family: var(--font-mono);
-  font-size: clamp(10px, 0.62vw, 11.5px);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-quiet);
-  margin: 0;
-}
-
-.ce-title {
-  font-family: var(--font-heading);
-  font-size: clamp(14px, 0.92vw, 16px);
-  line-height: 1.2;
-  color: var(--text-strong);
-  margin: 0;
-}
-
-/* A caption is prose about the photograph, so it is the reading size and it
-   wraps: the ellipsis this replaces was on a single line in a 90px column. */
-.ce-cap {
-  font-size: clamp(11.5px, 0.78vw, 13px);
-  line-height: 1.3;
-  color: var(--text);
-  margin: 2px 0 0;
-}
-
-.ce-tech {
-  font-family: var(--font-mono);
-  font-size: clamp(9.5px, 0.6vw, 11px);
-  line-height: 1.2;
-  color: var(--text-quiet);
-  margin: 3px 0 0;
-  overflow-wrap: anywhere;
-}
-
-.ce-cap {
-  font-size: 0.6rem;
-  line-height: 1.3;
-  color: var(--text);
-  margin: 1px 0 0;
-}
-
-.ce-tech {
-  font-family: var(--font-mono);
-  font-size: clamp(9.5px, 0.6vw, 11px);
-  line-height: 1.2;
-  color: var(--text-quiet);
-  margin: 3px 0 0;
-  overflow-wrap: anywhere;
-}
-
-/* About's portrait is presentation, not a hung piece: the same frame as
-   everything else on the walk, but a figure rather than a control, sized to the
-   image inside it rather than to the space beside the bio.
-
-   It takes no --panel-h, because it is not in a column and has no band to
-   divide. Its own clamp is therefore cut to the same band every other frame
-   is: 190px at 1080p, which still closes the About composition well above the
-   dock, and it cannot dominate a room that is only ever one screen wide. */
-.piece--portrait {
-  flex: 0 0 auto;
-  height: clamp(120px, 18vh, 190px);
-  width: fit-content;
-  max-width: 32%;
-  cursor: default;
-}
-
-.piece--portrait img {
-  width: auto;
-  max-width: 100%;
-}
-
-/* ── The honours room: a three-column list of tiles ───────────────────────
-   Not a hang. An honour that IS a project's award now lives on that project's
-   card, so what is left here is the honours that stand alone, and they are
-   read rather than looked at: one tile per honour, three across.
-
-   The room is still exactly one screen tall and the hall has no vertical axis,
-   so the grid must fit the band. Three columns is what makes that possible —
-   five honours is two rows at any supported width, where a two-column grid
-   would already be three rows at the 1280x704 floor and the third row would be
-   clipped with nowhere to scroll to. `grid-auto-rows: 1fr` splits whatever
-   height the room has left between the rows, so the list grows into the band
-   instead of being sized by its contents.
-
-   A tile is a panel, not a frame: no gilt, no mat, no photograph. The one
-   accent is the left edge on a tile that opens photographs, and it is the only
-   thing telling a visitor that one tile is pressable and the next is not. */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 14px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  /* The room is a flex column; without this the grid only takes its content
-     height and the rows collapse to it. */
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-  height: 100%;
-  padding: 14px 16px;
-  border: 1px solid var(--edge);
-  /* The lit edge, and the only cue that a tile opens something. A 2px accent on
-     the left is also how the record lists in the dialog mark themselves. */
-  border-left: 2px solid var(--edge);
-  background: var(--surface-1);
-  text-align: left;
-  cursor: default;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-
-/* Only a tile with photographs is a control, and the renderer emits it as a
-   button with a gallery handle. A tile with nothing behind it stays a panel:
-   a focusable control that opens nothing is worse than a row that plainly is
-   not one, which is the rule the frames already follow. */
-.tile--open {
-  cursor: pointer;
-  border-left-color: var(--accent);
-  background: var(--surface-2);
-}
-
-.tile--open:hover,
-.tile--open:focus-visible {
-  border-color: var(--text-quiet);
-  border-left-color: var(--accent);
-  background: rgba(214, 232, 240, 0.09);
-}
-
-.tile-year {
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.tile-desc {
-  font-family: var(--font-heading);
-  font-size: clamp(0.95rem, 1.15vw, 1.15rem);
-  line-height: 1.3;
-  color: var(--text-strong);
-}
-
-/* Pushed to the foot of its panel, so the three lines of every tile line up
-   with their neighbours however long a description runs. */
-.tile-open,
-.tile-awaited {
-  margin-top: auto;
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-
-.tile-awaited { color: var(--text-quiet); }
-
-.tile--open .tile-open { color: var(--accent); }
-
-/* The honours room IS one screen wide, unlike every other work room: its tiles
-   are a grid, and a grid cannot be shrink-to-fit. `.room` is `width:
-   max-content` (content-box), which for a flex row means "as wide as my
-   contents need"; a grid track asks its container how wide it is and the
-   container asks the track, so the room resolved 1052px against a 987px
-   content box and the third column was pushed off the right edge — measured on
-   the rendered page at 1440x900.
-
-   So the box model is the fix, not the track size: `border-box` makes `100vw`
-   mean one screen ALL IN, and the padding then takes the 34px the other rooms
-   take per side. Measured after: the room is 1440px in a 1440px viewport, the
-   grid 1372px inside it, and three 448px tracks that all fit. Do NOT widen the
-   grid back out with a negative margin to line the tiles up with the frames on
-   the other walls — that made the grid 1439px inside a 1372px box and clipped
-   the third column again, which is the fault this rule exists to fix.
-
-   ── And it pays for the threshold band on its right ───────────────────────
-   Leadership follows Honours, so `.room:not(:last-child)` gives Honours a band
-   of right padding — and on a border-box box that padding comes straight OUT of
-   the width. A fixed `100vw` here would leave the grid 76px at 1440x900 with the
-   tiles in a column. So the width is one screen PLUS the band, and the content
-   box is the same 1371px it was: `100vw + gap − 34px − (34px + gap)`. `max-width`
-   has to go with it — left at `100vw` it would clamp the box back and do the
-   damage the width was changed to avoid. About carries the band for the same
-   reason and is compensated in the same way, below. */
-.room[data-room="Honours"] {
-  box-sizing: border-box;
-  width: calc(100vw + var(--room-gap));
-  min-width: calc(100vw + var(--room-gap));
-  max-width: none;
-}
-
-/* About and Contact are single compositions, not runs of groups. Every other
-   gallery is as wide as its own hang; these two are exactly one screen.
-
-   About is followed by Robotics, so it carries the threshold band on its right
-   and pays for it exactly as Honours does: one screen plus the band in the
-   width, so the content box stays `100vw − 68px` and the portrait, the bio and
-   the links are where they were. Contact is the LAST room in the walk, so
-   `.room:not(:last-child)` leaves it alone and its width is one screen flat.
-   That difference is the whole reason these are two rules and not one. */
-.room[data-room="About"] {
-  width: calc(100vw + var(--room-gap));
-  min-width: calc(100vw + var(--room-gap));
-}
-
-.room[data-room="Contact"] {
-  width: 100vw;
-  min-width: 100vw;
-}
-
-/* The About room's row: the portrait, then the bio and the links. */
-.room[data-room="About"] .hang {
-  display: flex;
-  align-items: flex-start;
-  gap: 26px;
-}
-
-.about-copy { flex: 1 1 38%; max-width: 46%; }
-
-.about-copy .note {
-  font-family: var(--font-heading);
-  font-size: 1.02rem;
-  color: var(--text);
-  margin-bottom: 12px;
-}
-
-.about-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-
-.plate-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 9px 15px;
-  border: 1px solid var(--edge);
-  background: none;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  color: var(--text);
+.rail__stop {
+  position: relative; display: flex; align-items: center; height: 26px;
   text-decoration: none;
-  cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.rail__stop::before {
+  content: ""; position: absolute; left: -14px; top: 50%; width: 7px; height: 7px;
+  margin-top: -3.5px; border-radius: 50%;
+  border: 1px solid rgba(236, 226, 207, .42);
+  background: var(--night);
+  box-shadow: 0 0 0 4px rgba(8, 12, 14, .6);
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.rail__stop span {
+  position: absolute; left: 18px; top: 50%; transform: translate(-4px, -50%);
+  opacity: 0; pointer-events: none;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text); white-space: nowrap;
+  background: rgba(8, 12, 14, .92);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 9px;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.rail__stop:hover span,
+.rail__stop.is-active span { opacity: 1; transform: translate(0, -50%); }
+.rail__stop.is-active span { color: var(--text-strong); border-color: rgba(212, 176, 106, .5); }
+.rail__stop.is-active::before {
+  background: var(--accent); border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(8, 12, 14, .6), 0 0 14px rgba(212, 176, 106, .55);
+}
+.rail__stop:hover::before { border-color: var(--accent); }
+
+/* ── The page and its painted panels ──────────────────────────────── */
+
+.page { padding-top: 0; }
+
+.stop {
+  position: relative;
+  margin: 0 var(--gutter) var(--gutter);
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+  isolation: isolate;
+  scroll-margin-top: calc(var(--masthead-h) + 12px);
 }
 
-.plate-link:hover, .plate-link:focus-visible {
-  color: var(--text-strong);
-  border-color: var(--text-quiet);
+/* the painting — URLs live here, resolved against this stylesheet */
+.art--rice { --art: url("../files/painting-hero.jpg"); }
+.art--harvest { --art: url("../files/painting.jpg"); }
+
+.stop::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -2;
+  background-image: var(--art);
+  background-size: cover;
+  background-position: var(--pos, 50% 50%);
+  background-color: #1a1d18;
 }
 
-/* ── The label's own control, and the one-column stand under 900px ─────────
-   A stand is two cells: the hang on the left, the label beside it. On a phone
-   the stand is the window (`--stand-w` is capped at `100vw` — see the token),
-   and two cells inside one screen is not a stand, it is a squint: the label's
-   column takes `--label-col` of the screen, the pictures are squeezed into what
-   is left, and the rest of the label is reached by panning the walk.
+/* the scrim — keeps the far side of the art bright */
+.stop::after {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  background: var(--scrim, rgba(8, 12, 14, .7));
+  box-shadow:
+    inset 0 60px 70px -55px rgba(8, 12, 14, .95),
+    inset 0 -60px 70px -55px rgba(8, 12, 14, .95);
+}
 
-   So under 900px the stand becomes ONE COLUMN of one screen: the hang cell
-   takes the whole width and the whole height, the label column comes out of the
-   walk, and the record is read in the dialog instead — behind `.label-open`,
-   the control below. Nothing at or above 900px reads any of this, so the
-   desktop stand is untouched.
+.stop[data-side="left"] {
+  --scrim: linear-gradient(90deg,
+    rgba(8, 12, 14, .97) 0%,
+    rgba(8, 12, 14, .92) 26%,
+    rgba(8, 12, 14, .62) 52%,
+    rgba(8, 12, 14, .2) 78%,
+    rgba(8, 12, 14, .06) 100%);
+}
+.stop[data-side="right"] {
+  --scrim: linear-gradient(270deg,
+    rgba(8, 12, 14, .97) 0%,
+    rgba(8, 12, 14, .92) 26%,
+    rgba(8, 12, 14, .62) 52%,
+    rgba(8, 12, 14, .2) 78%,
+    rgba(8, 12, 14, .06) 100%);
+}
+.stop[data-side="center"] {
+  --scrim: linear-gradient(180deg,
+    rgba(8, 12, 14, .58) 0%,
+    rgba(8, 12, 14, .24) 34%,
+    rgba(8, 12, 14, .72) 72%,
+    rgba(8, 12, 14, .96) 100%);
+}
 
-   The control is RENDERED at every width (it is in the markup a desktop visitor
-   receives) and shown only here, so there is one code path and one delegated
-   handler. It is hidden by `display: none` rather than by `hidden` or by JS, so
-   this media query is the single place that decides whether a phone shows it. */
-
-/* ── The control is the primary control on a phone ────────────────────────
-   `display: none` is the DESKTOP state and the narrow block below is the only
-   place it is shown. The element is in the markup at every width — one code
-   path, and the delegated handler that drives it is always there — so hiding it
-   is a stylesheet decision and not a render-time one.
-
-   52px tall against the 44x44 floor every tap target here clears, because once
-   the label has left the walk this is the only way into the record. It is a
-   block under the legend in the hang cell, so `flex: 0 0 auto` keeps it out of
-   the cluster's division of the cell: the band is what is left after the legend
-   AND this, which is what `fitWall` measures.
-
-   It carries a fixed height rather than a content-driven one, and that is what
-   lets `fitWall` reserve it without a feedback loop: its height cannot depend
-   on `--wall-h`, so the solve cannot chase its own tail. */
-.label-open {
-  display: none;
+.stop-in {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: clamp(20px, 2.6vw, 40px);
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 52px;
-  margin-top: 8px;
-  padding: 10px 12px;
-  /* A button brings its own font, colour, border and background, so every one
-     of them is reset here: without it the control renders in the platform's UI
-     font, with the platform's button chrome, inside the wall. The same reset
-     `.award-open` carries. */
-  border: 1px solid var(--edge);
-  background: var(--surface-1);
-  font: inherit;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text);
-  cursor: pointer;
-  flex: 0 0 auto;
-  transition: color var(--transition-fast), border-color var(--transition-fast),
-              background var(--transition-fast);
+  min-height: 86vh;
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: clamp(48px, 6.5vw, 100px);
 }
 
-.label-open:hover,
-.label-open:focus-visible {
-  color: var(--text-strong);
-  border-color: var(--text-quiet);
-  background: var(--surface-2);
+.copy { grid-column: 1 / span 5; }
+.media { grid-column: 7 / span 6; }
+.stop[data-side="right"] .copy { grid-column: 8 / span 5; }
+.stop[data-side="right"] .media { grid-column: 1 / span 6; grid-row: 1; }
+.copy--center {
+  grid-column: 2 / span 10;
+  text-align: center;
+  justify-self: center;
+  max-width: 880px;
 }
 
-/* ── The label, read in the dialog ────────────────────────────────────────
-   The clone keeps the label's own markup, so it also keeps the two-column
-   `.label-body` grid it wears on a wide stand — the account beside its
-   furniture. That grid is written for a 520-760px cell; inside a dialog on a
-   phone it is two 130px columns, which is not a reading column. One column is
-   what the same copy reads as, and the label's own scroll and fade come off
-   with it: in the dialog the scrollport is `.modal-scroll` (which is already
-   `overflow-y: auto`), not the label.
+/* ── Type ─────────────────────────────────────────────────────────── */
 
-   Scoped to `#modalBody`, so nothing here can reach a label still standing on
-   the walk. */
-#modalBody .label {
-  height: auto;
-  overflow: visible;
-  -webkit-mask-image: none;
-  mask-image: none;
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 20px;
 }
 
-#modalBody .label-body {
-  grid-template-columns: minmax(0, 1fr);
+h1 {
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(42px, 6.4vw, 94px);
+  line-height: .96; letter-spacing: -.035em;
+  color: var(--text-strong); margin: 0 0 12px;
+  text-shadow: 0 2px 34px rgba(8, 12, 14, .6), 0 1px 3px rgba(8, 12, 14, .35);
 }
 
-/* ── The narrow stand: one screen wide, one column ────────────────────────
-   900px is the same breakpoint the shell's own responsive block uses, and it
-   is the point the stand and the screen stop being comparable: below it the
-   stand is the window, and there is no room for a second cell. */
-@media (max-width: 900px) {
-  /* The label's track is gone, so the hang cell spans the stand. */
-  .group {
-    grid-template-columns: minmax(0, 1fr);
+h2 {
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(30px, 3.4vw, 52px);
+  line-height: 1.02; letter-spacing: -.025em;
+  color: var(--text-strong); margin: 0 0 18px;
+}
+
+.hero-title {
+  font-family: var(--mono); font-size: clamp(12px, 1.1vw, 14px);
+  letter-spacing: .13em; text-transform: uppercase; color: var(--accent);
+  margin: 0 0 22px;
+  text-shadow: 0 1px 12px rgba(8, 12, 14, .8);
+}
+
+.hero-line, .lede {
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(18px, 1.7vw, 24px); line-height: 1.35;
+  color: var(--text); margin: 0 0 26px; max-width: 32ch;
+}
+
+.body { color: var(--text-quiet); margin: 0 0 24px; max-width: 44ch; }
+.body p { margin: 0 0 12px; }
+.body p:last-child { margin-bottom: 0; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+.btn {
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .07em;
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: 8px;
+  border: 1px solid var(--border); color: var(--text); text-decoration: none;
+  background: rgba(8, 12, 14, .3); cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: border-color .2s ease, background .2s ease, color .2s ease, transform .2s ease;
+}
+.btn:hover { border-color: var(--accent); color: var(--text-strong); background: rgba(8, 12, 14, .5); }
+.btn:active { transform: translateY(1px); }
+.btn--solid { background: var(--accent); border-color: var(--accent); color: #1a1408; }
+.btn--solid:hover { background: #e2bf78; border-color: #e2bf78; color: #1a1408; }
+
+/* hero */
+.stop--hero {
+  min-height: calc(100vh - var(--gutter));
+  --scrim: linear-gradient(180deg,
+    rgba(8, 12, 14, .62) 0%,
+    rgba(8, 12, 14, .26) 28%,
+    rgba(8, 12, 14, .58) 52%,
+    rgba(8, 12, 14, .9) 74%,
+    rgba(8, 12, 14, .98) 100%);
+}
+.stop--hero .stop-in {
+  align-items: end;
+  min-height: calc(100vh - var(--gutter));
+  padding-bottom: clamp(44px, 6vw, 84px);
+}
+.stop--hero .copy { grid-column: 1 / span 8; }
+.hero-cue {
+  position: absolute; right: clamp(22px, 4vw, 56px); bottom: clamp(28px, 4vw, 56px);
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: rgba(236, 226, 207, .62); writing-mode: vertical-rl;
+}
+
+/* ── Frames and the media stack ───────────────────────────────────── */
+
+.stack { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.frame {
+  position: relative; display: block; width: 100%; padding: 0;
+  border: 1px solid rgba(236, 226, 207, .2);
+  border-radius: var(--frame-radius); overflow: hidden;
+  background: #0d1215; cursor: pointer; text-align: left;
+  transition: border-color .2s ease, box-shadow .25s ease;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .7);
+}
+.frame:hover { border-color: var(--accent); box-shadow: 0 22px 48px -18px rgba(0, 0, 0, .8); }
+.frame img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform .5s cubic-bezier(.2, .7, .2, 1);
+}
+.frame:hover img { transform: scale(1.025); }
+.frame--lead { grid-column: 1 / -1; }
+.frame--lead img { aspect-ratio: 16 / 9; }
+.stack .frame:not(.frame--lead) img { aspect-ratio: 4 / 3; }
+
+.frame__label {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 24px 12px 9px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text); background: linear-gradient(transparent, rgba(8, 12, 14, .9));
+}
+.frame__play {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; padding-left: 3px;
+  background: rgba(8, 12, 14, .62);
+  border: 1px solid rgba(236, 226, 207, .45);
+  color: var(--text-strong); font-size: 11px;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+.frame:hover .frame__play { background: rgba(212, 176, 106, .9); border-color: var(--accent); color: #1a1408; }
+
+.frame--awaited {
+  border-style: dashed; border-color: rgba(236, 226, 207, .26);
+  cursor: default; box-shadow: none;
+}
+.frame--awaited .frame__inner {
+  aspect-ratio: 4 / 3; display: grid; place-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-quiet); text-align: center;
+}
+.frame--awaited .frame__inner::before { content: "◦"; font-size: 18px; line-height: 1; opacity: .7; }
+.frame--awaited .frame__label { position: static; background: none; padding: 0 12px 11px; color: var(--text-quiet); }
+
+/* portrait */
+.portrait { margin: 0; }
+.portrait img {
+  width: 100%; aspect-ratio: 4 / 5; object-fit: cover;
+  border-radius: var(--frame-radius);
+  border: 1px solid rgba(236, 226, 207, .22);
+  box-shadow: 0 30px 60px -24px rgba(0, 0, 0, .8);
+}
+.portrait figcaption {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .09em;
+  color: var(--text-quiet); margin-top: 10px;
+}
+
+/* ── Project panel extras ─────────────────────────────────────────── */
+
+.awards {
+  list-style: none; margin: 0 0 26px; padding: 0;
+  display: grid; gap: 7px; max-width: 46ch;
+}
+.awards li {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .02em;
+  color: var(--text-quiet); line-height: 1.55;
+  padding-left: 16px; position: relative;
+}
+.awards li::before { content: "—"; position: absolute; left: 0; color: var(--accent); }
+
+/* ── Leadership cards ─────────────────────────────────────────────── */
+
+.leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; grid-auto-rows: 1fr; }
+
+.leader {
+  display: grid; grid-template-columns: 84px 1fr; align-items: stretch; padding: 0;
+  border: 1px solid rgba(236, 226, 207, .18); border-radius: var(--frame-radius);
+  overflow: hidden; background: rgba(13, 18, 21, .72); cursor: pointer; text-align: left;
+  transition: border-color .2s ease, background .2s ease;
+}
+.leader:hover { border-color: var(--accent); background: rgba(13, 18, 21, .85); }
+.leader__thumb { width: 84px; height: 100%; object-fit: cover; }
+.leader__thumb--empty {
+  display: grid; place-items: center; width: 84px;
+  background: rgba(236, 226, 207, .05);
+  border-right: 1px dashed rgba(236, 226, 207, .2);
+  font-family: var(--mono); font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--text-quiet);
+}
+.leader__body { padding: 12px 13px; align-self: center; }
+.leader__year {
+  display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 5px;
+}
+.leader__text { font-size: 12.5px; line-height: 1.45; color: var(--text); }
+
+/* ── Honours list ─────────────────────────────────────────────────── */
+
+.honours { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.honour-row {
+  display: grid; grid-template-columns: 108px 1fr auto; gap: 16px; align-items: baseline;
+  width: 100%; padding: 13px 10px; border: 0; border-top: 1px solid var(--border);
+  background: none; text-align: left; color: var(--text); cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+}
+.honour-row:hover { color: var(--text-strong); background: rgba(236, 226, 207, .05); }
+.honour-row:disabled { cursor: default; color: var(--text); }
+.honour-row:disabled:hover { background: none; }
+.honour-row__year {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--accent);
+}
+.honour-row__text { font-size: 14px; line-height: 1.45; }
+.honour-row__mark { color: var(--accent); font-size: 11px; }
+
+/* ── Contact ──────────────────────────────────────────────────────── */
+
+.stop--contact {
+  min-height: 74vh;
+  --scrim: linear-gradient(180deg,
+    rgba(8, 12, 14, .5) 0%,
+    rgba(8, 12, 14, .34) 40%,
+    rgba(8, 12, 14, .5) 70%,
+    rgba(8, 12, 14, .92) 100%);
+}
+.stop--contact .stop-in { min-height: 74vh; position: relative; }
+
+/* A soft dark card behind the closing line: keeps every glyph AA while the
+   painting stays bright around it. Painted below the panel scrim (z-index -1)
+   so it belongs to the panel's own negative layer. */
+.stop--contact .stop-in::before {
+  content: "";
+  position: absolute; z-index: -1;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(72%, 780px); height: 62%;
+  border-radius: 26px;
+  background: rgba(8, 12, 14, .72);
+  -webkit-backdrop-filter: blur(20px) saturate(95%);
+  backdrop-filter: blur(20px) saturate(95%);
+  border: 1px solid rgba(236, 226, 207, .07);
+  box-shadow: 0 40px 100px -40px rgba(0, 0, 0, .95);
+}
+@media (max-width: 1023px) {
+  .stop--contact .stop-in::before {
+    width: calc(100% - 20px); height: calc(100% - 12px);
   }
+}
+.contact-mail {
+  display: inline-block; font-family: var(--serif); font-weight: 300;
+  font-size: clamp(24px, 3vw, 42px); letter-spacing: -.02em;
+  color: var(--text-strong); text-decoration: none;
+  border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 4px 0 30px;
+  text-shadow: 0 1px 20px rgba(8, 12, 14, .5);
+  transition: border-color .2s ease;
+}
+.contact-mail:hover { border-bottom-color: var(--accent); }
+.contact-links {
+  display: flex; flex-wrap: wrap; gap: 22px; justify-content: center;
+  font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+}
+.contact-links a { color: var(--text-quiet); text-decoration: none; transition: color .2s ease; }
+.contact-links a:hover { color: var(--text-strong); }
 
-  /* Scoped BY ITS PARENT, and the scope is load-bearing rather than tidy: the
-     dialog shows a CLONE of a label (see `openLabelRef` in js/main.js), and a
-     bare `.label { display: none }` would hide that copy too — the visitor
-     would press the control and open an empty dialog. Only a label that is a
-     direct child of its own stand leaves the walk. */
-  .group > .label {
-    display: none;
+/* ── Footer ───────────────────────────────────────────────────────── */
+
+.foot {
+  display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: baseline;
+  padding: 34px clamp(16px, 2.4vw, 34px) 42px;
+  border-top: 1px solid var(--border); margin: 26px var(--gutter) var(--gutter);
+}
+.foot__name { font-family: var(--serif); font-size: 17px; color: var(--text-strong); }
+.foot__credit, .foot__year {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--text-quiet);
+}
+.foot__year { margin-left: auto; }
+
+/* ── Dialog ───────────────────────────────────────────────────────── */
+
+.dialog {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(4, 6, 7, .84);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.dialog[hidden] { display: none; }
+
+.dialog__card {
+  position: relative; width: min(760px, 100%); max-height: 86vh; overflow: auto;
+  background: #0c1113; border: 1px solid var(--border); border-radius: 14px;
+  padding: clamp(22px, 3vw, 40px);
+  box-shadow: 0 40px 120px -20px rgba(0, 0, 0, .9);
+}
+.dialog__close {
+  position: absolute; top: 12px; right: 12px;
+  width: 44px; height: 44px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent; color: var(--text);
+  font-size: 20px; line-height: 1; cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+.dialog__close:hover { border-color: var(--accent); color: var(--text-strong); }
+.dialog__meta {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 10px;
+}
+.dialog__title {
+  font-family: var(--serif); font-weight: 300; font-size: clamp(26px, 3vw, 38px);
+  line-height: 1.05; letter-spacing: -.02em; color: var(--text-strong);
+  margin: 0 0 18px; padding-right: 40px;
+}
+.dialog__body { color: var(--text); font-size: 15px; line-height: 1.65; }
+.dialog__video {
+  display: block; width: 100%; margin: 0 0 18px;
+  border-radius: 8px; background: #000;
+  border: 1px solid var(--border);
+}
+.dialog__body p { margin: 0 0 14px; }
+.dialog__body h4 {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--text-quiet); margin: 26px 0 10px;
+}
+.dialog__gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.dialog__gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; }
+.dialog__body ul { margin: 0 0 14px; padding-left: 18px; }
+.dialog__body li { margin-bottom: 6px; }
+.dialog__body a { color: var(--accent); }
+
+/* ── Reveal ───────────────────────────────────────────────────────── */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .65s ease, transform .65s cubic-bezier(.2, .7, .2, 1);
+}
+[data-reveal].is-in { opacity: 1; transform: none; }
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  .rail { display: flex; }
+  .menu { margin-right: 8px; }
+}
+
+@media (max-width: 1023px) {
+  .rail-shade, .rail { display: none; }
+  .stop-in {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: clamp(34px, 7vw, 64px) clamp(22px, 5vw, 48px);
+    gap: 28px;
   }
-
-  /* The hang cell is the whole stand now: it takes the column's full width
-     instead of the `flex-start` width the two-cell stand left it, and it
-     divides the stand's height between the band and the legend exactly as it
-     did. `fitWall` measures this cell, and it reserves the outer height of
-     every block in it that is not the cluster — legend and control both — so
-     the band cannot overrun either. */
-  .hang-cell {
-    width: 100%;
+  .copy, .media, .stop[data-side="right"] .copy, .stop[data-side="right"] .media {
+    grid-column: 1 / -1; grid-row: auto;
   }
-
-  .label-open {
-    display: flex;
+  .stop--hero .stop-in { padding-top: 118px; padding-bottom: 56px; }
+  .stop--hero .copy { grid-column: 1 / -1; }
+  .copy--center { text-align: left; justify-self: start; }
+  .stop--contact .copy--center { text-align: center; justify-self: center; }
+  .menu { display: none; }
+  .hero-cue { display: none; }
+  .stop[data-side="left"], .stop[data-side="right"] {
+    --scrim: linear-gradient(180deg,
+      rgba(8, 12, 14, .93) 0%,
+      rgba(8, 12, 14, .8) 55%,
+      rgba(8, 12, 14, .52) 100%);
   }
 }
 
+@media (max-width: 639px) {
+  :root { --gutter: 10px; --panel-radius: 12px; }
+  h1 { font-size: clamp(38px, 11vw, 56px); }
+  .leaders { grid-template-columns: 1fr; }
+  .honour-row { grid-template-columns: 74px 1fr auto; gap: 12px; padding: 12px 6px; }
+  .honour-row__text { font-size: 13px; }
+  .dialog__gallery { grid-template-columns: 1fr; }
+  .foot { margin-top: 18px; }
+  .foot__year { margin-left: 0; }
+  .awards { max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    transition-duration: .001ms !important;
+    animation-duration: .001ms !important;
+  }
+  [data-reveal] { opacity: 1; transform: none; }
+}
