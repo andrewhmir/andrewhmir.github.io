@@ -63,6 +63,11 @@ page laid out. See **Run and verify**.
 
 Route by **intent**, not by file.
 
+For a component's full edit surface — its markup, renderer function, stylesheet
+section, data fields, tests and traps — open
+[`docs/library/README.md`](docs/library/README.md). This table is the intent
+router; the library is the per-component depth behind it.
+
 | Intent | Goes in | Anchor |
 |---|---|---|
 | Hero name, title, sentence, actions | `js/data.js` + `js/main.js` | `name:`, `title:`, `bio: [`; `/* 0 — hero */` |
@@ -280,6 +285,7 @@ feature.
 | `AGENTS.md` | Routing, vocabulary, constraints, verification — start here |
 | `README.md` | The design reasoning and the measurements behind the art, scrims, rail and type |
 | `tools/README.md` | Which dev tools survive, which are retired, and what each one does |
+| `docs/library/README.md` | The component library: one page per component plus the selector index and the data contract, and the checker that keeps them honest |
 | `css/styles.css` | The section banners and the actual values |
 | `files/fonts/README.md` | The vendored families, licences and SHA-256 pins |
 | `files/icons/README.md` | The vendored glyphs — currently unused by this page |

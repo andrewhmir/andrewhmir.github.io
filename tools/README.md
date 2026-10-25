@@ -21,6 +21,7 @@ for native commands rather than relying on `$ErrorActionPreference`.
 | `vendor-fonts.mjs` | Writes the vendored Newsreader/Courier Prime `.woff2` files, their OFL texts and the generated `css/fonts.css`. Preserves `unicode-range`. `--check` reports drift without writing. | serve + Chrome |
 | `vendor-icons.mjs` | Writes the twelve Font Awesome glyphs as inline SVG in `js/icons.js`, plus `files/icons/LICENSE.txt`. `--check` reports drift without writing. | serve + Chrome |
 | `orphans.mjs` | Lists CSS classes nothing emits, and emitted class names with no rule. Reads `css/styles.css`, `js/main.js`, `index.html` and `js/data.js`. | Node |
+| `library-check.mjs` | Validates `docs/library/` against the live source: index consistency, page format, anchor resolution, `PORTFOLIO` paths, CSS/id/`data-*`/emitted-class coverage, data coverage, integration, no-line-numbers and cited files. Run as the last `npm test` suite; `--page <path>` checks one page. | Node |
 | `caption-worklist.mjs` | Prints a pasteable `pieces: [...]` block for every record that has no per-photograph captions. | Node |
 | `shot-url.mjs` | Captures any URL at a viewport: `node tools/shot-url.mjs <url> <out.png> [width] [height]`. Default 1440×900. | Chrome |
 

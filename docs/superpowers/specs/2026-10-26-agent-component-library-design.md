@@ -258,7 +258,7 @@ existence of `tests/*.test.mjs` and `tools/*.mjs` paths it cites.
 
 | # | Check | Failure means |
 |---|---|---|
-| V1 | **Index consistency** — every `.md` under `docs/library/components|primitives` is linked from `README.md` exactly once, every link resolves, no duplicate page slugs | the library cannot be entered from one place |
+| V1 | **Index consistency** — every `.md` under `docs/library/components|primitives` is linked from `README.md` at least once (cross-links from the "start here" table are allowed), every link resolves, no orphan page file | the library cannot be entered from one place |
 | V2 | **Page format** — H1, one-line purpose before the first H2, required H2s (`Where it lives`, `Adjust it`, `Invariants`, `Traps`), table header shape | a page's shape drifted and grep/read habits break |
 | V3 | **Anchors** — for every `Where it lives` row: file exists; every backticked anchor token occurs in the file; multi-token cells split on `·` | a documented anchor is stale |
 | V4 | **Data paths** — every `Data` row path resolves against a `vm`-loaded `PORTFOLIO`; `!` paths exist on every record; `Site.helper` exists | the data contract lies |
@@ -331,7 +331,8 @@ writer self-checks.
 ## Acceptance criteria
 
 - [ ] `docs/library/` contains exactly the 14 component pages, 4 primitive pages,
-      `README.md`, `selectors.md`, `data.md`; README links every page once.
+      `README.md`, `selectors.md`, `data.md`; README links every page (at least
+      once; cross-links are allowed).
 - [ ] `tools/library-check.mjs` supports default run and `--page`, exits non-zero
       on failure, and V1–V10 are all implemented.
 - [ ] `tests/library.test.mjs` is registered in `package.json` **after** the six
