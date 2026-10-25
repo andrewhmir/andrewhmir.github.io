@@ -39,7 +39,7 @@ purpose (see [dialog.md](dialog.md)).
 
 ## Invariants
 
-- The list shows standalone honours only. An honour carrying `from: 'projectN'` is a project award, moved to `projectAwards` by `Site.honoursTiles` and shown under the project's Awards instead — see [project.md](project.md).
+- The list shows standalone honours only. An honour carrying `from: 'projectN'` is a project award: `Site.honoursTiles` drops it from `tiles`, and `js/main.js` never renders the `projectAwards` half. The panel's Awards come from the project's own `awards` array, so adding `from` alone removes the honour and puts nothing on the panel (see [project.md](project.md)).
 - Five tiles today: thirteen records minus eight carrying `from`; `tests/page.test.mjs` asserts the tile count.
 - The partition reads the field, never the description text. Copy wordings for one win differ between the honour record and the project panel, so only `from` decides a side.
 - A no-photo tile is `disabled` and its mark is empty; it never opens the dialog.

@@ -29,7 +29,7 @@ names except the phone override noted below.
 | Text | `--text-strong` | `#f9f4e8` | headings, brand, active labels |
 | Text | `--text-quiet` | `#9a9384` | supporting copy, years, captions |
 | Accent | `--accent` | `#d4b06a` | eyebrow, focus ring, active rail dot, progress hairline |
-| Rule | `--border` | `rgba(236, 226, 207, .14)` | hairlines, button borders, frame borders |
+| Rule | `--border` | `rgba(236, 226, 207, .14)` | masthead foot, `.resume`, rail label, `.btn`, `.honour-row` top, `.contact-mail`, `.foot`, dialog card/close/video |
 | Family | `--serif` | `'Newsreader', Georgia, 'Times New Roman', serif` | `h1`, `h2`, hero line, lede, brand, contact mail |
 | Family | `--mono` | `'Courier Prime', ui-monospace, Consolas, monospace` | eyebrow, buttons, labels, meta, footer credit |
 | Family | `--sans` | `ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` | body copy and interface text |

@@ -45,7 +45,7 @@ Buttons, links and focus behaviour: the outlined `.btn`, its gold solid variant,
 - `.btn` is a skin, not a tag — it styles `<a>` and `<button>` identically; semantics come from the element.
 - Primary actions keep a 44px minimum target (`.btn`'s `min-height`); the dialog close button reuses the same 44px box.
 - The solid button keeps dark ink (`#1a1408`) on gold; switching its text to `--text` would lose contrast.
-- The skip link stays the first focusable element in the shell and targets `#page`; see `AGENTS.md`'s load-order constraint and [page-shell.md](../components/page-shell.md).
+- The skip link stays the first focusable element in the shell and targets `#page`; [page-shell.md](../components/page-shell.md) owns the shell order, and this page owns the link's styling and focus.
 - The control voice is the vendored Courier Prime; no third-party font or icon load is allowed (`AGENTS.md`).
 
 ## Traps

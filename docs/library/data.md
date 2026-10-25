@@ -12,7 +12,7 @@ Thirteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing o
 | `title` | live | the hero `.hero-title` |
 | `bio` | live | the About paragraphs (`P.bio.map`); entry 4 (`bio[3]`, falling back to `bio[2]`) is the hero sentence |
 | `email` | live | the Contact mailto link and its text |
-| `social` | live | About buttons, Contact links and the masthead resume (`social[0]`, the entry labelled `Resume`) |
+| `social` | live | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (`social[0]`, the entry labelled `Resume`) |
 | `projects` | live | the six Work stops, the rail labels, the project dialog |
 | `leadership` | live | the Leadership cards and their dialog |
 | `honors` | live | the Honours tiles and their dialog |
@@ -78,7 +78,7 @@ Nested object paths, also validated: `projects[].overview.image` · `projects[].
 | `honors[].year` | required | `.honour-row__year` and the dialog meta line |
 | `honors[].summary` | required | the dialog body |
 | `honors[].pieces` | dormant | retired; no reader |
-| `honors[].images` | optional | the dialog gallery; its presence also enables the tile (7 of 13 records) |
+| `honors[].images` | optional | the dialog gallery and the enabled tile. Seven records have images, but three of those carry `from` and are project awards, so only four of the five tiles have one; images alone do not make a tile |
 | `honors[].from` | optional | `'projectN'` marks a project award, excluded from the tiles (8 of 13 records) |
 
 ### `social` — 3 entries
@@ -100,7 +100,7 @@ Nested object paths, also validated: `projects[].overview.image` · `projects[].
 
 ## `Site` helpers
 
-Twenty names. The page calls only `Site.posterFor` and `Site.honoursTiles`; the other eighteen are inherited from the retired horizontal build and kept because the data suites test them. **Used by page** is `yes` only for the two `js/main.js` calls.
+Twenty names. The page calls only `Site.posterFor` and `Site.honoursTiles`; the other eighteen are inherited from the retired horizontal build. Fourteen of the eighteen are referenced by a data suite; `Site.ROOM_ORDER`, `Site.visibleWork`, `Site.progressFraction` and `Site.roomAtOffset` are referenced by none. **Used by page** is `yes` only for the two `js/main.js` calls.
 
 | Helper | Used by page | Notes |
 |---|---|---|

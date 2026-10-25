@@ -30,7 +30,7 @@ stylesheet and script load order, the skip link, and the no-JS fallback.
 | What the page renders | `render()` in `js/main.js`; the shell keeps `#page` empty | `npm test` pins the empty mount |
 | Skip-link text or jump target | `<a class="skip" href="#page">` and `.skip:focus` | press Tab once on load |
 | Font or stylesheet order | the two `<link rel="stylesheet">` lines in `<head>` | `npm test` pins fonts before styles |
-| A remote script, font or image | nowhere: AGENTS.md's no-third-party-loads rule forbids it | `npm test` scans the runtime files with comments stripped |
+| A remote script, font or image | nowhere: AGENTS.md's no-third-party-loads rule forbids it | `npm test` scans `index.html` and `css/styles.css` with comments stripped, and `js/main.js` / `js/data.js` raw |
 | The no-JS fallback copy | `<noscript><section class="noscript">` in `index.html` | load the page with JavaScript disabled |
 | An off-screen label utility | `.sr-only`, already declared in the stylesheet | screen-reader or inspector pass |
 

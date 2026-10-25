@@ -46,6 +46,6 @@ side, with the framed portrait beside them.
 
 - Editing `PORTFOLIO.profileImage` changes nothing visible; only `files/profile.jpg` in the renderer is read.
 - `P.bio[3]` is also the hero sentence; rewriting or reordering `bio` edits two stops at once.
-- The social array feeds three places — hero resume, masthead resume (label lookup, falling back to `social[0]`) and contact links — so a label rename can silently repoint the masthead button.
+- The social array feeds three places — hero resume, masthead resume (label lookup, falling back to `social[0]`) and contact links. `Resume` is `social[0]`, so a label rename still resolves to the same entry; reordering `social` is what can silently repoint the masthead button.
 - The portrait `<img>` has no `onerror` fallback: a missing `files/profile.jpg` is a broken image, unlike project frames which swap in the placeholder.
 - `figcaption` text is static; changing the data does not update it.

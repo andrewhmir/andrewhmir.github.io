@@ -33,7 +33,7 @@ resort.
 
 | Want to change | Change here | Verify with |
 |---|---|---|
-| A breakpoint | every block that mentions it — the two 1023 rules move together with the 1024 rule | `node tools/library-check.mjs`; screenshots at 1024 and 1023 |
+| A breakpoint | every block that mentions it — the two 1023 rules move together with the 1024 rule | screenshots at 1024 and 1023; the validator's substring check cannot catch one edge moving alone |
 | The phone layout | `@media (max-width: 639px)` | 390×844 screenshot |
 | The rail below 1024 | not a CSS tweak: no replacement nav is deliberate (`AGENTS.md` absent list) | decide the feature first |
 | Reduced motion | the `prefers-reduced-motion` block plus the `matchMedia` branch in `wireReveals` | emulate reduced motion in devtools; reveals show immediately |

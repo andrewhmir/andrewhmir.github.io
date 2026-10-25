@@ -28,7 +28,7 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 | Want to change | Change here | Verify with |
 |---|---|---|
 | The closing heading or sentence | the literals in the `/* 5 — contact */` block of `render()` | read it back; they are not data |
-| The email address | `email:` in `js/data.js` — used for both the link text and the `href` | click the mailto link; `npm test` |
+| The email address | `email:` in `js/data.js` — used for both the link text and the `href` | click the mailto link; `npm test` has no email assertion |
 | The social row | `social: [` order and entries in `js/data.js` | click each link |
 | Card size, radius, blur or darkness | `.stop--contact .stop-in::before` | screenshots at 1440, 1280 and 390 |
 | Card at tablet width | the first `@media (max-width: 1023px)` block, immediately after the card rule | a 1023px-wide screenshot |
@@ -39,9 +39,9 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 
 - The dark card is a `::before` on `.stop-in` at `z-index: -1` inside a `.stop` that sets `isolation: isolate`; the art is `.stop::before` at -2 and the scrim `.stop::after` at -1. See the art/scrim stacking gotcha in `AGENTS.md`.
 - The email text and its `href` both come from `P.email`. The social row maps `P.social` in array order to plain anchors — no buttons, no icons on this page.
-- Contact is centred like the hero: `center: true` is what adds `.copy--center`, and the 1023px block keeps this one centred while other `.copy--center` panels go left.
+- Contact is the only centred stop: `center: true` is the flag that adds `.copy--center`; the hero passes `side: 'center'` only for its scrim, and its copy stays in `grid-column: 1 / span 8`. In the 1023px block the generic `.copy--center` goes left, but contact's own rule keeps it centred.
 - At ≤1023px the card rule widens to `calc(100% - 20px)` and grows to `calc(100% - 12px)` tall. Above 1024 it is 62% tall and at most 780px wide.
-- The shell's `<noscript>` fallback hand-copies the email and social URLs; keep it in step when the data changes (see the load-order constraint in `AGENTS.md`).
+- The shell's `<noscript>` fallback hand-copies the email and social URLs; keep it in step when the data changes. [page-shell.md](page-shell.md) owns the fallback, and no test asserts its copy — check the page with JavaScript off.
 
 ## Traps
 

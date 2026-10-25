@@ -42,7 +42,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.is-active` | [rail.md](components/rail.md) | the rail entry whose section crosses the viewport middle |
 | `.is-in` | [reveals-chrome.md](components/reveals-chrome.md) | a `[data-reveal]` node after it intersects (or immediately under reduced motion) |
 | `.btn--solid` | [primitives/controls.md](primitives/controls.md) | the gold solid button variant; hero "See the work" |
-| `.copy--center` | [panel.md](components/panel.md) | the centred copy column; hero and contact |
+| `.copy--center` | [panel.md](components/panel.md) | the centred copy column; Contact only — the hero keeps `.stop--hero .copy` on the left |
 | `.stop--hero` | [hero.md](components/hero.md) | the hero panel modifier |
 | `.stop--project` | [project.md](components/project.md) | one project panel; emitted once per project record |
 | `.stop--contact` | [contact.md](components/contact.md) | the contact panel modifier |
@@ -67,7 +67,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `#dialogBody` | [dialog.md](components/dialog.md) | the record body, replaced on every open |
 | `#top` | [hero.md](components/hero.md) | the hero stop anchor |
 | `#about` | [about.md](components/about.md) | the About stop anchor |
-| `#work` | [project.md](components/project.md) | the Work wrapper id; the rail's Work target |
+| `#work` | [project.md](components/project.md) | the Work wrapper id; the masthead menu's Work landing, not a rail stop |
 | `#leadership` | [leadership.md](components/leadership.md) | the Leadership stop anchor |
 | `#honours` | [honours.md](components/honours.md) | the Honours stop anchor |
 | `#contact` | [contact.md](components/contact.md) | the Contact stop anchor |

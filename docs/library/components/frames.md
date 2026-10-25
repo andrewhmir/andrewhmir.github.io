@@ -39,7 +39,8 @@ live frame is a button carrying `data-kind="project"` and `data-index`, an
 | Make a frame awaited | point the field at `files/PlaceHolder.png` (or leave it empty) so `isAwaited(` matches | dashed frame, not a button |
 | A film still / poster | regenerate with `tools/make-images.mjs`; never hand-edit `files/posters/` | `npm test` — `hang` asserts every poster is on disk |
 | Frame labels | the literals in `projectMedia(` ("Overview", "Film", "Team") | screenshot |
-| Frame radius or gap | `--frame-radius:` and the `.stack` gap | `npm test`; screenshot |
+| Frame radius | `--frame-radius:` | `npm test` — the token is pinned |
+| Media stack gap | the `.stack` gap (`12px`) | screenshot; the gap is not asserted |
 | The three-frame order | `function projectMedia(` — overview, poster, team | screenshot each project |
 | The lead frame aspect | `.frame--lead` and `.frame img` | screenshot 1440×900 |
 

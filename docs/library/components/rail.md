@@ -65,4 +65,6 @@ stop whose `data-stop` matches the intersecting section id. The sibling
 - A seventh project adds a rail stop automatically but collides with the crop
   table — see AGENTS.md's `PAN` gotcha before touching `js/data.js`.
 - The shade must stay behind the rail (z-index 29 against the rail's 30) and
-  never above the panels.
+  above the panel art by design: the fixed 108px layer deliberately darkens the
+  panels' left edge over the 16px gutter, which is what keeps the rail legible.
+  Do not lower it.
