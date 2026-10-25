@@ -435,18 +435,32 @@ export function checks(opts = {}) {
     }));
 }
 
+/* Run every check in-process and collect the outcome. Used by the CLI, by
+   tests/library.test.mjs, and by the mutation harness — spawning a child to
+   capture the CLI's output is EPERM under the confined sandbox. */
+export function runChecks(opts = {}) {
+  return checks(opts).map((c) => {
+    try {
+      c.fn();
+      return { id: c.id, name: c.name, ok: true, error: '' };
+    } catch (e) {
+      return { id: c.id, name: c.name, ok: false, error: e.message };
+    }
+  });
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const i = args.indexOf('--page');
   const page = i >= 0 ? args[i + 1] : null;
+  const results = runChecks(page ? { page } : {});
   let failed = 0;
-  for (const c of checks(page ? { page } : {})) {
-    try {
-      c.fn();
-      console.log('ok   ' + c.id + ' ' + c.name);
-    } catch (e) {
+  for (const r of results) {
+    if (r.ok) {
+      console.log('ok   ' + r.id + ' ' + r.name);
+    } else {
       failed++;
-      console.log('FAIL ' + c.id + ' ' + c.name + '\n     ' + e.message);
+      console.log('FAIL ' + r.id + ' ' + r.name + '\n     ' + r.error);
     }
   }
   console.log('\n' + (failed ? failed + ' failed' : 'library check passed'));
