@@ -163,11 +163,13 @@ in `files/` — Personnel's Week (×2), Commencement (×2), Work Immersion, and 
 2023 National Youth Congress. They render the dashed awaited frame or fall back
 to `PlaceHolder.png`.
 
-## Preview
+## Promotion
 
-`preview.html` — `node tools/serve.mjs 3333`, then
-`http://127.0.0.1:3333/preview.html`. The walk (`index.html`) stays untouched
-until this page is approved and promoted.
+Promoted on 2026-10-26: `preview.html` → `index.html`, `css/profile.css` →
+`css/styles.css`, `js/profile.js` → `js/main.js`, and the preview copies deleted.
+The walk's presentation, DOM suites and shell-check are retired; `npm test` now
+runs `tests/page.test.mjs` plus the five inherited data suites. Serve with
+`node tools/serve.mjs 3333`, then `http://127.0.0.1:3333/`.
 
 
 ## Out of scope for this iteration

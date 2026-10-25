@@ -1,380 +1,474 @@
 # Andrew Alangcao
 
-**Data Engineer | Computational Cognition Researcher**
+**Data Engineer · Computational Cognition Researcher**
 
 > **Editing this repo?** Read [`AGENTS.md`](AGENTS.md) first — it routes an
-> intent ("change how frames are sized") to the file and the section, and lists
-> the vocabulary and the constraints that have tests behind them. This README is
-> the design's reasoning: read it when you want to know *why*, not *where*.
+> intent (change the hero, a scrim, an award) to the file and the anchor, and
+> lists the vocabulary and the constraints. This README is the design's
+> reasoning: read it when you want to know *why*.
 
-Personal portfolio website, built as a single horizontal walk through a dark gallery: eight rooms
-side by side in one strip, each project, post and award hung as a **group** — a composition of
-framed photographs carrying one exhibition label — and the honours that stand alone read as a
-three-column list of tiles. Vanilla HTML, CSS and JavaScript — no frameworks and no build step.
+A static personal portfolio: one vertical profile page, painted with two
+Amorsolo landscapes, rendered from `js/data.js` by `js/main.js`. Vanilla HTML,
+CSS and JavaScript — no build step, no bundler, no runtime dependency.
 
-## About
+## The page this replaces
 
-My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development — all to improve everyday life for people in the Philippines and around the world.
+The previous site was a horizontal gallery: one strip of exhibits, each a stack
+of framed photographs with a label beside it, navigated by a scroll-position bar
+and a smooth-scroll engine. It was a deliberate exhibition, and it made the
+visitor walk sideways to read a person.
 
-## The walk
+This page is a profile. The subject comes first, then the work, then the
+record of what the work won, then the way to make contact. Every project is a
+**stop** in a downward sequence rather than an exhibit in a strip. Native
+vertical scroll, no Lenis, no snap, no hidden content off the right edge. The
+paintings survive from the old build because they were the best thing in it;
+the navigation model does not.
 
-A gallery is one viewport tall and **as wide as its own hang**. Its groups run in a single row that
-carries on past the screen edge, and the gallery ends where its last group does. The only floor is one
-screen, so a short gallery is never narrower than the window and a visitor is always standing inside
-one named gallery rather than looking at two.
+Still static. The page is `index.html` + two stylesheets + two scripts: the
+portfolio records and personal copy live in `js/data.js`, while section
+headings, labels and button text are literals in `js/main.js`. Node is only for
+tests and dev tools.
 
-Within that row, **one stand is one screen**. A stand — a project or a post, with its label
-and its frames — is sized so that when the walk parks on it, nothing of its neighbours is in shot:
-the gap between two stands of the SAME room is the smallest one that keeps that true — a quarter of
-a stand, 275px at 1440×900, 1536×864 and 1280×704, against the 170 / 218 / 90px those windows
-actually need — and a stand fills 66–86% of the screen's width. So the walk reads as a sequence of
-exhibits rather than as a continuous frieze.
+## Two paintings, eleven crops
 
-The walk measures **two** distances, and they are not the same size. Siblings in one room are
-separated by that frame; two ROOMS are separated by a threshold: 45vw of wall, 717px between the
-last stand of one room and the first of the next at 1440×900, against 275px between two stands of one
-room. It is spent as a **room's own right padding** — the room the visitor is leaving — and never as
-a gap in the strip: a flex gap is bare hall, and bare hall measures 28.91 where the room's own ground
-measures 20.44 (1.41× brighter), one flat lit screen of mural in the middle of a dim walk. The
-arriving room's left padding cannot carry it either: padding-left pushes that room's content box a
-band to the right, and its sticky heading then cannot reach its pin until the band has gone by
-(measured at 1250 against 550). As right padding the band is the same ground the projects hang on,
-20.44 against 20.93 for the room's own wall between two stands, and each room's 1px recess is the
-joint at the far edge of it. It was the other way round: `--group-gap` was `2 × --stand-w`, so two
-projects of one room stood 2,200px apart while two categories touched, 69px apart at 1440×900.
+Two saved paintings carry the whole page:
 
-One room is one viewport tall, and the hall is the document's only scroller, on one axis:
-horizontal. Chrome lives at the **foot** of the walk — a dock carrying every room and the current
-one, with the walk's progress drawn inside it as a track. Nothing is fixed over the top of a room:
-each room's own heading carries `position: sticky` and travels with the walk, so the name on screen
-is the heading itself rather than a second, smaller copy of it.
+| Name in code | File | What it is |
+|---|---|---|
+| `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, three project stops, Leadership and Contact. Also the source of the Open Graph share card. |
+| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, three project stops and Honours. |
 
-A **stand** is the unit that hangs: one project or one leadership post. Its three frames hang
-stacked in one column, all the same size, with a **legend** of one catalogue entry per frame beneath
-them, and one **label** beside the whole cell carrying the record's own account, its awards and its
-team caption. A project's first frame is its **preview film**, which plays while the stand is in shot;
-the two photograph frames under it are the way into the record, because a button may not contain the
-controls a film needs.
+The footer credits both: **Paintings by Fernando Amorsolo y Cueto (1892–1972).**
 
-**The legend is the only place a visitor can find out what a photograph is**, and it stands under the
-photographs it names: an entry is the text for one picture, so a picture and its name are not in
-different columns of the stand. Each entry carries the photograph's letter, its title, its caption and
-the file it came from; the frames on the wall hang clean, because a letter badged onto a photograph
-reads as part of the work. A stand with a single photograph is not lettered, because there is nothing
-to tell apart.
+### Why two, and why crops
 
-**What a photograph is called comes from its record's `pieces[]`**, and from nowhere else: `title` is
-what the picture shows, `caption` is a sentence about it. Where a record declares none, the entry falls
-back to "Photograph B" and the picture is undescribed — running `node tools/caption-worklist.mjs` lists
-every photograph still in that state, with its letter and its file, as a block to paste back into
-`js/data.js`. The line beneath is the file's own name, deliberately: a prettified stem like "Palad
-Team" reads like a description and is not one.
+One painting repeated eleven times reads as wallpaper, however it is cropped.
+Two paintings alternate: a bright field and a darker harvest, two different
+horizons and palettes, and the page gets a rhythm without inventing a third
+asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
 
-Every stand hangs **exactly three frames, all the same size**. For a project they are its preview
-film, its overview photograph and its team photograph; for a leadership post, its first three
-photographs. A record that declares fewer hangs a reserved frame where the photograph will go, rather
-than two frames on a wall built for three; one that declares more does not drop a photograph — a
-Leadership post's fourth is simply not hung, and stays reachable in the record's own dialog. An
-awaited frame draws no picture at all — it is a reserved place on the wall — and the label names
-however many are awaited in a single line rather than repeating "Photograph awaited" for each.
+| Stop | Id | Painting | `background-position` |
+|---|---|---|---|
+| Hero | `top` | `rice` | `50% 58%` |
+| About | `about` | `harvest` | `48% 52%` |
+| PALAD | `project1` | `rice` | `18% 56%` |
+| Hivemind | `project2` | `harvest` | `78% 44%` |
+| C.E.N.T.H.R.O. | `project3` | `rice` | `76% 50%` |
+| Focus Buddy | `project4` | `harvest` | `22% 66%` |
+| SATLearn | `project5` | `rice` | `44% 22%` |
+| BiyaHey! | `project6` | `harvest` | `56% 50%` |
+| Leadership | `leadership` | `rice` | `8% 44%` |
+| Honours | `honours` | `harvest` | `88% 36%` |
+| Contact | `contact` | `rice` | `50% 88%` |
 
-One frame size for every stand means one SHAPE for every frame, and it is `--frame-ar` in
-`css/styles.css`: 16:9, cropped to fill with `object-fit: cover`. That is a reversal, and a
-considered one. While a frame followed its own photograph's proportions the two alternatives were
-rejected — `contain` left black bars (measured, 15 of 23 frames at 1536×864 were 63–77% bar) and
-`cover` cropped. One size for every frame is the design now, and of the two ways to put a photograph
-of one shape into a box of another, a crop is the one that still reads as a photograph.
+Eleven stops, two files, no per-stop downloads. A panel paints the whole image
+`cover` at the stop's `background-position`; the browser does the crop. The pan
+is therefore a pair of percentages, not an image edit and not a camera move.
+Percentage positions survive every viewport: there is no second art direction
+for mobile, and no asset that has to be re-cut when a panel's aspect ratio
+changes. The crop is the design; the image is one of two.
 
-Because a gallery is exactly one viewport tall inside a hall with `overflow-y: hidden`, there is no
-vertical axis to overflow into: the single column is what makes the width work.
+The art sits on `.stop::before` at `z-index: -2`, with `background-color:
+#1a1d18` behind it so a slow image does not flash white. `.stop` sets
+`isolation: isolate`, which is what lets the two negative layers stay inside
+the panel rather than sliding under the page.
 
-**A stand is a row of two cells, and they are not equal.** The left cell holds the hang and the legend
-beneath it; the right cell is the label that reads the record. Each takes the stand's full height — the
-label is *beside* the pictures, not beneath them. It was two stacked bands until an earlier build: a
-picture band fixed at 156px with the label at the stand's full width below it, which measured 765.7px
-inside a 724px band at 1536×864, so the room title was drawn 15px above the top of the window and the
-last award 48px under the dock — 116px over at the spec's 1280×704 floor.
+### Why panels rather than one background
 
-`--label-col` is the right cell and it is a share of the viewport rather than a fixed width, so the
-proportion survives every screen: 634px at 1440, 669px at 1520, 676px at 1536 and 704px at 1600 (its
-720px ceiling binds at about 1640 and holds above that). The left cell takes what is left. It used to
-need the larger share because a frame followed its photograph's width, so a narrow cell made its
-pictures narrower and taller until a 2.251-ratio photograph was squeezed to the 44px tap floor —
-measured at a 317px wall, three frames of 44×691, a wall of lines. A frame is one box now, so the cell
-binds through the BAND the solve is allowed rather than through a frame's own proportions. The stand
-is `min(clamp(1100px, 68vw, 1440px), 100vw)`, so that leaves the hang cell 435px at 1440, 390px at 1536,
-361px at 1600 and 546px at 1920.
+A single fixed painting behind the whole document would be one continuous
+surface, and every section would have to fight it for contrast. A panel is a
+rounded plate with its own crop, its own scrim and a 16px gutter around it. The
+section boundary is visible, the art changes with the story, and the scrim can
+be tuned per side instead of globally. The painting is the ground of each
+section, not wallpaper behind the site.
 
-The `min(…, 100vw)` cap is not tidying — it is the fix for a defect the 1100px floor caused below
-1100px. A stand on its floor is wider than the window, and `--group-gap` reads
-`max(0.25 × stand, (100vw − stand) / 2)`: with the floor binding, the first term is a fixed 275px while
-`--room-gap` keeps shrinking at `45vw`, so the two crossed at a **611px viewport** and below it two
-projects of one room ended up FURTHER apart than two different rooms — the inverse of the rule the
-whole walk is built on. Measured before the fix, at 390×844: **sibling 275px against category 245px**.
-Capping the stand at the viewport makes `(100vw − stand) / 2` exactly zero, so the sibling gap falls
-back to `0.25vw` against a `0.45vw` category gap at every width, with no crossing to find. The cap is
-inert at ≥1100px, so nothing above the floor moved.
+## Sectioning: each project is a stop
 
-The legend is 62% of that cell's width and it shares the pictures' LEFT edge — the two no longer share a
-right edge, because a frame's width is the solved band times `--frame-ar` (331px in a 435px cell at
-1440×900) where 62% is 270px. Making the caption follow the pictures instead is a feedback loop, since
-this block's own height is part of what the band is solved around; `css/styles.css` records it. It is
-pinned to the cell's foot, which leaves the band of wall between the pictures and their names that a
-hang centred on a wall has. `--label-side` is the label's own interior split — 30% for the furniture
-(the summary, the awards, the team caption) beside the account's two columns. Both numbers are
-measured, not chosen: a narrower furniture column wraps the awards until *they* are the tall pole and
-the label scrolls, and a wider one takes the width the account needs.
+The page order is fixed and semantic:
 
-The label column **does not scroll at any desktop viewport from 1366×768 up** — between 900px and
-1366px the stand is still wider than the window and the walk is a pan, not a page — which is the change
-that put the legend under
-the hang: the catalogue was the tallest block of the label's furniture column, and the label's own
-content came to 743px inside a 690px box at 1440×900, a scrollbar over copy a visitor had to go looking
-for. The 1280×704 floor still scrolls, by 44px on its worst label where it used to scroll by 273px on
-six of them; a `max-height: 800px` query widens the label to buy back what width can, and nothing there
-is clipped either way — `ux-check` reports the scrolls as information and fails only on copy that is cut
-off.
+| Stop | Id | Holds | Minimum height |
+|---|---|---|---|
+| Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
+| About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | 86vh |
+| Work | `work` | Six project stops, each with copy + three media frames | 86vh each |
+| Leadership | `leadership` | Four cards: year, description, thumbnail | 86vh |
+| Honours | `honours` | Five standalone honours, newest first | 86vh |
+| Contact | `contact` | Closing line, email, social links, on a dark card | 74vh |
+| Footer | — | Name, Amorsolo credit, copyright | auto |
 
-**On a phone the label leaves the stand and the hang takes the screen.** Below 900px the two-cell stand
-cannot hold a usable label column *and* a usable hang, so the stand becomes one column: the hang fills
-the width, `.group > .label` is taken out of the walk, and a single **`Read the label`** control under
-the legend opens the record in the dialog the site already had. The control is rendered at every width
-and hidden above the breakpoint, so there is one code path rather than two; activating it clones the
-stand's own label into the dialog rather than moving it, so widening the window restores the two-cell
-stand with no re-render. The property this buys is that a stand is **one screen wide at every width**,
-which is what the `100vw` cap above needs in order to hold the sibling/category ordering. This extends a
-precedent the walk already set: a fourth photograph is not hung, and stays reachable in the record's
-dialog. The label is the same bargain at this width.
+Those are **minimum** heights. A stop grows if its copy or media needs more;
+the page never clips a record to preserve a rhythm.
 
-The hide is scoped `.group > .label` and never a bare `.label`, because the dialog's copy is the same
-element and a bare rule would hide it too.
+The ordinary stop is 86vh rather than 100vh so the next panel's edge and the
+16px gutter are visible: the page reads as a stack to continue through, not a
+slideshow that replaces one screen with the next. The hero is the exception —
+it is the arrival, so it takes the viewport minus the gutter. Contact is shorter
+because its job is to close, not to introduce.
 
-The numbers this now measures, all with **zero bare wall** left under the hang:
-band **487px** and frames **278×156** at 390×844, band 391px and 223×125 at the
-1280×704 floor, band 579px and **331×186** at 1440×900. The last is the figure
-this file has always quoted for a frame at 1440×900, which is the check that the
-narrow work did not move the desktop.
+### The 12-column panel
 
-Getting there caught a defect worth recording, because every check that existed
-was blind to it. The band solve reserves the height of each block in the hang
-cell that is not the cluster — and the legend is pinned to the cell's foot by
-`margin-top: auto`, which the browser resolves to *whatever space is left over*.
-`getComputedStyle` reports that as a used pixel length and not the string `auto`,
-so the solve was reading the slack back as space already spent: **303.547px** at
-390×844, which collapsed the band to 184px and drew three **98×55** frames above
-303px of empty wall. It passed every phone check, because 98×55 still clears the
-44px tap floor and still sits inside its stand. The fix is a placement rather
-than a test — the pinning margin is `margin-bottom: auto` on the **cluster** now,
-which the solve skips by construction — and `shell-check.mjs` asserts the
-placement, because no runtime test can: the resolved value of an `auto` margin is
-indistinguishable from a real one. It hid on desktop for a second reason, which
-is why measuring beats reasoning here: the `22vh` fallback sits within about 10px
-of the correct band at 1440×900, so the broken solve looked entirely plausible
-there.
+`.stop-in` is `repeat(12, 1fr)`, capped at 1440px, with `clamp(48px, 6.5vw,
+100px)` padding and a `clamp(20px, 2.6vw, 40px)` gap. Copy takes columns 1–5,
+media 7–12; the empty sixth column is the seam between them. Mirrored stops put
+copy in 8–12 and media in 1–6. The media side is larger because three frames
+need the width; the copy is held to 44ch so the line length stays readable.
 
-**How large a photograph reads is decided by the band, and the band is solved.** Every frame is one
-box, so a stand's shape is fixed: a column of three frames is `(band − gaps) / 3` tall each and 16:9
-times that wide. Two things bound the band — the cell's width, and the HEIGHT the cell has left after
-its legend — and for a stack of three landscape frames the height is the one that binds, because the
-column is taller than it is wide. `Site.bandFor` in `js/data.js` does that arithmetic (it is pure, and
-`tests/band.test.mjs` pins it to the pixel); `fitWall` in `js/main.js` measures the two numbers and
-`css/styles.css`'s `--wall-h` clamp is the band until it runs. The loading floor is part of the same
-solve: a band may not take the frames under the tap target, so the floor is `44 × rows + gap × (rows −
-1)` and a floor that forgets the gaps comes out at 39px on a frame.
+The hero's copy takes 1–8 and is bottom-aligned: the name sits low over the
+painting rather than floating in the middle. About is copy-left/media-right.
+Leadership and Honours are copy-left with cards/list on the right. Contact is
+centred across 2–10, capped at 880px.
 
-The solve no longer reads any photograph's aspect ratio, which is a simplification worth naming: it
-used to run again on every `load`, because a frame's width followed its photograph and there was no
-ratio to solve with until the bytes arrived. One ratio, one shape, and the solve is the same before and
-after a photograph loads.
+### The six project stops
 
-**A column an arrangement drops is held by the cell, not cut by it.** The one arrangement this walk
-deals — three frames in one column — publishes `drop: [0]`, because a single stack of one size is
-meant to read as a stack. The mechanism is kept and it is not decorative: it is the record of a fault
-that shipped once, and it is what a future arrangement offsets a column with. An arrangement offsets a
-column down by 14px, and that offset is a margin — so the dropped column's outer box is 14px taller
-than the band, and the frame at its foot hangs that far below the cell. The cell's `overflow: hidden`
-is what stops a hang painting over its neighbour, so it cut the difference off: measured, 10 of the
-collection's 32 frames — one per stand — each lost exactly 14px, the gilt and the mat and, on six of
-them, part of the photograph itself. An awaited frame in that position is the shape a visitor reported:
-a black rectangle with no bottom edge, which is a hole rather than a reserved place. `--drop` is the
-deepest offset the arrangement actually deals, written on the cluster by `renderCluster` and spent as
-the cell's own `padding-bottom` with `box-sizing: content-box`, so the room is added below the band
-instead of being taken out of it. `ux-check` measures every frame against its cell's padding box — the
-edge the clip really happens at — rather than against the stand, which is the looser box that let this
-ship.
+The project order is the order in `PORTFOLIO.projects`:
 
-**The band is solved, not chosen** — `Site.bandFor` in `js/data.js` holds the arithmetic, `fitWall`
-in `js/main.js` does the measuring, and `tests/band.test.mjs` pins the numbers. The solve is run once
-on load, on resize and after the fonts settle; it no longer re-runs when a photograph arrives, because
-it no longer reads any photograph's ratio.
+1. **Project PALAD** — contactless palm biometrics.
+2. **Hivemind** — AI-native organizational memory.
+3. **C.E.N.T.H.R.O.** — fingerprint transit and healthcare records.
+4. **Focus Buddy** — a desktop robot study companion.
+5. **SATLearn** — SAT practice with analytics.
+6. **BiyaHey!** — a community commute map.
 
-`--label-col` (the label's cell, which sets the wall's width) and `--frame-ar` (the shape of every
-frame) are the two dials. `--band-h`, `--frame-h`, `--max-panel-h` and `--label-w` are retired with the
-stacked shape they described. `tools/stand-fit.mjs`, `tools/avg-frame.mjs` and `tools/label-fit.mjs`
-measure what they produce.
+Each stop carries an eyebrow (`category · venue`), an `h2` title, the tagline,
+the summary, the project's awards and an **Open the record →** button. The media
+side is one overview frame at 16:9 spanning two columns, with the film still and
+the team photograph as 4:3 supports beneath it. That is the old build's
+three-frame identity, laid flat: overview leads, film and team support. The film
+frame is a **generated still with a play badge**, not a playing video — the
+player lives in the dialog. Six simultaneous videos would cost page weight and
+compete with the painting; one player on demand does not.
 
-**The label column scrolls when its content does not fit, and the suite can tell that apart from
-clipping.** The arithmetic does not always close: at the 1280×704 floor PALAD's label needs 530px of
-a 502px cell and BiyaHey!'s 617px, and at 1536×864 Hivemind — 1,369 characters, the longest account
-in the collection — needs 741px of 650px. The alternatives were each worse for a visitor: an account
-below its 12.5px floor, a frame narrower than a photograph, or a paragraph that is clipped and
-invisible until someone reads to the bottom. So the label scrolls, with a gradient cue, and both
-`tools/ux-check.mjs` and `tools/label-fit.mjs` read `overflow-y` before they call a label clipped —
-`hidden` is copy a visitor cannot reach, `auto` is copy they can.
+Sides alternate by index, not by category: PALAD copy-left, Hivemind copy-right,
+C.E.N.T.H.R.O. copy-left, and so on. The alternation keeps consecutive stops
+from reading as a list and lets the scrim mirror each time, so the bright side
+of the art is always the side away from the copy. Category is still legible in
+the eyebrow; it does not need to drive the layout.
 
-## Honours, and where an award lives
+### Honours, and where an award lives
 
-An award is a project's award, so it belongs to the project: the Robothon placings, the Muntinlupa
-title and the DLSU-D citation are read in the **Awards** dialog on the project's own stand — the
-button sits on its exhibition label, under the paragraph that frames the project and above its
-catalogue of photographs. An honour that is nobody's project — a commencement citation, a CERN-Solvay
-shortlisting, a congress delegation — stands alone.
+`PORTFOLIO.honors` holds thirteen records. Five stand alone; eight are a
+project's award. The distinguishing field is authored, `from: 'projectN'`, not a
+text match against the project's own award copy — one win is worded differently
+on the project panel and in the honours array, and no predicate over those
+strings can be trusted to leave a record on exactly one side.
 
-That button is the **only** way to those awards, because the walk hangs groups rather than cards.
-There is no second copy of them on the wall, so a control that stops rendering takes eight awards off
-the site with nothing looking broken: `tests/renderer.test.mjs` asserts one control per project that
-declares awards, and `tools/ux-check.mjs` presses one and reads the dialog back against the data.
+`Site.honoursTiles(PORTFOLIO.honors)` partitions the array. The page renders
+only `.tiles`, which is the five that stand alone; the eight `projectAwards`
+live as the project's own **Awards** list. There is no second copy of a project
+award on the Honours panel, and no second visual language for it. The Honours
+panel's copy says exactly that.
 
-`js/data.js` says which is which with one authored field, `from: 'projectN'`, on the honours that are
-a project's award. `Site.honoursTiles(honours)` splits the array on it and returns `{ tiles,
-projectAwards }`, each entry carrying the record's **true index** into the unfiltered array because
-that is what `Site.galleryFor` resolves against. The split reads the field rather than matching the
-description against the project's own award text: the wall and the label name one win in two wordings,
-and no predicate over those strings can be trusted to leave a record on exactly one side. It is a
-total partition, so a mis-filed honour is a failing test rather than an honour that quietly left the
-site.
+The five tiles are a year-led list, not cards: an honour is a register entry,
+and a row scans faster than a card. A tile with declared photographs is a
+button that opens the shared dialog; a tile with none is disabled rather than a
+focusable control that opens nothing.
 
-The Honours room is then a **three-column list of tiles** — one tile per honour that stands alone,
-carrying its year, its description, and whether there are photographs behind it. A tile with
-photographs is a real button and opens them in the shared dialog; one without is a plain panel that
-says "Photographs awaited", because a focusable control that opens nothing is worse than a row that
-plainly is not one. Three columns is not a preference: the room is one screen tall with no vertical
-axis, so a fourth row would be clipped with nowhere to scroll to, and `tools/ux-check.mjs` measures
-the columns, the rows and the tile boxes at both reference viewports.
+## The scrim, and the measured contrast
 
-## Tech Stack
-
-- **HTML5** — Semantic, accessible markup
-- **CSS3** — Custom properties, container queries, responsive design, a lit gallery palette on a
-  near-black wall
-
-  The palette is *lit*, not near-black throughout: the wall is near-black and the light in the
-  room is not. Retuning it is two dials and they are a single constraint — `--wall-scrim` and the
-  crown stop of `.room` set how open the wall is, and `--text-quiet` is the tier that has to
-  survive it, because the crown is the brightest ground any text on the page meets. The tier that
-  ships spent its whole margin on this once already, so `tests/shell-check.mjs` now asserts both
-  halves: every tier clears WCAG AA *and* the crown's luminance stays above a floor, so the wall
-  can be opened further but cannot be quietly closed again.
-- **Vanilla JavaScript** — Data-driven rendering
-- **Lenis 1.3.26** — Smooth horizontal scrolling, vendored in `js/vendor/`. MIT ©
-  darkroom.engineering. Committed and pinned by size and SHA-256 (`js/vendor/README.md`).
-- **Newsreader and Courier Prime** — vendored in `files/fonts/` with their SIL OFL 1.1 licences,
-  declared in the generated `css/fonts.css`. Eight `woff2` files, but `unicode-range` is preserved from
-  Google's own stylesheet, so a visit still downloads only the subsets it uses — measured, an English
-  page loads **5 of the 14 faces**. Refresh with `tools/vendor-fonts.mjs`.
-- **Twelve icon glyphs** — Font Awesome Free 5.15.4 (CC BY 4.0, licence in `files/icons/`), inlined as
-  SVG path data in the generated `js/icons.js`. The site used to link Font Awesome's stylesheet instead:
-  **59,305 bytes** of CSS describing several thousand glyphs, plus a webfont subset on top, to draw
-  twelve shapes. Refresh with `tools/vendor-icons.mjs`.
-
-**Nothing is resolved from a CDN at runtime.** There is still no build step, no bundler and no package
-install needed to serve the site.
-
-## Structure
+The paintings are daylight-bright. The text is warm off-white. A flat dark
+overlay would either kill the art or fail the text, so the scrim is a gradient
+whose dark end follows the copy side. On a left-copy stop:
 
 ```
-├── index.html          Entry point — the hall, the strip, the dock, the dialog
-├── css/
-│   └── styles.css      All styles
-├── js/
-│   ├── data.js         Single source of truth — all content, the room derivation,
-│   │                   the group split, and the honours tiles
-│   ├── main.js         Group renderer, label renderer, tile renderer, the light
-│   │                   controller, the Lenis walk, the dock, the dialog
-│   └── vendor/         Lenis 1.3.26, vendored and pinned (see its README)
-├── tests/              In-process unit suites (no test framework, no spawn)
-├── files/              Images, videos, and assets
-│   └── posters/        Poster frames for the project preview videos
-├── tools/              Dev-only checks and asset generators (not required to run the site)
-├── docs/               Plans and design notes
-└── .gitignore
+linear-gradient(90deg,
+  rgba(8,12,14,.97)  0%,
+  rgba(8,12,14,.92) 26%,
+  rgba(8,12,14,.62) 52%,
+  rgba(8,12,14,.20) 78%,
+  rgba(8,12,14,.06) 100%)
 ```
 
-## Adding content
+A right-copy stop uses the same stops at `270deg`; the copy side is always the
+near-opaque end. The far edge is only 6% night, so the painting is essentially
+untouched there. The gradient does not desaturate, duotone or blur the art.
 
-Every label is derived from `js/data.js`. A record may carry two optional fields, both authored:
+Centred stops use a vertical gradient because there is no far side:
 
-```js
-{
-  description: "Some Award – Champion",
-  year: "April 2026",
-  images: ["files/award-1.jpg", "files/award-2.jpg"],
-  summary: "The paragraph that frames the group.",        // optional
-  pieces: [                                               // optional, one per image
-    { title: "At the podium", caption: "Receiving the award." },
-    { title: "With the team" }
-  ]
-}
-```
+- **Contact:** `.5` top, `.34` at 40%, `.5` at 70%, `.92` bottom.
+- **Hero:** `.62` top, `.26` at 28%, `.58` at 52%, `.9` at 74%, `.98` bottom.
 
-Both are optional and every level falls back, so a record added without copy still renders: the
-narrative falls back to the record's own description, and a piece with no title is named for its
-position. `npm test` asserts that every shipped record has authored copy rather than fallback text.
+Each panel also carries inset top and bottom vignettes — `60px 70px -55px`
+shadows at `.95` — so two bright crops meeting across the 16px gutter do not
+draw a light seam. The rounded panel edge and the vignette do the separation;
+there is no border between sections.
 
-An **honours** record, and only an honours record, may also carry `from: 'projectN'`. Add it when the
-honour IS that project's award, and add the same award to the project's own `awards` array — the
-renderer suite fails if you give a project an award it does not list, or list one the honour does not
-name, and the project's label grows an Awards button as soon as its `awards` array is non-empty.
-Without `from`, the record is an honour that stands alone and is drawn as a tile in the Honours
-room. Its `images` are then fetched when a visitor presses the tile rather than hung on a wall.
+The contact copy sits on a separate soft card inside the panel: a blur-backed
+`rgba(8,12,14,.72)` surface, 20px blur, 26px radius, sized `min(72%, 780px)` by
+62% and centred. The earlier radial scrim measured **2.1:1** behind the closing
+copy and left a visible box edge; the card measures **12.4:1** and reads as a
+deliberate surface. On narrow screens the card takes the panel's width.
 
-`images` is also the hang's budget, not just its content: a record that declares fewer than three
-hangs empty frames up to three, and one that declares more than six hangs its first six. So a record
-added with one photograph still gets a full composition, and adding the rest later is a data edit
-with nothing else to change. The budget applies to a **stand** — a project or a leadership post; an
-honour's photographs are a gallery in the dialog, not a hang.
+### Measured, not eyeballed
 
-## Running Locally
+A masked full-page capture hid the copy text, and the pixels behind every copy
+column were sampled; the figure is the worst ground against the text tier. The
+shipped numbers:
 
-Open `index.html` in any browser — no server or build step required.
+| Area | Contrast | Reading |
+|---|---|---|
+| Hero | **4.17:1** | Clears AA for large text only. The hero is built from display type, a shadowed gold title line and buttons on their own translucent ground; it is not a place for a normal-size paragraph. |
+| Section copy columns | **8.3–9.8:1** | AA for normal text, with margin. |
+| Contact | **12.4:1** | AA for normal text, on the blurred card. |
 
-## Tests
+The probe was a scratch script under `.tmp-diag/` (gitignored), recorded in the
+design note rather than committed. The numbers are the authority, not token
+arithmetic: the same `--text` can pass on one crop and fail on another, which is
+why a crop or a scrim change needs re-measurement rather than a colour swap.
 
-The unit suites run **in-process** with a ten-line runner (`tests/harness.mjs`) instead of
-`node --test`, which spawns child processes and fails under a confined sandbox:
+## The journey rail and the left shade
+
+The masthead has four links, but the page has ten named stops (About, the six
+projects, Leadership, Honours, Contact). The rail is the full index: a fixed
+hairline at the left edge, one dot per stop, a label chip on hover and on the
+active stop. The hero is not a rail stop — it is the arrival, and the brand in
+the masthead already returns to it.
+
+The active stop is the one crossing a narrow band at the viewport's middle, not
+the one entering the top: `IntersectionObserver` with `rootMargin: '-45% 0px
+-45% 0px'`. So the dot follows what is being read. Clicking a dot is a plain
+anchor to the section; `scroll-margin-top: calc(var(--masthead-h) + 12px)` keeps
+the panel's top clear of the fixed masthead. `html { scroll-behavior: smooth }`
+does the travel; the rail never hijacks the wheel. Under reduced motion the
+smooth behaviour is turned off.
+
+The shade is the rail's legibility layer: a fixed 108px gradient from
+`rgba(8,12,14,.82)` at the edge through `.58` at 34%, `.2` at 70%, transparent at
+100%, with `pointer-events: none`. It exists because the rail is fixed over
+whatever crop happens to be at the left edge; on a bright rice field the dots
+and labels disappeared. The shade is not a page overlay — it is bounded to the
+rail's gutter, below the masthead (`z-index: 29`) and below the rail itself
+(`30`), and it is hidden with the rail below 1024px.
+
+The rail is a navigation, not a scrollbar. Scroll progress is the separate 1px
+gold hairline at the foot of the masthead.
+
+## Palette, type and radii
+
+The palette did not change with the page. It had already been measured for the
+old build, and the text tiers are still the right warm values against a dark
+ground:
+
+| Token | Value | Role |
+|---|---|---|
+| `--night` | `#080c0e` | Page ground; also the scrim's dark end |
+| `--text` | `#ece2cf` | Body and lede text |
+| `--text-strong` | `#f9f4e8` | Display headings, names, active labels |
+| `--text-quiet` | `#9a9384` | Supporting copy, years, captions |
+| `--accent` | `#d4b06a` | Gold meta, rules, the active rail dot, links |
+| `--border` | `rgba(236,226,207,.14)` | Hairlines, buttons, frame borders |
+
+The art supplies the colour. Keeping the text palette stable means a crop can be
+retuned without re-deciding the type colours, and the measured contrast table
+above remains the reference.
+
+### Type
+
+| Face | Role | Notes |
+|---|---|---|
+| **Newsreader** | Display: `h1`, `h2`, hero line, lede, brand, contact email | Serif, weight 300 requested; the vendored family declares 400/500/600, so the browser serves its closest face (400). A true 300 needs a new vendored face. |
+| **Courier Prime** | Meta: eyebrows, hero title, buttons, awards, rail chips, masthead nav, footer credit | 10–11.5px, uppercase with wide tracking where it labels; it is the page's instrument voice. |
+| **System sans** | Body copy and interface text | 16px / 1.65; no third webfont is shipped. |
+
+`h1` is `clamp(42px, 6.4vw, 94px)` at `.96` line-height; `h2` is
+`clamp(30px, 3.4vw, 52px)`; the hero line and lede are
+`clamp(18px, 1.7vw, 24px)`. The body column is capped at 44ch; the lede at 32ch.
+The hero title is 12–14px Courier Prime in gold, with a text shadow — the one
+small free-text line in the hero.
+
+The two webfonts are vendored in `files/fonts/`, with their OFL licences, and
+declared by the generated `css/fonts.css`. Nothing is fetched from a font CDN at
+runtime. The body deliberately uses the system sans stack rather than a third
+family: the display and mono faces carry the identity, and the reading face
+should be the one the operating system already renders well.
+
+### Radii
+
+| Surface | Radius |
+|---|---|
+| Painted panel | 16px (`--panel-radius`; 12px below 640) |
+| Media frame | 10px (`--frame-radius`) |
+| Button / resume / dialog close | 8px |
+| Dialog card | 14px |
+| Contact card | 26px |
+
+The old build was `border-radius: 0` because it was a gallery wall. This page is
+a stack of painted plates and framed prints; the radii separate the two: a panel
+is a surface, a frame is an object sitting on it. The nested values (16 panel,
+10 frame, 8 control) keep the corners concentric rather than arbitrary. The
+contact card is softer than the panel because it is a light-catching surface,
+not a frame.
+
+## Interactions
+
+### One dialog
+
+Every record that opens uses the same dialog. For a project it holds the title
+and meta, a real `<video controls muted loop playsinline
+preload="metadata">` with the generated poster, the summary, the overview
+paragraphs (split on blank lines), the team caption, the awards list, the links,
+and a gallery of the project's frames. For a leadership record or an honour it
+holds the description, the year, the summary and the record's photographs.
+
+One dialog means one focus trap, one escape path and one body layout. The
+project/leadership/honour difference is in the data, not in three modal
+implementations.
+
+The accessibility contract is explicit:
+
+- `role="dialog"`, `aria-modal="true"`, `aria-labelledby="dialogTitle"`, and a
+  44px close button with an accessible name.
+- Opening saves `document.activeElement`, focuses the dialog card, and locks
+  body scroll.
+- Tab and Shift-Tab wrap between the first and last focusable elements.
+- Escape, the close button and a click on the overlay all close it; closing
+  restores focus to the control that opened it.
+
+The video is a player, not decoration: it is muted and looping by default, has
+controls, and does not autoplay. The rest of the page's motion is the reveal,
+the frame hover and the masthead/rail transitions.
+
+### Frames
+
+A frame with a real image is a `<button>`; an awaited frame is a `<div>` with a
+dashed border and the words **Awaiting photograph**, because a control that
+opens nothing is worse than an honest reserved place. The film frame carries a
+decorative play badge; the whole frame is the button, and the dialog supplies the
+player.
+
+### Honours and empty records
+
+A standalone honour with photographs is a button; one without is a disabled row.
+Leadership cards always open; a record with no photographs still has its summary
+to show. A photograph path that is missing falls back to `PlaceHolder.png`
+through `onerror`; it is not the same as the explicit awaited state, which the
+data declares with `PlaceHolder.png` itself.
+
+### Reveals and chrome
+
+Copy and media blocks fade up 16px over 650ms when they first cross the
+viewport; the observer unobserves each block, so scrolling back does not replay
+the entrance. `prefers-reduced-motion: reduce` makes every reveal visible
+immediately, collapses the transitions to effectively zero and turns smooth
+scrolling off.
+
+The masthead starts transparent over the hero and gains a blur and a hairline
+once the hero is behind it. Its progress hairline is the page's scroll position,
+not a section indicator. There is no scroll snap, no Lenis and no smooth-scroll
+library: the page uses the browser's own scrolling and smooth anchor behaviour.
+
+## Missing photographs
+
+Six rendered references point at files that are not in `files/`:
+
+- Personnel's Week — two photographs;
+- Annual Commencement — two;
+- Best in Work Immersion — one;
+- 2023 National Youth Congress — one.
+
+They are a content gap, not a layout bug. The affected leadership thumbnail shows
+the `PlaceHolder.png` fallback; the honours rows that declare those images still
+open a gallery whose broken images fall back to the same placeholder. The import
+tool's `MAPPING` has no entries for them, so the fix is to add the mappings,
+import the sources, and keep the existing data paths.
+
+HiveMind and SATLearn are a different case: their `team.image` is explicitly
+`PlaceHolder.png`, so they render awaited frames. `tools/make-images.mjs` can
+derive team stills from the project films (the `STILLS` table), but the outputs
+are not in `files/` and the data is not wired to them. That is a content decision,
+not something the renderer should guess.
+
+## Responsive behaviour
+
+The page has two breakpoints: 1024px and 639px.
+
+| Range | Layout | Rail / menu | Scrim |
+|---|---|---|---|
+| ≥1024px | 12 columns; copy 5, media 6; sides alternate | Rail and left shade visible; masthead menu visible | Side-aware |
+| 640–1023px | One column; copy then media; ordinary stops lose the 86vh minimum | Rail, shade and menu hidden | Vertical `.93` → `.8` at 55% → `.52` |
+| <640px | One column; 10px gutter; 12px panel radius; `h1` 38–56px; leadership one column; honours year column 74px; dialog gallery one column | Hidden | Vertical |
+
+The 1024px breakpoint is where a 5+6 split stops being readable: below it the
+two columns cramp, so the panel becomes one column and the art scrim rotates to
+vertical because the copy now spans the width and there is no far side to keep
+bright. The art crop itself does not change; percentage positions and `cover`
+already survive the narrower panel, so there is no second set of images.
+
+The hero keeps its full-height composition and gains 118px of top padding to
+clear the masthead. Contact's dark card becomes full width. On a phone the
+masthead keeps the brand and the Resume link, but there is no menu drawer: the
+page is one scroll, and the rail is removed rather than shrunk into something
+that would sit over the copy.
+
+## Verification
 
 ```powershell
-node tests/shell-check.mjs         # markup, palette and the hard constraints, statically
-node tests/derive-rooms.test.mjs   # rooms, group pieces and the honours partition
-node tests/hang.test.mjs           # the 3-6 photograph budget and the hang arrangements
-node tests/light.test.mjs          # the light falloff maths
-node tests/lights.test.mjs         # the lighting controller's contract
-node tests/renderer.test.mjs       # the rendered DOM contract, under a DOM stub
-node tests/gallery-index.test.mjs  # the honours gallery index lookup
-node tests/delegation.test.mjs     # every control in the walk does something
-npm test                           # runs the above in order
+npm test
+node tools/serve.mjs 3333
 ```
 
-The suites that drive `js/main.js` run it under a DOM stub (`tests/dom-harness.mjs`). It does
-**not** model CSS layout — a layout rule can still be wrong with every check green, so the browser
-suite below remains the authority on anything visual.
+`npm test` runs the static guard first, then the five surviving data suites:
 
-`tools/ux-check.mjs` drives headless Chrome over the DevTools Protocol and is the authority on
-layout: the fold, the dock band, the room heading's pin, tap targets, the dialog's focus containment,
-the lighting contract, and every room's fit at 1440×900 and at the spec's 1280×704 floor. It is also
-the only place a gallery's width, the depth of the tallest hang and a label's fixed basis can be
-measured at all — the DOM stub models no CSS. It needs headless Chrome, which needs named pipes —
-see `tools/README.md`.
+- `tests/page.test.mjs` — shell order, palette, both paintings, art layers,
+  dialog markup, no third-party resource loads, section ids, the 6/4/5 content
+  counts, and the guard's place in the npm script.
+- `tests/derive-rooms.test.mjs`, `hang.test.mjs`, `band.test.mjs`,
+  `gallery-index.test.mjs`, `award-photos.test.mjs` — inherited pure helpers and
+  data shapes. `hang` also checks that every shipped film has a poster still on
+  disk.
 
-`tools/rooms.mjs` prints per-room geometry, `tools/stand-fit.mjs` and `tools/stand-gap.mjs` measure
-the band a stand may use and how much bare wall it leaves either side, and `tools/avg-frame.mjs`
-prints the one number for "how big do the pictures read": photograph area per screen. All of them
-force `loading="lazy"` images to load first, or they would measure frames the walk has not reached.
-See `tools/README.md` for the full table.
+The guard is static and the data suites are pure. **No committed test renders
+the page or models CSS.** The browser probe that was the old walk's geometry
+authority is retired with the walk and slated for the cleanup commit; this page
+has no equivalent. A green `npm test` is the floor, not a layout verification.
+
+Layout was verified by headless Chrome screenshots at 1440×900, the spec's
+1280×704 floor and 390×844. Chrome needs a non-confined shell on this machine
+(Mojo named pipes), and the `.tmp-diag/` scratch directory is gitignored. If you
+re-measure contrast, hide the copy text, sample behind each copy column and
+compare against the text tier; do not compute a ratio from the token values
+alone.
+
+`tools/shot-url.mjs` captures a viewport at any URL. For scrolled or full-page
+captures use Chrome DevTools or a scratch CDP script under `.tmp-diag/`.
+`tools/README.md` indexes what survives and what is retired.
+
+## Design record
+
+- [The Long Field — Amorsolo profile design](docs/superpowers/specs/2026-10-25-amorsolo-profile-design.md)
+- [The Long Field — implementation plan](docs/superpowers/plans/2026-10-25-amorsolo-profile.md)
+
+The spec and plan are the record of the direction and the polish pass. They are
+not a line-by-line description of the shipped CSS: the scrim stops, the honours
+side and some responsive details were tuned during implementation. Where they
+differ, `css/styles.css` and the measurements above are current.
+
+Everything earlier under `docs/superpowers/` is historical — some of it
+describes the horizontal build, some the vertical document before that. It is
+never hand-edited.
+
+## Running locally
+
+Open `index.html` directly, or serve the folder when checking video, fonts or
+screenshots:
+
+```powershell
+node tools/serve.mjs 3333
+# http://127.0.0.1:3333/
+```
+
+No install and no build; the optional static server is only for checking video,
+fonts or screenshots. A change to a CSS or JS file needs a page refresh; there is
+no live reload.
 
 ## Credits
 
-Background paintings by Fernando Amorsolo y Cueto (1892–1972).
+Paintings by Fernando Amorsolo y Cueto (1892–1972): *Planting Rice* (1949) and
+the 1934 harvest scene.
+
+Newsreader and Courier Prime are vendored under the SIL Open Font License 1.1;
+the licence texts are in `files/fonts/`. The site fetches nothing from a
+third-party host at runtime.
 
 ## License
 
