@@ -38,9 +38,9 @@ const PORTFOLIO = {
   favicon: "",
   scrollerIcon: "",
   social: [
-    { label: "Resume",    icon: "fas fa-file-alt",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
-    { label: "GitHub",    icon: "fab fa-github",     url: "https://github.com/andrewhmir" },
-    { label: "LinkedIn",  icon: "fab fa-linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" }
+    { label: "Resume",    icon: "file-alt",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
+    { label: "GitHub",    icon: "github",     url: "https://github.com/andrewhmir" },
+    { label: "LinkedIn",  icon: "linkedin",   url: "https://www.linkedin.com/in/andrew-alangcao/" }
   ],
 
   /* ── Navigation ─────────────────────────────────────────────────── */
@@ -75,7 +75,7 @@ const PORTFOLIO = {
       report: { image: "", text: "" },
       video: "files/Palad_Preview.mp4",
       links: [
-        { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=vY84w2aF754" }
+        { label: "Video", icon: "play", url: "https://www.youtube.com/watch?v=vY84w2aF754" }
       ],
       overview: {
         image: "files/Palad_Overview.jpg",
@@ -108,7 +108,7 @@ const PORTFOLIO = {
       video: "files/HiveMind_Preview.mp4",
       links: [],
       overview: {
-        image: "files/HiveMind_Overview.png",
+        image: "files/HiveMind_Overview.jpg",
         text: "A lot of the projects I've worked on started with noticing something that felt unnecessarily difficult in everyday life. Hivemind started the same way, but this time the problem was at work.\n\nWe kept running into the same issue: information was everywhere, but finding the right information was surprisingly difficult. Slack had conversations, Notion had documents, meetings had their own notes, and code had its own context. Even when someone on the team had already solved a problem, you often had to know who to ask or dig through old messages to find it.\n\nWe started wondering what would happen if an organization could actually remember what it had learned.\n\nSo we built Hivemind.\n\nHivemind continuously indexes an organization's documents, conversations, and other sources of knowledge, then lets people ask questions in natural language and get answers with citations back to the original information. We designed it to respect existing permissions, so people only see information they're already allowed to access.\n\nWhat started as a simple search tool became a much bigger idea for us: an organization's knowledge shouldn't have to disappear into old conversations or forgotten documents. It should be something the organization can actually build on.\n\nWe're now using Hivemind within our own team and working with other organizations to see how far we can take that idea."
       },
       team: {
@@ -131,7 +131,7 @@ const PORTFOLIO = {
       source: "closed",
       video: "files/CENTHRO_Preview.mp4",
       links: [
-        { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=jknjW6C9JpY" }
+        { label: "Video", icon: "play", url: "https://www.youtube.com/watch?v=jknjW6C9JpY" }
       ],
       overview: {
         image: "files/CENTHRO_Overview.jpg",
@@ -162,8 +162,8 @@ const PORTFOLIO = {
       source: "closed",
       video: "files/FocusBuddy_Preview.mp4",
       links: [
-        { label: "Video", icon: "fas fa-play", url: "https://www.youtube.com/watch?v=SedhOQ-z65Y&t" },
-        { label: "GMA News Feature", icon: "fas fa-play", url: "https://youtu.be/2ulcDQ-Hoko?t=44" }
+        { label: "Video", icon: "play", url: "https://www.youtube.com/watch?v=SedhOQ-z65Y&t" },
+        { label: "GMA News Feature", icon: "play", url: "https://youtu.be/2ulcDQ-Hoko?t=44" }
       ],
       overview: {
         image: "files/FocusBuddy_Overview.jpg",
@@ -194,7 +194,7 @@ const PORTFOLIO = {
       video: "files/SATLearn_Preview.mp4",
       links: [],
       overview: {
-        image: "files/SATLearn_Overview.png",
+        image: "files/SATLearn_Overview.jpg",
         text: "SATLearn started because I was studying for the SAT and ran into a pretty specific problem. Bluebook had realistic full-length practice tests, but there were only a limited number of them. There was also a much larger question bank, but it didn't really give me the same experience as taking an actual timed test. I wanted more practice tests without having to reuse the same ones over and over.\n\nSo I built one.\n\nI took over 3,000 SAT questions and used OCR to turn them into a structured question bank, then built an open-source platform that could generate full-length practice tests from them. But I didn't just want more questions. I wanted to know how I was actually improving — what concepts I kept getting wrong, what kinds of mistakes I was making, and what I should study next.\n\nSo I added AI to analyze my practice results and give me specific insights into where I was struggling and how I could improve.\n\nI originally built SATLearn just so I could study for my own SAT. But it became another example of something I've found myself doing repeatedly: when the tool I need doesn't quite exist, I usually end up building it myself."
       },
       team: {

@@ -20,6 +20,7 @@ sandbox off. `BASE` and `CDP` override the URL and the debugging port.
 | "there's a line on the wall" | `mural-columns.mjs` — is it in the picture or in the CSS? |
 | "a photograph has no description" | `caption-worklist.mjs` |
 | "the dock is off screen / too small" | `dock-check.mjs` |
+| "the icons or the webfonts need refreshing" | `vendor-icons.mjs`, `vendor-fonts.mjs` — both take `--check` |
 
 Do not reach for `wall-drift.mjs` — it reports `STATIC` for a wall that moves.
 See its note below.
@@ -303,3 +304,37 @@ sniffs the JPEG/PNG magic bytes, so a `.CR3` that is really a JPEG imports fine.
 
 Note: headless Chrome needs Mojo named pipes to start, so these tools cannot run
 from a session whose sandbox forbids named-pipe access.
+
+## Vendoring: `vendor-fonts.mjs` and `vendor-icons.mjs`
+
+The site has no CDN at runtime. These two tools are what keeps that true: they
+pull the two webfonts and the twelve icon glyphs down once and write them into
+the repo.
+
+| Tool | Writes | Recorded in |
+|---|---|---|
+| `vendor-fonts.mjs` | `files/fonts/*.woff2` + the two OFL licences, and `css/fonts.css` | `files/fonts/README.md` |
+| `vendor-icons.mjs` | `js/icons.js` (twelve inline SVG paths) + `files/icons/LICENSE.txt` | `files/icons/README.md` |
+
+Both take `--check`, which re-fetches and reports drift **without writing**, so
+that is the cheap way to tell whether a re-vendor is worth a commit. Both are
+idempotent: a second run reports `unchanged` and touches nothing.
+
+`index.html` used to link `use.fontawesome.com` (59,305 bytes of CSS describing
+several thousand glyphs, to draw twelve) and `fonts.googleapis.com` +
+`fonts.gstatic.com` behind two preconnects. Twelve inline paths are about 8 KB,
+and the webfonts are eight files whose `unicode-range` still limits a visit to
+the subsets it uses — measured, an English page loads **5 of the 14 faces**.
+Read the two READMEs above before changing either; both record why inlining
+beats vendoring a font, and both pin the sources by SHA-256.
+
+**Why these drive Chrome.** Node has no network egress in a confined session, and
+Chrome does. It is also the only way to get the bytes: Chrome *downloads* a
+`.woff2` rather than rendering it, so navigating to one yields no response body
+to read back, and the fetch has to happen inside a page.
+
+```powershell
+# terminals 1 and 2 are the usual pair (serve.mjs, then headless Chrome)
+node tools/vendor-fonts.mjs --check
+node tools/vendor-icons.mjs --check
+```

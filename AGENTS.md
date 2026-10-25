@@ -31,10 +31,16 @@ Three files carry the whole site:
 |---|---|---|
 | `js/data.js` | ~640 | `PORTFOLIO` — all authored content — plus the pure logic: room derivation, the hang layouts, the honours partition, the gallery lookup |
 | `js/main.js` | ~1840 | Everything that renders `PORTFOLIO`: the cluster, the label, the rooms, the dock, the lighting, the dialog |
-| `css/styles.css` | ~3160 | All styling. **76% of it is comment** — read the Table of Contents at the top, then jump to a section |
+| `css/styles.css` | ~3260 | All styling. **82% of it is comment** — read the Table of Contents at the top, then jump to a section |
 
-`index.html` is a 133-line shell: `#hall` → `#strip` (rooms are rendered into
+`index.html` is a 140-line shell: `#hall` → `#strip` (rooms are rendered into
 it), the dock, the dialog, the announcer.
+
+Two generated files are also part of the page, and neither is hand-edited:
+`css/fonts.css` (the `@font-face` rules for the two families) and `js/icons.js`
+(the twelve inline SVG glyphs). Both are written by tools — see
+`tools/vendor-fonts.mjs` and `tools/vendor-icons.mjs`. Both CDNs are gone: the
+page fetches nothing from a third party, and `shell-check.mjs` asserts it.
 
 ## Where to change what
 
@@ -172,9 +178,37 @@ once:
   their own width rules. They shipped the other way round — 2,200px between two
   projects of one room against 69px between two rooms — and `shell-check.mjs`
   asserts the shape of both tokens, a half-screen (45vw) floor on the second,
-  and where that second is spent. Only
+  and where that second is spent. `--stand-w` is capped at `100vw` —
+  `min(clamp(1100px, 68vw, 1440px), 100vw)` — because the 1100px floor made a
+  stand WIDER THAN THE WINDOW below 1100px, which inverted this ordering: the
+  cap makes `(100vw − stand) / 2` zero, so `--group-gap` falls back to
+  `0.25 * stand` against a `0.45vw` category gap at every width. The old
+  crossing was at 611px and it measured **sibling 275px against category 245px
+  at 390×844**. The cap is inert at ≥1100px, so the desktop viewports are
+  unmoved. Only
   `ux-check.mjs` can measure which of the two is actually the larger, and it
-  does, at all three viewports.
+  does, at all **four** viewports — 1440×900, 1536×864, 1280×704 and the
+  390×844 phone.
+- **The pinning margin lives on the cluster, never on the legend.** The legend is
+  pinned to the foot of the hang cell by an `auto` margin, and it must be
+  `margin-bottom: auto` on `.cluster` rather than `margin-top: auto` on
+  `.legend`. Both read identically and only one is solvable: `fitWall` reserves
+  the height of every block in that cell which is not the cluster, and it reads
+  that height through `getComputedStyle`, which reports an `auto` margin as its
+  **resolved used value** — the slack itself. On the legend that slack measured
+  **303.547px** in the settled 390×844 layout, so the solve subtracted the space
+  it was about to create and collapsed the band to the tap floor: band 184px,
+  three **98×55** frames and **303px of bare wall** under them. `shell-check.mjs`
+  asserts the placement, because the `auto` margin cannot be detected at runtime
+  — CSSOM special-cases the margin properties and hands back a length, never the
+  string `auto`. This is invisible on desktop unless you measure: the `22vh`
+  fallback sits within about 10px of the correct band at 1440×900, so the broken
+  solve looked plausible there. Restored by the fix: band 487px and **278×156**
+  frames at 390×844, 391px and 223×125 at the 1280×704 floor, 579px and
+  **331×186** at 1440×900 — the last of which is the number the stylesheet has
+  always documented, so desktop was restored rather than changed. `ux-check.mjs`
+  holds the other half: at 390×844 the band must fill the height the legend and
+  the control leave, measured as a residual of **0px**.
 - **The mural is `#hall`'s own background with `background-attachment: local`.**
   Both halves are load-bearing and both fail silently. Never reintroduce a
   `.wall` element — no box inside this walk spans its scroll width, and
@@ -212,7 +246,11 @@ once:
   docs name them now — no stylesheet rule declares them, and a probe that reads
   one reports the empty string. The live pair is `--frame-ar` (the shape of every
   frame) and `--wall-h` (the band its column divides, written by `fitWall`).
-- **Everything is `border-radius: 0`.** There is no radius token.
+- **Everything is `border-radius: 0`.** Two radius tokens exist — `--radius-sm`
+  and `--radius-md` — and **both are `0`**, so every rule that reads one resolves
+  to `border-radius: 0`. They are kept so `.pill`, `.project-card`, `.toast` and
+  the modal can name a radius role without naming a number; do not give either a
+  non-zero value, and do not add a third.
 
 ## Gotchas
 
@@ -223,9 +261,11 @@ once:
   check `$LASTEXITCODE`.
 - **Headless Chrome cannot run under a confined sandbox** (named pipes), and a
   reused `--remote-debugging-port` can still be sitting on the previous URL.
-- **`.tmp-diag/` is a live untracked scratch directory** holding ~30 MB of probe
-  scripts and screenshots from the last diagnostics. Do not add it to a commit;
-  decide whether to keep or delete it deliberately.
+- **`.tmp-diag/` is a live scratch directory and it is GITIGNORED.** It holds
+  probe scripts and screenshots from diagnostics — tens of MB. `.gitignore`
+  lists it, so `git add -A` cannot sweep it up; the entry exists because it used
+  to be untracked-but-not-ignored, which put it one `git add -A` from a commit.
+  Keeping or deleting its contents is still a deliberate decision.
 - **A change to a `.js` or `.css` file needs a page refresh** — there is no live
   reload and no dev server build.
 
@@ -233,26 +273,65 @@ once:
 
 Do not add these to this repo without being asked: no build step, no bundler, no
 npm runtime dependency, no test framework on disk (the harness is 15 lines), no
-CDN at runtime, and no `node --test`. Lenis is the only dependency and it is
-vendored, pinned by size and SHA-256 in `js/vendor/README.md`.
+CDN at runtime, and no `node --test`.
 
-## Known cleanup, not yet done
+**Nothing is fetched from a third party at runtime, and `shell-check.mjs`
+asserts it.** Lenis is vendored and pinned by size and SHA-256 in
+`js/vendor/README.md`; the two webfonts are vendored in `files/fonts/`
+(`files/fonts/README.md`) and declared by the generated `css/fonts.css`; the
+twelve icon glyphs are inlined as SVG in `js/icons.js`
+(`files/icons/README.md`), read through `Site.icon()` and sized by the `.icon`
+rule. Refresh the fonts and icons with `tools/vendor-fonts.mjs` and
+`tools/vendor-icons.mjs`, both of which take `--check`.
 
-- **19 dead selectors.** Referenced nowhere in `index.html`, `js/main.js` or
-  `js/data.js`: `.hero-bio-container`, `.hero-cue`, `.hero-email`, `.hero-intro`,
-  `.hero-links`, `.hero-painting-stage`, `.hero-photo-print`, `.hero-signature`,
-  `.project-list`, `.project-source--closed`, `.project-source--open`,
-  `.record-list--honors`, `.records-subheading`, `.scroll-progress`,
-  `.scroll-top`, `.section-heading`, `.section-label`, `.section-note`,
-  `.site-footer`. The stylesheet marks their sections `RETIRED`. Removing them is
-  its own change with its own verification — it is not a documentation edit.
-- **The stylesheet's comments are 76% of the file** (12,393 of 16,357 words). The
+The page used to fetch from three hosts — `use.fontawesome.com` for 59,305 bytes
+of CSS describing several thousand glyphs, to draw twelve, plus
+`fonts.googleapis.com` and `fonts.gstatic.com` for the webfonts behind two
+`preconnect`s. All three are gone. **Adding a `<link>`, `@import` or
+`<script src>` to a third-party host is the regression to prevent**, and the
+guard that stops it reads `index.html` **with its comments stripped** — the
+removal is documented in comments that necessarily name those hosts, and a raw
+scan reports them as a reintroduction. See `js/icons.js` for the load-order
+requirement (`after js/data.js`, which creates `Site`; `before js/main.js`,
+which calls `Site.icon()`), which `shell-check.mjs` pins as an exact sequence.
+
+## Known cleanup
+
+- **The 19 dead selectors are retired.** `.hero-bio-container`, `.hero-cue`,
+  `.hero-email`, `.hero-intro`, `.hero-links`, `.hero-painting-stage`,
+  `.hero-photo-print`, `.hero-signature`, `.project-list`,
+  `.project-source--closed`, `.project-source--open`, `.record-list--honors`,
+  `.records-subheading`, `.scroll-progress`, `.scroll-top`, `.section-heading`,
+  `.section-label`, `.section-note`, `.site-footer` — and `.bg-painting`, the
+  child of `.hero-painting-stage` that named `files/painting-hero.jpg`.
+  They were the vertical document this site replaced and they are gone from
+  `css/styles.css`, along with their rules in the `@media` blocks and the
+  Table of Contents entry that listed them as `RETIRED`. Do not re-add any of
+  them; the stylesheet's TOC now marks sections 6, 8, 13 and 14 `DELETED`.
+- **`files/painting-hero.jpg` is NOT dead, and it is not a site asset either.**
+  It is 2 MB and nothing in `files/` is bigger, so it looks like an orphan — but
+  `tools/make-images.mjs` draws the Open Graph share card from it, and
+  `index.html`'s `og:image` points at that card. A visitor never fetches it; a
+  re-run of the image generator needs it. Deleting it makes the share card
+  unreproducible, so it stays. Two other files in `files/` **were** genuinely
+  unreferenced and were retired: `painting.jpg` (227 KB) and
+  `InventiRAG_Team.jpg` (98 KB) — neither named anywhere in `index.html`,
+  `js/`, `css/` or `tools/`.
+- **`.hero` itself is still in the stylesheet, and it is dead too.** The bare
+  `.hero { padding: 0 !important; text-align: center; position: relative; }` at
+  what was section 8 survives because it was not on the retirement list, and
+  nothing emits `class="hero"`. It is a leftover of the same section; remove it
+  when something else already touches that part of the file.
+- **The stylesheet's comments are 82% of the file** (15,820 of 19,185
+  whitespace-separated tokens, with `/* … */` bodies counted as prose). The
   prose there is genuinely valuable — it records measurements that stop a fixed
   defect returning — but it is also the single largest token cost in this repo,
   and `js/main.js` is written in the same style. If token cost becomes a real
   problem, this is the lever: split each section's rationale into a short
   `WHY:`-tagged note, or move the narrative to `docs/`, rather than deleting it.
   Do not do this without being asked; the comments are load-bearing for humans.
+  (The share rose from 76% when the retired vertical-document rules came out:
+  almost everything removed was code, and almost nothing was comment.)
 
 ## Docs map
 
@@ -262,5 +341,8 @@ vendored, pinned by size and SHA-256 in `js/vendor/README.md`.
 | `README.md` | The design's reasoning, and the measurements behind each decision |
 | `tools/README.md` | Every dev tool, and which probe diagnoses which symptom |
 | `css/styles.css` | The Table of Contents at the top of the file |
+| `files/fonts/README.md` | The vendored webfonts, their OFL licences, and their SHA-256 pins |
+| `files/icons/README.md` | The twelve inlined glyphs, their per-icon `viewBox`, and why inlining beat vendoring the font |
+| `js/vendor/README.md` | The vendored Lenis build, pinned by size and SHA-256 |
 | `docs/superpowers/` | Plans and specs for past builds — a historical record, never hand-edited |
 | `tests/` · `tools/` | The suites and the probes themselves |

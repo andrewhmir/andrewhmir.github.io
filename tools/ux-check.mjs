@@ -1223,7 +1223,16 @@ await section('One stand per screen', async () => {
    `the gap between stands covers the wall beside a parked stand` above is the
    floor on the sibling number; this is the ORDER of the two. */
 await section('The two gaps', async () => {
-  for (const [w, h] of [[1440, 900], [1536, 864], [1280, 704]]) {
+  /* The phone is in this loop because it is the ONE viewport where the
+     ordering is at risk, and the three desktop widths below cannot see it.
+     `--stand-w` is `clamp(1100px, 68vw, 1440px)`, so below a 1618px viewport
+     it sits on its 1100px floor; `--group-gap` then reads
+     `max(0.25 * 1100, (100vw - 1100) / 2)` = 275px, while `--room-gap` is
+     `45vw` and keeps shrinking with the screen. The two cross at 611px:
+     narrower than that, two projects of one room end up FURTHER apart than two
+     different rooms, which is the inverse of the rule this section exists to
+     assert. Measured at 390x844: sibling 275px against category 175px. */
+  for (const [w, h] of [[1440, 900], [1536, 864], [1280, 704], [390, 844]]) {
     await setViewport(w, h, false);
     await goto(BASE);
     await evaluate(`(async () => {
@@ -1863,6 +1872,186 @@ await section('Mobile (390x844)', async () => {
   check('every room is a pip in the collapsed dock',
         mob.dockPips >= 6, mob.dockPips + ' pips');
   check('a collapsed pip is a full 44px wide', mob.pipWidth >= 44, mob.pipWidth + 'px');
+
+  /* ── Every stand is readable on a phone ────────────────────────────────
+     Under 900px a stand is one screen wide and ONE COLUMN: the hang cell takes
+     the whole width and the whole height, the label column leaves the walk, and
+     the record is read in the dialog. `.label-open` is the only way in, so a
+     stand without one is a record a phone visitor cannot read at all — and a
+     control that opens nothing is the same fault wearing a button.
+
+     It is checked on EVERY stand rather than on the first: the control is
+     hidden above the breakpoint by CSS, and a rule that hid it here too would
+     take one stand out of the walk and leave the rest working, which is exactly
+     the kind of fault a single-sample check passes. `offsetWidth`/
+     `offsetHeight` are the measure, as in the sweep above: the closed card is
+     scaled, so a rect would shrink the control without changing how big it is.
+
+     The activation is a real click at the control's own centre — the input path
+     a visitor uses, and the one that proves it is not covered by the legend or
+     the cluster it shares the cell with.
+
+     It is the FIRST stand's control that is pressed, and the dialog is asserted
+     against THAT stand's own label: a dialog that opened the right markup for
+     the wrong record is the fault the scoped `data-entry` key exists to prevent
+     (see `openLabelRef`), and comparing the two names is what catches it. */
+  const stands = await evaluate(`(() => {
+    const withLabel = [...document.querySelectorAll('#strip .group')];
+    const controls = withLabel.map(g => {
+      const b = g.querySelector('.label-open');
+      if (!b) return { entry: g.dataset.entry, missing: true };
+      return { entry: g.dataset.entry, missing: false,
+               w: b.offsetWidth, h: b.offsetHeight,
+               shown: getComputedStyle(b).display !== 'none',
+               visible: b.offsetParent !== null };
+    });
+    /* Which arm of the promise failed, not merely that one did. */
+    const absent = controls.filter(c => c.missing).length;
+    const hidden = controls.filter(c => !c.missing && !c.shown).length;
+    const small = controls.filter(c => !c.missing && c.shown && (c.w < 44 || c.h < 44))
+      .map(c => c.entry + ' ' + Math.round(c.w) + 'x' + Math.round(c.h));
+    const zero = controls.filter(c => !c.missing && c.shown && (c.w < 1 || c.h < 1)).length;
+    const minH = Math.min(...controls.filter(c => c.shown).map(c => c.h));
+    return { stands: controls.length, absent, hidden, zero,
+             small: small.length, examples: small.slice(0, 6).join(' | '),
+             minH: isFinite(minH) ? Math.round(minH) : 0 };
+  })()`);
+  check('every stand on a phone carries the label control',
+        stands.stands > 0 && stands.absent === 0 && stands.hidden === 0,
+        stands.stands + ' stands, ' + stands.absent + ' with no control, '
+        + stands.hidden + ' with it hidden');
+  check('the label control is a full tap target on a phone',
+        stands.zero === 0 && stands.small === 0,
+        stands.small + ' controls under 44x44 (shortest ' + stands.minH + 'px): ' + stands.examples);
+
+  /* ── The band fills the cell on a phone ────────────────────────────────
+     The narrow stand's cell is 659px tall and holds three blocks: the band of
+     pictures, the legend under it, and the control. The solve hands the band
+     whatever those last two leave, so the invariant is that almost NONE of the
+     cell is left bare — and it is worth asserting because the way it breaks is
+     invisible. Measured while a feedback error was in the solve: a 184px band in
+     a 659px cell, three 98x55 frames and 303px of empty wall, with every other
+     check in this file green. The frames still cleared 44x44 and still stayed
+     inside the stand; they were simply a quarter of the size the cell allowed.
+
+     The 8px is not a cushion for the layout — it covers the sub-pixel rounding
+     in the three offsetHeights the residual is summed from. Measured as shipped:
+     0px at 390x844. */
+  const bandFit = await evaluate(`(() => {
+    const out = [];
+    document.querySelectorAll('#strip .group').forEach((g, i) => {
+      if (i > 4) return;
+      const cell = g.querySelector('.hang-cell');
+      const cluster = g.querySelector('.cluster');
+      const legend = g.querySelector('.legend');
+      const control = g.querySelector('.label-open');
+      const piece = g.querySelector('.piece');
+      const pr = piece.getBoundingClientRect();
+      const mb = getComputedStyle(cluster).marginBottom;
+      const leftover = cell.clientHeight - cluster.offsetHeight - legend.offsetHeight
+        - control.offsetHeight - (parseFloat(getComputedStyle(control).marginTop) || 0)
+        - (mb === 'auto' ? 0 : (parseFloat(mb) || 0));
+      out.push({ entry: g.dataset.entry, cellH: cell.clientHeight, band: cluster.offsetHeight,
+                 legendH: legend.offsetHeight, leftover: Math.round(leftover),
+                 frame: Math.round(pr.width) + 'x' + Math.round(pr.height) });
+    });
+    return out;
+  })()`);
+  const worstBare = bandFit.reduce((m, r) => Math.max(m, r.leftover), 0);
+  const minFrameH = Math.min(...bandFit.map((r) => Number(String(r.frame).split('x')[1])));
+  check('the band fills the height the legend and the control leave',
+        bandFit.length > 0 && worstBare <= 8,
+        worstBare + 'px of bare wall in the worst of ' + bandFit.length + ' cells: '
+        + bandFit.map((r) => r.entry + ' cell ' + r.cellH + ' band ' + r.band
+            + ' legend ' + r.legendH + ' left ' + r.leftover).join(' | '));
+  check('the pictures are bigger than the tap floor by a wide margin',
+        minFrameH >= 120,
+        'the shortest frame is ' + minFrameH + 'px tall: ' + bandFit.map((r) => r.entry + ' ' + r.frame).join(' | '));
+
+  /* Bring the first stand to the centre so its control is on screen: a stand is
+     one screen wide here, so a control at the far edge of the strip cannot be
+     pressed at any coordinate the viewport has. */
+  await centreWork('#strip .group:first-of-type');
+  const target = await evaluate(`(() => {
+    const b = document.querySelector('#strip .group .label-open');
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const hit = document.elementFromPoint(cx, cy);
+    return { x: cx, y: cy, key: b.dataset.label,
+             left: +r.left.toFixed(3), right: +r.right.toFixed(3), w: +r.width.toFixed(3),
+             innerWidth,
+             /* NOT a bare "left >= 0 and right <= innerWidth". The control is
+                exactly one viewport wide, and a box exactly as wide as the
+                screen cannot be guaranteed to land on integer coordinates:
+                measured here it sits at -0.5 .. 389.5, so an exact-edge
+                assertion fails on a control that covers the whole screen and is
+                plainly tappable. What a tap target needs is that its CENTRE is
+                on screen and hittable, and that nothing of it hangs off by more
+                than a pixel. */
+             overhang: +Math.max(0, -r.left, r.right - innerWidth).toFixed(3),
+             centreOnScreen: cx >= 0 && cx <= innerWidth && cy >= 0 && cy <= innerHeight,
+             reachable: !!hit && !!hit.closest && !!hit.closest('.label-open') };
+  })()`);
+  if (!target) {
+    check('the label control opens the dialog with the record\'s own label', false,
+          'the first stand has no .label-open control to press');
+  } else {
+    /* The control is on screen and at its own hit point — a control behind the
+       legend or the cluster it shares the cell with would measure 52px tall and
+       still be unreachable. */
+    check('the label control is reachable at its own centre',
+          target.centreOnScreen && target.reachable && target.overhang <= 1,
+          'box ' + target.left + '..' + target.right + ' of ' + target.innerWidth
+          + ' (' + target.w + 'px wide, ' + target.overhang + 'px over), centre on screen='
+          + target.centreOnScreen + ' reachable=' + target.reachable + ' (' + target.key + ')');
+    await click(target.x, target.y);
+    const opened = await evaluate(`(() => ({
+      open: document.getElementById('modalOverlay').classList.contains('active'),
+      header: (document.getElementById('modalHeader').textContent || '').trim(),
+      chars: (document.getElementById('modalBody').textContent || '').trim().length,
+      inDialog: !!document.querySelector('#modalBody .label .narr-title'),
+      key: (document.querySelector('#strip .group .label-open') || { dataset: {} })
+             .dataset.label || null,
+      stillOnWalk: !!document.querySelector('#strip .group > .label')
+    }))()`);
+    const record = await evaluate(`(() => {
+      const g = [...document.querySelectorAll('#strip .group')]
+        .find(x => x.querySelector('.label-open'));
+      const t = g && g.querySelector('.label .narr-title');
+      return { title: t ? t.textContent.trim() : null,
+               key: g ? g.getAttribute('data-entry') : null };
+    })()`);
+    check('the label control opens the dialog with the record\'s own label',
+          opened.open && opened.chars > 0 && opened.inDialog
+          && !!record.title && opened.header.indexOf(record.title) === 0
+          && record.key === opened.key,
+          opened.open
+            ? 'header "' + opened.header + '" for ' + record.key + ', ' + opened.chars
+              + ' characters in the dialog' + (opened.inDialog ? '' : ', none of it a label')
+            : 'the dialog never opened');
+    /* ── The clone, and the original that must survive it ──────────────────
+       `openLabelRef` CLONES the label rather than moving it, and the difference
+       is visible the moment the window widens again: a moved node leaves the
+       stand with no label at all, and above 900px there is no control to read it
+       from either. So the original is asserted to be exactly where it was — the
+       direct child of its own stand — while the dialog is still open. */
+    check('the stand keeps its own label while the dialog shows the clone',
+          opened.stillOnWalk,
+          'the stand\'s own `.label` is ' + (opened.stillOnWalk ? 'in place' : 'GONE')
+          + ' — the dialog moved it instead of cloning it');
+    /* The dialog's own close path, so the focus restore runs: `lastFocused` is
+       the control that was pressed, and a close that did not return focus to it
+       puts a phone visitor back at the head of the walk. */
+    await closeModal();
+    const restored = await evaluate(
+      `!!(document.activeElement && document.activeElement.classList
+          && document.activeElement.classList.contains('label-open'))`);
+    check('closing the label dialog returns focus to the control that opened it',
+          restored === true, 'focus is on ' + (restored ? 'the control' : 'something else'));
+    check('closing the label dialog hides the dialog',
+          (await modalOpen()) === false, 'the overlay is still active');
+  }
 });
 
 /* -- 12. The walk is horizontal --------------------------------------- */

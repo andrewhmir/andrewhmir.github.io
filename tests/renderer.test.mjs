@@ -189,8 +189,13 @@ globalThis.Lenis = function Lenis() {
   return { scrollTo() {}, resize() {}, stop() {}, start() {}, raf() {} };
 };
 
-/* data.js first, exactly as index.html loads it before main.js. */
+/* data.js first, exactly as index.html loads it before main.js — and icons.js
+   between them for the same reason, because `Site.icon()` is called WHILE
+   main.js renders. Three places keep this order in step: index.html, this file
+   and dom-harness.mjs, each of which loads the page's scripts itself; a new
+   script on the page is a change in all three. */
 await import('../js/data.js');
+await import('../js/icons.js');
 await import('../js/main.js');
 
 const PORTFOLIO = globalThis.PORTFOLIO;

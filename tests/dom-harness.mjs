@@ -325,8 +325,15 @@ export async function loadSite({ reducedMotion = false, rooms = [] } = {}) {
     return { scrollTo() {}, resize() {}, stop() {}, start() {}, raf() {} };
   };
 
-  /* data.js first, exactly as index.html loads it before main.js. */
+  /* data.js first, exactly as index.html loads it before main.js — and icons.js
+     between them for the same reason, because `Site.icon()` is called WHILE
+     main.js renders. A harness that loads the map late gets a TypeError out of
+     renderHero() instead of markup. Three places keep this order in step:
+     index.html, this file and renderer.test.mjs, each of which loads the page's
+     scripts itself. A new script on the page is a change in all three, and
+     tests/shell-check.mjs pins the order for index.html. */
   await import('../js/data.js');
+  await import('../js/icons.js');
   await import('../js/main.js');
 
   return {

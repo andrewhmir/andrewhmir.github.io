@@ -72,18 +72,18 @@
     }
     if ($heroEmail) {
       const obfuscated = PORTFOLIO.email.replace('.', ' [dot] ').replace('@', ' [at] ').replace('.', ' [dot] ');
-      $heroEmail.innerHTML = `<i class="far fa-envelope" style="margin-right:7px;"></i>${obfuscated}`;
+      $heroEmail.innerHTML = `<span style="margin-right:7px;">${Site.icon('envelope')}</span>${obfuscated}`;
       $heroEmail.dataset.copy = PORTFOLIO.email;
     }
     if ($heroLinks) {
       $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
         if (item.copy) {
           return `<button class="pill" data-action="copy" data-copy="${item.copy}" aria-label="Copy ${item.label.toLowerCase()}">
-            <i class="${item.icon}"></i> ${item.label}
+            ${Site.icon(item.icon)} ${item.label}
           </button>`;
         }
         return `<a class="pill" href="${item.url}" target="_blank" rel="noopener">
-          <i class="${item.icon}"></i> ${item.label}
+          ${Site.icon(item.icon)} ${item.label}
         </a>`;
       }).join('');
     }
@@ -97,7 +97,7 @@
     if (!$newsTimeline) return;
     $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) => {
       const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-      const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
+      const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true">' + Site.icon('images') + '</span>' : '';
       const inner = `<span class="timeline-date">${item.date}</span>
         <p class="timeline-text">${item.text}${hint}</p>`;
       const delay = `style="--reveal-delay: ${i * 60}ms"`;
@@ -119,10 +119,10 @@
     const soloClass = isSolo ? ' project-card--solo' : '';
     const isImg = isImage(p.video);
     const links = [
-      { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
-      ...(!isSolo ? [{ label: 'Team', icon: 'fas fa-users', action: 'team' }] : []),
-      ...(p.awards && p.awards.length ? [{ label: 'Awards', icon: 'fas fa-trophy', action: 'awards' }] : []),
-      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
+      { label: 'Overview', icon: 'eye', action: 'overview' },
+      ...(!isSolo ? [{ label: 'Team', icon: 'users', action: 'team' }] : []),
+      ...(p.awards && p.awards.length ? [{ label: 'Awards', icon: 'trophy', action: 'awards' }] : []),
+      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'file-pdf', action: 'report' }] : []),
       ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
     ];
 
@@ -132,9 +132,9 @@
 
     const pills = links.map(l => {
       if (l.url) {
-        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
+        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener">${Site.icon(l.icon)} ${l.label}</a>`;
       }
-      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
+      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}">${Site.icon(l.icon)} ${l.label}</button>`;
     }).join('');
 
     return `
@@ -148,7 +148,7 @@
                </video>`
           }
           <div class="project-cue" aria-hidden="true">
-            <span class="project-cue-icon"><i class="fas fa-eye"></i></span>
+            <span class="project-cue-icon">${Site.icon('eye')}</span>
             <span class="project-cue-label">View project</span>
           </div>
         </div>
@@ -212,7 +212,7 @@
      Site.galleryFor resolves against, so a row opens its own entry. */
   function renderRecordItem(item, entryIndex, kind, step) {
     const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-    const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
+    const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true">' + Site.icon('images') + '</span>' : '';
     const inner = `<span class="record-desc">${item.description}${hint}</span>
       <span class="record-year">${item.year}</span>`;
     const delay = `style="--reveal-delay: ${entryIndex * step}ms"`;
@@ -291,8 +291,8 @@
             </figure>`).join('')}
         </div>
         ${multi ? `
-          <button class="gallery-arrow gallery-arrow--prev" id="galleryPrev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
-          <button class="gallery-arrow gallery-arrow--next" id="galleryNext" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
+          <button class="gallery-arrow gallery-arrow--prev" id="galleryPrev" aria-label="Previous photo">${Site.icon('chevron-left')}</button>
+          <button class="gallery-arrow gallery-arrow--next" id="galleryNext" aria-label="Next photo">${Site.icon('chevron-right')}</button>
           <div class="gallery-dots" id="galleryDots">
             ${images.map((_, i) => `<button class="gallery-dot${i === 0 ? ' active' : ''}" data-slide="${i}" aria-label="Go to photo ${i + 1}"></button>`).join('')}
           </div>
@@ -314,6 +314,78 @@
     var index = Number(ref.slice(at + 1));
     if (!Number.isInteger(index) || index < 0) return;
     openGallery(kind, index);
+  }
+
+  /* ── The record's own label, read in the dialog ───────────────────────────
+     This is the other half of the narrow stand. Above 900px the label is the
+     stand's right cell and this function is never reached; at or below it the
+     cell has left the walk (see the `@media (max-width: 900px)` block in
+     css/styles.css) and `renderLabelOpen`'s control is the only way to read the
+     record.
+
+     The ref is the stand's entry key, which the control carries as
+     `data-label` and which its own `.group` ALREADY carries as `data-entry` —
+     the scoping convention the pieces use, where both record arrays can start
+     at 0 because the key names the array too. So the lookup reuses the key
+     rather than adding a second way to name a record, and the label is then
+     found as a child of that stand. Nothing here builds a selector out of the
+     key: nothing about a record's name belongs in a query string.
+
+     CLONE, do not move. The original label stays where it is, in the stand, for
+     two reasons that each produce a different fault: widening the window back
+     above 900px has to restore the two-cell stand with NO re-render (a moved
+     node would leave the stand with no label at all), and the walk's own
+     `initLabelFades` bound its scroll listener to that node.
+
+     Cloning is safe because `renderLabel` emits no `id`: the dialog's own
+     `#modalTitle` is the only id in this subtree, and a duplicate would make
+     `aria-labelledby` resolve to whichever copy came first. Verified — the
+     renderer suite can clone a label as often as it likes.
+
+     The cloned label keeps `tabindex="0"` and `role="region"`, which is right
+     inside a dialog: it is still a named region a visitor can focus and scroll.
+     Its `aria-label` ("<record> — exhibition label") is what names it, and the
+     header says the same thing in words.
+
+     `$modalImage` is hidden exactly as the awards path hides it: this dialog is
+     copy, not photographs, and an empty 16:9 well above the text would be a
+     picture frame with nothing in it. */
+  function openLabelRef(ref) {
+    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
+
+    var key = String(ref == null ? '' : ref);
+    if (!key) return;
+
+    /* The stand that owns this key. Total by construction: a key that matches no
+       stand opens nothing, rather than falling through to a neighbour's label —
+       the same rule `openGalleryRef` keeps for photographs. */
+    var group = null;
+    var groups = document.querySelectorAll('[data-group]');
+    for (var i = 0; i < groups.length; i++) {
+      if (groups[i].getAttribute('data-entry') === key) { group = groups[i]; break; }
+    }
+    if (!group) return;
+
+    var label = group.querySelector('.label');
+    if (!label) return;
+
+    var title = label.querySelector('.narr-title');
+    $modalHeader.innerHTML = '<h3 id="modalTitle">'
+      + (title ? title.innerHTML : esc(key)) + '</h3>'
+      + '<p class="modal-subtitle">Exhibition label</p>';
+
+    $modalImage.style.display = 'none';
+    $modalImage.innerHTML = '';
+
+    $modalBody.innerHTML = '';
+    $modalBody.appendChild(label.cloneNode(true));
+
+    /* `openDialog` and nothing else: the focus trap, the background-inert walk,
+       the body-scroll lock and the `lastFocused` restore are all its, and the
+       control that opened this is `document.activeElement` when it runs — so
+       closing the dialog returns focus to the `.label-open` button that was
+       pressed, with no code of ours. */
+    openDialog();
   }
 
   function openGallery(kind, entryIndex) {
@@ -569,6 +641,14 @@
 
     var galleryBtn = t.closest('[data-gallery]');
     if (galleryBtn) { openGalleryRef(galleryBtn.dataset.entry); return; }
+
+    /* The narrow stand's control, dispatched here rather than by a listener of
+       its own: this is the one document-level click handler the walk's controls
+       use, and the rooms are rendered after this file runs, so a handler bound
+       to the control itself would never fire. It is asked AFTER `data-gallery`,
+       which the control does not carry — the two never match the same element. */
+    var labelBtn = t.closest('[data-label]');
+    if (labelBtn) { openLabelRef(labelBtn.dataset.label); return; }
 
     var copyBtn = t.closest('[data-action="copy"]');
     if (copyBtn) { copyToClipboard(copyBtn.dataset.copy, copyBtn); }
@@ -1067,10 +1147,70 @@
     var gap = parseFloat(colStyle.rowGap || colStyle.gap);
     if (isFinite(gap) && gap > 0) colGap = gap;
 
-    /* The legend is the block the hang must not spend; a cell that holds no
-       legend leaves the whole height to the pictures. */
-    var legend = wall.querySelector('.legend');
-    var availH = wall.clientHeight - (legend ? legend.offsetHeight : 0);
+    /* ── The cell's other blocks are what the hang must not spend ─────────────
+       The band is solved against the height the CLUSTER can have, so every
+       other block in this cell has to come out of it first. This named the
+       legend, and the legend was the cell's only other block; the narrow stand
+       added a second (`.label-open`, the control that opens the record, present
+       at every width and shown under 900px), and a solve that reserved the
+       legend alone would have over-estimated the band by the control's height
+       and let the stand overflow — silently, because `overflow: hidden` on the
+       cell is what would absorb it.
+
+       So it is generalised rather than extended: every child of the cell that
+       is not the cluster is reserved, at its own height plus the margins that
+       are REAL SPACE. One block today, two under 900px, and a third would need
+       no change here.
+
+       ── An `auto` margin is slack, and reserving it inverts the solve ───────
+       The legend is pinned to the foot of the cell by an `auto` margin, which
+       the browser resolves to whatever room is left over — so it is a function
+       of the very number this solve produces, and reserving it is a feedback
+       loop. Measured at 1440x900 while that margin sat on `.legend`: the legend
+       is 112px of text and its resolved margin was 383px of slack, so `reserved`
+       came to 496px of a 691px cell, `availH` fell to 195px and the band
+       collapsed to the tap floor — three 104x58 frames in a cell left with
+       380px of bare wall under them. The original code never had this fault
+       because it reserved `legend.offsetHeight` and nothing else; a solve that
+       reads the slack back is one that has already spent it.
+
+       AN `auto` MARGIN CANNOT BE DETECTED HERE, and that is why the guard is a
+       PLACEMENT rather than a branch. CSSOM special-cases the margin
+       properties: `getComputedStyle(block).marginTop` returns the resolved used
+       value — a pixel length, never the string `auto` — so no test on it can
+       tell slack from space. The pinning margin therefore lives on `.cluster`,
+       which this loop skips by construction (see the note on `.cluster`'s
+       `margin-bottom` in css/styles.css), and `tests/shell-check.mjs` asserts
+       where it lives. Do NOT move it back onto `.legend`: `parseFloat('auto')`
+       is NaN and would be read as 0, so nothing here would catch it and the
+       band would collapse in silence — invisible at 1440x900, where the token's
+       own fallback (`22vh` = 198px) sits near the correct 579px band, and
+       grossly wrong on a phone.
+
+       Cheap and loop-free, as the solve must stay. It is one pass over the
+       cell's direct children, and it runs once per solve — at init, on resize
+       and when the fonts settle — not per frame.
+
+       Nothing else here may depend on `--wall-h`: the reserved blocks are the
+       legend (whose height is its own text, wrapped at 62% of the cell's width)
+       and the control (a fixed 52px), and neither reads the band. A block whose
+       height DID depend on it would make this solve chase its own tail. */
+    var reserved = 0;
+    var children = wall.children;
+    for (var bi = 0; bi < children.length; bi++) {
+      var block = children[bi];
+      if (block === cluster) continue;
+      /* A block that is not laid out — `display: none`, which is the control's
+         state at every width above 900px — has no height and no margins of its
+         own to reserve. Its computed margins are still real lengths, so the
+         check is on the box and not on the style. */
+      if (!block.offsetHeight) continue;
+      var bcs = getComputedStyle(block);
+      reserved += block.offsetHeight
+        + (parseFloat(bcs.marginTop) || 0)
+        + (parseFloat(bcs.marginBottom) || 0);
+    }
+    var availH = wall.clientHeight - reserved;
 
     cluster.style.setProperty('--wall-h', Site.bandFor({
       width: wall.clientWidth,
@@ -1193,6 +1333,18 @@
       + '<div class="hang-cell">'
       + renderCluster(pieces, layout, record, kind, entryKey)
       + renderLegend(record, pieces)
+      /* ── And the way into the record, for a stand that is one column ──────
+         Under 900px the label cell leaves the walk and this is what replaces
+         it: the cluster and the legend still hang, and the record is read in
+         the dialog. It sits AFTER the legend because it is the last block of
+         the cell — `fitWall` reserves the outer height of everything in this
+         cell that is not the cluster, and both of these blocks are what the
+         band is solved around.
+
+         It is rendered at every width and hidden above the breakpoint by CSS,
+         so a desktop visitor's stand is byte-for-byte the same three blocks it
+         was — the fourth is there, and it is `display: none`. */
+      + renderLabelOpen(record, entryKey)
       + '</div>'
       + renderLabel(record, pieces)
       + '</div>';
@@ -1458,6 +1610,38 @@
       + '</div>';
   }
   Site.renderLegend = renderLegend;
+
+  /* ── The label's control, and the narrow stand ────────────────────────────
+     Under 900px a stand is ONE screen wide and ONE column: the hang cell takes
+     the whole width and the whole height, the label column leaves the walk (see
+     the `@media (max-width: 900px)` block in css/styles.css), and the record is
+     READ IN THE DIALOG instead.
+
+     So the control goes in the HANG CELL, after the legend — the cell that is
+     still on the screen — and not in the label, which is the cell that has
+     gone. It is rendered at EVERY width: the desktop visitor's copy is simply
+     hidden by CSS, so there is one code path, one delegated handler, and
+     nothing that renders the control only on a phone and cannot be tested at
+     all.
+
+     Its reference is the stand's entry key, as `data-entry`, and the stand
+     already carries that same key on `.group` — `openLabelRef` in this file
+     resolves one from the other. That is the convention the pieces use (the
+     `data-gallery` / `data-entry` pair, scoped by the array the record lives in
+     so both record arrays can start at 0), followed rather than reinvented: no
+     new naming scheme, and no second index to fall out of step with the first.
+
+     The name says what it OPENS, and it names the RECORD: pressed, this reveals
+     the label, which is the record's own account. */
+  function renderLabelOpen(record, entryKey) {
+    var title = labelTitle(record);
+    return '<button type="button" class="label-open"'
+      + ' data-label="' + esc(entryKey) + '" data-entry="' + esc(entryKey) + '"'
+      + ' aria-label="' + esc('Read the label — ' + title) + '">'
+      + esc('Read the label')
+      + '</button>';
+  }
+  Site.renderLabelOpen = renderLabelOpen;
 
   function renderLabel(record, pieces) {
     var list = Array.isArray(pieces) ? pieces : [];

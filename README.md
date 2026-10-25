@@ -102,8 +102,18 @@ need the larger share because a frame followed its photograph's width, so a narr
 pictures narrower and taller until a 2.251-ratio photograph was squeezed to the 44px tap floor —
 measured at a 317px wall, three frames of 44×691, a wall of lines. A frame is one box now, so the cell
 binds through the BAND the solve is allowed rather than through a frame's own proportions. The stand
-is `clamp(1100px, 68vw, 1440px)`, so that leaves the hang cell 435px at 1440, 390px at 1536, 361px at
-1600 and 546px at 1920.
+is `min(clamp(1100px, 68vw, 1440px), 100vw)`, so that leaves the hang cell 435px at 1440, 390px at 1536,
+361px at 1600 and 546px at 1920.
+
+The `min(…, 100vw)` cap is not tidying — it is the fix for a defect the 1100px floor caused below
+1100px. A stand on its floor is wider than the window, and `--group-gap` reads
+`max(0.25 × stand, (100vw − stand) / 2)`: with the floor binding, the first term is a fixed 275px while
+`--room-gap` keeps shrinking at `45vw`, so the two crossed at a **611px viewport** and below it two
+projects of one room ended up FURTHER apart than two different rooms — the inverse of the rule the
+whole walk is built on. Measured before the fix, at 390×844: **sibling 275px against category 245px**.
+Capping the stand at the viewport makes `(100vw − stand) / 2` exactly zero, so the sibling gap falls
+back to `0.25vw` against a `0.45vw` category gap at every width, with no crossing to find. The cap is
+inert at ≥1100px, so nothing above the floor moved.
 
 The legend is 62% of that cell's width and it shares the pictures' LEFT edge — the two no longer share a
 right edge, because a frame's width is the solved band times `--frame-ar` (331px in a 435px cell at
@@ -115,14 +125,52 @@ hang centred on a wall has. `--label-side` is the label's own interior split —
 measured, not chosen: a narrower furniture column wraps the awards until *they* are the tall pole and
 the label scrolls, and a wider one takes the width the account needs.
 
-The label column **does not scroll at any desktop viewport from 1366×768 up** — below that the stand is
-wider than the window and the walk is a pan, not a page — which is the change that put the legend under
+The label column **does not scroll at any desktop viewport from 1366×768 up** — between 900px and
+1366px the stand is still wider than the window and the walk is a pan, not a page — which is the change
+that put the legend under
 the hang: the catalogue was the tallest block of the label's furniture column, and the label's own
 content came to 743px inside a 690px box at 1440×900, a scrollbar over copy a visitor had to go looking
 for. The 1280×704 floor still scrolls, by 44px on its worst label where it used to scroll by 273px on
 six of them; a `max-height: 800px` query widens the label to buy back what width can, and nothing there
 is clipped either way — `ux-check` reports the scrolls as information and fails only on copy that is cut
 off.
+
+**On a phone the label leaves the stand and the hang takes the screen.** Below 900px the two-cell stand
+cannot hold a usable label column *and* a usable hang, so the stand becomes one column: the hang fills
+the width, `.group > .label` is taken out of the walk, and a single **`Read the label`** control under
+the legend opens the record in the dialog the site already had. The control is rendered at every width
+and hidden above the breakpoint, so there is one code path rather than two; activating it clones the
+stand's own label into the dialog rather than moving it, so widening the window restores the two-cell
+stand with no re-render. The property this buys is that a stand is **one screen wide at every width**,
+which is what the `100vw` cap above needs in order to hold the sibling/category ordering. This extends a
+precedent the walk already set: a fourth photograph is not hung, and stays reachable in the record's
+dialog. The label is the same bargain at this width.
+
+The hide is scoped `.group > .label` and never a bare `.label`, because the dialog's copy is the same
+element and a bare rule would hide it too.
+
+The numbers this now measures, all with **zero bare wall** left under the hang:
+band **487px** and frames **278×156** at 390×844, band 391px and 223×125 at the
+1280×704 floor, band 579px and **331×186** at 1440×900. The last is the figure
+this file has always quoted for a frame at 1440×900, which is the check that the
+narrow work did not move the desktop.
+
+Getting there caught a defect worth recording, because every check that existed
+was blind to it. The band solve reserves the height of each block in the hang
+cell that is not the cluster — and the legend is pinned to the cell's foot by
+`margin-top: auto`, which the browser resolves to *whatever space is left over*.
+`getComputedStyle` reports that as a used pixel length and not the string `auto`,
+so the solve was reading the slack back as space already spent: **303.547px** at
+390×844, which collapsed the band to 184px and drew three **98×55** frames above
+303px of empty wall. It passed every phone check, because 98×55 still clears the
+44px tap floor and still sits inside its stand. The fix is a placement rather
+than a test — the pinning margin is `margin-bottom: auto` on the **cluster** now,
+which the solve skips by construction — and `shell-check.mjs` asserts the
+placement, because no runtime test can: the resolved value of an `auto` margin is
+indistinguishable from a real one. It hid on desktop for a second reason, which
+is why measuring beats reasoning here: the `22vh` fallback sits within about 10px
+of the correct band at 1440×900, so the broken solve looked entirely plausible
+there.
 
 **How large a photograph reads is decided by the band, and the band is solved.** Every frame is one
 box, so a stand's shape is fixed: a column of three frames is `(band − gaps) / 3` tall each and 16:9
@@ -219,9 +267,18 @@ the columns, the rows and the tile boxes at both reference viewports.
   can be opened further but cannot be quietly closed again.
 - **Vanilla JavaScript** — Data-driven rendering
 - **Lenis 1.3.26** — Smooth horizontal scrolling, vendored in `js/vendor/`. MIT ©
-  darkroom.engineering. This is the site's only dependency: it is committed, pinned by
-  size and SHA-256 (`js/vendor/README.md`), and never resolved from a CDN at runtime.
-  There is still no build step, no bundler and no package install needed to serve the site.
+  darkroom.engineering. Committed and pinned by size and SHA-256 (`js/vendor/README.md`).
+- **Newsreader and Courier Prime** — vendored in `files/fonts/` with their SIL OFL 1.1 licences,
+  declared in the generated `css/fonts.css`. Eight `woff2` files, but `unicode-range` is preserved from
+  Google's own stylesheet, so a visit still downloads only the subsets it uses — measured, an English
+  page loads **5 of the 14 faces**. Refresh with `tools/vendor-fonts.mjs`.
+- **Twelve icon glyphs** — Font Awesome Free 5.15.4 (CC BY 4.0, licence in `files/icons/`), inlined as
+  SVG path data in the generated `js/icons.js`. The site used to link Font Awesome's stylesheet instead:
+  **59,305 bytes** of CSS describing several thousand glyphs, plus a webfont subset on top, to draw
+  twelve shapes. Refresh with `tools/vendor-icons.mjs`.
+
+**Nothing is resolved from a CDN at runtime.** There is still no build step, no bundler and no package
+install needed to serve the site.
 
 ## Structure
 
