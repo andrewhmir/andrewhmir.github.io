@@ -166,6 +166,16 @@ function v1() {
   for (const link of linked) {
     if (!exists(link)) throw new Error(`README.md links ${link}, which does not exist`);
   }
+  // Every cross-link between library files must resolve too, not just README's.
+  for (const file of libraryFiles()) {
+    const dir = path.posix.dirname(clean(file));
+    for (const m of read(file).matchAll(/\]\(([^)\s]+)\)/g)) {
+      const target = m[1];
+      if (/^(https?:|#|mailto:)/.test(target)) continue;
+      const resolved = clean(path.posix.join(dir, target));
+      if (!exists(resolved)) throw new Error(`${file}: link ${target} does not resolve to ${resolved}`);
+    }
+  }
 }
 
 /* ── V2: page format ───────────────────────────────────────────────── */
@@ -189,6 +199,8 @@ function v2(pageOnly) {
       const name = x.l.slice(3).trim();
       if (!ALLOWED_H2.has(name)) throw new Error(`${file}: unknown heading "## ${name}"`);
     }
+    const count = lines.length - 1;
+    if (count < 40 || count > 90) throw new Error(`${file}: ${count} lines; the page contract allows 40-90`);
   }
 }
 
