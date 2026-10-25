@@ -319,9 +319,14 @@ function v6() {
   for (const m of js.matchAll(classAttr)) addClasses(m[1]);
   // A ternary modifier lives outside the class="..." literal, e.g.
   // class="copy' + (o.center ? ' copy--center' : ''); scan BEM tokens directly.
-  // The lookbehind stops `honour-row__year` from also yielding `row__year`.
-  const bem = /(?<![a-z0-9_-])([a-z][a-z0-9]*(?:--[a-z0-9-]+|__[a-z0-9-]+))(?![a-z0-9_-])/g;
-  for (const m of (js + '\n' + html).matchAll(bem)) emitted.add(m[1]);
+  // Comments are stripped so a comment naming a retired class is not an emission;
+  // the lookbehind stops `honour-row__year` from also yielding `row__year`, and
+  // the hyphen in the base covers classes such as `honour-row--mutant`.
+  const jsForBem = js
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const bem = /(?<![a-z0-9_-])([a-z][a-z0-9-]*(?:--[a-z0-9-]+|__[a-z0-9-]+))(?![a-z0-9_-])/g;
+  for (const m of (jsForBem + '\n' + html).matchAll(bem)) emitted.add(m[1]);
   for (const m of js.matchAll(/className\s*=\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/cls:\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/classList\.(?:add|remove|toggle)\('([^']+)'/g)) addClasses(m[1]);
