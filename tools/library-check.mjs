@@ -295,11 +295,15 @@ function v6() {
   const emitted = new Set();
   const addClasses = (raw) => {
     for (const t of String(raw).split(/\s+/)) {
+      // The template strings in js/main.js concatenate class names with ternaries;
+      // anything that is not a plain class token is a fragment, not a class.
+      if (!/^[a-z][a-z0-9_-]*$/.test(t)) continue;
       if (t.length >= 3 && !t.endsWith('-')) emitted.add(t);
     }
   };
-  for (const m of html.matchAll(/class="([^"]+)"/g)) addClasses(m[1]);
-  for (const m of js.matchAll(/class="([^"]+)"/g)) addClasses(m[1]);
+  const classAttr = /class="([^"'<>]*)/g;
+  for (const m of html.matchAll(classAttr)) addClasses(m[1]);
+  for (const m of js.matchAll(classAttr)) addClasses(m[1]);
   for (const m of js.matchAll(/className\s*=\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/cls:\s*'([^']+)'/g)) addClasses(m[1]);
   for (const m of js.matchAll(/classList\.(?:add|remove|toggle)\('([^']+)'/g)) addClasses(m[1]);

@@ -38,7 +38,7 @@ unhides the dialog. `closeDialog()` reverses it. The opening buttons carry
 |---|---|---|
 | Card width, height or scroll | `.dialog__card` (`max-width`, `max-height`, `overflow`) | screenshot at 1280×704 and 390×844; no clipped controls |
 | Card radius | `--panel-radius:` and `.dialog__card` | `npm test` (the token is pinned) |
-| Video player behaviour | the `dialog__video` template inside `openRecord` (`controls muted loop playsinline`) | open a project record; controls reachable |
+| Video player behaviour | the `.dialog__video` template inside `openRecord` (`controls muted loop playsinline`) | open a project record; controls reachable |
 | Gallery grid | `.dialog__gallery` | open an honour with photographs |
 | Trap, Escape, overlay close, focus restore | `closeDialog(` and the `keydown` handler | manual Tab / Escape walk; focus returns to the opener |
 | Which elements open it | `data-kind` / `data-index` on the control; delegation in `wireDelegation` | click a frame, leader card and honour tile |
