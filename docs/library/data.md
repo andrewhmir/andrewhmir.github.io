@@ -109,7 +109,7 @@ Twenty names. The page calls only `Site.posterFor` and `Site.honoursTiles`; the 
 | `Site.PLACEHOLDER` | no | the `files/PlaceHolder.png` constant |
 | `Site.deriveRooms` | no | retired room grouping; data-suite only |
 | `Site.ROOM_TITLES` | no | retired room titles; data-suite only |
-| `Site.ROOM_ORDER` | no | retired room order; data-suite only |
+| `Site.ROOM_ORDER` | no | retired room order; referenced by no test or page |
 | `Site.groupPieces` | no | retired three-frame grouping; data-suite only |
 | `Site.MIN_PIECES` | no | retired hang constant |
 | `Site.MAX_PIECES` | no | retired hang constant |
