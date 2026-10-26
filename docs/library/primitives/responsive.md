@@ -21,7 +21,7 @@ The five `@media` blocks that change the page's structure — the 1024px rail br
 |---|---|---|
 | `@media (min-width: 1024px)` | `.rail { display: flex; }`; `.menu { margin-right: 8px; }` | [rail.md](../components/rail.md), [masthead.md](../components/masthead.md) |
 | `@media (max-width: 1023px)` in `── Contact` | the dark card `.stop--contact .stop-in::before` becomes `width: calc(100% - 20px)` and `height: calc(100% - 12px)` | [contact.md](../components/contact.md) |
-| `@media (max-width: 1023px)` fallback | hides `.rail` and `.rail-shade`; `.stop-in` becomes one column with `min-height: 0`, `gap: 28px` and smaller padding; `.copy`/`.media` span the column; hero padding-top `118px`; `.copy--center` goes left (except Contact); `.menu` and `.hero-cue` hidden; left/right scrims become vertical | [rail.md](../components/rail.md), [panel.md](../components/panel.md), [hero.md](../components/hero.md) |
+| `@media (max-width: 1023px)` fallback | hides `.rail` and `.rail-shade` and re-shows `.progress` (the rail's small-screen fallback); `.stop-in` becomes one column with `min-height: 0`, `gap: 28px` and smaller padding; `.copy`/`.media` span the column; hero padding-top `118px`; `.copy--center` goes left (except Contact); `.menu` and `.hero-cue` hidden; left/right scrims become vertical | [rail.md](../components/rail.md), [panel.md](../components/panel.md), [hero.md](../components/hero.md) |
 | `@media (max-width: 639px)` | re-declares `--gutter: 10px` and `--panel-radius: 12px`; `h1` becomes `clamp(38px, 11vw, 56px)`; `.leaders` one column; narrower `.honour-row`; `.dialog__gallery` one column; footer and awards adjustments | [tokens.md](tokens.md), [type.md](type.md), [leadership.md](../components/leadership.md), [honours.md](../components/honours.md), [dialog.md](../components/dialog.md), [footer.md](../components/footer.md) |
 | `@media (prefers-reduced-motion: reduce)` | `scroll-behavior: auto`; every transition and animation collapses to `.001ms`; `[data-reveal]` is visible with no transform | [reveals-chrome.md](../components/reveals-chrome.md) |
 
@@ -42,7 +42,7 @@ resort.
 ## Invariants
 
 - `css/styles.css` holds exactly these five `@media` blocks; a sixth changes layout and belongs on this page.
-- The rail exists only at 1024px and wider; below it there is no drawer or alternate nav, and that absence is deliberate (`AGENTS.md`).
+- The rail exists only at 1024px and wider; below it there is no drawer or alternate nav, and that absence is deliberate (`AGENTS.md`). The masthead hairline is the progress cue there, and is hidden again from 1024px up.
 - Reduced motion is honoured twice: the CSS collapses motion, and `wireReveals` marks every `[data-reveal]` visible instead of observing — see `AGENTS.md`'s hard constraints.
 - `css/fonts.css` has no `@media`; font subsets are chosen by `unicode-range`, not by breakpoint.
 - There is no automated layout test: green `npm test` means the guard strings hold, not that the page laid out (`AGENTS.md` Run and verify).

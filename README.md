@@ -240,8 +240,12 @@ and labels disappeared. The shade is not a page overlay — it is bounded to the
 rail's gutter, below the masthead (`z-index: 29`) and below the rail itself
 (`30`), and it is hidden with the rail below 1024px.
 
-The rail is a navigation, not a scrollbar. Scroll progress is the separate 1px
-gold hairline at the foot of the masthead.
+The rail is a navigation, not a scrollbar, but it now carries the page's scroll
+progress as well. The 1px line is the track: faint all the way down, with gold
+filling from its top in proportion to the scrollable part of the document. The
+dots paint above the fill, so the active stop still marks the section crossing
+the viewport middle. The masthead hairline remains only below 1024px, where the
+rail — and the fill — are hidden.
 
 ## Palette, type and radii
 
@@ -353,9 +357,11 @@ immediately, collapses the transitions to effectively zero and turns smooth
 scrolling off.
 
 The masthead starts transparent over the hero and gains a blur and a hairline
-once the hero is behind it. Its progress hairline is the page's scroll position,
-not a section indicator. There is no scroll snap, no Lenis and no smooth-scroll
-library: the page uses the browser's own scrolling and smooth anchor behaviour.
+once the hero is behind it. Below 1024px its foot carries the page's scroll
+progress; from 1024px up that progress is drawn down the journey rail's line
+instead, so the rail is both navigation and page meter (see above). There is no
+scroll snap, no Lenis and no smooth-scroll library: the page uses the browser's
+own scrolling and smooth anchor behaviour.
 
 ## Missing photographs
 

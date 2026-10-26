@@ -13,8 +13,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.brand` | [masthead.md](components/masthead.md) | the masthead name link |
 | `.menu` | [masthead.md](components/masthead.md) | the masthead section nav |
 | `.resume` | [masthead.md](components/masthead.md) | the masthead resume chip |
-| `.progress` | [masthead.md](components/masthead.md) | the scroll-progress hairline |
-| `.rail` | [rail.md](components/rail.md) | the fixed journey nav, rendered by JS |
+| `.progress` | [masthead.md](components/masthead.md) | the small-screen scroll-progress hairline |
+| `.rail` | [rail.md](components/rail.md) | the fixed journey nav and page-progress fill, rendered by JS |
 | `.rail-shade` | [rail.md](components/rail.md) | the fixed left gradient behind the rail |
 | `.rail__stop` | [rail.md](components/rail.md) | one rail entry; carries `data-stop` |
 | `.stop` | [panel.md](components/panel.md) | one painted panel, the unit of page order |
@@ -59,7 +59,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `#masthead` | [masthead.md](components/masthead.md) | the fixed header |
 | `#rail` | [rail.md](components/rail.md) | the empty journey nav the renderer fills |
 | `#resumeLink` | [masthead.md](components/masthead.md) | the resume chip; its `href` is filled from the Resume social entry |
-| `#progress` | [masthead.md](components/masthead.md) | the progress hairline |
+| `#progress` | [masthead.md](components/masthead.md) | the small-screen progress hairline |
 | `#dialog` | [dialog.md](components/dialog.md) | the modal root, `[hidden]` until a record opens |
 | `#dialogClose` | [dialog.md](components/dialog.md) | the labelled close button |
 | `#dialogMeta` | [dialog.md](components/dialog.md) | the record's meta line |

@@ -1,7 +1,7 @@
 # Masthead
 
 The fixed header bar: the brand, the section menu, the resume action and the
-hairline that tracks how far the page has been scrolled.
+hairline that tracks how far the page has been scrolled on small screens.
 
 ## Where it lives
 
@@ -23,7 +23,9 @@ hairline that tracks how far the page has been scrolled.
 holds `a.brand` (jumps to `#top`), `nav.menu` with four section jumps,
 `a.resume#resumeLink`, and `div.progress#progress`. `.is-stuck` is toggled on the
 header once the scroll passes the hero; `.progress` is a 1px gold bar whose width
-is the scroll fraction.
+is the scroll fraction. It is `display: none` from 1024px up, where the journey
+rail draws page progress in its line instead; below 1024px the rail is hidden, so
+the hairline is the small-screen cue.
 
 ## Adjust it
 
@@ -34,15 +36,18 @@ is the scroll fraction.
 | Resume URL | the markup only starts at `#`; `wireChrome` copies the URL of the `social` entry labelled `Resume` | `npm test` pins `P.social[0].label`; click Resume |
 | Header height | `--masthead-h:` in `css/styles.css`; panels' `scroll-margin-top` reads it too | jump to an anchor; the panel top clears the bar |
 | When the bar turns solid | `masthead.classList.toggle('is-stuck', y > Math.max(120, heroH - 72))` | scroll across the hero edge |
-| Hairline colour or thickness | `.progress` (`height`, `background`) | screenshot at the bottom of the page |
+| Hairline colour or thickness | `.progress` (`height`, `background`); it is visible below 1024px only | 390×844 screenshot |
+| Where progress is drawn | this page owns the small-screen hairline; `rail.md` owns the ≥1024px fill | 1023px and 1024px screenshots |
 | Menu visibility on small screens | `@media (max-width: 1023px)` hides `.menu`; no drawer exists | 390×844 screenshot |
 
 ## Invariants
 
 - One header, fixed, with its height in `--masthead-h:`; see AGENTS.md's
-  **Masthead stickiness and progress hairline** row for the route.
+  **Masthead stickiness and the small-screen progress hairline** row for the
+  route.
 - `.progress` is `aria-hidden` decoration: width 0–100% of the scrollable part
-  of the document, never anything interactive.
+  of the document, never anything interactive. It is the small-screen fallback
+  for the rail's progress fill, not a second indicator.
 - `#resumeLink` ships with `href="#"` and is filled at init from data; the URL is
   never hard-coded in the markup.
 - The menu is anchor jumps to ids the renderer emits; it is not a drawer, and
@@ -54,8 +59,11 @@ is the scroll fraction.
 
 - `is-stuck` flips at `Math.max(120, heroH - 72)`: if `#top` has not rendered,
   `heroH` is 0 and the bar sticks at 120px instead of the hero edge.
-- `wireChrome` looks up `#resumeLink` and `#progress` once at init; renaming
-  either id silently leaves the resume at `#` and the hairline at width 0.
+- `wireChrome` looks up `#resumeLink`, `#progress` and `#rail` once at init;
+  renaming any id silently leaves the resume at `#`, the hairline at width 0 or
+  the rail fill unwritten.
+- `.progress` is `display: none` from 1024px up and re-shown by the 1023px block;
+  removing either half silently loses the small-screen cue.
 - The progress maths clamps to 100% and falls back to 0 when the document is
   shorter than the viewport, so a short page shows no hairline.
 - `--masthead-h:` also feeds panels' `scroll-margin-top`, which adds 12px to the

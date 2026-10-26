@@ -48,7 +48,8 @@
   <a class="skip" href="#page">Skip to content</a>
 
   <!-- Masthead: transparent over the hero, gains a blur + border once the walk
-       begins. The hairline at its foot is the page's scroll progress. -->
+       begins. From 1024px up the page's scroll progress is drawn down the rail
+       instead; the hairline at this bar's foot is the small-screen fallback. -->
   <header class="masthead" id="masthead">
     <a class="brand" href="#top">Andrew Alangcao</a>
     <nav class="menu" aria-label="Sections">
@@ -65,7 +66,8 @@
        It is the only fixed element besides the rail, and it is decoration. -->
   <div class="rail-shade" aria-hidden="true"></div>
 
-  <!-- The journey line: one stop per section, filled in by js/main.js -->
+  <!-- The journey line: one stop per section plus the page-progress fill, both
+       fed by js/main.js -->
   <nav class="rail" id="rail" aria-label="The walk through the profile"></nav>
 
   <!-- Sections are rendered from PORTFOLIO by js/main.js. The shell stays empty

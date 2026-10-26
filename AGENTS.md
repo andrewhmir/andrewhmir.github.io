@@ -26,8 +26,9 @@ The page is a vertical profile, in this order: fixed masthead → hero (`#top`) 
 About (`#about`) → Work (`#work`, six project stops with ids `project1` …
 `project6`) → Leadership (`#leadership`) → Honours (`#honours`) → Contact
 (`#contact`) → footer. A fixed journey rail (≥1024px) tracks the section crossing
-the middle of the viewport. One shared record dialog serves every project, every
-leadership record, and every honour that has photographs.
+the middle of the viewport and carries the page's scroll progress. One shared
+record dialog serves every project, every leadership record, and every honour
+that has photographs.
 
 Every stop is a full-width rounded panel painted by a different crop of one of
 two saved Amorsolo paintings. A direction-aware scrim keeps the copy side dark
@@ -44,7 +45,7 @@ promoted by rename into its final names and the preview copies deleted. Edit onl
 | File | Size | Holds |
 |---|---|---|
 | `index.html` | ~110 lines | The shell: meta/OG/canonical, `css/fonts.css` then `css/styles.css`, masthead, rail shade, rail nav, empty `#page`, footer, `<noscript>` fallback, the one dialog, then `js/data.js` before `js/main.js`. |
-| `css/styles.css` | ~620 lines | All styling: tokens, masthead/progress, rail shade, rail, panels/art/scrims, type, frames, project extras, leadership, honours, contact, footer, dialog, reveals, responsive. Section banners are the map. |
+| `css/styles.css` | ~630 lines | All styling: tokens, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, project extras, leadership, honours, contact, footer, dialog, reveals, responsive. Section banners are the map. |
 | `js/main.js` | ~440 lines | `PAN` (the art order), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `render()`, the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`. Publishes `window.Profile`. |
 | `js/data.js` | ~680 lines | `PORTFOLIO` — the portfolio records and personal copy — plus `Site.*` helpers. The page itself reads only `Site.posterFor` and `Site.honoursTiles`; the other helpers are inherited from the retired horizontal build and are kept because the surviving data suites test them. |
 | `css/fonts.css` | generated | The `@font-face` rules for Newsreader and Courier Prime. Do not hand-edit; refresh with `tools/vendor-fonts.mjs`. |
@@ -83,8 +84,8 @@ router; the library is the per-component depth behind it.
 | Honours list, and which awards stay on projects | `js/data.js` + `js/main.js` | `honors: [`, `from: 'project`; `S.honoursTiles(P.honors)` |
 | The dialog, its focus trap, Escape, restore | `index.html` + `js/main.js` | `#dialog`; `function openRecord(`, `function closeDialog(`, the `keydown` trap |
 | The project video player | `js/main.js` | `dialog__video`; poster from `S.posterFor` |
-| The journey rail and its active state | `js/main.js` + `css/styles.css` | `function buildRail(`; `.rail`, `.rail-shade` |
-| Masthead stickiness and progress hairline | `js/main.js` + `css/styles.css` | `wireChrome`; `.masthead.is-stuck`, `.progress` |
+| The journey rail, its active state and the page-progress fill | `js/main.js` + `css/styles.css` | `function buildRail(`, `wireChrome`; `.rail`, `.rail::before`, `.rail-shade`, `--rail-progress` |
+| Masthead stickiness and the small-screen progress hairline | `js/main.js` + `css/styles.css` | `wireChrome`; `.masthead.is-stuck`, `.progress` |
 | Reveals and reduced motion | `js/main.js` + `css/styles.css` | `function wireReveals(`; `[data-reveal]`, `prefers-reduced-motion` |
 | Palette | `css/styles.css` | `:root`, `--night: #080c0e` |
 | Type | `css/styles.css` + `css/fonts.css` | `--serif:`, `--mono:`, `h1 {`, `h2 {`, `h1 {` in the responsive block |
@@ -171,7 +172,7 @@ floor, and 390×844, and look for:
 - no horizontal scrollbar, and no title overflow (`C.E.N.T.H.R.O.` and
   `BiyaHey!` at 390px);
 - the copy side dark enough to read, the far side still painting;
-- the rail labels and active dot over the brightest crop;
+- the rail labels, active dot and gold progress fill over the brightest crop;
 - the dialog fitting the viewport, its video controls reachable, Tab staying
   inside, Escape returning focus to the button that opened it.
 

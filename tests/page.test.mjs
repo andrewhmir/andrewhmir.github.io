@@ -55,6 +55,14 @@ assert.match(css, /background-position:\s*var\(--pos/);
 assert.match(css, /\.rail-shade/);
 console.log('ok  palette, radii, both paintings, art layers, rail shade');
 
+// Progress lives in the rail: wireChrome writes the fraction, the rail's
+// ::before scales by it, and the masthead hairline is the small-screen fallback.
+assert.match(js, /--rail-progress/);
+assert.match(cssNoComments, /--rail-progress/);
+assert.match(cssNoComments, /\.rail::before/);
+assert.match(cssNoComments, /\.progress\s*\{[^}]*display:\s*none/);
+console.log('ok  rail carries page progress; masthead hairline is mobile-only');
+
 // Braces must balance; an unbalanced rule silently eats the rest of the sheet.
 assert.equal((cssNoComments.match(/{/g) || []).length, (cssNoComments.match(/}/g) || []).length);
 console.log('ok  css: braces balanced');

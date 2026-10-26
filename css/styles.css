@@ -106,7 +106,11 @@ a { color: inherit; }
 }
 .resume:hover { border-color: var(--accent); color: var(--text-strong); background: rgba(8, 12, 14, .55); }
 
+/* The small-screen progress cue. From 1024px up the rail carries page progress
+   (see ── Journey rail); below that the rail is hidden, so the hairline at the
+   masthead's foot keeps the read. */
 .progress {
+  display: none;
   position: absolute; left: 0; bottom: 0; height: 1px; width: 0;
   background: var(--accent); opacity: .85;
 }
@@ -128,10 +132,22 @@ a { color: inherit; }
 .rail {
   position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 30;
   display: none; flex-direction: column; gap: 0; padding-left: 14px;
+  /* The unfilled track. It used to be .rail::before's gradient; the progress
+     fill needs that pseudo-element now, and an element background paints
+     beneath its own children, so the dots stay on top. */
+  background-image: linear-gradient(transparent, rgba(236, 226, 207, .26) 12%, rgba(236, 226, 207, .26) 88%, transparent);
+  background-repeat: no-repeat;
+  background-position: 3px 9px;
+  background-size: 1px calc(100% - 18px);
 }
+/* Page progress, filling down the rail's line. --rail-progress is the scroll
+   fraction 0–1 written by wireChrome; scaleY keeps the update off the layout
+   thread, and ::before paints before the stops, so the dots sit on the gold. */
 .rail::before {
   content: ""; position: absolute; left: 3px; top: 9px; bottom: 9px; width: 1px;
-  background: linear-gradient(transparent, rgba(236, 226, 207, .26) 12%, rgba(236, 226, 207, .26) 88%, transparent);
+  background: var(--accent); opacity: .9;
+  transform-origin: top;
+  transform: scaleY(var(--rail-progress, 0));
 }
 .rail__stop {
   position: relative; display: flex; align-items: center; height: 26px;
@@ -578,6 +594,7 @@ h2 {
 
 @media (max-width: 1023px) {
   .rail-shade, .rail { display: none; }
+  .progress { display: block; }
   .stop-in {
     grid-template-columns: 1fr;
     min-height: 0;

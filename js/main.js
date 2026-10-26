@@ -387,6 +387,7 @@
 
     var masthead = document.getElementById('masthead');
     var progress = document.getElementById('progress');
+    var rail = document.getElementById('rail');
     var hero = document.getElementById('top');
     var ticking = false;
 
@@ -395,10 +396,12 @@
       var y = window.scrollY || document.documentElement.scrollTop || 0;
       var heroH = hero ? hero.offsetHeight : 0;
       if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, heroH - 72));
-      if (progress) {
-        var max = document.documentElement.scrollHeight - window.innerHeight;
-        progress.style.width = (max > 0 ? Math.min(100, (y / max) * 100) : 0) + '%';
-      }
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var fraction = max > 0 ? Math.min(1, y / max) : 0;
+      /* One value feeds both cues: the rail draws page progress from 1024px up,
+         the masthead hairline is the fallback below that, where the rail is hidden. */
+      if (rail) rail.style.setProperty('--rail-progress', fraction);
+      if (progress) progress.style.width = (fraction * 100) + '%';
     }
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; window.requestAnimationFrame(update); }

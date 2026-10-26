@@ -1,14 +1,14 @@
 # Reveals and chrome
 
 The scroll-time behaviour bound once at init: reveal-on-scroll, the
-reduced-motion fallback, the masthead's stuck state, the progress hairline, the
+reduced-motion fallback, the masthead's stuck state, the progress writes, the
 resume href and the delegated click that opens a record.
 
 ## Where it lives
 
 | Role | File | Anchor |
 |---|---|---|
-| Markup | `index.html` | `<main id="page" class="page"></main>` · `id="progress"` |
+| Markup | `index.html` | `<main id="page" class="page"></main>` · `id="progress"` · `id="rail"` |
 | Render | `js/main.js` | `function wireReveals(` · `function wireDelegation(` |
 | Render | `js/main.js` | `function wireChrome(` · `window.addEventListener('scroll'` |
 | Render | `js/main.js` | `e.target.closest('[data-kind][data-index]')` · `function init(` |
@@ -22,7 +22,9 @@ resume href and the delegated click that opens a record.
 start at `opacity: 0` and gain `.is-in` once they are 8% inside the viewport. The
 rail observer toggles `.is-active` on the matching `data-stop` link as a section
 crosses the middle band. Scroll and resize toggle `.masthead.is-stuck` on
-`#masthead` and write `#progress`'s width. Clicks bubble to `#page`, where one listener reads
+`#masthead`, write the page fraction to `--rail-progress` on `#rail` and to
+`#progress`'s width. The rail draws it from 1024px up; the hairline is the
+small-screen fallback. Clicks bubble to `#page`, where one listener reads
 `data-kind` and `data-index` off the nearest control and opens the record dialog.
 
 ## Adjust it
@@ -35,7 +37,7 @@ crosses the middle band. Scroll and resize toggle `.masthead.is-stuck` on
 | Which blocks reveal | add `data-reveal` where `panel()` builds `.copy` / `.media` | `npm test`, then scroll |
 | Reduced-motion behaviour | the `matchMedia` branch in `wireReveals` and the `@media (prefers-reduced-motion: reduce)` block | set reduce motion; every block is visible at once |
 | The stuck threshold | `masthead.classList.toggle('is-stuck', ...)` in `wireChrome` | scroll across the hero edge |
-| The progress computation | `progress.style.width` and its `Math.min(100, ...)` clamp | scroll to the bottom |
+| The progress computation | the fraction in `wireChrome`; `--rail-progress` on `#rail` and `progress.style.width` | scroll to 50% and to the bottom; the rail fills halfway, then to the foot of its line |
 | What opens a record | `data-kind` / `data-index` on the control and the listener in `wireDelegation` | click a frame, a leader card and a photographed honour |
 | The rail's active band | `rootMargin: '-45% 0px -45% 0px'` in `buildRail` | see `rail.md` |
 
@@ -50,6 +52,9 @@ crosses the middle band. Scroll and resize toggle `.masthead.is-stuck` on
   `data-index` is the array index into that collection, never the record id.
 - `data-stop` is the id of the section the rail link targets; `.is-active` is
   applied to the link, never to the section.
+- One scroll fraction feeds both cues: `--rail-progress` for the ≥1024px rail
+  fill and `#progress`'s width for the small-screen hairline. They must not
+  diverge; both are written in the same `wireChrome` `update()`.
 - `wireReveals`, `wireChrome` and `wireDelegation` run from `init()` after
   `render()`; no scroll behaviour binds before the content exists.
 
@@ -61,9 +66,9 @@ crosses the middle band. Scroll and resize toggle `.masthead.is-stuck` on
   the mount listener is the only survivor, so wire new controls to it.
 - A control without `data-kind` / `data-index`, or a `disabled` one, is skipped —
   honours without photographs never open (see `dialog.md`).
-- `wireChrome`'s initial `update()` is what paints the stuck state and hairline
-  on a reload that starts mid-page; listening to `scroll` alone leaves them stale
-  until the first scroll.
+- `wireChrome`'s initial `update()` is what paints the stuck state, the rail fill
+  and the hairline on a reload that starts mid-page; listening to `scroll` alone
+  leaves them stale until the first scroll.
 - The `prefers-reduced-motion` string is pinned by `page.test.mjs`, while the CSS
   block and the JS branch must stay in agreement by inspection; neither alone
   proves the other.
