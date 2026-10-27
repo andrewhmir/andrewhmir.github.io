@@ -50,8 +50,10 @@ unhides the dialog. `closeDialog()` reverses it. The opening buttons carry
 - One dialog serves all three record kinds; there is no second modal.
 - `role="dialog"`, `aria-modal="true"`, a labelled close button — see the
   accessibility row in `AGENTS.md`'s hard constraints.
-- `openRecord` saves `document.activeElement`, focuses the card, and locks body
-  scroll; `closeDialog` restores the scroll and the focus.
+- `openRecord` saves `document.activeElement`, focuses the card, locks body
+  scroll and stops Lenis; `closeDialog` restores the scroll, the focus and
+  Lenis. The card carries `data-lenis-prevent` so its own scroll area keeps
+  working while Lenis is stopped.
 - Escape, a click on the overlay and the close button all close the dialog.
 - Tab is trapped inside the card's focusable elements.
 - The video is the only place the films play: muted, looping and inline, with

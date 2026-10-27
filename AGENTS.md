@@ -18,9 +18,11 @@ the promoted files.
 
 ## What this is
 
-A static personal portfolio: **no build step, no bundler, no runtime dependency.**
-`index.html` opens directly; `node tools/serve.mjs 3333` serves it when video,
-fonts or screenshots need HTTP. Node is only for tests and dev tools.
+A static personal portfolio: **no build step, no bundler, no remote third-party
+runtime loads.** Lenis, the one vendored library, adds a smooth wheel glide to
+an otherwise native vertical scroll. `index.html` opens directly;
+`node tools/serve.mjs 3333` serves it when video, fonts or screenshots need
+HTTP. Node is only for tests and dev tools.
 
 The page is a vertical profile, in this order: fixed masthead → hero (`#top`) →
 About (`#about`) → Work (`#work`, six project stops with ids `project1` …
@@ -38,19 +40,21 @@ the sections, rail and dialog content are rendered from `PORTFOLIO` by
 
 The page was built as `preview.html` + `css/profile.css` + `js/profile.js`, then
 promoted by rename into its final names and the preview copies deleted. Edit only
-`index.html`, `css/styles.css`, `js/main.js`.
+`index.html`, `css/styles.css`, `js/main.js`; `js/vendor/` is copied verbatim
+and never hand-edited.
 
 ## The files
 
 | File | Size | Holds |
 |---|---|---|
-| `index.html` | ~110 lines | The shell: meta/OG/canonical, `css/fonts.css` then `css/styles.css`, masthead, rail shade, rail nav, empty `#page`, footer, `<noscript>` fallback, the one dialog, then `js/data.js` before `js/main.js`. |
-| `css/styles.css` | ~630 lines | All styling: tokens, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, project extras, leadership, honours, contact, footer, dialog, reveals, responsive. Section banners are the map. |
-| `js/main.js` | ~440 lines | `PAN` (the art order), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `render()`, the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`. Publishes `window.Profile`. |
+| `index.html` | ~120 lines | The shell: meta/OG/canonical, `css/fonts.css` then `css/styles.css` and the vendored `js/vendor/lenis.css`, masthead, rail shade, rail nav, empty `#page`, footer, `<noscript>` fallback, the one dialog, then `js/vendor/lenis.min.js` before `js/data.js` before `js/main.js`. |
+| `css/styles.css` | ~660 lines | All styling: tokens, the `html.lenis` scroll override, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, project extras, leadership, honours, contact, footer, dialog, reveals, responsive. Section banners are the map. |
+| `js/main.js` | ~560 lines | `PAN` (the art order), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `render()`, the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`, `wireSmoothScroll`. Publishes `window.Profile`. |
 | `js/data.js` | ~680 lines | `PORTFOLIO` — the portfolio records and personal copy — plus `Site.*` helpers. The page itself reads only `Site.posterFor` and `Site.honoursTiles`; the other helpers are inherited from the retired horizontal build and are kept because the surviving data suites test them. |
+| `js/vendor/` | vendored | Lenis 1.3.26 (`lenis.min.js` + `lenis.css`), copied verbatim; sizes and SHA-256 pins in its README. The page's only third-party runtime code, loaded locally. |
 | `css/fonts.css` | generated | The `@font-face` rules for Newsreader and Courier Prime. Do not hand-edit; refresh with `tools/vendor-fonts.mjs`. |
 | `files/` | assets | The two paintings, portrait, project overview/team photographs, six films, generated `posters/`, generated `og-card.jpg`, favicon, vendored fonts, currently unused icons. |
-| `tests/page.test.mjs` | ~108 lines | The static guard: shell order, palette, both paintings and art layers, dialog markup, no third-party loads, section ids, data counts, and that `npm test` runs it. |
+| `tests/page.test.mjs` | ~160 lines | The static guard: shell order, palette, both paintings and art layers, dialog markup, no third-party loads, the vendored Lenis wiring, section ids, data counts, and that `npm test` runs it. |
 | `tests/*.test.mjs` | data suites | `derive-rooms`, `hang`, `band`, `gallery-index`, `award-photos` — pure tests of inherited `Site.*` helpers and the content. None renders the page. |
 | `tools/` | dev only | Static server, image/font/icon generators, asset import, orphan scan. `tools/README.md` indexes what survives and what is retired. |
 | `docs/superpowers/` | historical | Specs and plans. Never hand-edit; read for the design record. |
@@ -86,6 +90,7 @@ router; the library is the per-component depth behind it.
 | The project video player | `js/main.js` | `dialog__video`; poster from `S.posterFor` |
 | The journey rail, its active state and the page-progress fill | `js/main.js` + `css/styles.css` | `function buildRail(`, `wireChrome`; `.rail`, `.rail::before`, `.rail-shade`, `--rail-progress` |
 | Masthead stickiness and the small-screen progress hairline | `js/main.js` + `css/styles.css` | `wireChrome`; `.masthead.is-stuck`, `.progress` |
+| Smooth wheel scrolling, anchor travel, dialog scroll lock | `index.html` + `js/main.js` + `css/styles.css` | `js/vendor/lenis.min.js` before `js/data.js`; `function wireSmoothScroll(`; `html.lenis`; `lenis.stop()` |
 | Reveals and reduced motion | `js/main.js` + `css/styles.css` | `function wireReveals(`; `[data-reveal]`, `prefers-reduced-motion` |
 | Palette | `css/styles.css` | `:root`, `--night: #080c0e` |
 | Type | `css/styles.css` + `css/fonts.css` | `--serif:`, `--mono:`, `h1 {`, `h2 {`, `h1 {` in the responsive block |
@@ -112,6 +117,7 @@ word and editing the wrong thing.
 | **scrim** | The direction-aware gradient over the art that keeps the copy side dark and the far side bright. | `--scrim`, `.stop[data-side]`, `.stop::after` |
 | **rail** | The fixed left-hand journey nav with one stop per named section (not the hero). | `.rail`, `.rail__stop`, `buildRail` |
 | **left shade** | The fixed 108px gradient behind the rail so it stays legible over bright crops. | `.rail-shade` |
+| **smooth scroll** | The vendored Lenis wheel layer: it smooths the wheel and hash-anchor travel only; touch, the keyboard and reduced motion stay native. | `js/vendor/lenis.min.js`, `wireSmoothScroll`, `html.lenis`, `lenis.stop()` |
 | **frame** | One media box in a project's stack: the overview, the film still or the team photograph. | `.frame`, `.frame--lead` |
 | **film still / poster** | The generated `files/posters/<stem>.jpg` shown in the film frame. The page does not play it in the panel; the player is in the dialog. | `S.posterFor`, `.frame__play` |
 | **record** | One authored project, leadership entry or honour in `PORTFOLIO`. | `P.projects`, `P.leadership`, `P.honors` |
@@ -121,11 +127,14 @@ word and editing the wrong thing.
 | **project award** | An honour carrying `from: 'projectN'`, excluded from the Honours tiles and shown under the project's Awards. | `from: 'projectN'`, `honoursTiles.projectAwards` |
 
 **Retired vocabulary — do not present any of it as live:** hall, room, stand,
-cluster, hang cell, legend, dock, Lenis, snap, mural, the dragon-frieze wall
+cluster, hang cell, legend, dock, snap, mural, the dragon-frieze wall
 (`files/wall-mushoku.webp`), and the exhibition-label idea. They belong to the
-horizontal build this page replaced. Do not restore their code. Some of those
-words still appear in the surviving data-suite names and output because those
-suites test inherited `Site.*` helpers; that is history, not page vocabulary.
+horizontal build this page replaced. Do not restore their code. Lenis is the one
+word that came back: the vendored library is the vertical page's smooth-wheel
+layer (see **smooth scroll** above), not the walk's engine — the walk's
+`lenis/snap` code stays retired. Some of those words still appear in the
+surviving data-suite names and output because those suites test inherited
+`Site.*` helpers; that is history, not page vocabulary.
 
 ## Hard constraints
 
@@ -138,10 +147,11 @@ specific: a constraint that only a review catches is marked as such.
 | **Palette tokens are exact** | `--night #080c0e`, `--text #ece2cf`, `--text-strong #f9f4e8`, `--text-quiet #9a9384`, `--accent #d4b06a`; border `rgba(236,226,207,.14)`. | `page.test.mjs` asserts the five colour strings; the border alpha is not separately asserted |
 | **Both paintings and the art layers exist** | `.art--rice` points at `../files/painting-hero.jpg`, `.art--harvest` at `../files/painting.jpg`; `.stop::before` and `background-position: var(--pos` are the layers. | `page.test.mjs` |
 | **Radii** | Panels 16px, frames 10px, buttons 8px; panel 12px below 640. | `page.test.mjs` pins the two tokens; the button radius is a CSS rule |
-| **Load order** | `css/fonts.css` before `css/styles.css`; `js/data.js` before `js/main.js`; `#page` empty; dialog markup present; `<noscript>` present. | `page.test.mjs` |
-| **The retired build stays out of the shell** | `lenis`, `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped). | `page.test.mjs` |
+| **Load order** | `css/fonts.css` before `css/styles.css`; `js/vendor/lenis.min.js` before `js/data.js`; `js/data.js` before `js/main.js`; `#page` empty; dialog markup present; `<noscript>` present. | `page.test.mjs` |
+| **The retired build stays out of the shell** | `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped). Lenis is the deliberate exception: the vendored library is the page's smooth-wheel layer now. | `page.test.mjs` |
 | **The dialog stays accessible** | `role="dialog"`, `aria-modal="true"`, `aria-labelledby="dialogTitle"`, a labelled close button; `openRecord` saves focus, focuses the card, traps Tab, closes on Escape/overlay/button and restores focus; body scroll is locked while open. | Markup is pinned by `page.test.mjs`; the trap and restore are behaviour in `js/main.js` and are **not** unit-tested |
-| **Reduced motion is honoured** | `prefers-reduced-motion` disables reveals and smooth scrolling; the JS marks every reveal visible instead of observing. | `page.test.mjs` pins the string; the CSS media query and the JS branch implement it; behaviour is manual |
+| **Reduced motion is honoured** | `prefers-reduced-motion` disables reveals and smooth scrolling, and Lenis is never constructed; the JS marks every reveal visible instead of observing. | `page.test.mjs` pins the string; the CSS media query and the JS branches implement it; behaviour is manual |
+| **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog stops it while open and its card opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and dialog behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
 | **The content counts** | Six projects, four leadership cards, five standalone honour tiles; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
@@ -155,14 +165,15 @@ panel, or model CSS. Treat green as the floor, not as proof the page works.
 
 ```powershell
 node tests/page.test.mjs      # the static guard, alone
-npm test                      # guard + the five data suites
+npm test                      # guard + data suites + library check
 node tools/serve.mjs 3333     # http://127.0.0.1:3333/
 ```
 
 `npm test` runs, in order: `page.test.mjs`, `derive-rooms.test.mjs`,
 `hang.test.mjs`, `band.test.mjs`, `gallery-index.test.mjs`,
-`award-photos.test.mjs`. The data suites are pure and print `ok` per check; they
-use `tests/harness.mjs`, not `node --test`. `hang` is the one that also asserts
+`award-photos.test.mjs`, then `tests/library.test.mjs`. The data suites are pure
+and print `ok` per check; they use `tests/harness.mjs`, not `node --test`. `hang`
+is the one that also asserts
 every shipped project video has its poster still on disk.
 
 The old DOM/browser suites are retired. **There is no automated layout check for
@@ -172,9 +183,13 @@ floor, and 390×844, and look for:
 - no horizontal scrollbar, and no title overflow (`C.E.N.T.H.R.O.` and
   `BiyaHey!` at 390px);
 - the copy side dark enough to read, the far side still painting;
-- the rail labels, active dot and gold progress fill over the brightest crop;
+- the rail labels, active tick and gold progress fill over the brightest crop;
 - the dialog fitting the viewport, its video controls reachable, Tab staying
-  inside, Escape returning focus to the button that opened it.
+  inside, Escape returning focus to the button that opened it;
+- the wheel gliding and settling (`window.Profile.lenis` truthy), a long
+  recorded dialog wheel/touch-scrolling its own card while the page stays put,
+  and a reduced-motion reload leaving `html.lenis` off and
+  `window.Profile.lenis` null.
 
 `tools/shot-url.mjs` captures one viewport at a URL; for scrolled or full-page
 shots use Chrome DevTools' capture or a scratch CDP script under `.tmp-diag/`.
@@ -200,10 +215,22 @@ server build.
   `js/profile.js` were the build copies and were deleted on promotion. A
   reintroduced preview would fork the page and can render stale CSS/JS while the
   real page ignores it; `page.test.mjs` only reads the promoted names.
-- **Leftover walk files are not live.** `js/icons.js`, `js/vendor/`,
+- **Leftover walk files are not live.** `js/icons.js`,
   `files/wall-mushoku.webp` and the retired tools are unreferenced by the page.
-  `page.test.mjs` rejects `icons.js` and `wall-mushoku` in `index.html`. Do not
-  wire any of them back without a reason.
+  `js/vendor/` is the exception: Lenis is loaded by `index.html` and constructed
+  by `wireSmoothScroll` (its `lenis-snap` sibling is still absent).
+  `page.test.mjs` rejects `icons.js` and `wall-mushoku` in `index.html`.
+- **Lenis is a wheel layer, not the page's scrolling.** It is constructed only
+  when the visitor allows motion; `window.Profile.lenis` is the live instance
+  (or `null`). `html.lenis { scroll-behavior: auto }` is load-bearing: with the
+  CSS ease left on, every Lenis frame would start its own native smooth
+  animation. Lenis subtracts an element's own `scroll-margin-top` in
+  `scrollTo`, so the anchor handler only passes the panels' clearance as an
+  offset for targets without one (`#work`, `#page`); adding both would double
+  it. The dialog calls `lenis.stop()` / `lenis.start()` or the wheel fights the
+  body scroll lock, and its card carries `data-lenis-prevent`: a stopped Lenis
+  still cancels the wheel/touch it would otherwise capture, so without the
+  attribute a long record could not scroll.
 - **`files/painting.jpg` is live.** It is the About/Hivemind/Focus
   Buddy/BiyaHey/Honours art (`art--harvest`). Older cleanup notes called it an
   orphan because the retired page did not use it; that is no longer true. Do not
@@ -271,7 +298,7 @@ server build.
 
 Do not add these without being asked: a build step, a bundler, an npm runtime
 dependency, a CDN at runtime, analytics, a CMS, a test framework or
-`node --test`; an icon font or a loaded `js/icons.js`; Lenis, scroll snap or a
+`node --test`; an icon font or a loaded `js/icons.js`; scroll snap or a
 horizontal page; a mobile menu drawer; a News section; inline or autoplaying
 video in project panels; a third webfont; TypeScript or JSX.
 

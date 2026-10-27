@@ -9,7 +9,8 @@
 
 A static personal portfolio: one vertical profile page, painted with two
 Amorsolo landscapes, rendered from `js/data.js` by `js/main.js`. Vanilla HTML,
-CSS and JavaScript — no build step, no bundler, no runtime dependency.
+CSS and JavaScript — no build step, no bundler, and nothing fetched from a
+third-party host: Lenis, the one vendored library, is served from `js/vendor/`.
 
 ## The page this replaces
 
@@ -20,15 +21,16 @@ visitor walk sideways to read a person.
 
 This page is a profile. The subject comes first, then the work, then the
 record of what the work won, then the way to make contact. Every project is a
-**stop** in a downward sequence rather than an exhibit in a strip. Native
-vertical scroll, no Lenis, no snap, no hidden content off the right edge. The
-paintings survive from the old build because they were the best thing in it;
-the navigation model does not.
+**stop** in a downward sequence rather than an exhibit in a strip. Vertical
+scroll, no snap, no hidden content off the right edge. The paintings survive
+from the old build because they were the best thing in it; the navigation model
+does not. Lenis came back too, but only as the wheel and anchor glide on top of
+ordinary scrolling — not as the walk engine.
 
-Still static. The page is `index.html` + two stylesheets + two scripts: the
-portfolio records and personal copy live in `js/data.js`, while section
-headings, labels and button text are literals in `js/main.js`. Node is only for
-tests and dev tools.
+Still static. The page is `index.html`, the generated font stylesheet, one
+hand-written stylesheet, two hand-written scripts and the vendored Lenis pair:
+the portfolio records and personal copy live in `js/data.js`, while section headings, labels and button
+text are literals in `js/main.js`. Node is only for tests and dev tools.
 
 ## Two paintings, eleven crops
 
@@ -90,21 +92,21 @@ The page order is fixed and semantic:
 | Stop | Id | Holds | Minimum height |
 |---|---|---|---|
 | Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
-| About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | 86vh |
-| Work | `work` | Six project stops, each with copy + three media frames | 86vh each |
-| Leadership | `leadership` | Four cards: year, description, thumbnail | 86vh |
-| Honours | `honours` | Five standalone honours, newest first | 86vh |
-| Contact | `contact` | Closing line, email, social links, on a dark card | 74vh |
+| About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
+| Work | `work` | Six project stops, each with copy + three media frames | `calc(100vh - 16px)` each |
+| Leadership | `leadership` | Four cards: year, description, thumbnail | `calc(100vh - 16px)` |
+| Honours | `honours` | Five standalone honours, newest first | `calc(100vh - 16px)` |
+| Contact | `contact` | Closing line, email, social links, on a dark card | `calc(100vh - 16px)` |
 | Footer | — | Name, Amorsolo credit, copyright | auto |
 
 Those are **minimum** heights. A stop grows if its copy or media needs more;
 the page never clips a record to preserve a rhythm.
 
-The ordinary stop is 86vh rather than 100vh so the next panel's edge and the
-16px gutter are visible: the page reads as a stack to continue through, not a
-slideshow that replaces one screen with the next. The hero is the exception —
-it is the arrival, so it takes the viewport minus the gutter. Contact is shorter
-because its job is to close, not to introduce.
+Every stop is one screen tall: the panel plus its 16px gutter make exactly one
+viewport, so the sections share a size and the next panel's edge arrives on the
+beat as you scroll. The hero already worked that way; Contact used to run
+shorter and now matches the rest. Below 1024px the minimum is dropped and each
+panel grows with its content, so a phone is not forced through ten blank screens.
 
 ### The 12-column panel
 
@@ -220,32 +222,44 @@ why a crop or a scrim change needs re-measurement rather than a colour swap.
 
 The masthead has four links, but the page has ten named stops (About, the six
 projects, Leadership, Honours, Contact). The rail is the full index: a fixed
-hairline at the left edge, one dot per stop, a label chip on hover and on the
-active stop. The hero is not a rail stop — it is the arrival, and the brand in
-the masthead already returns to it.
+5px progress bar at the left edge, a short rule per stop — the awards list's em
+dash, reused as a station tick — and a label chip on hover and on the active
+stop. Each rule starts on the rail's line, its left end tucked beneath the gold
+so the bar and its ticks read as one mark, and the chip sits above both. A
+stop's hit row is 77×34px — much larger than the 1–3px rule it shows — so the
+rail is easy to click, and the chip itself is clickable while it is showing.
+The hero is not a rail stop — it is the arrival, and the brand in the masthead
+already returns to it.
 
-The active stop is the one crossing a narrow band at the viewport's middle, not
-the one entering the top: `IntersectionObserver` with `rootMargin: '-45% 0px
--45% 0px'`. So the dot follows what is being read. Clicking a dot is a plain
-anchor to the section; `scroll-margin-top: calc(var(--masthead-h) + 12px)` keeps
-the panel's top clear of the fixed masthead. `html { scroll-behavior: smooth }`
-does the travel; the rail never hijacks the wheel. Under reduced motion the
+The active stop is the panel covering the viewport's middle: as the boundary
+between two panels crosses the centre, the next tick takes over (a middle that
+falls in a gutter keeps the section just passed). Clicking a stop travels to
+the section through Lenis when it is active; `scroll-margin-top:
+calc(var(--masthead-h) + 12px)` keeps the panel's top clear of the fixed
+masthead, and Lenis's `scrollTo` reads that same value off the target; the
+handler only supplies it as an offset for targets that have no margin of their
+own (`#work`, `#page`). Native hash travel and `html { scroll-behavior: smooth }`
+are the fallback. Under reduced motion Lenis is never constructed and the CSS
 smooth behaviour is turned off.
 
 The shade is the rail's legibility layer: a fixed 108px gradient from
 `rgba(8,12,14,.82)` at the edge through `.58` at 34%, `.2` at 70%, transparent at
 100%, with `pointer-events: none`. It exists because the rail is fixed over
-whatever crop happens to be at the left edge; on a bright rice field the dots
+whatever crop happens to be at the left edge; on a bright rice field the ticks
 and labels disappeared. The shade is not a page overlay — it is bounded to the
 rail's gutter, below the masthead (`z-index: 29`) and below the rail itself
 (`30`), and it is hidden with the rail below 1024px.
 
-The rail is a navigation, not a scrollbar, but it now carries the page's scroll
-progress as well. The 1px line is the track: faint all the way down, with gold
-filling from its top in proportion to the scrollable part of the document. The
-dots paint above the fill, so the active stop still marks the section crossing
-the viewport middle. The masthead hairline remains only below 1024px, where the
-rail — and the fill — are hidden.
+The rail is a navigation, not a scrollbar, but it now carries section progress as
+well. The 5px line is the track: faint from the first tick's centre to the last,
+with a gold gradient bar — amber into bright gold — that reaches a stop's tick as
+that panel's top reaches the top of the viewport, and runs between two ticks while
+the page crosses from one panel to the next. When the viewport is split between
+two panels the head sits midway between their ticks. A short ease trails the
+scroll, so it glides rather than jumps; `prefers-reduced-motion` drops the ease
+and the head snaps. The masthead hairline remains only below 1024px, where the
+rail is hidden and the hairline reports the same progress as a fraction of the
+ten stops.
 
 ## Palette, type and radii
 
@@ -259,7 +273,7 @@ ground:
 | `--text` | `#ece2cf` | Body and lede text |
 | `--text-strong` | `#f9f4e8` | Display headings, names, active labels |
 | `--text-quiet` | `#9a9384` | Supporting copy, years, captions |
-| `--accent` | `#d4b06a` | Gold meta, rules, the active rail dot, links |
+| `--accent` | `#d4b06a` | Gold meta, rules, the active rail tick, links |
 | `--border` | `rgba(236,226,207,.14)` | Hairlines, buttons, frame borders |
 
 The art supplies the colour. Keeping the text palette stable means a crop can be
@@ -354,14 +368,17 @@ Copy and media blocks fade up 16px over 650ms when they first cross the
 viewport; the observer unobserves each block, so scrolling back does not replay
 the entrance. `prefers-reduced-motion: reduce` makes every reveal visible
 immediately, collapses the transitions to effectively zero and turns smooth
-scrolling off.
+scrolling off — the CSS ease and the Lenis layer both.
 
 The masthead starts transparent over the hero and gains a blur and a hairline
 once the hero is behind it. Below 1024px its foot carries the page's scroll
 progress; from 1024px up that progress is drawn down the journey rail's line
 instead, so the rail is both navigation and page meter (see above). There is no
-scroll snap, no Lenis and no smooth-scroll library: the page uses the browser's
-own scrolling and smooth anchor behaviour.
+scroll snap: the page uses the browser's own scrolling. Lenis 1.3.26, vendored
+in `js/vendor/`, adds the wheel glide and smooth hash-anchor travel, and nothing
+else — touch and the keyboard stay native, the record dialog stops it and its
+card opts out of the capture (`data-lenis-prevent`) so a long record still
+scrolls, and a reduced-motion visitor never gets the library constructed at all.
 
 ## Missing photographs
 
@@ -391,7 +408,7 @@ The page has two breakpoints: 1024px and 639px.
 | Range | Layout | Rail / menu | Scrim |
 |---|---|---|---|
 | ≥1024px | 12 columns; copy 5, media 6; sides alternate | Rail and left shade visible; masthead menu visible | Side-aware |
-| 640–1023px | One column; copy then media; ordinary stops lose the 86vh minimum | Rail, shade and menu hidden | Vertical `.93` → `.8` at 55% → `.52` |
+| 640–1023px | One column; copy then media; panels lose the full-viewport minimum | Rail, shade and menu hidden | Vertical `.93` → `.8` at 55% → `.52` |
 | <640px | One column; 10px gutter; 12px panel radius; `h1` 38–56px; leadership one column; honours year column 74px; dialog gallery one column | Hidden | Vertical |
 
 The 1024px breakpoint is where a 5+6 split stops being readable: below it the
@@ -413,15 +430,19 @@ npm test
 node tools/serve.mjs 3333
 ```
 
-`npm test` runs the static guard first, then the five surviving data suites:
+`npm test` runs the static guard first, then the five surviving data suites and
+the component-library checker:
 
 - `tests/page.test.mjs` — shell order, palette, both paintings, art layers,
-  dialog markup, no third-party resource loads, section ids, the 6/4/5 content
-  counts, and the guard's place in the npm script.
+  dialog markup, no third-party resource loads, the vendored Lenis wiring and
+  reduced-motion opt-out, section ids, the 6/4/5 content counts, and the
+  guard's place in the npm script.
 - `tests/derive-rooms.test.mjs`, `hang.test.mjs`, `band.test.mjs`,
   `gallery-index.test.mjs`, `award-photos.test.mjs` — inherited pure helpers and
   data shapes. `hang` also checks that every shipped film has a poster still on
   disk.
+- `tests/library.test.mjs` — the `docs/library` validator: page shape, anchors,
+  class/id coverage and cross-links.
 
 The guard is static and the data suites are pure. **No committed test renders
 the page or models CSS.** The browser probe that was the old walk's geometry
@@ -473,8 +494,9 @@ Paintings by Fernando Amorsolo y Cueto (1892–1972): *Planting Rice* (1949) and
 the 1934 harvest scene.
 
 Newsreader and Courier Prime are vendored under the SIL Open Font License 1.1;
-the licence texts are in `files/fonts/`. The site fetches nothing from a
-third-party host at runtime.
+the licence texts are in `files/fonts/`. Lenis 1.3.26 is vendored under the MIT
+licence in `js/vendor/`. The site fetches nothing from a third-party host at
+runtime.
 
 ## License
 

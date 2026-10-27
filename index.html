@@ -37,6 +37,11 @@
   <!-- Styles: the Long Field profile page. -->
   <link rel="stylesheet" href="css/styles.css">
 
+  <!-- Smooth scrolling: Lenis is vendored locally (no CDN), so only its own
+       state stylesheet is needed. js/main.js constructs it unless the visitor
+       asks for reduced motion. See js/vendor/README.md. -->
+  <link rel="stylesheet" href="js/vendor/lenis.css">
+
   <!-- Favicon. One 512px PNG serves both roles: the browser tab scales it down,
        and iOS accepts a 512 for `apple-touch-icon`, so there is no second asset
        to keep in sync. -->
@@ -93,9 +98,11 @@
   </noscript>
 
   <!-- The one shared record dialog. Project records embed a muted video player;
-       leadership and honours records open their photographs. -->
+       leadership and honours records open their photographs. The card opts out of
+       Lenis's wheel capture (`data-lenis-prevent`), so its own scroll area still
+       works while the page's smooth scroll is stopped. -->
   <div class="dialog" id="dialog" hidden>
-    <div class="dialog__card" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" tabindex="-1">
+    <div class="dialog__card" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="dialogTitle" tabindex="-1">
       <button class="dialog__close" id="dialogClose" type="button" aria-label="Close record">×</button>
       <p class="dialog__meta" id="dialogMeta"></p>
       <h3 class="dialog__title" id="dialogTitle"></h3>
@@ -103,6 +110,10 @@
     </div>
   </div>
 
+  <!-- Smooth scrolling: vendored Lenis 1.3.26 (MIT, 18.7 KB). It must load
+       before the renderer; with it absent or reduced motion asked for, the page
+       keeps the browser's own scroll. -->
+  <script src="js/vendor/lenis.min.js"></script>
   <!-- Data: PORTFOLIO is the single source of truth for all authored content. -->
   <script src="js/data.js"></script>
   <!-- Renderer: builds the sections, the rail and the dialog. -->

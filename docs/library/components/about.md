@@ -30,7 +30,7 @@ side, with the framed portrait beside them.
 | Portrait image | `files/profile.jpg` — the path is hard-coded in `/* 1 — about */` | image loads; screenshot |
 | Portrait caption | the `figcaption` literal in `/* 1 — about */` | screenshot |
 | Social buttons | `P.social` labels and URLs in `js/data.js` | each button opens its URL |
-| Portrait shape or border | `.portrait img` (`aspect-ratio`, radius, border) | screenshot 390×844 |
+| Portrait shape, border or fit | `.portrait img` (`aspect-ratio`, `max-height: calc(100vh - 250px)`, radius, border) | screenshots at 1440×900 and 390×844 |
 | Eyebrow or heading | the literals in `/* 1 — about */` | screenshot |
 
 ## Invariants
@@ -38,6 +38,9 @@ side, with the framed portrait beside them.
 - The portrait path is hard-coded as `files/profile.jpg` in `js/main.js`; `PORTFOLIO.profileImage` has no reader on this page — see the fields-with-no-reader gotcha in `AGENTS.md`.
 - Every `bio` entry renders as its own paragraph inside `.body`; the array order is the reading order.
 - The social row maps the whole `P.social` array to `.btn` links, each with a "↗" suffix; the same array feeds the hero resume, the masthead resume and the contact links.
+- The portrait is capped at `calc(100vh - 250px)` tall so the About panel stays
+  one screen tall like the other stops; the 4:5 ratio is preserved, the image
+  scales down and is centred in the media column.
 - The About panel is `side: 'left'`, so the scrim darkens the copy side and the portrait sits on the right; the panel itself is the panel page's contract.
 - The caption is a literal in the renderer, not a data field.
 - Bio text is escaped: HTML in the data renders as text.

@@ -33,6 +33,11 @@ html {
   scrollbar-width: thin;
 }
 
+/* Lenis writes the scroll position itself; the CSS ease above is the fallback
+   for a reduced-motion visit or a failed script, and would double every frame
+   while Lenis is active. Its class is added to <html> by the library. */
+html.lenis { scroll-behavior: auto; }
+
 body {
   margin: 0;
   background: var(--night);
@@ -132,53 +137,67 @@ a { color: inherit; }
 .rail {
   position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 30;
   display: none; flex-direction: column; gap: 0; padding-left: 14px;
-  /* The unfilled track. It used to be .rail::before's gradient; the progress
-     fill needs that pseudo-element now, and an element background paints
-     beneath its own children, so the dots stay on top. */
-  background-image: linear-gradient(transparent, rgba(236, 226, 207, .26) 12%, rgba(236, 226, 207, .26) 88%, transparent);
+  /* Only the stops take the pointer. The hit rows are wider than this box, and
+     the blank strip must not swallow clicks meant for the panel beneath. */
+  pointer-events: none;
+  /* The unfilled track: a hairline from the first tick's centre to the last
+     one's (the 34px row), so the line starts and ends on a stop. The progress
+     fill needs the ::before, so the track stays an element background. */
+  background-image: linear-gradient(transparent, rgba(236, 226, 207, .2) 12%, rgba(236, 226, 207, .2) 88%, transparent);
   background-repeat: no-repeat;
-  background-position: 3px 9px;
-  background-size: 1px calc(100% - 18px);
+  background-position: 1px 17px;
+  background-size: 5px calc(100% - 34px);
 }
-/* Page progress, filling down the rail's line. --rail-progress is the scroll
-   fraction 0–1 written by wireChrome; scaleY keeps the update off the layout
-   thread, and ::before paints before the stops, so the dots sit on the gold. */
+/* Page progress as a 5px gold bar: amber at the top, bright gold at the moving
+   head, square ends, no glow. --rail-progress is the eased scroll fraction in
+   px, written by wireChrome. It paints above the dashes so their left end tucks
+   under the bar, and below the label chips (z-index 2). */
 .rail::before {
-  content: ""; position: absolute; left: 3px; top: 9px; bottom: 9px; width: 1px;
-  background: var(--accent); opacity: .9;
-  transform-origin: top;
-  transform: scaleY(var(--rail-progress, 0));
+  content: ""; position: absolute; left: 1px; top: 17px; width: 5px;
+  height: var(--rail-progress, 0px);
+  z-index: 1;
+  border-radius: 0;
+  background: linear-gradient(180deg, #9a7430 0%, #d4b06a 60%, #f0d79a 100%);
 }
+/* The hit row is deliberately larger than the mark: 77x34 starting at the rail
+   line, so the dash and the gap before its label are all clickable. */
 .rail__stop {
-  position: relative; display: flex; align-items: center; height: 26px;
+  position: relative; display: flex; align-items: center;
+  width: 77px; height: 34px; margin-left: -13px;
+  pointer-events: auto; cursor: pointer;
   text-decoration: none;
 }
+/* Stop marker reuses the page's rule language — the em-dash tick from the
+   awards list, not a dot. It starts on the line, tucking its left end under the
+   bar, widens on hover and turns gold when active, leading into the label chip. */
 .rail__stop::before {
-  content: ""; position: absolute; left: -14px; top: 50%; width: 7px; height: 7px;
-  margin-top: -3.5px; border-radius: 50%;
-  border: 1px solid rgba(236, 226, 207, .42);
-  background: var(--night);
-  box-shadow: 0 0 0 4px rgba(8, 12, 14, .6);
-  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+  content: ""; position: absolute; left: 0; top: 50%; width: 12px; height: 1px;
+  margin-top: -.5px; border-radius: 1px;
+  background: rgba(236, 226, 207, .3);
+  transition: background .2s ease, width .2s ease, height .2s ease, margin-top .2s ease;
 }
 .rail__stop span {
-  position: absolute; left: 18px; top: 50%; transform: translate(-4px, -50%);
+  position: absolute; left: 31px; top: 50%; transform: translate(-4px, -50%);
+  z-index: 2;
   opacity: 0; pointer-events: none;
   font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text); white-space: nowrap;
   background: rgba(8, 12, 14, .92);
-  border: 1px solid var(--border); border-radius: 6px;
+  border: 1px solid var(--border); border-radius: 0;
   padding: 5px 9px;
   transition: opacity .18s ease, transform .18s ease;
 }
 .rail__stop:hover span,
+.rail__stop:focus-visible span,
 .rail__stop.is-active span { opacity: 1; transform: translate(0, -50%); }
+.rail__stop:hover span,
+.rail__stop:focus-visible span { pointer-events: auto; }
 .rail__stop.is-active span { color: var(--text-strong); border-color: rgba(212, 176, 106, .5); }
+.rail__stop:hover::before { width: 20px; background: rgba(249, 244, 232, .7); }
 .rail__stop.is-active::before {
-  background: var(--accent); border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(8, 12, 14, .6), 0 0 14px rgba(212, 176, 106, .55);
+  width: 30px; height: 3px; margin-top: -1.5px;
+  background: var(--accent);
 }
-.rail__stop:hover::before { border-color: var(--accent); }
 
 /* ── The page and its painted panels ──────────────────────────────── */
 
@@ -245,7 +264,9 @@ a { color: inherit; }
   grid-template-columns: repeat(12, 1fr);
   gap: clamp(20px, 2.6vw, 40px);
   align-items: center;
-  min-height: 86vh;
+  /* One screen per panel: the panel plus its gutter make exactly one viewport,
+     so every section is the same size and the next edge arrives on the beat. */
+  min-height: calc(100vh - var(--gutter));
   max-width: var(--max);
   margin: 0 auto;
   padding: clamp(48px, 6.5vw, 100px);
@@ -320,7 +341,6 @@ h2 {
 
 /* hero */
 .stop--hero {
-  min-height: calc(100vh - var(--gutter));
   --scrim: linear-gradient(180deg,
     rgba(8, 12, 14, .62) 0%,
     rgba(8, 12, 14, .26) 28%,
@@ -330,7 +350,6 @@ h2 {
 }
 .stop--hero .stop-in {
   align-items: end;
-  min-height: calc(100vh - var(--gutter));
   padding-bottom: clamp(44px, 6vw, 84px);
 }
 .stop--hero .copy { grid-column: 1 / span 8; }
@@ -396,7 +415,12 @@ h2 {
 /* portrait */
 .portrait { margin: 0; }
 .portrait img {
-  width: 100%; aspect-ratio: 4 / 5; object-fit: cover;
+  display: block; width: auto; max-width: 100%; height: auto;
+  /* the About panel is one screen tall: the 4:5 portrait scales down to fit
+     rather than stretching the panel past the viewport */
+  max-height: calc(100vh - 250px);
+  aspect-ratio: 4 / 5; object-fit: cover;
+  margin: 0 auto;
   border-radius: var(--frame-radius);
   border: 1px solid rgba(236, 226, 207, .22);
   box-shadow: 0 30px 60px -24px rgba(0, 0, 0, .8);
@@ -467,14 +491,13 @@ h2 {
 /* ── Contact ──────────────────────────────────────────────────────── */
 
 .stop--contact {
-  min-height: 74vh;
   --scrim: linear-gradient(180deg,
     rgba(8, 12, 14, .5) 0%,
     rgba(8, 12, 14, .34) 40%,
     rgba(8, 12, 14, .5) 70%,
     rgba(8, 12, 14, .92) 100%);
 }
-.stop--contact .stop-in { min-height: 74vh; position: relative; }
+.stop--contact .stop-in { position: relative; }
 
 /* A soft dark card behind the closing line: keeps every glyph AA while the
    painting stays bright around it. Painted below the panel scrim (z-index -1)

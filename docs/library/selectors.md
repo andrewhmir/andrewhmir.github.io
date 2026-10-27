@@ -41,6 +41,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.is-stuck` | [masthead.md](components/masthead.md) | `wireChrome` sets it on `.masthead` once past the hero threshold |
 | `.is-active` | [rail.md](components/rail.md) | the rail entry whose section crosses the viewport middle |
 | `.is-in` | [reveals-chrome.md](components/reveals-chrome.md) | a `[data-reveal]` node after it intersects (or immediately under reduced motion) |
+| `html.lenis` | [reveals-chrome.md](components/reveals-chrome.md) | the `.lenis` class Lenis puts on `<html>` for the lifetime of the instance, including while stopped |
 | `.btn--solid` | [primitives/controls.md](primitives/controls.md) | the gold solid button variant; hero "See the work" |
 | `.copy--center` | [panel.md](components/panel.md) | the centred copy column; Contact only — the hero keeps `.stop--hero .copy` on the left |
 | `.stop--hero` | [hero.md](components/hero.md) | the hero panel modifier |
@@ -77,6 +78,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | Selector | Page | What it is |
 |---|---|---|
 | `data-side` | [panel.md](components/panel.md) | `left` / `right` / `center`; drives the scrim direction and the copy column |
+| `data-lenis-prevent` | [dialog.md](components/dialog.md) | opts the dialog card out of Lenis's wheel/touch capture so its own scroll area works while Lenis is stopped |
 | `data-reveal` | [reveals-chrome.md](components/reveals-chrome.md) | marks a node for reveal-on-scroll |
 | `data-kind` | [dialog.md](components/dialog.md) | record kind for the delegated opener: `project`, `leadership` or `honors` |
 | `data-index` | [dialog.md](components/dialog.md) | the record's index into that kind's array |

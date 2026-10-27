@@ -33,7 +33,7 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 | Card size, radius, blur or darkness | `.stop--contact .stop-in::before` | screenshots at 1440, 1280 and 390 |
 | Card at tablet width | the first `@media (max-width: 1023px)` block, immediately after the card rule | a 1023px-wide screenshot |
 | The panel painting or crop | `PAN[10]` in `js/main.js` | screenshot; PAN is positional |
-| Panel height | `.stop--contact` (`min-height: 74vh`) and `.stop--contact .stop-in` | screenshot at 1280×704 |
+| Panel height | inherits the full-screen `.stop-in` minimum; `.stop--contact` only adds its scrim | screenshot at 1280×704 |
 
 ## Invariants
 
@@ -47,7 +47,7 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 
 - The card's negative `z-index` depends on `.stop`'s `isolation: isolate`. Removing the isolation lets the card and art escape behind the page, while raising the card to a positive z-index paints it over the scrim; a new positive-z layer inside `.stop-in` hides the art.
 - There are two `@media (max-width: 1023px)` blocks. Only the one immediately after the card rule resizes the card; the later fallback block does not. Editing the wrong one shows no tablet change.
-- `.stop--contact` overrides the panel rhythm with `min-height: 74vh` and a shorter `.stop-in`; do not measure contact against the 86vh used by the other stops.
+- `.stop--contact` no longer shortens the panel: it uses the same full-screen `.stop-in` minimum as every other stop and only adds the dark card and its scrim.
 - `P.email` has no fallback: an empty value renders a `mailto:` link with empty text, while the no-JS fallback still shows the old address.
 - The social row is not `.btn`s. Adding control classes changes weight and colour unexpectedly because `.contact-links a` owns the styling inside the row.
 - `PAN[10]` is positional: adding or reordering projects shifts the contact painting — see the PAN gotcha in `AGENTS.md`.

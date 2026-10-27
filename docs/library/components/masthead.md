@@ -23,9 +23,11 @@ hairline that tracks how far the page has been scrolled on small screens.
 holds `a.brand` (jumps to `#top`), `nav.menu` with four section jumps,
 `a.resume#resumeLink`, and `div.progress#progress`. `.is-stuck` is toggled on the
 header once the scroll passes the hero; `.progress` is a 1px gold bar whose width
-is the scroll fraction. It is `display: none` from 1024px up, where the journey
-rail draws page progress in its line instead; below 1024px the rail is hidden, so
-the hairline is the small-screen cue.
+is the section fraction the rail fill shows — 0 at the hero, 100% at Contact,
+interpolated between as the page crosses from one panel to the next. It is
+`display: none` from 1024px up, where the journey rail draws section progress in
+its line instead; below 1024px the rail is hidden, so the hairline is the
+small-screen cue.
 
 ## Adjust it
 
@@ -45,9 +47,9 @@ the hairline is the small-screen cue.
 - One header, fixed, with its height in `--masthead-h:`; see AGENTS.md's
   **Masthead stickiness and the small-screen progress hairline** row for the
   route.
-- `.progress` is `aria-hidden` decoration: width 0–100% of the scrollable part
-  of the document, never anything interactive. It is the small-screen fallback
-  for the rail's progress fill, not a second indicator.
+- `.progress` is `aria-hidden` decoration: width 0–100% of the ten-stop journey,
+  never anything interactive. It is the small-screen fallback for the rail's
+  progress fill, not a second indicator.
 - `#resumeLink` ships with `href="#"` and is filled at init from data; the URL is
   never hard-coded in the markup.
 - The menu is anchor jumps to ids the renderer emits; it is not a drawer, and
@@ -64,8 +66,9 @@ the hairline is the small-screen cue.
   the rail fill unwritten.
 - `.progress` is `display: none` from 1024px up and re-shown by the 1023px block;
   removing either half silently loses the small-screen cue.
-- The progress maths clamps to 100% and falls back to 0 when the document is
-  shorter than the viewport, so a short page shows no hairline.
+- The hairline is anchored to sections, not raw scroll: it reaches each tenth as
+  the matching panel tops out and interpolates between, so page length does not
+  skew it. It shares the rail fill's ease.
 - `--masthead-h:` also feeds panels' `scroll-margin-top`, which adds 12px to the
   bar height, so resizing the bar changes where every in-page jump lands.
 - Below 1024px `.menu` is `display: none` with nothing replacing it; hiding it

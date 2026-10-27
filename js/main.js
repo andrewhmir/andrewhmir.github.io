@@ -242,6 +242,7 @@
   var dialogClose = document.getElementById('dialogClose');
   var dialogCard = dialog && dialog.querySelector('.dialog__card');
   var lastFocus = null;
+  var scrollEngine = null;   /* the vendored Lenis controller, when motion is allowed */
 
   function gallery(images, title) {
     var list = (images || []).filter(function (src) { return src && src !== PLACEHOLDER; });
@@ -307,6 +308,7 @@
     lastFocus = document.activeElement;
     dialog.hidden = false;
     document.body.style.overflow = 'hidden';
+    if (scrollEngine) scrollEngine.stop();   /* the dialog scrolls itself, not the page */
     if (dialogCard) dialogCard.focus();
   }
 
@@ -314,6 +316,7 @@
     if (!dialog || dialog.hidden) return;
     dialog.hidden = true;
     document.body.style.overflow = '';
+    if (scrollEngine) scrollEngine.start();
     if (lastFocus && lastFocus.focus) lastFocus.focus();
     lastFocus = null;
   }
@@ -336,6 +339,8 @@
 
   /* ── rail, masthead, progress, reveals ──────────────────────────── */
 
+  /* Builds the journey line only. The active stop and the progress fill are
+     driven from wireChrome, which owns the scroll geometry. */
   function buildRail() {
     var rail = document.getElementById('rail');
     if (!rail) return;
@@ -348,18 +353,6 @@
       return '<a class="rail__stop" href="#' + esc(s.id) + '" data-stop="' + esc(s.id) + '"><span>' +
         esc(s.label) + '</span></a>';
     }).join('');
-
-    if (!('IntersectionObserver' in window)) return;
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var id = entry.target.id;
-        rail.querySelectorAll('.rail__stop').forEach(function (a) {
-          a.classList.toggle('is-active', a.getAttribute('data-stop') === id);
-        });
-      });
-    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
-    document.querySelectorAll('.stop[id]').forEach(function (s) { io.observe(s); });
   }
 
   function wireReveals() {
@@ -389,25 +382,167 @@
     var progress = document.getElementById('progress');
     var rail = document.getElementById('rail');
     var hero = document.getElementById('top');
+    var sections = document.querySelectorAll('#page .stop[id]');
+    var railStops = rail ? rail.querySelectorAll('.rail__stop') : [];
     var ticking = false;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var EASE = 0.18;   /* per-frame approach: the fill glides between ticks */
+    var target = 0;      /* rail fill length for the active tick, in px */
+    var shown = 0;
+    var targetFrac = 0;  /* small-screen hairline: sections reached / total */
+    var shownFrac = 0;
+    var active = '';
+    var frame = 0;
+    var painted = false;
+
+    /* The active section is the one covering the viewport middle: the cue flips
+       exactly as the boundary between two panels crosses the centre. When the
+       middle falls in the gutter between two panels, the section just passed
+       stays current, so the tick does not blink back. */
+    function activeSection(rects) {
+      var mid = window.innerHeight / 2;
+      var passed = '';
+      for (var i = 0; i < rects.length; i++) {
+        if (rects[i].top <= mid && rects[i].bottom > mid) return sections[i].id;
+        if (rects[i].top <= mid) passed = sections[i].id;
+      }
+      return passed;
+    }
+
+    /* Where a section's tick sits on the fill (the fill ends at its centre) and
+       how much of the ten-stop journey it represents for the phone hairline. The
+       track starts at the first tick's centre, so the first stop is 0 and the
+       last stop's fill length is the whole line. */
+    function railTarget(id) {
+      if (!railStops.length) return { px: 0, frac: 0 };
+      var origin = railStops[0].offsetTop + railStops[0].offsetHeight / 2;
+      for (var i = 0; i < railStops.length; i++) {
+        if (railStops[i].getAttribute('data-stop') !== id) continue;
+        var centre = railStops[i].offsetTop + railStops[i].offsetHeight / 2;
+        return { px: Math.max(0, centre - origin), frac: (i + 1) / railStops.length };
+      }
+      return { px: 0, frac: 0 };
+    }
+
+    /* Continuous but anchored: the fill reaches a section's tick when that
+       panel's top reaches the viewport top, and travels proportionally between
+       the two ticks while the page crosses from one panel to the next — so it
+       sits midway when the viewport is split between two panels. */
+    function fillTarget(rects) {
+      var k = -1;
+      for (var i = 0; i < rects.length; i++) if (rects[i].top <= 0) k = i;
+      if (k < 0) return { px: 0, frac: 0 };
+      var from = railTarget(sections[k].id);
+      var next = sections[k + 1];
+      if (!next) return from;
+      var span = rects[k + 1].top - rects[k].top;
+      var t = span > 0 ? Math.min(1, Math.max(0, -rects[k].top / span)) : 1;
+      var to = railTarget(next.id);
+      return {
+        px: from.px + (to.px - from.px) * t,
+        frac: from.frac + (to.frac - from.frac) * t
+      };
+    }
+
+    function draw() {
+      if (rail) rail.style.setProperty('--rail-progress', shown.toFixed(1) + 'px');
+      if (progress) progress.style.width = (shownFrac * 100).toFixed(2) + '%';
+    }
+
+    function paint() {
+      frame = 0;
+      shown += (target - shown) * EASE;
+      shownFrac += (targetFrac - shownFrac) * EASE;
+      var settled = Math.abs(target - shown) < 0.5 && Math.abs(targetFrac - shownFrac) < 0.001;
+      if (settled) { shown = target; shownFrac = targetFrac; }
+      draw();
+      if (!settled) frame = window.requestAnimationFrame(paint);
+    }
 
     function update() {
       ticking = false;
       var y = window.scrollY || document.documentElement.scrollTop || 0;
       var heroH = hero ? hero.offsetHeight : 0;
       if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, heroH - 72));
-      var max = document.documentElement.scrollHeight - window.innerHeight;
-      var fraction = max > 0 ? Math.min(1, y / max) : 0;
-      /* One value feeds both cues: the rail draws page progress from 1024px up,
-         the masthead hairline is the fallback below that, where the rail is hidden. */
-      if (rail) rail.style.setProperty('--rail-progress', fraction);
-      if (progress) progress.style.width = (fraction * 100) + '%';
+
+      var rects = [];
+      for (var i = 0; i < sections.length; i++) rects.push(sections[i].getBoundingClientRect());
+
+      var id = activeSection(rects);
+      if (id !== active) {
+        active = id;
+        for (var j = 0; j < railStops.length; j++) {
+          railStops[j].classList.toggle('is-active', railStops[j].getAttribute('data-stop') === id);
+        }
+      }
+
+      var t = fillTarget(rects);
+      target = t.px;
+      targetFrac = t.frac;
+      /* First paint (including a reload that starts mid-page) and reduced motion
+         jump straight to the value; otherwise the fill eases after the scroll. */
+      if (!painted || reduced) {
+        painted = true;
+        shown = target;
+        shownFrac = targetFrac;
+        draw();
+      } else if (!frame) {
+        frame = window.requestAnimationFrame(paint);
+      }
     }
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
     }, { passive: true });
-    window.addEventListener('resize', update, { passive: true });
+    window.addEventListener('resize', function () {
+      active = null;               /* the rail may have been hidden when measured */
+      update();
+    }, { passive: true });
     update();
+  }
+
+  /* Smooth scrolling: the vendored Lenis library smooths the wheel only. Touch
+     and the keyboard stay native, and under reduced motion — or if the script
+     did not load — nothing is constructed, so the page keeps the browser's own
+     scrolling and the stylesheet's smooth anchor travel. Anchor clicks are sent
+     through Lenis so the CSS scroll-margin-top clearance is preserved. */
+  function wireSmoothScroll() {
+    if (!window.Lenis) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var lenis = new window.Lenis({ autoRaf: true });
+    scrollEngine = {
+      lenis: lenis,
+      stop: function () { lenis.stop(); },
+      start: function () { lenis.start(); }
+    };
+
+    /* Lenis subtracts the target's own scroll-margin top itself — the CSS
+       masthead clearance on .stop. Targets without one (the #work wrapper and
+       #page) need the panels' clearance passed as an offset instead. */
+    var pageStop = document.querySelector('.stop');
+
+    document.addEventListener('click', function (e) {
+      /* Modified clicks belong to the browser (new tab, download), and the skip
+         link must keep its native jump: that jump is what moves the sequential
+         focus starting point into #page. */
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (!link || link.classList.contains('skip') || link.getAttribute('href') === '#') return;
+      var hash = link.getAttribute('href');
+      var target = document.getElementById(hash.slice(1));
+      if (!target) return;
+      e.preventDefault();
+      var margin = parseFloat(window.getComputedStyle(target).scrollMarginTop) || 0;
+      if (margin) {
+        lenis.scrollTo(target);
+      } else {
+        var clearance = pageStop ? (parseFloat(window.getComputedStyle(pageStop).scrollMarginTop) || 0) : 0;
+        lenis.scrollTo(target, { offset: -clearance });
+      }
+      if (window.history && history.pushState && location.hash !== hash) {
+        history.pushState(null, '', hash);
+      }
+    });
   }
 
   function wireDelegation() {
@@ -426,6 +561,7 @@
     wireReveals();
     wireChrome();
     wireDelegation();
+    wireSmoothScroll();
   }
 
   if (document.readyState === 'loading') {
@@ -435,5 +571,10 @@
   }
 
   /* Published for the eventual guard suite and for manual probing. */
-  window.Profile = { render: render, openRecord: openRecord, closeDialog: closeDialog };
+  window.Profile = {
+    render: render,
+    openRecord: openRecord,
+    closeDialog: closeDialog,
+    get lenis() { return scrollEngine ? scrollEngine.lenis : null; }
+  };
 })();

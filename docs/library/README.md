@@ -40,7 +40,7 @@ per-component depth behind it.
 | Contact | Closing line, email, social links, dark card | [components/contact.md](components/contact.md) |
 | Footer | Name, painting credit, year | [components/footer.md](components/footer.md) |
 | Record dialog | One shared modal: open, close, trap, video, gallery | [components/dialog.md](components/dialog.md) |
-| Reveals and chrome | Reveal-on-scroll, reduced motion, stuck state, delegation | [components/reveals-chrome.md](components/reveals-chrome.md) |
+| Reveals and chrome | Reveal-on-scroll, reduced motion, Lenis wheel layer, stuck state, delegation | [components/reveals-chrome.md](components/reveals-chrome.md) |
 
 ## Foundations
 
