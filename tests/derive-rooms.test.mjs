@@ -19,6 +19,12 @@ check('titles come from ROOM_TITLES', () => {
   assert.equal(rooms[1].title, 'Works in Applications');
 });
 
+check('every known room carries a sentence for its panel', () => {
+  const rooms = deriveRooms(globalThis.PORTFOLIO.projects);
+  assert.match(rooms[0].lede, /^Three machines built to be used/);
+  assert.match(rooms[1].lede, /^Three systems for problems/);
+});
+
 check('every project appears exactly once across all rooms', () => {
   const projects = globalThis.PORTFOLIO.projects;
   const placed = deriveRooms(projects).flatMap(r => r.projects.map(p => p.id));

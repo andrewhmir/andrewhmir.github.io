@@ -288,6 +288,13 @@ const PORTFOLIO = {
   var ROOM_TITLES = { Robotics: 'Works in Robotics', Applications: 'Works in Applications' };
   var ROOM_ORDER  = ['Robotics', 'Applications'];
 
+  /* One sentence per category, shown on that category's Work panel. The key is
+     the project's own `category` value, so grouping never needs a second list. */
+  var ROOM_LEDES = {
+    Robotics: 'Three machines built to be used rather than demonstrated: a palm scanner, a fingerprint fare system, and a desk robot that will not let you drift.',
+    Applications: 'Three systems for problems that kept getting in the way: organizational memory, a better way to practise for the SAT, and a map of how Metro Manila actually moves.'
+  };
+
   /* Group projects into rooms. Known categories come first in ROOM_ORDER;
      anything else follows in first-seen order so no project is ever dropped. */
   function deriveRooms(projects) {
@@ -301,7 +308,7 @@ const PORTFOLIO = {
     var ordered = ROOM_ORDER.filter(function (k) { return groups[k]; })
       .concat(seen.filter(function (k) { return ROOM_ORDER.indexOf(k) === -1; }));
     return ordered.map(function (key) {
-      return { key: key, title: ROOM_TITLES[key] || key, projects: groups[key] };
+      return { key: key, title: ROOM_TITLES[key] || key, lede: ROOM_LEDES[key] || '', projects: groups[key] };
     });
   }
 
