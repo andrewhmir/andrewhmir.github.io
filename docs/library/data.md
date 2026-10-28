@@ -100,14 +100,14 @@ Nested object paths, also validated: `projects[].overview.image` · `projects[].
 
 ## `Site` helpers
 
-Twenty names. The page calls only `Site.posterFor` and `Site.honoursTiles`; the other eighteen are inherited from the retired horizontal build. Fourteen of the eighteen are referenced by a data suite; `Site.ROOM_ORDER`, `Site.visibleWork`, `Site.progressFraction` and `Site.roomAtOffset` are referenced by none. **Used by page** is `yes` only for the two `js/main.js` calls.
+Twenty names. The page calls three of them — `Site.posterFor`, `Site.honoursTiles` and `Site.deriveRooms`; the other seventeen are inherited from the retired horizontal build. Thirteen of the seventeen are referenced by a data suite; `Site.ROOM_ORDER`, `Site.visibleWork`, `Site.progressFraction` and `Site.roomAtOffset` are referenced by none. **Used by page** is `yes` only for the three `js/main.js` calls.
 
 | Helper | Used by page | Notes |
 |---|---|---|
 | `Site.posterFor` | yes | a `files/*.mp4` path to `files/posters/<stem>.jpg`; also the dialog video poster |
 | `Site.honoursTiles` | yes | splits `honors` into `tiles` and `projectAwards` on `from` |
 | `Site.PLACEHOLDER` | no | the `files/PlaceHolder.png` constant |
-| `Site.deriveRooms` | no | retired room grouping; data-suite only |
+| `Site.deriveRooms` | yes | groups projects by `category` into the two Work panels; carries each room's `lede` |
 | `Site.ROOM_TITLES` | no | retired room titles; data-suite only |
 | `Site.ROOM_ORDER` | no | retired room order; referenced by no test or page |
 | `Site.groupPieces` | no | retired three-frame grouping; data-suite only |

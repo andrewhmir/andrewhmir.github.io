@@ -32,14 +32,14 @@ hand-written stylesheet, two hand-written scripts and the vendored Lenis pair:
 the portfolio records and personal copy live in `js/data.js`, while section headings, labels and button
 text are literals in `js/main.js`. Node is only for tests and dev tools.
 
-## Two paintings, twelve crops
+## Two paintings, fourteen crops
 
 Two saved paintings carry the whole page:
 
 | Name in code | File | What it is |
 |---|---|---|
-| `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, three project stops, Leadership and Contact. Also the source of the Open Graph share card. |
-| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, the News stop, three project stops and Honours. |
+| `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, the Robotics category panel, Leadership and Contact. Also the source of the Open Graph share card. |
+| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, the News stop, the Applications category panel and Honours. |
 
 The footer credits both: **Paintings by Fernando Amorsolo y Cueto (1892–1972).**
 
@@ -55,17 +55,17 @@ asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
 | Hero | `top` | `rice` | `50% 58%` |
 | About | `about` | `harvest` | `48% 52%` |
 | News | `news` | `harvest` | `20% 26%` |
-| PALAD | `project1` | `rice` | `18% 56%` |
-| Hivemind | `project2` | `harvest` | `78% 44%` |
-| C.E.N.T.H.R.O. | `project3` | `rice` | `76% 50%` |
-| Focus Buddy | `project4` | `harvest` | `22% 66%` |
-| SATLearn | `project5` | `rice` | `44% 22%` |
-| BiyaHey! | `project6` | `harvest` | `56% 50%` |
+| Robotics | `robotics` | `rice` | `30% 62%` |
+| Applications | `applications` | `harvest` | `64% 38%` |
 | Leadership | `leadership` | `rice` | `8% 44%` |
 | Honours | `honours` | `harvest` | `88% 36%` |
 | Contact | `contact` | `rice` | `50% 88%` |
 
-Twelve stops, two files, no per-stop downloads. A panel paints the whole image
+The six records keep their own crops in `PROJECT_ART` (project id → painting and
+position) for the project view, so a card opens the panel that record had as a
+page stop.
+
+Fourteen crops, two files, no per-stop downloads. A panel paints the whole image
 `cover` at the stop's `background-position`; the browser does the crop. The pan
 is therefore a pair of percentages, not an image edit and not a camera move.
 Percentage positions survive every viewport: there is no second art direction
@@ -86,7 +86,7 @@ section boundary is visible, the art changes with the story, and the scrim can
 be tuned per side instead of globally. The painting is the ground of each
 section, not wallpaper behind the site.
 
-## Sectioning: each project is a stop
+## Sectioning: each category is a stop
 
 The page order is fixed and semantic:
 
@@ -95,7 +95,7 @@ The page order is fixed and semantic:
 | Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
 | About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
 | News | `news` | Four dated updates, newest first | `calc(100vh - 16px)` |
-| Work | `work` | Six project stops, each with copy + three media frames | `calc(100vh - 16px)` each |
+| Work | `work` | Two category panels (Robotics, Applications), each with a room lede and three project cards | `calc(100vh - 16px)` each |
 | Leadership | `leadership` | Four cards: year, description, thumbnail | `calc(100vh - 16px)` |
 | Honours | `honours` | Five standalone honours, newest first | `calc(100vh - 16px)` |
 | Contact | `contact` | Closing line, email, social links, on a dark card | `calc(100vh - 16px)` |
@@ -108,7 +108,7 @@ Every stop is one screen tall: the panel plus its 16px gutter make exactly one
 viewport, so the sections share a size and the next panel's edge arrives on the
 beat as you scroll. The hero already worked that way; Contact used to run
 shorter and now matches the rest. Below 1024px the minimum is dropped and each
-panel grows with its content, so a phone is not forced through eleven blank screens.
+panel grows with its content, so a phone is not forced through eight blank screens.
 
 ### The 12-column panel
 
@@ -123,31 +123,38 @@ painting rather than floating in the middle. About is copy-left/media-right.
 Leadership and Honours are copy-left with cards/list on the right. Contact is
 centred across 2–10, capped at 880px.
 
-### The six project stops
+The two category panels widen the media side: copy 1–4 and the three cards 5–12,
+mirrored for Applications. The project view goes back to the project split
+(copy 1–5, media 7–12), because it shows one record's full stack.
 
-The project order is the order in `PORTFOLIO.projects`:
+### The two category panels
 
-1. **Project PALAD** — contactless palm biometrics.
-2. **Hivemind** — AI-native organizational memory.
-3. **C.E.N.T.H.R.O.** — fingerprint transit and healthcare records.
-4. **Focus Buddy** — a desktop robot study companion.
-5. **SATLearn** — SAT practice with analytics.
-6. **BiyaHey!** — a community commute map.
+`PORTFOLIO.projects[].category` already splits the roster 3 + 3, and
+`Site.deriveRooms` groups by it: Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy)
+then Applications (Hivemind, SATLearn, BiyaHey!). Each room is one panel: an
+eyebrow ("03 · Work · Robotics"), the room name as the `h2`, a one-sentence lede
+from `ROOM_LEDES`, a `3 projects · 7 awards` count, and three project cards.
+A card is the record's overview still, title, tagline and award count (or the
+venue when the record has no awards).
 
-Each stop carries an eyebrow (`category · venue`), an `h2` title, the tagline,
-the summary, the project's awards and an **Open the record →** button. The media
-side is one overview frame at 16:9 spanning two columns, with the film still and
-the team photograph as 4:3 supports beneath it. That is the old build's
-three-frame identity, laid flat: overview leads, film and team support. The film
-frame is a **generated still with a play badge**, not a playing video — the
-player lives in the dialog. Six simultaneous videos would cost page weight and
-compete with the painting; one player on demand does not.
+The panel a card opens is the record's own project panel, content unchanged: an
+eyebrow (`category · venue`), the title, tagline, summary, the record's awards
+and an **Open the record →** button, with the three-frame media stack — overview
+at 16:9 spanning two columns, film still and team photograph as 4:3 supports
+beneath it. That is the old build's three-frame identity, laid flat: overview
+leads, film and team support. The film frame is a **generated still with a play
+badge**, not a playing video — the player lives in the dialog.
 
-Sides alternate by index, not by category: PALAD copy-left, Hivemind copy-right,
-C.E.N.T.H.R.O. copy-left, and so on. The alternation keeps consecutive stops
-from reading as a list and lets the scrim mirror each time, so the bright side
-of the art is always the side away from the copy. Category is still legible in
-the eyebrow; it does not need to drive the layout.
+The panel opens as a fixed full-screen view (`#projectView`) with a back button,
+not as a page stop, so the category panel and the scroll position survive the
+detour. Escape and the back button both close it and return focus to the card.
+The record dialog stacks above the view, and the body scroll lock is a count:
+closing the dialog leaves the page locked until the view closes too.
+
+The six records keep their ids (`project1`…`project6`) because honours link back
+with `from: 'projectN'`; only those records' position in the page changed. The
+category panel's copy side alternates left/right like the other stops, so the
+scrim mirrors and the bright side of the painting stays away from the copy.
 
 ### Honours, and where an award lives
 
@@ -222,8 +229,8 @@ why a crop or a scrim change needs re-measurement rather than a colour swap.
 
 ## The journey rail and the left shade
 
-The masthead has five links, but the page has eleven named stops (About, News,
-the six projects, Leadership, Honours, Contact). The rail is the full index: a fixed
+The masthead has five links, but the page has seven named stops (About, News,
+Robotics, Applications, Leadership, Honours, Contact). The rail is the full index: a fixed
 5px progress bar at the left edge, a short rule per stop — the awards list's em
 dash, reused as a station tick — and a label chip on hover and on the active
 stop. Each rule starts on the rail's line, its left end tucked beneath the gold
@@ -261,7 +268,7 @@ two panels the head sits midway between their ticks. A short ease trails the
 scroll, so it glides rather than jumps; `prefers-reduced-motion` drops the ease
 and the head snaps. The masthead hairline remains only below 1024px, where the
 rail is hidden and the hairline reports the same progress as a fraction of the
-eleven stops.
+seven stops.
 
 ## Palette, type and radii
 
