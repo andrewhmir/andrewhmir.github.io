@@ -1,7 +1,7 @@
 # Hero stop
 
 The first panel, `#top`: the name, the title line, the one-sentence bio sentence,
-two actions and the scroll cue.
+and two actions.
 
 ## Where it lives
 
@@ -11,19 +11,17 @@ two actions and the scroll cue.
 | Render | `js/main.js` | `/* 0 — hero */` · `'<h1>'` |
 | Render | `js/main.js` | `P.bio[3]` · `'<p class="hero-line">'` |
 | Render | `js/main.js` | `'<div class="actions">'` · `See the work →` |
-| Render | `js/main.js` | `Scroll — the field goes on` |
 | Styles | `css/styles.css` | `.stop--hero {` · `.hero-title {` · `.hero-line, .lede {` |
-| Styles | `css/styles.css` | `.hero-cue {` · `.actions {` |
+| Styles | `css/styles.css` | `.actions {` |
 | Data | `js/data.js` | `name` · `title` · `bio` · `social[].url` |
 | Test | `tests/page.test.mjs` | `'top'` · `P.social[0].label` |
 
 ## Structure
 
-The hero is `panel()` with `cls: 'stop--hero'`, `side: 'center'` and `cue: true`.
+The hero is `panel()` with `cls: 'stop--hero'`, `side: 'center'`.
 Inside `.copy`: `<h1>` (the page's only h1), `.hero-title`, `.hero-line`, then
 `.actions` holding the `.btn--solid` "See the work →" and a plain `.btn`
-"Resume ↗". The `.hero-cue` span is emitted after `.stop-in` and is
-`aria-hidden`.
+"Resume ↗".
 
 ## Adjust it
 
@@ -32,7 +30,6 @@ Inside `.copy`: `<h1>` (the page's only h1), `.hero-title`, `.hero-line`, then
 | Name or title | `PORTFOLIO.name`, `PORTFOLIO.title` in `js/data.js` | screenshot 1440×900 and 390×844 |
 | The one-sentence line | `P.bio[3]` (fallback `P.bio[2]`) in `/* 0 — hero */` | screenshot; it also changes with `bio` order |
 | The two actions | the `actions` markup in `/* 0 — hero */`; the resume URL is `P.social[0]` | click both; resume opens `social[0].url` |
-| The scroll cue text | the literal in `function panel(` (`Scroll — the field goes on`) | screenshot desktop; hidden below 1024 |
 | Hero height, padding, alignment | `.stop--hero`, `.stop--hero .stop-in`, `.copy` | screenshot 1280×704 and 390×844 |
 | Name size or weight | `h1` in the `── Type` section of `css/styles.css` | screenshot 390×844; the longest title must not overflow |
 | The hero's place in page order | `/* 0 — hero */` is the first `out.push` in `render()` | the hero has no rail entry |
@@ -44,7 +41,6 @@ Inside `.copy`: `<h1>` (the page's only h1), `.hero-title`, `.hero-line`, then
 - The hero carries `id="top"` so the masthead brand link lands on it, and it is deliberately absent from the rail.
 - The first action is an in-page anchor to `#work`; the second is an external link filled from the first `social` entry, so it is data.
 - The panel is the `center` side with `cls: 'stop--hero'`; its crop, scrim and radius come from the panel page.
-- `.hero-cue` is decoration: `aria-hidden`, and hidden below 1024px.
 
 ## Traps
 

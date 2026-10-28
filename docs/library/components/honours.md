@@ -7,7 +7,7 @@ The Honours stop: the standalone honour tiles, with project-linked awards exclud
 | Role | File | Anchor |
 |---|---|---|
 | Markup | `index.html` | `id="page"` |
-| Render | `js/main.js` | `/* 4 — honours */` · `S.honoursTiles(P.honors)` |
+| Render | `js/main.js` | `/* 5 — honours */` · `S.honoursTiles(P.honors)` |
 | Render | `js/main.js` | `cls: 'stop--list'` · `class="honours"` |
 | Render | `js/main.js` | `data-kind="honors"` · `honour-row__mark` |
 | Render | `js/main.js` | `hasPhotos` |
@@ -19,7 +19,7 @@ The Honours stop: the standalone honour tiles, with project-linked awards exclud
 ## Structure
 
 `#honours` is a `.stop.stop--list` panel (`cls: 'stop--list'`, `side: 'left'`, art
-pan `PAN[9]`). Its copy is the eyebrow, `h2` and `.body`; its `.media` cell is
+pan `PAN[10]`). Its copy is the eyebrow, `h2` and `.body`; its `.media` cell is
 `<ol class="honours">` holding one `<li><button class="honour-row" data-kind="honors"
 data-index>` per tile, with `.honour-row__year`, `.honour-row__text` and
 `.honour-row__mark`. A tile whose record has no `images` is rendered `disabled`
@@ -52,5 +52,5 @@ purpose (see [dialog.md](dialog.md)).
 - `hasPhotos` tests `images && images.length` and does **not** filter `PlaceHolder.png`, while the dialog gallery does. An honour whose images are only the placeholder therefore renders an enabled tile that opens a dialog with an empty gallery.
 - `data-index` is the unfiltered array position. `tiles` has dropped the project awards, so the tile's loop position is not its index; using the position opens a neighbour's record.
 - Do not hunt for a `.stop--list` stylesheet rule — there is none by design (the panel emits the class but every list style is on `.honours`/`.honour-row`). Adding a rule is a runtime change, not a docs fix.
-- The "standalone honours, newest first" sentence is a literal in the `/* 4 — honours */` block of `render()`, not derived from data; reordering `honors` without it makes the page lie.
+- The "standalone honours, newest first" sentence is a literal in the `/* 5 — honours */` block of `render()`, not derived from data; reordering `honors` without it makes the page lie.
 - The `.honour-row` grid has three columns (year, text, mark); the mark column collapses to nothing on a disabled tile, so rows with and without photographs are visibly different stripes.

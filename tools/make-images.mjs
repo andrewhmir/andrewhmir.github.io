@@ -176,7 +176,7 @@ try {
     g.fillText('Andrew Alangcao', 72, H - 150);
     g.fillStyle = '#c8892e';
     g.font = '400 30px Georgia, "Times New Roman", serif';
-    g.fillText('Data Engineer  \u00b7  Computational Cognition Researcher', 72, H - 92);
+    g.fillText('Software Engineer', 72, H - 92);
     return c.toDataURL('image/jpeg', 0.86);
   })()`);
   writeFileSync(join(SITE, 'files', 'og-card.jpg'), Buffer.from(ogDataUrl.split(',')[1], 'base64'));

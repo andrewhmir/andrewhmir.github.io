@@ -23,7 +23,7 @@ const LIB = 'docs/library';
 const COMPONENT_DIR = LIB + '/components';
 const PRIMITIVE_DIR = LIB + '/primitives';
 const COMPONENT_PAGES = [
-  'page-shell', 'masthead', 'rail', 'panel', 'hero', 'about', 'project',
+  'page-shell', 'masthead', 'rail', 'panel', 'hero', 'about', 'news', 'project',
   'frames', 'leadership', 'honours', 'contact', 'footer', 'dialog',
   'reveals-chrome',
 ];

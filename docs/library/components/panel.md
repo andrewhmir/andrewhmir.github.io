@@ -27,21 +27,22 @@ the stop id, `data-side` and the inline `--pos`, and fills `.stop-in` with
 `.copy` (or `.copy--center`) and the optional `.media`. The art is
 `.stop::before`; the scrim is `.stop::after`.
 
-`PAN` is indexed by page position; the eleven crops in page order are:
+`PAN` is indexed by page position; the twelve crops in page order are:
 
 | `PAN` | Painting | `--pos` | Stop |
 |---|---|---|---|
 | 0 | `rice` | `50% 58%` | hero |
 | 1 | `harvest` | `48% 52%` | about |
-| 2 | `rice` | `18% 56%` | project 1 |
-| 3 | `harvest` | `78% 44%` | project 2 |
-| 4 | `rice` | `76% 50%` | project 3 |
-| 5 | `harvest` | `22% 66%` | project 4 |
-| 6 | `rice` | `44% 22%` | project 5 |
-| 7 | `harvest` | `56% 50%` | project 6 |
-| 8 | `rice` | `8% 44%` | leadership |
-| 9 | `harvest` | `88% 36%` | honours |
-| 10 | `rice` | `50% 88%` | contact |
+| 2 | `harvest` | `20% 26%` | news |
+| 3 | `rice` | `18% 56%` | project 1 |
+| 4 | `harvest` | `78% 44%` | project 2 |
+| 5 | `rice` | `76% 50%` | project 3 |
+| 6 | `harvest` | `22% 66%` | project 4 |
+| 7 | `rice` | `44% 22%` | project 5 |
+| 8 | `harvest` | `56% 50%` | project 6 |
+| 9 | `rice` | `8% 44%` | leadership |
+| 10 | `harvest` | `88% 36%` | honours |
+| 11 | `rice` | `50% 88%` | contact |
 
 ## Adjust it
 
@@ -60,14 +61,14 @@ the stop id, `data-side` and the inline `--pos`, and fills `.stop-in` with
 - Every stop is a `.stop` panel; no other component paints its own background or adds a second art layer.
 - `.stop` sets `isolation: isolate`, so the art (`::before`, `z-index: -2`) and the scrim (`::after`, `z-index: -1`) stay inside the panel. A positive-z layer hides the art; dropping `isolation` lets the negative layers escape — see the art/scrim stacking gotcha in `AGENTS.md`.
 - `background-position: var(--pos` is the only crop mechanism: one painting moved by an inline custom property, not an image swap and not an animation.
-- The eleven crops are page order, not project id order: hero, about, six projects, leadership, honours, contact.
+- The twelve crops are page order, not project id order: hero, about, news, six projects, leadership, honours, contact.
 - `data-side` drives both the scrim direction and the copy/media columns, and is set on the `.stop`, never on `.stop-in`.
 - The panel radius is `--panel-radius: 16px` (12px below 640) and overflow is clipped, so art and scrim need no own radius.
 - A new panel class is covered by the library check (V5); document it here in the same edit.
 
 ## Traps
 
-- `PAN` is indexed by page position. A seventh project takes `PAN[8]`, which is Leadership's crop today; every later crop shifts and `page.test.mjs` asserts six projects. Extend `PAN`, the rail and the guard together (see the `PAN` gotcha in `AGENTS.md`).
+- `PAN` is indexed by page position. A seventh project takes `PAN[9]`, which is Leadership's crop today; every later crop shifts and `page.test.mjs` asserts six projects. Extend `PAN`, the rail and the guard together (see the `PAN` gotcha in `AGENTS.md`).
 - Reordering `PORTFOLIO.projects` reslices every project panel's crop silently: no selector changes and no error surfaces.
 - `panel()` concatenates the art class (`'stop art--' + o.art`); a typo in an `art` key leaves no `--art`, so the panel paints flat dark instead of a painting.
 - `data-side` is consumed on `.stop`; putting it on `.stop-in` changes nothing because the rules are `.stop[data-side="right"] .copy`.

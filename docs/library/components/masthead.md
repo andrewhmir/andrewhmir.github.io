@@ -20,7 +20,7 @@ hairline that tracks how far the page has been scrolled on small screens.
 ## Structure
 
 `header.masthead#masthead` is fixed to the top and sized by `--masthead-h:`. It
-holds `a.brand` (jumps to `#top`), `nav.menu` with four section jumps,
+holds `a.brand` (jumps to `#top`), `nav.menu` with five section jumps,
 `a.resume#resumeLink`, and `div.progress#progress`. `.is-stuck` is toggled on the
 header once the scroll passes the hero; `.progress` is a 1px gold bar whose width
 is the section fraction the rail fill shows — 0 at the hero, 100% at Contact,
@@ -47,7 +47,7 @@ small-screen cue.
 - One header, fixed, with its height in `--masthead-h:`; see AGENTS.md's
   **Masthead stickiness and the small-screen progress hairline** row for the
   route.
-- `.progress` is `aria-hidden` decoration: width 0–100% of the ten-stop journey,
+- `.progress` is `aria-hidden` decoration: width 0–100% of the eleven-stop journey,
   never anything interactive. It is the small-screen fallback for the rail's
   progress fill, not a second indicator.
 - `#resumeLink` ships with `href="#"` and is filled at init from data; the URL is

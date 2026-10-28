@@ -20,7 +20,7 @@ Thirteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing o
 | `favicon` | dormant | no reader |
 | `scrollerIcon` | dormant | no reader |
 | `nav` | dormant | the shell's menu is hand-written in `index.html` |
-| `news` | dormant | not rendered at all; four entries with `date`, `text` and `images` |
+| `news` | live | the News stop rows (`P.news.map`); four entries with `date`, `text` and `images` — `images` is still unread because no news photograph is on disk |
 
 ## Path grammar
 

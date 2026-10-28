@@ -30,6 +30,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.leader` | [leadership.md](components/leadership.md) | one Leadership card button |
 | `.honours` | [honours.md](components/honours.md) | the Honours list |
 | `.honour-row` | [honours.md](components/honours.md) | one honour tile |
+| `.news` | [news.md](components/news.md) | the News stop's dated list |
+| `.news-row` | [news.md](components/news.md) | one dated update row |
 | `.foot` | [footer.md](components/footer.md) | the page footer |
 | `.dialog` | [dialog.md](components/dialog.md) | the one shared record modal |
 | `.btn` | [primitives/controls.md](primitives/controls.md) | the button/link primitive every action uses |
@@ -47,7 +49,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.stop--hero` | [hero.md](components/hero.md) | the hero panel modifier |
 | `.stop--project` | [project.md](components/project.md) | one project panel; emitted once per project record |
 | `.stop--contact` | [contact.md](components/contact.md) | the contact panel modifier |
-| `.stop--list` | [honours.md](components/honours.md) | emitted on the Honours panel; no CSS rule |
+| `.stop--news` | [news.md](components/news.md) | the News panel modifier; widens the copy column |
+| `.stop--list` | [honours.md](components/honours.md), [news.md](components/news.md) | emitted on the Honours and News panels; no CSS rule |
 | `.frame--lead` | [frames.md](components/frames.md) | the 16/9 lead frame that spans the stack |
 | `.frame--awaited` | [frames.md](components/frames.md) | the dashed non-button frame for `PlaceHolder.png` |
 | `.leader__thumb--empty` | [leadership.md](components/leadership.md) | the "no photo" span replacing a missing leader thumb |
@@ -68,6 +71,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `#dialogBody` | [dialog.md](components/dialog.md) | the record body, replaced on every open |
 | `#top` | [hero.md](components/hero.md) | the hero stop anchor |
 | `#about` | [about.md](components/about.md) | the About stop anchor |
+| `#news` | [news.md](components/news.md) | the News stop anchor |
 | `#work` | [project.md](components/project.md) | the Work wrapper id; the masthead menu's Work landing, not a rail stop |
 | `#leadership` | [leadership.md](components/leadership.md) | the Leadership stop anchor |
 | `#honours` | [honours.md](components/honours.md) | the Honours stop anchor |

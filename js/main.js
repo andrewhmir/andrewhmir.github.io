@@ -16,6 +16,7 @@
   var PAN = [
     { art: 'rice', pos: '50% 58%' },    /* hero */
     { art: 'harvest', pos: '48% 52%' }, /* about */
+    { art: 'harvest', pos: '20% 26%' }, /* news */
     { art: 'rice', pos: '18% 56%' },    /* project 1 */
     { art: 'harvest', pos: '78% 44%' }, /* project 2 */
     { art: 'rice', pos: '76% 50%' },    /* project 3 */
@@ -54,8 +55,7 @@
       '<div class="stop-in">' +
         '<div class="copy' + (o.center ? ' copy--center' : '') + '" data-reveal>' + o.copy + '</div>' +
         (o.media ? '<div class="media" data-reveal>' + o.media + '</div>' : '') +
-      '</div>' +
-      (o.cue ? '<span class="hero-cue" aria-hidden="true">Scroll — the field goes on</span>' : '');
+      '</div>';
     return s;
   }
 
@@ -114,7 +114,6 @@
       side: 'center',
       art: PAN[0].art,
       pos: PAN[0].pos,
-      cue: true,
       copy:
         '<h1>' + esc(P.name) + '</h1>' +
         '<p class="hero-title">' + esc(P.title) + '</p>' +
@@ -133,7 +132,7 @@
       pos: PAN[1].pos,
       copy:
         '<p class="eyebrow">01 · About</p>' +
-        '<h2>A record of the pursuit.</h2>' +
+        '<h2>Andrew Alangcao</h2>' +
         '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
         '<div class="actions">' + P.social.map(function (s) {
           return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';
@@ -141,11 +140,30 @@
       media:
         '<figure class="portrait">' +
           '<img src="files/profile.jpg" alt="Portrait of Andrew Alangcao" width="585" height="766" loading="lazy">' +
-          '<figcaption>Andrew Alangcao · Muntinlupa</figcaption>' +
+          '<figcaption>Laufey: A Night at the Symphony · PICC Plenary Hall, May 28, 2024</figcaption>' +
         '</figure>'
     }));
 
-    /* 2 — work (six project panels, wrapped so #work lands on the first) */
+    /* 2 — news */
+    out.push(panel({
+      id: 'news',
+      cls: 'stop--list stop--news',
+      side: 'right',
+      art: PAN[2].art,
+      pos: PAN[2].pos,
+      copy:
+        '<p class="eyebrow">02 · News</p>' +
+        '<h2>Milestones.</h2>' +
+        '<p class="body">Roles, talks and firsts, newest first.</p>' +
+        '<ol class="news">' + P.news.map(function (n) {
+          return '<li class="news-row">' +
+            '<span class="news-row__date">' + esc(n.date) + '</span>' +
+            '<span class="news-row__text">' + esc(n.text) + '</span>' +
+          '</li>';
+        }).join('') + '</ol>'
+    }));
+
+    /* 3 — work (six project panels, wrapped so #work lands on the first) */
     var work = document.createElement('div');
     work.className = 'work';
     work.id = 'work';
@@ -154,20 +172,20 @@
         id: p.id,
         cls: 'stop--project',
         side: i % 2 === 0 ? 'left' : 'right',
-        art: PAN[2 + i].art,
-        pos: PAN[2 + i].pos,
+        art: PAN[3 + i].art,
+        pos: PAN[3 + i].pos,
         copy: projectCopy(p, i),
         media: projectMedia(p, i)
       }));
     });
     out.push(work);
 
-    /* 3 — leadership */
+    /* 4 — leadership */
     out.push(panel({
       id: 'leadership',
       side: 'left',
-      art: PAN[8].art,
-      pos: PAN[8].pos,
+      art: PAN[9].art,
+      pos: PAN[9].pos,
       copy:
         '<p class="eyebrow">04 · Leadership</p>' +
         '<h2>Running things.</h2>' +
@@ -187,14 +205,14 @@
       }).join('') + '</div>'
     }));
 
-    /* 4 — honours */
+    /* 5 — honours */
     var tiles = S.honoursTiles(P.honors).tiles;
     out.push(panel({
       id: 'honours',
       cls: 'stop--list',
       side: 'left',
-      art: PAN[9].art,
-      pos: PAN[9].pos,
+      art: PAN[10].art,
+      pos: PAN[10].pos,
       copy:
         '<p class="eyebrow">05 · Honours</p>' +
         '<h2>Recognised here and abroad.</h2>' +
@@ -211,13 +229,13 @@
       }).join('') + '</ol>'
     }));
 
-    /* 5 — contact */
+    /* 6 — contact */
     out.push(panel({
       id: 'contact',
       cls: 'stop--contact',
       side: 'center',
-      art: PAN[10].art,
-      pos: PAN[10].pos,
+      art: PAN[11].art,
+      pos: PAN[11].pos,
       center: true,
       copy:
         '<p class="eyebrow">06 · Contact</p>' +
@@ -345,6 +363,7 @@
     var rail = document.getElementById('rail');
     if (!rail) return;
     var labels = [{ id: 'about', label: 'About' }];
+    labels.push({ id: 'news', label: 'News' });
     P.projects.forEach(function (p) { labels.push({ id: p.id, label: p.title }); });
     labels.push({ id: 'leadership', label: 'Leadership' });
     labels.push({ id: 'honours', label: 'Honours' });
@@ -410,7 +429,7 @@
     }
 
     /* Where a section's tick sits on the fill (the fill ends at its centre) and
-       how much of the ten-stop journey it represents for the phone hairline. The
+       how much of the eleven-stop journey it represents for the phone hairline. The
        track starts at the first tick's centre, so the first stop is 0 and the
        last stop's fill length is the whole line. */
     function railTarget(id) {

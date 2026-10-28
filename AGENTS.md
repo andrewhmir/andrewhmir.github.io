@@ -25,10 +25,11 @@ an otherwise native vertical scroll. `index.html` opens directly;
 HTTP. Node is only for tests and dev tools.
 
 The page is a vertical profile, in this order: fixed masthead → hero (`#top`) →
-About (`#about`) → Work (`#work`, six project stops with ids `project1` …
-`project6`) → Leadership (`#leadership`) → Honours (`#honours`) → Contact
-(`#contact`) → footer. A fixed journey rail (≥1024px) tracks the section crossing
-the middle of the viewport and carries the page's scroll progress. One shared
+About (`#about`) → News (`#news`) → Work (`#work`, six project stops with ids
+`project1` … `project6`) → Leadership (`#leadership`) → Honours (`#honours`) →
+Contact (`#contact`) → footer. A fixed journey rail (≥1024px) tracks the
+section crossing the middle of the viewport and carries the page's scroll
+progress. One shared
 record dialog serves every project, every leadership record, and every honour
 that has photographs.
 
@@ -48,8 +49,8 @@ and never hand-edited.
 | File | Size | Holds |
 |---|---|---|
 | `index.html` | ~120 lines | The shell: meta/OG/canonical, `css/fonts.css` then `css/styles.css` and the vendored `js/vendor/lenis.css`, masthead, rail shade, rail nav, empty `#page`, footer, `<noscript>` fallback, the one dialog, then `js/vendor/lenis.min.js` before `js/data.js` before `js/main.js`. |
-| `css/styles.css` | ~660 lines | All styling: tokens, the `html.lenis` scroll override, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, project extras, leadership, honours, contact, footer, dialog, reveals, responsive. Section banners are the map. |
-| `js/main.js` | ~560 lines | `PAN` (the art order), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `render()`, the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`, `wireSmoothScroll`. Publishes `window.Profile`. |
+| `css/styles.css` | ~670 lines | All styling: tokens, the `html.lenis` scroll override, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, project extras, leadership, honours, news list, contact, footer, dialog, reveals, responsive. Section banners are the map. |
+| `js/main.js` | ~600 lines | `PAN` (the art order), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `render()`, the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`, `wireSmoothScroll`. Publishes `window.Profile`. |
 | `js/data.js` | ~680 lines | `PORTFOLIO` — the portfolio records and personal copy — plus `Site.*` helpers. The page itself reads only `Site.posterFor` and `Site.honoursTiles`; the other helpers are inherited from the retired horizontal build and are kept because the surviving data suites test them. |
 | `js/vendor/` | vendored | Lenis 1.3.26 (`lenis.min.js` + `lenis.css`), copied verbatim; sizes and SHA-256 pins in its README. The page's only third-party runtime code, loaded locally. |
 | `css/fonts.css` | generated | The `@font-face` rules for Newsreader and Courier Prime. Do not hand-edit; refresh with `tools/vendor-fonts.mjs`. |
@@ -77,13 +78,14 @@ router; the library is the per-component depth behind it.
 |---|---|---|
 | Hero name, title, sentence, actions | `js/data.js` + `js/main.js` | `name:`, `title:`, `bio: [`; `/* 0 — hero */` |
 | About copy, portrait, social row | `js/data.js` + `js/main.js` | `/* 1 — about */`, `P.bio.map` |
-| Section order, or removing a section | `js/main.js` | `function render()`, then the `out.push` blocks `/* 0 — hero */` … `/* 5 — contact */` |
+| News rows and the News stop's copy | `js/data.js` + `js/main.js` | `news: [`, `/* 2 — news */` |
+| Section order, or removing a section | `js/main.js` | `function render()`, then the `out.push` blocks `/* 0 — hero */` … `/* 6 — contact */` |
 | Add or edit a project | `js/data.js` | `projects: [` — page order is array order; the id becomes the anchor and rail label |
 | A project's copy and award list | `js/main.js` + `js/data.js` | `function projectCopy(`, the project's `awards: [` |
 | A project's three media frames | `js/main.js` | `function projectMedia(`, `function frame(` |
 | Which painting and crop each stop uses | `js/main.js` + `css/styles.css` | `var PAN = [`; `.art--rice`, `.art--harvest`; `background-position: var(--pos` |
 | A scrim, or which side the copy sits on | `css/styles.css` + `js/main.js` | `.stop[data-side="left"]`, `"right"`, `"center"`, `.stop--hero`, `.stop--contact`; `panel()` sets `data-side` |
-| Contact closing and its dark card | `js/main.js` + `css/styles.css` | `/* 5 — contact */`; `.stop--contact .stop-in::before` |
+| Contact closing and its dark card | `js/main.js` + `css/styles.css` | `/* 6 — contact */`; `.stop--contact .stop-in::before` |
 | Leadership cards | `js/data.js` + `js/main.js` | `leadership: [`; `P.leadership.map` |
 | Honours list, and which awards stay on projects | `js/data.js` + `js/main.js` | `honors: [`, `from: 'project`; `S.honoursTiles(P.honors)` |
 | The dialog, its focus trap, Escape, restore | `index.html` + `js/main.js` | `#dialog`; `function openRecord(`, `function closeDialog(`, the `keydown` trap |
@@ -110,7 +112,7 @@ word and editing the wrong thing.
 
 | Term | Means | Code |
 |---|---|---|
-| **stop / section** | One unit of page order: hero, About, one project, Leadership, Honours, Contact. `#work` itself is a wrapper `div.work`, not a stop. | `section.stop`, `.stop--project`; a rail entry is `.rail__stop` |
+| **stop / section** | One unit of page order: hero, About, News, one project, Leadership, Honours, Contact. `#work` itself is a wrapper `div.work`, not a stop. | `section.stop`, `.stop--project`; a rail entry is `.rail__stop` |
 | **panel** | The painted surface of a stop: the rounded box, its art layer and its scrim. | `.stop`, `.stop::before`, `.stop::after` |
 | **art pan** | The crop chosen by `background-position` for this stop. Not an animation and not a separate image. | `--pos`, `PAN` |
 | **painting** | One of the two source images. `rice` is `painting-hero.jpg` (*Planting Rice*, 1949); `harvest` is `painting.jpg` (a 1934 harvest scene). | `.art--rice`, `.art--harvest` |
@@ -123,6 +125,7 @@ word and editing the wrong thing.
 | **record** | One authored project, leadership entry or honour in `PORTFOLIO`. | `P.projects`, `P.leadership`, `P.honors` |
 | **dialog** | The one shared modal. Prefer “record dialog” to “modal” when routing. | `#dialog`, `.dialog__card`, `openRecord` |
 | **honours tile** | One standalone honour row in the Honours list. Project awards are not tiles; they live as text on the project panel. | `.honour-row`, `Site.honoursTiles` |
+| **news row** | One dated update in the News stop; a list item, not a button — there is no news record to open. | `.news-row`, `P.news.map` |
 | **awaited frame** | A frame reserved for a photograph that is not there yet: dashed, labelled “Awaiting photograph”, not a button. Only an empty `src` or `PlaceHolder.png` becomes awaited. | `.frame--awaited`, `isAwaited` |
 | **project award** | An honour carrying `from: 'projectN'`, excluded from the Honours tiles and shown under the project's Awards. | `from: 'projectN'`, `honoursTiles.projectAwards` |
 
@@ -154,7 +157,7 @@ specific: a constraint that only a review catches is marked as such.
 | **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog stops it while open and its card opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and dialog behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
-| **The content counts** | Six projects, four leadership cards, five standalone honour tiles; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
+| **The content counts** | Six projects, four leadership cards, five standalone honour tiles, four news rows; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
 | **The guard follows the promoted names** | `page.test.mjs` reads `index.html`, `css/styles.css`, `js/main.js`, `js/data.js`, `package.json`. Renaming any of them without updating the guard fails it. | `page.test.mjs` |
 | **CSS braces balance** | An unmatched brace silently eats the rest of the sheet. | `page.test.mjs` |
 
@@ -231,7 +234,7 @@ server build.
   body scroll lock, and its card carries `data-lenis-prevent`: a stopped Lenis
   still cancels the wheel/touch it would otherwise capture, so without the
   attribute a long record could not scroll.
-- **`files/painting.jpg` is live.** It is the About/Hivemind/Focus
+- **`files/painting.jpg` is live.** It is the About/News/Hivemind/Focus
   Buddy/BiyaHey/Honours art (`art--harvest`). Older cleanup notes called it an
   orphan because the retired page did not use it; that is no longer true. Do not
   delete it as an unreferenced image.
@@ -253,16 +256,16 @@ server build.
   has a `STILLS` table that can derive team stills from the project videos, but
   the outputs are not in `files/` and `js/data.js` still points at the
   placeholder. That is a content decision, not a layout fix.
-- **Some data fields have no reader on this page.** `news`, `nav`, `authors`,
-  `source`, `report`, `pieces`, `profileImage`, `favicon`, `scrollerIcon` and
-  the social `icon` names are inherited or unused. `PORTFOLIO.news` is not
-  rendered at all; editing it changes nothing visible. Check `js/main.js` before
-  wiring a field you expect to appear.
+- **Some data fields have no reader on this page.** `nav`, `authors`, `source`,
+  `report`, `pieces`, `profileImage`, `favicon`, `scrollerIcon` and the social
+  `icon` names are inherited or unused; `news[].images` has no reader because no
+  news photograph exists on disk. Check `js/main.js` before wiring a field you
+  expect to appear.
 - **The hero sentence is `P.bio[3]`, not `bio[2]`.** The portrait is hard-coded
   as `files/profile.jpg` in `js/main.js`; `PORTFOLIO.profileImage` is ignored.
   Changing bio order changes the hero sentence.
 - **`PAN` is indexed by page position.** Adding a seventh project collides with
-  `PAN[8]` (Leadership), and `page.test.mjs` asserts six projects. Adding one
+  `PAN[9]` (Leadership), and `page.test.mjs` asserts six projects. Adding one
   means extending the `PAN` table, revisiting the rail, and updating the guard;
   reordering projects shifts every later crop.
 - **The art/scrim stacking is deliberate.** `.stop` sets `isolation: isolate`;
@@ -299,7 +302,7 @@ server build.
 Do not add these without being asked: a build step, a bundler, an npm runtime
 dependency, a CDN at runtime, analytics, a CMS, a test framework or
 `node --test`; an icon font or a loaded `js/icons.js`; scroll snap or a
-horizontal page; a mobile menu drawer; a News section; inline or autoplaying
+horizontal page; a mobile menu drawer; inline or autoplaying
 video in project panels; a third webfont; TypeScript or JSX.
 
 The films are local and play only in the dialog. The panel's film frame is a

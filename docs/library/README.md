@@ -31,8 +31,9 @@ per-component depth behind it.
 | Masthead | Fixed header, brand, menu, resume, small-screen progress hairline | [components/masthead.md](components/masthead.md) |
 | Journey rail | Fixed section nav, active stop, page-progress fill, left shade | [components/rail.md](components/rail.md) |
 | Painted panel | `.stop`, art layer, scrim, copy/media cells, the `PAN` crops | [components/panel.md](components/panel.md) |
-| Hero | First stop: name, title, sentence, actions, scroll cue | [components/hero.md](components/hero.md) |
+| Hero | First stop: name, title, sentence, actions | [components/hero.md](components/hero.md) |
 | About | Bio paragraphs, social buttons, framed portrait | [components/about.md](components/about.md) |
+| News | Dated update rows in the News stop; no photographs yet | [components/news.md](components/news.md) |
 | Project stop | Work wrapper, copy, awards, open-record button, stop ids | [components/project.md](components/project.md) |
 | Media stack | Three frames: lead, film still, team; awaited frame | [components/frames.md](components/frames.md) |
 | Leadership | Four cards opening the dialog gallery | [components/leadership.md](components/leadership.md) |

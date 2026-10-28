@@ -7,7 +7,7 @@ The final stop: the closing line, the email link, the social row and the dark ca
 | Role | File | Anchor |
 |---|---|---|
 | Markup | `index.html` | `id="page"` |
-| Render | `js/main.js` | `/* 5 — contact */` · `center: true` |
+| Render | `js/main.js` | `/* 6 — contact */` · `center: true` |
 | Render | `js/main.js` | `class="contact-mail"` · `class="contact-links"` |
 | Render | `js/main.js` | `P.social.map` |
 | Styles | `css/styles.css` | `── Contact` · `.stop--contact .stop-in::before` |
@@ -18,7 +18,7 @@ The final stop: the closing line, the email link, the social row and the dark ca
 ## Structure
 
 `#contact` is the last `.stop` (`cls: 'stop--contact'`, `side: 'center'`,
-`center: true`, art pan `PAN[10]`). Its `.copy.copy--center` holds the eyebrow,
+`center: true`, art pan `PAN[11]`). Its `.copy.copy--center` holds the eyebrow,
 the closing `h2`, a `.lede`, the `.contact-mail` mailto link and `.contact-links`
 anchors. `.stop--contact .stop-in::before` paints the dark card; the panel's own
 art layer is `.stop::before` and its scrim `.stop::after`.
@@ -27,12 +27,12 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 
 | Want to change | Change here | Verify with |
 |---|---|---|
-| The closing heading or sentence | the literals in the `/* 5 — contact */` block of `render()` | read it back; they are not data |
+| The closing heading or sentence | the literals in the `/* 6 — contact */` block of `render()` | read it back; they are not data |
 | The email address | `email:` in `js/data.js` — used for both the link text and the `href` | click the mailto link; `npm test` has no email assertion |
 | The social row | `social: [` order and entries in `js/data.js` | click each link |
 | Card size, radius, blur or darkness | `.stop--contact .stop-in::before` | screenshots at 1440, 1280 and 390 |
 | Card at tablet width | the first `@media (max-width: 1023px)` block, immediately after the card rule | a 1023px-wide screenshot |
-| The panel painting or crop | `PAN[10]` in `js/main.js` | screenshot; PAN is positional |
+| The panel painting or crop | `PAN[11]` in `js/main.js` | screenshot; PAN is positional |
 | Panel height | inherits the full-screen `.stop-in` minimum; `.stop--contact` only adds its scrim | screenshot at 1280×704 |
 
 ## Invariants
@@ -50,4 +50,4 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 - `.stop--contact` no longer shortens the panel: it uses the same full-screen `.stop-in` minimum as every other stop and only adds the dark card and its scrim.
 - `P.email` has no fallback: an empty value renders a `mailto:` link with empty text, while the no-JS fallback still shows the old address.
 - The social row is not `.btn`s. Adding control classes changes weight and colour unexpectedly because `.contact-links a` owns the styling inside the row.
-- `PAN[10]` is positional: adding or reordering projects shifts the contact painting — see the PAN gotcha in `AGENTS.md`.
+- `PAN[11]` is positional: adding or reordering projects shifts the contact painting — see the PAN gotcha in `AGENTS.md`.

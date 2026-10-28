@@ -1,6 +1,6 @@
 # Andrew Alangcao
 
-**Data Engineer · Computational Cognition Researcher**
+**Software Engineer**
 
 > **Editing this repo?** Read [`AGENTS.md`](AGENTS.md) first — it routes an
 > intent (change the hero, a scrim, an award) to the file and the anchor, and
@@ -32,20 +32,20 @@ hand-written stylesheet, two hand-written scripts and the vendored Lenis pair:
 the portfolio records and personal copy live in `js/data.js`, while section headings, labels and button
 text are literals in `js/main.js`. Node is only for tests and dev tools.
 
-## Two paintings, eleven crops
+## Two paintings, twelve crops
 
 Two saved paintings carry the whole page:
 
 | Name in code | File | What it is |
 |---|---|---|
 | `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, three project stops, Leadership and Contact. Also the source of the Open Graph share card. |
-| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, three project stops and Honours. |
+| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, the News stop, three project stops and Honours. |
 
 The footer credits both: **Paintings by Fernando Amorsolo y Cueto (1892–1972).**
 
 ### Why two, and why crops
 
-One painting repeated eleven times reads as wallpaper, however it is cropped.
+One painting repeated twelve times reads as wallpaper, however it is cropped.
 Two paintings alternate: a bright field and a darker harvest, two different
 horizons and palettes, and the page gets a rhythm without inventing a third
 asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
@@ -54,6 +54,7 @@ asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
 |---|---|---|---|
 | Hero | `top` | `rice` | `50% 58%` |
 | About | `about` | `harvest` | `48% 52%` |
+| News | `news` | `harvest` | `20% 26%` |
 | PALAD | `project1` | `rice` | `18% 56%` |
 | Hivemind | `project2` | `harvest` | `78% 44%` |
 | C.E.N.T.H.R.O. | `project3` | `rice` | `76% 50%` |
@@ -64,7 +65,7 @@ asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
 | Honours | `honours` | `harvest` | `88% 36%` |
 | Contact | `contact` | `rice` | `50% 88%` |
 
-Eleven stops, two files, no per-stop downloads. A panel paints the whole image
+Twelve stops, two files, no per-stop downloads. A panel paints the whole image
 `cover` at the stop's `background-position`; the browser does the crop. The pan
 is therefore a pair of percentages, not an image edit and not a camera move.
 Percentage positions survive every viewport: there is no second art direction
@@ -93,6 +94,7 @@ The page order is fixed and semantic:
 |---|---|---|---|
 | Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
 | About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
+| News | `news` | Four dated updates, newest first | `calc(100vh - 16px)` |
 | Work | `work` | Six project stops, each with copy + three media frames | `calc(100vh - 16px)` each |
 | Leadership | `leadership` | Four cards: year, description, thumbnail | `calc(100vh - 16px)` |
 | Honours | `honours` | Five standalone honours, newest first | `calc(100vh - 16px)` |
@@ -106,7 +108,7 @@ Every stop is one screen tall: the panel plus its 16px gutter make exactly one
 viewport, so the sections share a size and the next panel's edge arrives on the
 beat as you scroll. The hero already worked that way; Contact used to run
 shorter and now matches the rest. Below 1024px the minimum is dropped and each
-panel grows with its content, so a phone is not forced through ten blank screens.
+panel grows with its content, so a phone is not forced through eleven blank screens.
 
 ### The 12-column panel
 
@@ -220,8 +222,8 @@ why a crop or a scrim change needs re-measurement rather than a colour swap.
 
 ## The journey rail and the left shade
 
-The masthead has four links, but the page has ten named stops (About, the six
-projects, Leadership, Honours, Contact). The rail is the full index: a fixed
+The masthead has five links, but the page has eleven named stops (About, News,
+the six projects, Leadership, Honours, Contact). The rail is the full index: a fixed
 5px progress bar at the left edge, a short rule per stop — the awards list's em
 dash, reused as a station tick — and a label chip on hover and on the active
 stop. Each rule starts on the rail's line, its left end tucked beneath the gold
@@ -259,7 +261,7 @@ two panels the head sits midway between their ticks. A short ease trails the
 scroll, so it glides rather than jumps; `prefers-reduced-motion` drops the ease
 and the head snaps. The masthead hairline remains only below 1024px, where the
 rail is hidden and the hairline reports the same progress as a fraction of the
-ten stops.
+eleven stops.
 
 ## Palette, type and radii
 

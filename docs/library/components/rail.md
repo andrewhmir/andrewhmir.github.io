@@ -22,8 +22,8 @@ crops.
 ## Structure
 
 `nav.rail#rail` ships empty and `buildRail` fills it with one
-`a.rail__stop[data-stop="<id>"] > span` per named section: About, one per project
-id, Leadership, Honours and Contact — ten today, the hero excluded. `wireChrome`
+`a.rail__stop[data-stop="<id>"] > span` per named section: About, News, one per
+project id, Leadership, Honours and Contact — eleven today, the hero excluded. `wireChrome`
 toggles `.is-active` for the panel covering the viewport middle — the boundary
 crossing the centre is the moment the tick changes, a middle in a gutter keeps
 the section just passed. The sibling `div.rail-shade` is a 108px gradient.

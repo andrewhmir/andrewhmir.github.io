@@ -141,7 +141,7 @@ console.log('ok  no third-party resource loads');
 
 /* ── the renderer's contract ──────────────────────────────────────── */
 
-for (const id of ["'top'", "'about'", "'work'", "'leadership'", "'honours'", "'contact'"]) {
+for (const id of ["'top'", "'about'", "'news'", "'work'", "'leadership'", "'honours'", "'contact'"]) {
   assert.ok(js.includes(id), `renderer missing section id ${id}`);
 }
 assert.match(js, /P\.projects\.forEach/);
@@ -162,8 +162,9 @@ const S = ctx.Site;
 assert.equal(P.projects.length, 6, 'the page is built for six project stops');
 assert.equal(P.leadership.length, 4, 'leadership renders four cards');
 assert.equal(S.honoursTiles(P.honors).tiles.length, 5, 'honours renders the standalone tiles');
+assert.equal(P.news.length, 4, 'news renders four rows');
 assert.equal(P.social[0].label, 'Resume', 'the masthead resume link reads PORTFOLIO.social[0]');
-console.log('ok  data: 6 projects, 4 leadership cards, 5 honour tiles');
+console.log('ok  data: 6 projects, 4 leadership cards, 5 honour tiles, 4 news rows');
 
 /* ── the npm test script actually runs this file ──────────────────── */
 

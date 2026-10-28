@@ -7,7 +7,7 @@ The Leadership stop: four cards, each a button that opens the shared record dial
 | Role | File | Anchor |
 |---|---|---|
 | Markup | `index.html` | `id="page"` |
-| Render | `js/main.js` | `/* 3 — leadership */` · `P.leadership.map` |
+| Render | `js/main.js` | `/* 4 — leadership */` · `P.leadership.map` |
 | Render | `js/main.js` | `class="leaders"` · `class="leader"` |
 | Render | `js/main.js` | `leader__thumb--empty` · `function isAwaited(` |
 | Styles | `css/styles.css` | `── Leadership cards` · `.leader__thumb--empty` |
@@ -16,7 +16,7 @@ The Leadership stop: four cards, each a button that opens the shared record dial
 
 ## Structure
 
-`#leadership` is one `.stop` panel (`side: 'left'`, art pan `PAN[8]`). Its `.media`
+`#leadership` is one `.stop` panel (`side: 'left'`, art pan `PAN[9]`). Its `.media`
 cell holds `.leaders`, a two-column grid of `.leader` buttons. Each button carries
 `data-kind="leadership"` and `data-index`, and contains either an
 `<img class="leader__thumb">` or a `<span class="leader__thumb leader__thumb--empty">`,
@@ -29,7 +29,7 @@ then `.leader__body` with `.leader__year` and `.leader__text`. A click opens
 | Want to change | Change here | Verify with |
 |---|---|---|
 | Add, remove or reorder a card | `leadership: [` in `js/data.js` (array order is card order) | `node tests/page.test.mjs` — it pins four records |
-| The "four committees and clubs" sentence above the grid | the literal in the `/* 3 — leadership */` block of `render()` | read it back; it is not data |
+| The "four committees and clubs" sentence above the grid | the literal in the `/* 4 — leadership */` block of `render()` | read it back; it is not data |
 | A card's photo | `leadership[].images[0]`; later images are dialog-only | card and dialog screenshots |
 | The no-photo label | the `leader__thumb--empty` span in `js/main.js` and its rule in CSS | screenshot a record whose `images` is absent |
 | Card type, year colour or body text | `.leader__year`, `.leader__text`, `.leader__body` | screenshots at 1440 and 390 |

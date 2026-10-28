@@ -8,7 +8,7 @@ and the button that opens the shared record dialog.
 | Role | File | Anchor |
 |---|---|---|
 | Markup | `index.html` | `<a href="#work">` |
-| Render | `js/main.js` | `/* 2 — work` · `work.className = 'work';` · `work.id = 'work';` |
+| Render | `js/main.js` | `/* 3 — work` · `work.className = 'work';` · `work.id = 'work';` |
 | Render | `js/main.js` | `P.projects.forEach(function (p, i) {` · `cls: 'stop--project',` |
 | Render | `js/main.js` | `function projectCopy(` · `Open the record →` |
 | Styles | `css/styles.css` | `── Project panel extras` · `.awards {` · `.awards li {` |
@@ -49,7 +49,7 @@ tagline, `.body` summary, an optional `.awards` list and an "Open the record →
 
 ## Traps
 
-- Adding a seventh project collides with `PAN[8]` (Leadership) and shifts every later crop; extend `PAN`, the rail and `page.test.mjs`'s six-project count together — see the `PAN` gotcha in `AGENTS.md`.
+- Adding a seventh project collides with `PAN[9]` (Leadership) and shifts every later crop; extend `PAN`, the rail and `page.test.mjs`'s six-project count together — see the `PAN` gotcha in `AGENTS.md`.
 - Reordering `projects` changes page order, rail order, every later `PAN` crop and the copy-side alternation: one data edit, many visual changes.
 - The `.awards` list is not the Honours list. Project awards live here as text and are excluded from tiles by `from: 'projectN'`; do not duplicate them.
 - "Overview", "Film", "Team" and "Open the record →" are literals inside `projectMedia(` / `projectCopy(`; editing data does not change them.
