@@ -13,6 +13,10 @@ and three project cards that open a record's own panel.
 | Render | `js/main.js` | `function categoryCards(` · `data-kind="panel"` · `project-card__art` |
 | Styles | `css/styles.css` | `── Category panels` · `.category-cards {` · `.project-card {` |
 | Styles | `css/styles.css` | `.stop--category .copy` · `.project-card__art` · `.category-count` |
+| Markup | `index.html` | `id="projectView"` · `role="dialog"` |
+| Render | `js/main.js` | `function openProject(` · `function closeProject(` |
+| Render | `js/main.js` | `project-view__back` · `data-close-view` |
+| Styles | `css/styles.css` | `── Project view` · `.project-view` |
 | Data | `js/data.js` | `projects[].category` · `projects[].overview` · `projects[].awards` |
 | Data | `js/data.js` | `Site.deriveRooms` |
 | Test | `tests/page.test.mjs` | `Array.from(rooms` · `function categoryCards\(` |
@@ -34,6 +38,11 @@ category rather than dropping it. `ROOM_LEDES` in `js/data.js` supplies each
 room's sentence; a record's own id and index are untouched, so the honours
 `from: 'projectN'` links still resolve.
 
+A card click calls `openProject(index)`, painting `#projectView` with the
+record's `PROJECT_ART` crop and `projectCopy` / `projectMedia`. Escape or the back
+button calls `closeProject` (focus returns to the card); `setLock` keeps the page
+still while the view or the dialog is open.
+
 ## Adjust it
 
 | Want to change | Change here | Verify with |
@@ -44,6 +53,7 @@ room's sentence; a record's own id and index are untouched, so the honours
 | The eyebrow, title or count line | `function categoryCopy(` | screenshot at 1440×900 |
 | Which crop each category panel uses | `PAN[3]` / `PAN[4]` in `js/main.js` (see [panel.md](panel.md)) | screenshot; copy side still readable |
 | The card column split or card look | `.stop--category .copy` / `.media`, `.category-cards`, `.project-card` in `css/styles.css` | 1440×900 (three abreast) and 390×844 (one column) |
+| The project view's crop or opening side | `openProject(` and `PROJECT_ART` in `js/main.js` | open a card from each category; crop, side and focus return follow the record |
 
 ## Invariants
 
@@ -58,6 +68,10 @@ room's sentence; a record's own id and index are untouched, so the honours
   in `index.html`.
 - `.category-cards` is a 3-column grid above 1024px and one column below it, in
   step with the panel grid collapsing to one column.
+- A card opens `#projectView`; the dialog is the layer above. Both are views,
+  not routes; Escape and the back button are the exits.
+- `setLock` is a count — closing the dialog must not unlock the page while the
+  view stays open — and `openProject` traps Tab, then returns focus to the card.
 
 ## Traps
 
@@ -72,3 +86,5 @@ room's sentence; a record's own id and index are untouched, so the honours
   `[data-kind][data-index]`, so a card missing either attribute is inert.
 - A record with no `awards` shows its `venue` in the meta line rather than an
   empty count.
+- The project view is injected HTML with no `data-reveal`: the reveal observer
+  runs once at init, so a reveal attribute there would leave it invisible.

@@ -31,6 +31,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.project-card__tag` | [project.md](components/project.md) | the record tagline |
 | `.project-card__meta` | [project.md](components/project.md) | award count, or the venue when there are none |
 | `.category-count` | [project.md](components/project.md) | the project/award count under the room lede |
+| `.project-view` | [project.md](components/project.md) | the fixed full-screen project panel |
+| `.project-view__back` | [project.md](components/project.md) | the view's back button; carries `data-close-view` |
 | `.portrait` | [about.md](components/about.md) | the framed About portrait |
 | `.stack` | [frames.md](components/frames.md) | the three-frame media column |
 | `.frame` | [frames.md](components/frames.md) | one media frame: lead, film still, team or awaited |
@@ -82,6 +84,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `#about` | [about.md](components/about.md) | the About stop anchor |
 | `#news` | [news.md](components/news.md) | the News stop anchor |
 | `#work` | [project.md](components/project.md) | the Work wrapper id; the masthead menu's Work landing, not a rail stop |
+| `#projectView` | [project.md](components/project.md) | the fixed project view layer, `[hidden]` until a card opens it |
 | `#leadership` | [leadership.md](components/leadership.md) | the Leadership stop anchor |
 | `#honours` | [honours.md](components/honours.md) | the Honours stop anchor |
 | `#contact` | [contact.md](components/contact.md) | the Contact stop anchor |
@@ -96,3 +99,4 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `data-kind` | [dialog.md](components/dialog.md) | record kind for the delegated opener: `panel`, `project`, `leadership` or `honors` |
 | `data-index` | [dialog.md](components/dialog.md) | the record's index into that kind's array |
 | `data-stop` | [rail.md](components/rail.md) | the section id on a `.rail__stop` |
+| `data-close-view` | [project.md](components/project.md) | marks the project view's back button; the delegated click closes the view |

@@ -294,6 +294,9 @@
   var dialogCard = dialog && dialog.querySelector('.dialog__card');
   var lastFocus = null;
   var scrollEngine = null;   /* the vendored Lenis controller, when motion is allowed */
+  var projectView = document.getElementById('projectView');
+  var viewOpener = null;     /* the card that opened the project view */
+  var lockCount = 0;         /* how many layers currently hold the page still */
 
   function gallery(images, title) {
     var list = (images || []).filter(function (src) { return src && src !== PLACEHOLDER; });
@@ -358,35 +361,90 @@
 
     lastFocus = document.activeElement;
     dialog.hidden = false;
-    document.body.style.overflow = 'hidden';
-    if (scrollEngine) scrollEngine.stop();   /* the dialog scrolls itself, not the page */
+    setLock(true);   /* the dialog scrolls itself, not the page */
     if (dialogCard) dialogCard.focus();
   }
 
   function closeDialog() {
     if (!dialog || dialog.hidden) return;
     dialog.hidden = true;
-    document.body.style.overflow = '';
-    if (scrollEngine) scrollEngine.start();
+    setLock(false);
     if (lastFocus && lastFocus.focus) lastFocus.focus();
     lastFocus = null;
+  }
+
+  /* ── scroll lock, focus trap and the project view ────────────────── */
+
+  /* A count, not a flag: the project view and the record dialog can both be
+     open, and the page must stay still until the last one closes. */
+  function setLock(lock) {
+    lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
+    document.body.style.overflow = lockCount ? 'hidden' : '';
+    if (!scrollEngine) return;
+    if (lockCount) scrollEngine.stop(); else scrollEngine.start();
+  }
+
+  function trapTab(e, container) {
+    if (!container) return;
+    var f = container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    var first = f[0];
+    var last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  /* The project's own panel, painted with the crop that record had as a page
+     stop and filled with the same projectCopy/projectMedia the dialog uses. */
+  function openProject(index) {
+    if (!projectView) return;
+    var p = P.projects[index];
+    if (!p) return;
+    var art = PROJECT_ART[p.id] || { art: 'rice', pos: '50% 50%' };
+    projectView.className = 'stop art--' + art.art + ' stop--project project-view';
+    projectView.style.setProperty('--pos', art.pos);
+    projectView.dataset.side = index % 2 === 0 ? 'left' : 'right';
+    projectView.setAttribute('aria-label', p.title);
+    projectView.innerHTML =
+      '<div class="stop-in">' +
+        '<div class="copy">' +
+          '<button class="btn project-view__back" type="button" data-close-view>← ' + esc(p.category) + '</button>' +
+          projectCopy(p, index) +
+        '</div>' +
+        '<div class="media">' + projectMedia(p, index) + '</div>' +
+      '</div>';
+    viewOpener = document.activeElement;
+    projectView.hidden = false;
+    setLock(true);
+    projectView.focus();
+  }
+
+  function closeProject() {
+    if (!projectView || projectView.hidden) return;
+    projectView.hidden = true;
+    setLock(false);
+    if (viewOpener && viewOpener.focus) viewOpener.focus();
+    viewOpener = null;
   }
 
   if (dialog) {
     dialogClose.addEventListener('click', closeDialog);
     dialog.addEventListener('click', function (e) { if (e.target === dialog) closeDialog(); });
-    document.addEventListener('keydown', function (e) {
-      if (dialog.hidden) return;
-      if (e.key === 'Escape') { closeDialog(); return; }
-      if (e.key !== 'Tab' || !dialogCard) return;
-      var f = dialogCard.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
-      if (!f.length) return;
-      var first = f[0];
-      var last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    });
   }
+
+  /* One key handler for both layers: the dialog owns Tab/Escape while it is
+     open, otherwise the project view does. Two separate handlers would let one
+     Escape close both. */
+  document.addEventListener('keydown', function (e) {
+    if (dialog && !dialog.hidden) {
+      if (e.key === 'Escape') { closeDialog(); return; }
+      if (e.key === 'Tab') trapTab(e, dialogCard);
+      return;
+    }
+    if (!projectView || projectView.hidden) return;
+    if (e.key === 'Escape') { closeProject(); return; }
+    if (e.key === 'Tab') trapTab(e, projectView);
+  });
 
   /* ── rail, masthead, progress, reveals ──────────────────────────── */
 
@@ -600,12 +658,14 @@
   }
 
   function wireDelegation() {
-    var page = document.getElementById('page');
-    if (!page) return;
-    page.addEventListener('click', function (e) {
+    document.addEventListener('click', function (e) {
+      var closer = e.target.closest ? e.target.closest('[data-close-view]') : null;
+      if (closer) { closeProject(); return; }
       var t = e.target.closest ? e.target.closest('[data-kind][data-index]') : null;
       if (!t || t.disabled) return;
-      openRecord(t.getAttribute('data-kind'), Number(t.getAttribute('data-index')));
+      var kind = t.getAttribute('data-kind');
+      if (kind === 'panel') { openProject(Number(t.getAttribute('data-index'))); return; }
+      openRecord(kind, Number(t.getAttribute('data-index')));
     });
   }
 
@@ -629,6 +689,8 @@
     render: render,
     openRecord: openRecord,
     closeDialog: closeDialog,
+    openProject: openProject,
+    closeProject: closeProject,
     get lenis() { return scrollEngine ? scrollEngine.lenis : null; }
   };
 })();

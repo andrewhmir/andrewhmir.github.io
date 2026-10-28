@@ -33,6 +33,10 @@ assert.match(html, /aria-modal="true"/);
 assert.match(html, /id="rail"/);
 assert.match(html, /class="rail-shade"/);
 assert.match(html, /<noscript>/);
+assert.match(htmlNoComments, /id="projectView"/);
+assert.match(htmlNoComments, /class="stop art--rice stop--project project-view"/);
+assert.match(htmlNoComments, /id="projectView"[\s\S]{0,160}role="dialog"/);
+assert.match(html, /aria-modal="true"/);
 console.log('ok  shell: fonts, scripts, page, dialog, rail, no-JS fallback');
 
 // The retired walk must not creep back in. Lenis is the one exception: the
@@ -57,8 +61,11 @@ assert.match(js, /var scrollEngine/);
 // constructor, in that order, so deleting a guard cannot pass the check.
 assert.match(js, /function wireSmoothScroll\(\) \{\s*if \(!window\.Lenis\) return;\s*if \(window\.matchMedia && window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\) return;\s*var lenis = new window\.Lenis\(\{ autoRaf: true \}\);/);
 // The dialog must stop and start the engine, not merely define an adapter.
-assert.match(js, /dialog\.hidden = false;[\s\S]*?scrollEngine\.stop\(\)/);
-assert.match(js, /dialog\.hidden = true;[\s\S]*?scrollEngine\.start\(\)/);
+assert.match(js, /function setLock\(/);
+assert.match(js, /dialog\.hidden = false;[\s\S]*?setLock\(true\)/);
+assert.match(js, /dialog\.hidden = true;[\s\S]*?setLock\(false\)/);
+assert.match(js, /scrollEngine\.stop\(\)/);
+assert.match(js, /scrollEngine\.start\(\)/);
 // The card opts out of Lenis's capture: a stopped Lenis would otherwise cancel
 // the wheel over the dialog's own scroll area.
 assert.match(html, /class="dialog__card" data-lenis-prevent/);
@@ -147,9 +154,14 @@ for (const id of ["'top'", "'about'", "'news'", "'work'", "'leadership'", "'hono
 assert.match(js, /S\.deriveRooms\(P\.projects\)/);
 assert.match(js, /function categoryCopy\(/);
 assert.match(js, /function categoryCards\(/);
+assert.match(js, /function openProject\(/);
+assert.match(js, /function closeProject\(/);
+assert.match(js, /function trapTab\(/);
+assert.match(js, /data-kind="panel"/);
 assert.match(js, /stop--category/);
 assert.match(js, /project-card/);
 assert.match(js, /project-card__art[\s\S]{0,400}FALLBACK/);
+assert.match(cssNoComments, /\.project-view/);
 assert.match(js, /S\.honoursTiles\(P\.honors\)/);
 assert.match(js, /dialog__video/);
 assert.match(js, /IntersectionObserver/);

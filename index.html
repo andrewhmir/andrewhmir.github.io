@@ -81,6 +81,12 @@
        here except the no-JS fallback below. -->
   <main id="page" class="page"></main>
 
+  <!-- Project view: the one full-screen project panel, painted from PORTFOLIO
+       by js/main.js. It stacks below the record dialog (z-index 80 vs 60), so
+       the view's "Open the record →" still opens the dialog above it. -->
+  <div class="stop art--rice stop--project project-view" id="projectView" hidden
+       role="dialog" aria-modal="true" aria-label="Project record" tabindex="-1"></div>
+
   <footer class="foot">
     <span class="foot__name">Andrew Alangcao</span>
     <span class="foot__credit">Paintings by Fernando Amorsolo y Cueto (1892–1972)</span>

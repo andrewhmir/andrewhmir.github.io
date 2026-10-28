@@ -647,6 +647,23 @@ h2 {
 .dialog__body li { margin-bottom: 6px; }
 .dialog__body a { color: var(--accent); }
 
+/* ── Project view ─────────────────────────────────────────────────── */
+
+/* The fixed, full-screen layer a card opens: the same painted panel as a page
+   stop, but outside the page flow (and below the record dialog's z-index 80). */
+.project-view {
+  position: fixed; inset: 0; z-index: 60;
+  margin: 0; border-radius: 0;
+  overflow-x: hidden; overflow-y: auto;
+  animation: project-view-in .22s ease;
+  scrollbar-width: none;
+}
+.project-view[hidden] { display: none; }
+.project-view::-webkit-scrollbar { width: 0; height: 0; }
+.project-view .stop-in { min-height: 100vh; }
+.project-view__back { margin: 0 0 22px; }
+@keyframes project-view-in { from { opacity: 0; } to { opacity: 1; } }
+
 /* ── Reveal ───────────────────────────────────────────────────────── */
 
 [data-reveal] {

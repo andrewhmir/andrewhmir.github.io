@@ -29,8 +29,8 @@ The shell ships one empty dialog: `.dialog` (`#dialog[hidden]`) > `.dialog__card
 (`#dialogMeta`), `.dialog__title` (`#dialogTitle`) and `.dialog__body`
 (`#dialogBody`). `openRecord(kind, index)` fills title, meta and body, then
 unhides the dialog. `closeDialog()` reverses it. The opening buttons carry
-`data-kind` and `data-index`; their delegation lives on `#page` (see
-[reveals-chrome.md](reveals-chrome.md)).
+`data-kind` and `data-index`; their delegation lives on `document` (see
+[project.md](project.md) and [reveals-chrome.md](reveals-chrome.md)).
 
 ## Adjust it
 
@@ -51,9 +51,12 @@ unhides the dialog. `closeDialog()` reverses it. The opening buttons carry
 - `role="dialog"`, `aria-modal="true"`, a labelled close button — see the
   accessibility row in `AGENTS.md`'s hard constraints.
 - `openRecord` saves `document.activeElement`, focuses the card, locks body
-  scroll and stops Lenis; `closeDialog` restores the scroll, the focus and
-  Lenis. The card carries `data-lenis-prevent` so its own scroll area keeps
-  working while Lenis is stopped.
+  scroll through the shared `setLock` count (so the project view may still hold
+  the lock beneath it) and stops Lenis; `closeDialog` restores the focus and
+  releases only its own lock. The card carries `data-lenis-prevent` so its own
+  scroll area keeps working while Lenis is stopped.
+- `#projectView` is the layer below: the dialog's `z-index: 80` beats the view's
+  `60`, and one keydown handler gives Escape/Tab to the dialog first.
 - Escape, a click on the overlay and the close button all close the dialog.
 - Tab is trapped inside the card's focusable elements.
 - The video is the only place the films play: muted, looping and inline, with
