@@ -438,6 +438,43 @@ h2 {
 }
 .awards li::before { content: "—"; position: absolute; left: 0; color: var(--accent); }
 
+/* ── Category panels ──────────────────────────────────────────────── */
+
+/* Work is two panels, one per category: the copy keeps a narrower column and
+   the three project cards take the rest, so they sit abreast. */
+.stop--category .copy { grid-column: 1 / span 4; }
+.stop--category .media { grid-column: 5 / span 8; }
+.stop[data-side="right"].stop--category .copy { grid-column: 9 / span 4; }
+.stop[data-side="right"].stop--category .media { grid-column: 1 / span 8; grid-row: 1; }
+
+.category-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.project-card {
+  padding: 0; border: 1px solid rgba(236, 226, 207, .2); border-radius: var(--frame-radius);
+  overflow: hidden; background: rgba(13, 18, 21, .72); text-align: left; color: var(--text);
+  cursor: pointer; box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .7);
+  transition: border-color .2s ease, background .2s ease;
+}
+.project-card:hover, .project-card:focus-visible {
+  border-color: var(--accent); background: rgba(13, 18, 21, .88); outline: none;
+}
+.project-card__art { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: #0d1215; }
+.project-card__art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.project-card__body { display: block; padding: 10px 12px 12px; }
+.project-card__title {
+  display: block; font-family: var(--serif); font-weight: 400; font-size: 17px;
+  line-height: 1.2; color: var(--text-strong);
+}
+.project-card__tag { display: block; font-size: 12.5px; line-height: 1.4; color: var(--text-quiet); margin-top: 4px; }
+.project-card__meta {
+  display: block; margin-top: 8px; font-family: var(--mono); font-size: 10px;
+  letter-spacing: .09em; text-transform: uppercase; color: var(--accent);
+}
+.category-count {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-quiet); margin: 0 0 22px;
+}
+
 /* ── Leadership cards ─────────────────────────────────────────────── */
 
 .leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; grid-auto-rows: 1fr; }
@@ -638,6 +675,12 @@ h2 {
   .copy, .media, .stop[data-side="right"] .copy, .stop[data-side="right"] .media {
     grid-column: 1 / -1; grid-row: auto;
   }
+  .stop--category .copy, .stop--category .media,
+  .stop[data-side="right"].stop--category .copy,
+  .stop[data-side="right"].stop--category .media {
+    grid-column: 1 / -1; grid-row: auto;
+  }
+  .category-cards { grid-template-columns: 1fr; }
   .stop--hero .stop-in { padding-top: 118px; padding-bottom: 56px; }
   .stop--hero .copy { grid-column: 1 / -1; }
   .copy--center { text-align: left; justify-self: start; }

@@ -144,7 +144,12 @@ console.log('ok  no third-party resource loads');
 for (const id of ["'top'", "'about'", "'news'", "'work'", "'leadership'", "'honours'", "'contact'"]) {
   assert.ok(js.includes(id), `renderer missing section id ${id}`);
 }
-assert.match(js, /P\.projects\.forEach/);
+assert.match(js, /S\.deriveRooms\(P\.projects\)/);
+assert.match(js, /function categoryCopy\(/);
+assert.match(js, /function categoryCards\(/);
+assert.match(js, /stop--category/);
+assert.match(js, /project-card/);
+assert.match(js, /project-card__art[\s\S]{0,400}FALLBACK/);
 assert.match(js, /S\.honoursTiles\(P\.honors\)/);
 assert.match(js, /dialog__video/);
 assert.match(js, /IntersectionObserver/);
@@ -159,7 +164,10 @@ vm.createContext(ctx);
 vm.runInContext(data, ctx);
 const P = ctx.PORTFOLIO;
 const S = ctx.Site;
-assert.equal(P.projects.length, 6, 'the page is built for six project stops');
+assert.equal(P.projects.length, 6, 'the page is built for six project records');
+const rooms = S.deriveRooms(P.projects);
+assert.equal(Array.from(rooms, (r) => r.key).join(','), 'Robotics,Applications', 'the Work panels are the two categories');
+assert.equal(Array.from(rooms, (r) => r.projects.length).join(','), '3,3', 'each category panel holds three projects');
 assert.equal(P.leadership.length, 4, 'leadership renders four cards');
 assert.equal(S.honoursTiles(P.honors).tiles.length, 5, 'honours renders the standalone tiles');
 assert.equal(P.news.length, 4, 'news renders four rows');

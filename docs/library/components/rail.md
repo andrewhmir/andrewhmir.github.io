@@ -16,17 +16,18 @@ crops.
 | Styles | `css/styles.css` | `── Journey rail` · `.rail__stop.is-active` |
 | Styles | `css/styles.css` | `── The left shade, so the rail reads over a bright crop` |
 | Styles | `css/styles.css` | `.rail::before` · `--rail-progress` · `background-size: 5px calc(100% - 34px)` · `.rail__stop span` · `:focus-visible` · `@media (min-width: 1024px)` |
-| Data | `js/data.js` | `projects[].id` · `projects[].title` |
+| Data | `js/data.js` | `projects[].category` |
 | Test | `tests/page.test.mjs` | `id="rail"` · `class="rail-shade"` · `--rail-progress` |
 
 ## Structure
 
 `nav.rail#rail` ships empty and `buildRail` fills it with one
 `a.rail__stop[data-stop="<id>"] > span` per named section: About, News, one per
-project id, Leadership, Honours and Contact — eleven today, the hero excluded. `wireChrome`
-toggles `.is-active` for the panel covering the viewport middle — the boundary
-crossing the centre is the moment the tick changes, a middle in a gutter keeps
-the section just passed. The sibling `div.rail-shade` is a 108px gradient.
+Work category, Leadership, Honours and Contact — seven today, the hero excluded.
+`wireChrome` toggles `.is-active` for the panel covering the viewport middle —
+the boundary crossing the centre is the moment the tick changes, a middle in a
+gutter keeps the section just passed. The sibling `div.rail-shade` is a 108px
+gradient.
 
 The rail's line does double duty. `.rail` paints the unfilled track as a
 background hairline from the first tick's centre to the last; `.rail::before` is
@@ -40,7 +41,7 @@ tucked under the gold bar, labels above; the stop's hit row is 77x34px.
 
 | Want to change | Change here | Verify with |
 |---|---|---|
-| A section label | the `labels` array in `buildRail`; project labels come from `P.projects`, the rest are literals | click the stop; the label matches the section |
+| A section label | the `labels` array in `buildRail`; category labels come from `Site.deriveRooms`, the rest are literals | click the stop; the label matches the section |
 | Which sections get a stop | `labels` in `buildRail`; the page order decides what the middle finds | scroll past a section; the active tick moves |
 | The active section | `activeSection()` in `wireChrome`: the panel covering the viewport middle | scroll across two panel boundaries; the tick flips as the boundary crosses the middle |
 | Rail position, spacing or click area | `.rail` (`left`, `top`, `transform`); `.rail__stop` (34px rows, 77px hit width, -13px margin under the line) | 1440×900 screenshot; click just right of a dash |
@@ -83,8 +84,7 @@ tucked under the gold bar, labels above; the stop's hit row is 77x34px.
 - `--rail-progress` is a px length: `height: var(--rail-progress, 0px)`. A bare
   number there collapses the fill, and the `reduced` branch must keep skipping
   `paint()` or the fill animates against a reduced-motion preference.
-- A seventh project adds a rail stop automatically but collides with the `PAN`
-  crop table — see AGENTS.md before touching `js/data.js`.
+- A new category adds a rail stop automatically; a seventh project changes only the 3 + 3 counts and the guard's data assertions.
 - The hit row overflows the rail's box: `.rail` must keep `pointer-events: none`
   with `.rail__stop` restored to `auto`, or the strip eats panel clicks.
 - The shade stays behind the rail (29 against 30), above the panel art, darkening the panels' left edge.

@@ -21,8 +21,16 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.stop-in` | [panel.md](components/panel.md) | the 12-column grid inside a panel |
 | `.art--rice` | [panel.md](components/panel.md) | painting 1 art layer (`painting-hero.jpg`) |
 | `.art--harvest` | [panel.md](components/panel.md) | painting 2 art layer (`painting.jpg`) |
-| `.work` | [project.md](components/project.md) | the Work wrapper holding the six project stops |
+| `.work` | [project.md](components/project.md) | the Work wrapper holding the two category panels |
 | `.awards` | [project.md](components/project.md) | a project's award list, present only when `awards` is non-empty |
+| `.category-cards` | [project.md](components/project.md) | the three project cards inside a category panel |
+| `.project-card` | [project.md](components/project.md) | one project card button; opens that project's view |
+| `.project-card__art` | [project.md](components/project.md) | the card's overview still |
+| `.project-card__body` | [project.md](components/project.md) | the card's text column |
+| `.project-card__title` | [project.md](components/project.md) | the record title |
+| `.project-card__tag` | [project.md](components/project.md) | the record tagline |
+| `.project-card__meta` | [project.md](components/project.md) | award count, or the venue when there are none |
+| `.category-count` | [project.md](components/project.md) | the project/award count under the room lede |
 | `.portrait` | [about.md](components/about.md) | the framed About portrait |
 | `.stack` | [frames.md](components/frames.md) | the three-frame media column |
 | `.frame` | [frames.md](components/frames.md) | one media frame: lead, film still, team or awaited |
@@ -47,7 +55,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.btn--solid` | [primitives/controls.md](primitives/controls.md) | the gold solid button variant; hero "See the work" |
 | `.copy--center` | [panel.md](components/panel.md) | the centred copy column; Contact only — the hero keeps `.stop--hero .copy` on the left |
 | `.stop--hero` | [hero.md](components/hero.md) | the hero panel modifier |
-| `.stop--project` | [project.md](components/project.md) | one project panel; emitted once per project record |
+| `.stop--project` | [project.md](components/project.md) | the project-panel modifier; the category panels and the project view both carry it |
+| `.stop--category` | [project.md](components/project.md) | the category-panel modifier on the two Work panels |
 | `.stop--contact` | [contact.md](components/contact.md) | the contact panel modifier |
 | `.stop--news` | [news.md](components/news.md) | the News panel modifier; widens the copy column |
 | `.stop--list` | [honours.md](components/honours.md), [news.md](components/news.md) | emitted on the Honours and News panels; no CSS rule |
@@ -84,6 +93,6 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `data-side` | [panel.md](components/panel.md) | `left` / `right` / `center`; drives the scrim direction and the copy column |
 | `data-lenis-prevent` | [dialog.md](components/dialog.md) | opts the dialog card out of Lenis's wheel/touch capture so its own scroll area works while Lenis is stopped |
 | `data-reveal` | [reveals-chrome.md](components/reveals-chrome.md) | marks a node for reveal-on-scroll |
-| `data-kind` | [dialog.md](components/dialog.md) | record kind for the delegated opener: `project`, `leadership` or `honors` |
+| `data-kind` | [dialog.md](components/dialog.md) | record kind for the delegated opener: `panel`, `project`, `leadership` or `honors` |
 | `data-index` | [dialog.md](components/dialog.md) | the record's index into that kind's array |
 | `data-stop` | [rail.md](components/rail.md) | the section id on a `.rail__stop` |

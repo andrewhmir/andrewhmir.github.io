@@ -27,28 +27,28 @@ the stop id, `data-side` and the inline `--pos`, and fills `.stop-in` with
 `.copy` (or `.copy--center`) and the optional `.media`. The art is
 `.stop::before`; the scrim is `.stop::after`.
 
-`PAN` is indexed by page position; the twelve crops in page order are:
+`PAN` is indexed by page position; the eight crops in page order are:
 
 | `PAN` | Painting | `--pos` | Stop |
 |---|---|---|---|
 | 0 | `rice` | `50% 58%` | hero |
 | 1 | `harvest` | `48% 52%` | about |
 | 2 | `harvest` | `20% 26%` | news |
-| 3 | `rice` | `18% 56%` | project 1 |
-| 4 | `harvest` | `78% 44%` | project 2 |
-| 5 | `rice` | `76% 50%` | project 3 |
-| 6 | `harvest` | `22% 66%` | project 4 |
-| 7 | `rice` | `44% 22%` | project 5 |
-| 8 | `harvest` | `56% 50%` | project 6 |
-| 9 | `rice` | `8% 44%` | leadership |
-| 10 | `harvest` | `88% 36%` | honours |
-| 11 | `rice` | `50% 88%` | contact |
+| 3 | `rice` | `30% 62%` | Robotics |
+| 4 | `harvest` | `64% 38%` | Applications |
+| 5 | `rice` | `8% 44%` | leadership |
+| 6 | `harvest` | `88% 36%` | honours |
+| 7 | `rice` | `50% 88%` | contact |
+
+`PROJECT_ART` is the separate table for the project view: it is keyed by project
+id, so a record keeps its own crop there without shifting the page's `PAN`.
 
 ## Adjust it
 
 | Want to change | Change here | Verify with |
 |---|---|---|
 | Which crop a stop shows | its `PAN` entry (`art`, `pos`) in `js/main.js` | screenshot at 1440×900 and 390×844; copy side still readable |
+| Which crop a project view shows | `PROJECT_ART` in `js/main.js`, keyed by project id | open a project card; the crop matches the record |
 | Which side the copy sits on | the `side:` value the caller passes `panel()`; the CSS reads `data-side` | screenshot: scrim dark under the copy, painting bright on the far side |
 | The copy/media column split | `.stop-in`, `.copy`, `.media`, `.copy--center` | screenshot at 1280×704; no overlap |
 | A scrim gradient | `.stop[data-side="left"]`, `"right"` or `"center"` | screenshot over the brightest crop |
@@ -61,14 +61,14 @@ the stop id, `data-side` and the inline `--pos`, and fills `.stop-in` with
 - Every stop is a `.stop` panel; no other component paints its own background or adds a second art layer.
 - `.stop` sets `isolation: isolate`, so the art (`::before`, `z-index: -2`) and the scrim (`::after`, `z-index: -1`) stay inside the panel. A positive-z layer hides the art; dropping `isolation` lets the negative layers escape — see the art/scrim stacking gotcha in `AGENTS.md`.
 - `background-position: var(--pos` is the only crop mechanism: one painting moved by an inline custom property, not an image swap and not an animation.
-- The twelve crops are page order, not project id order: hero, about, news, six projects, leadership, honours, contact.
+- The eight page crops are page order, not record order: hero, about, news, Robotics, Applications, leadership, honours, contact. `PROJECT_ART` is keyed by project id and paints the project view.
 - `data-side` drives both the scrim direction and the copy/media columns, and is set on the `.stop`, never on `.stop-in`.
 - The panel radius is `--panel-radius: 16px` (12px below 640) and overflow is clipped, so art and scrim need no own radius.
 - A new panel class is covered by the library check (V5); document it here in the same edit.
 
 ## Traps
 
-- `PAN` is indexed by page position. A seventh project takes `PAN[9]`, which is Leadership's crop today; every later crop shifts and `page.test.mjs` asserts six projects. Extend `PAN`, the rail and the guard together (see the `PAN` gotcha in `AGENTS.md`).
+- `PAN` is indexed by page position, so adding or moving a stop shifts every later crop; `page.test.mjs` pins the section counts. `PROJECT_ART` is keyed by project id, so a new project needs an entry there or its view falls back to `50% 50%`.
 - Reordering `PORTFOLIO.projects` reslices every project panel's crop silently: no selector changes and no error surfaces.
 - `panel()` concatenates the art class (`'stop art--' + o.art`); a typo in an `art` key leaves no `--art`, so the panel paints flat dark instead of a painting.
 - `data-side` is consumed on `.stop`; putting it on `.stop-in` changes nothing because the rules are `.stop[data-side="right"] .copy`.

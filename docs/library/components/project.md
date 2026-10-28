@@ -1,57 +1,74 @@
-# Project stop
+# Category panel
 
-The Work wrapper and its project panels: eyebrow, title, copy, optional awards,
-and the button that opens the shared record dialog.
+The Work wrapper and its two category panels: a room sentence, a project count,
+and three project cards that open a record's own panel.
 
 ## Where it lives
 
 | Role | File | Anchor |
 |---|---|---|
 | Markup | `index.html` | `<a href="#work">` |
-| Render | `js/main.js` | `/* 3 — work` · `work.className = 'work';` · `work.id = 'work';` |
-| Render | `js/main.js` | `P.projects.forEach(function (p, i) {` · `cls: 'stop--project',` |
-| Render | `js/main.js` | `function projectCopy(` · `Open the record →` |
-| Styles | `css/styles.css` | `── Project panel extras` · `.awards {` · `.awards li {` |
-| Styles | `css/styles.css` | `── Type` · `.eyebrow {` |
-| Data | `js/data.js` | `projects[].id` · `projects[].title` · `projects[].category` · `projects[].venue` · `projects[].tagline` · `projects[].summary` |
-| Data | `js/data.js` | `projects[].awards` |
-| Test | `tests/page.test.mjs` | `'work'` · `P.projects.length` |
+| Render | `js/main.js` | `S.deriveRooms(P.projects)` · `cls: 'stop--project stop--category',` |
+| Render | `js/main.js` | `function categoryCopy(` · `03 · Work · ` · `category-count` |
+| Render | `js/main.js` | `function categoryCards(` · `data-kind="panel"` · `project-card__art` |
+| Styles | `css/styles.css` | `── Category panels` · `.category-cards {` · `.project-card {` |
+| Styles | `css/styles.css` | `.stop--category .copy` · `.project-card__art` · `.category-count` |
+| Data | `js/data.js` | `projects[].category` · `projects[].overview` · `projects[].awards` |
+| Data | `js/data.js` | `Site.deriveRooms` |
+| Test | `tests/page.test.mjs` | `Array.from(rooms` · `function categoryCards\(` |
 
 ## Structure
 
-`render()` creates the `.work` wrapper (`#work`) and appends one
-`section.stop` with `stop--project` per `PORTFOLIO.projects` record, in array
-order; the stop's id is the record id (`project1`…`project6` today). Each
-panel's `.copy` cell is `.eyebrow` (category · venue), an `<h2>` title, `.lede`
-tagline, `.body` summary, an optional `.awards` list and an "Open the record →"
-`.btn`. The `.media` cell is the three-frame stack — see
-[frames.md](frames.md).
+`render()` creates the `.work` wrapper (`#work`) and appends one `section.stop`
+with `stop--project stop--category` per `Site.deriveRooms(PORTFOLIO.projects)`
+room, in room order. The stop id is the room key lowercased (`robotics`,
+`applications`), so it is the rail and masthead anchor. The `.copy` cell is
+`.eyebrow` ("03 · Work · <key>"), an `<h2>` ("Robotics."), the room's `.lede`
+and a `.category-count` line. The `.media` cell is `.category-cards`: three
+`.project-card` buttons, each with the record's overview still, title, tagline
+and a meta line (award count, or the venue when the record has no awards).
+
+The grouping is derived, not authored: `Site.deriveRooms` splits on
+`projects[].category`, orders the known rooms first, and keeps an unknown
+category rather than dropping it. `ROOM_LEDES` in `js/data.js` supplies each
+room's sentence; a record's own id and index are untouched, so the honours
+`from: 'projectN'` links still resolve.
 
 ## Adjust it
 
 | Want to change | Change here | Verify with |
 |---|---|---|
-| Project copy | `projects[]` fields in `js/data.js` (`title`, `tagline`, `summary`, `category`, `venue`) | screenshot each stop |
-| Awards on a project | the record's `awards:` array of `{ description, year }`; the `<ul class="awards">` renders only when the array is non-empty | `npm test` data suites; screenshot |
-| The button that opens the record | `projectCopy(` emits it with `data-kind="project"` and `data-index`; the dialog page owns the destination | click a project panel button |
-| A project's stop id, rail label and position | `projects[].id` and array order in `js/data.js` | rail jumps to the record id; `page.test.mjs` count |
-| Where the panel sits in `#work` | the `P.projects.forEach` loop in `render()` | screenshot; the first stop is the wrapper's landing point |
-| Which crop a project uses | `PAN[2 + i]` — the crop table on the panel page | screenshot |
+| A room's sentence | `ROOM_LEDES` in `js/data.js` | screenshot the category panel |
+| Which projects share a panel | the record's `category` field; rooms are derived | rail labels and card order follow the derived groups |
+| A card's still, title, tagline or meta | `function categoryCards(` in `js/main.js` | open the panel; the card matches the record |
+| The eyebrow, title or count line | `function categoryCopy(` | screenshot at 1440×900 |
+| Which crop each category panel uses | `PAN[3]` / `PAN[4]` in `js/main.js` (see [panel.md](panel.md)) | screenshot; copy side still readable |
+| The card column split or card look | `.stop--category .copy` / `.media`, `.category-cards`, `.project-card` in `css/styles.css` | 1440×900 (three abreast) and 390×844 (one column) |
 
 ## Invariants
 
-- One `.stop--project` per `PORTFOLIO.projects` record, in array order; the rendered id is the record id, so it doubles as the rail anchor.
-- `#work` lives on the `.work` wrapper, not on a project panel, so the Work nav link lands on the first project.
-- The copy is assembled only by `projectCopy(`; no project markup is authored in `index.html`.
-- The awards list appears only when the record has awards; project awards are excluded from the Honours tiles by `from: 'projectN'` (the honours page owns that partition).
-- Copy-side alternation is positional (`i % 2 === 0 ? 'left' : 'right'`), so the side follows page position, not the record.
-- Frame labels and the button text are literals in the renderer, not data fields.
+- One category panel per derived room; today that is Robotics (PALAD,
+  C.E.N.T.H.R.O., Focus Buddy) and Applications (Hivemind, SATLearn, BiyaHey!),
+  three each.
+- `#work` lives on the `.work` wrapper, not on a category panel, so the Work nav
+  link lands on the first category.
+- A card's `data-index` is the record's index in `PORTFOLIO.projects`, which is
+  what the shared dialog and the project view resolve against.
+- The copy is assembled only by `categoryCopy(`; no category markup is authored
+  in `index.html`.
+- `.category-cards` is a 3-column grid above 1024px and one column below it, in
+  step with the panel grid collapsing to one column.
 
 ## Traps
 
-- Adding a seventh project collides with `PAN[9]` (Leadership) and shifts every later crop; extend `PAN`, the rail and `page.test.mjs`'s six-project count together — see the `PAN` gotcha in `AGENTS.md`.
-- Reordering `projects` changes page order, rail order, every later `PAN` crop and the copy-side alternation: one data edit, many visual changes.
-- The `.awards` list is not the Honours list. Project awards live here as text and are excluded from tiles by `from: 'projectN'`; do not duplicate them.
-- "Overview", "Film", "Team" and "Open the record →" are literals inside `projectMedia(` / `projectCopy(`; editing data does not change them.
-- `data-kind="project"` plus `data-index` is the dialog contract; a control missing either is inert because delegation selects `[data-kind][data-index]`.
-- `#work` is a plain wrapper, not a stop. The rail observes `.stop[id]` only — do not give the wrapper a panel class.
+- The 3 + 3 split is a fact of `projects[].category`; adding a project changes a
+  room's count and `page.test.mjs`'s data assertions, not a hand-written list.
+- Reordering `PORTFOLIO.projects` changes card order inside each room but never
+  moves a project between rooms.
+- `.stop--category .copy` / `.media` set the 4/8 column split; the 1023px block
+  must keep overriding them to `grid-column: 1 / -1`, or the split leaks into the
+  one-column mobile grid.
+- The cards are buttons inside `.media`; the delegated opener selects
+  `[data-kind][data-index]`, so a card missing either attribute is inert.
+- A record with no `awards` shows its `venue` in the meta line rather than an
+  empty count.

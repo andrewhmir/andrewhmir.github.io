@@ -12,21 +12,27 @@
   var PLACEHOLDER = 'files/PlaceHolder.png';
   var FALLBACK = ' onerror="this.onerror=null;this.src=\'' + PLACEHOLDER + '\'"';
 
-  /* The pan: one crop of one painting per stop, in page order. */
+  /* The pan: one crop of one painting per page stop, in page order. */
   var PAN = [
     { art: 'rice', pos: '50% 58%' },    /* hero */
     { art: 'harvest', pos: '48% 52%' }, /* about */
     { art: 'harvest', pos: '20% 26%' }, /* news */
-    { art: 'rice', pos: '18% 56%' },    /* project 1 */
-    { art: 'harvest', pos: '78% 44%' }, /* project 2 */
-    { art: 'rice', pos: '76% 50%' },    /* project 3 */
-    { art: 'harvest', pos: '22% 66%' }, /* project 4 */
-    { art: 'rice', pos: '44% 22%' },    /* project 5 */
-    { art: 'harvest', pos: '56% 50%' }, /* project 6 */
+    { art: 'rice', pos: '30% 62%' },    /* robotics */
+    { art: 'harvest', pos: '64% 38%' }, /* applications */
     { art: 'rice', pos: '8% 44%' },     /* leadership */
     { art: 'harvest', pos: '88% 36%' }, /* honours */
     { art: 'rice', pos: '50% 88%' }     /* contact */
   ];
+
+  /* The project view keeps each record's own crop from the old page order. */
+  var PROJECT_ART = {
+    project1: { art: 'rice', pos: '18% 56%' },
+    project2: { art: 'harvest', pos: '78% 44%' },
+    project3: { art: 'rice', pos: '76% 50%' },
+    project4: { art: 'harvest', pos: '22% 66%' },
+    project5: { art: 'rice', pos: '44% 22%' },
+    project6: { art: 'harvest', pos: '56% 50%' }
+  };
 
   function esc(v) {
     return String(v == null ? '' : v)
@@ -99,6 +105,33 @@
       '<button class="btn" type="button" data-kind="project" data-index="' + i + '">Open the record →</button>';
   }
 
+  function awardCount(p) { return (p.awards && p.awards.length) || 0; }
+
+  function categoryCopy(room) {
+    var awards = room.projects.reduce(function (n, p) { return n + awardCount(p); }, 0);
+    return '<p class="eyebrow">03 · Work · ' + esc(room.key) + '</p>' +
+      '<h2>' + esc(room.key) + '.</h2>' +
+      '<p class="lede">' + esc(room.lede) + '</p>' +
+      '<p class="category-count">' + room.projects.length + ' projects · ' +
+        awards + (awards === 1 ? ' award' : ' awards') + '</p>';
+  }
+
+  function categoryCards(room) {
+    return '<div class="category-cards">' + room.projects.map(function (p) {
+      var i = P.projects.indexOf(p);
+      var n = awardCount(p);
+      var meta = n ? n + (n === 1 ? ' award' : ' awards') : p.venue;
+      return '<button class="project-card" type="button" data-kind="panel" data-index="' + i + '">' +
+        '<span class="project-card__art"><img src="' + esc(p.overview && p.overview.image) +
+          '" alt="' + esc(p.title + ' — overview') + '" loading="lazy"' + FALLBACK + '></span>' +
+        '<span class="project-card__body">' +
+          '<span class="project-card__title">' + esc(p.title) + '</span>' +
+          '<span class="project-card__tag">' + esc(p.tagline) + '</span>' +
+          '<span class="project-card__meta">' + esc(meta) + '</span>' +
+        '</span></button>';
+    }).join('') + '</div>';
+  }
+
   /* ── the page ───────────────────────────────────────────────────── */
 
   function render() {
@@ -163,19 +196,19 @@
         }).join('') + '</ol>'
     }));
 
-    /* 3 — work (six project panels, wrapped so #work lands on the first) */
+    /* 3 — work (one panel per category, wrapped so #work lands on the first) */
     var work = document.createElement('div');
     work.className = 'work';
     work.id = 'work';
-    P.projects.forEach(function (p, i) {
+    S.deriveRooms(P.projects).forEach(function (room, r) {
       work.appendChild(panel({
-        id: p.id,
-        cls: 'stop--project',
-        side: i % 2 === 0 ? 'left' : 'right',
-        art: PAN[3 + i].art,
-        pos: PAN[3 + i].pos,
-        copy: projectCopy(p, i),
-        media: projectMedia(p, i)
+        id: room.key.toLowerCase(),
+        cls: 'stop--project stop--category',
+        side: r % 2 === 0 ? 'left' : 'right',
+        art: PAN[3 + r].art,
+        pos: PAN[3 + r].pos,
+        copy: categoryCopy(room),
+        media: categoryCards(room)
       }));
     });
     out.push(work);
@@ -184,8 +217,8 @@
     out.push(panel({
       id: 'leadership',
       side: 'left',
-      art: PAN[9].art,
-      pos: PAN[9].pos,
+      art: PAN[5].art,
+      pos: PAN[5].pos,
       copy:
         '<p class="eyebrow">04 · Leadership</p>' +
         '<h2>Running things.</h2>' +
@@ -211,8 +244,8 @@
       id: 'honours',
       cls: 'stop--list',
       side: 'left',
-      art: PAN[10].art,
-      pos: PAN[10].pos,
+      art: PAN[6].art,
+      pos: PAN[6].pos,
       copy:
         '<p class="eyebrow">05 · Honours</p>' +
         '<h2>Recognised here and abroad.</h2>' +
@@ -234,8 +267,8 @@
       id: 'contact',
       cls: 'stop--contact',
       side: 'center',
-      art: PAN[11].art,
-      pos: PAN[11].pos,
+      art: PAN[7].art,
+      pos: PAN[7].pos,
       center: true,
       copy:
         '<p class="eyebrow">06 · Contact</p>' +
@@ -364,7 +397,9 @@
     if (!rail) return;
     var labels = [{ id: 'about', label: 'About' }];
     labels.push({ id: 'news', label: 'News' });
-    P.projects.forEach(function (p) { labels.push({ id: p.id, label: p.title }); });
+    S.deriveRooms(P.projects).forEach(function (room) {
+      labels.push({ id: room.key.toLowerCase(), label: room.key });
+    });
     labels.push({ id: 'leadership', label: 'Leadership' });
     labels.push({ id: 'honours', label: 'Honours' });
     labels.push({ id: 'contact', label: 'Contact' });
@@ -429,7 +464,7 @@
     }
 
     /* Where a section's tick sits on the fill (the fill ends at its centre) and
-       how much of the eleven-stop journey it represents for the phone hairline. The
+       how much of the seven-stop journey it represents for the phone hairline. The
        track starts at the first tick's centre, so the first stop is 0 and the
        last stop's fill length is the whole line. */
     function railTarget(id) {
