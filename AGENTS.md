@@ -157,7 +157,7 @@ specific: a constraint that only a review catches is marked as such.
 | **The retired build stays out of the shell** | `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped). Lenis is the deliberate exception: the vendored library is the page's smooth-wheel layer now. | `page.test.mjs` |
 | **The dialog stays accessible** | `role="dialog"`, `aria-modal="true"`, `aria-labelledby="dialogTitle"`, a labelled close button; `openRecord` saves focus, focuses the card, traps Tab, closes on Escape/overlay/button and restores focus; body scroll is locked while open. | Markup is pinned by `page.test.mjs`; the trap and restore are behaviour in `js/main.js` and are **not** unit-tested |
 | **Reduced motion is honoured** | `prefers-reduced-motion` disables reveals and smooth scrolling, and Lenis is never constructed; the JS marks every reveal visible instead of observing. | `page.test.mjs` pins the string; the CSS media query and the JS branches implement it; behaviour is manual |
-| **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog stops it while open and its card opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and dialog behaviour are manual |
+| **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
 | **The content counts** | Six projects split 3 + 3 across two categories, four leadership cards, five standalone honour tiles, four news rows; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
@@ -193,8 +193,9 @@ floor, and 390×844, and look for:
 - the dialog fitting the viewport, its video controls reachable, Tab staying
   inside, Escape returning focus to the button that opened it;
 - a project card opening `#projectView` at the record's own crop, its back
-  button and Escape returning focus to that card, and the dialog stacking above
-  the view while the page stays locked underneath;
+  button and Escape returning focus to that card, its own wheel/touch scrolling
+  while the page stays locked, Shift+Tab staying inside, and the dialog stacking
+  above it;
 - the wheel gliding and settling (`window.Profile.lenis` truthy), a long
   recorded dialog wheel/touch-scrolling its own card while the page stays put,
   and a reduced-motion reload leaving `html.lenis` off and
@@ -236,10 +237,10 @@ server build.
   animation. Lenis subtracts an element's own `scroll-margin-top` in
   `scrollTo`, so the anchor handler only passes the panels' clearance as an
   offset for targets without one (`#work`, `#page`); adding both would double
-  it. The dialog calls `lenis.stop()` / `lenis.start()` or the wheel fights the
-  body scroll lock, and its card carries `data-lenis-prevent`: a stopped Lenis
-  still cancels the wheel/touch it would otherwise capture, so without the
-  attribute a long record could not scroll.
+  it. The dialog and the project view stop Lenis through the shared `setLock`
+  count or the wheel fights the body scroll lock, and both carry
+  `data-lenis-prevent`: a stopped Lenis still cancels the wheel/touch it would
+  otherwise capture, so without the attribute a long record could not scroll.
 - **`files/painting.jpg` is live.** It is the About/News/Hivemind/Focus
   Buddy/BiyaHey/Honours art (`art--harvest`). Older cleanup notes called it an
   orphan because the retired page did not use it; that is no longer true. Do not
@@ -272,9 +273,11 @@ server build.
   Changing bio order changes the hero sentence.
 - **`PAN` is indexed by page position; `PROJECT_ART` by project id.** A seventh
   project does not shift `PAN` (categories are the stops) but needs a
-  `PROJECT_ART` entry or its view falls back to `50% 50%`; the guard asserts six
-  projects and two rooms of three. A new category is a new `PAN` entry, a rail
-  stop and a count change — update the guard with it.
+  `PROJECT_ART` entry or its view falls back to the category's crop, then
+  `50% 50%`; the guard asserts six projects and two rooms of three. Adding a
+  category shifts every later `PAN` entry — including the hard-coded Leadership
+  `PAN[5]`, Honours `PAN[6]` and Contact `PAN[7]` — so update those and the
+  guard together.
 - **The art/scrim stacking is deliberate.** `.stop` sets `isolation: isolate`;
   the art is `::before` at `z-index: -2`, the scrim `::after` at `-1`, and the
   contact card is a `::before` on `.stop-in` at `-1`. A new positive-z layer

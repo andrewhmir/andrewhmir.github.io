@@ -16,12 +16,12 @@ The Leadership stop: four cards, each a button that opens the shared record dial
 
 ## Structure
 
-`#leadership` is one `.stop` panel (`side: 'left'`, art pan `PAN[9]`). Its `.media`
+`#leadership` is one `.stop` panel (`side: 'left'`, art pan `PAN[5]`). Its `.media`
 cell holds `.leaders`, a two-column grid of `.leader` buttons. Each button carries
 `data-kind="leadership"` and `data-index`, and contains either an
 `<img class="leader__thumb">` or a `<span class="leader__thumb leader__thumb--empty">`,
 then `.leader__body` with `.leader__year` and `.leader__text`. A click opens
-[dialog.md](dialog.md) through the delegated handler on `#page` (see
+[dialog.md](dialog.md) through the delegated handler on `document` (see
 [reveals-chrome.md](reveals-chrome.md)).
 
 ## Adjust it

@@ -47,7 +47,7 @@ small-screen cue.
 - One header, fixed, with its height in `--masthead-h:`; see AGENTS.md's
   **Masthead stickiness and the small-screen progress hairline** row for the
   route.
-- `.progress` is `aria-hidden` decoration: width 0–100% of the eleven-stop journey,
+- `.progress` is `aria-hidden` decoration: width 0–100% of the seven-stop journey,
   never anything interactive. It is the small-screen fallback for the rail's
   progress fill, not a second indicator.
 - `#resumeLink` ships with `href="#"` and is filled at init from data; the URL is

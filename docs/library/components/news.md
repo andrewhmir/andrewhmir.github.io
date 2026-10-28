@@ -51,7 +51,7 @@ the panel is shared with the other stops.
 - The rows live on the dark side of the scrim by placing them in `.copy`; the panel deliberately has no `.media` cell, because text over the bright half of the painting does not hold contrast.
 - The date is data (`news[].date`); CSS uppercases it, and the renderer never rewrites its casing.
 - Text goes through `esc()`; markup in the data renders as text.
-- The stop owns `PAN[2]`; the six project stops, Leadership, Honours and Contact each shifted one place when News was inserted.
+- The stop owns `PAN[2]`; the two category panels, Leadership, Honours and Contact follow it in the positional table.
 
 ## Traps
 

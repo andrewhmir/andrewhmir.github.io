@@ -35,8 +35,13 @@ assert.match(html, /class="rail-shade"/);
 assert.match(html, /<noscript>/);
 assert.match(htmlNoComments, /id="projectView"/);
 assert.match(htmlNoComments, /class="stop art--rice stop--project project-view"/);
-assert.match(htmlNoComments, /id="projectView"[\s\S]{0,160}role="dialog"/);
-assert.match(html, /aria-modal="true"/);
+const viewTag = (htmlNoComments.match(/<div[^>]*id="projectView"[^>]*>/) || [''])[0];
+assert.ok(viewTag.includes('hidden'), 'the project view must ship hidden');
+assert.ok(viewTag.includes('tabindex="-1"'), 'the project view must be focusable as a container');
+assert.ok(viewTag.includes('data-lenis-prevent'), 'the project view must opt out of Lenis wheel capture');
+assert.match(cssNoComments, /\.project-view\s*\{[^}]*z-index:\s*60/);
+assert.match(cssNoComments, /\.dialog\s*\{[^}]*z-index:\s*80/);
+assert.equal((js.match(/project\d: \{ art:/g) || []).length, 6, 'each record keeps a view crop');
 console.log('ok  shell: fonts, scripts, page, dialog, rail, no-JS fallback');
 
 // The retired walk must not creep back in. Lenis is the one exception: the

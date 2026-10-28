@@ -34,7 +34,7 @@ per-component depth behind it.
 | Hero | First stop: name, title, sentence, actions | [components/hero.md](components/hero.md) |
 | About | Bio paragraphs, social buttons, framed portrait | [components/about.md](components/about.md) |
 | News | Dated update rows in the News stop; no photographs yet | [components/news.md](components/news.md) |
-| Project stop | Work wrapper, copy, awards, open-record button, stop ids | [components/project.md](components/project.md) |
+| Category panels and view | Work wrapper, room lede, project cards, project view | [components/project.md](components/project.md) |
 | Media stack | Three frames: lead, film still, team; awaited frame | [components/frames.md](components/frames.md) |
 | Leadership | Four cards opening the dialog gallery | [components/leadership.md](components/leadership.md) |
 | Honours | Standalone tiles and the project-award partition | [components/honours.md](components/honours.md) |

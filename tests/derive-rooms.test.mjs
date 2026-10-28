@@ -41,6 +41,11 @@ check('an uncategorised project is kept, not dropped', () => {
   assert.ok(placed.includes('orphan'), 'orphan must not vanish from the walk');
 });
 
+check('a room with no authored sentence has an empty lede, not a crash', () => {
+  const [orphan] = deriveRooms([{ id: 'x' }]).filter(r => r.key === 'Other');
+  assert.equal(orphan.lede, '');
+});
+
 /* ── The pieces of a group ───────────────────────────────────────────────
    One record is one group; a group's pieces are its photographs, in declared
    order. Every branch below is a real shape in js/data.js, not a hypothetical:

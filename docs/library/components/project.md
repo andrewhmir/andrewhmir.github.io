@@ -26,7 +26,7 @@ and three project cards that open a record's own panel.
 `render()` creates the `.work` wrapper (`#work`) and appends one `section.stop`
 with `stop--project stop--category` per `Site.deriveRooms(PORTFOLIO.projects)`
 room, in room order. The stop id is the room key lowercased (`robotics`,
-`applications`), so it is the rail and masthead anchor. The `.copy` cell is
+`applications`), so it is the rail anchor (`#work` stays the masthead's Work landing). The `.copy` cell is
 `.eyebrow` ("03 · Work · <key>"), an `<h2>` ("Robotics."), the room's `.lede`
 and a `.category-count` line. The `.media` cell is `.category-cards`: three
 `.project-card` buttons, each with the record's overview still, title, tagline
@@ -70,8 +70,8 @@ still while the view or the dialog is open.
   step with the panel grid collapsing to one column.
 - A card opens `#projectView`; the dialog is the layer above. Both are views,
   not routes; Escape and the back button are the exits.
-- `setLock` is a count — closing the dialog must not unlock the page while the
-  view stays open — and `openProject` traps Tab, then returns focus to the card.
+- `setLock` is a count (closing the dialog must not unlock the page while the
+  view stays open); the shared keydown traps Tab and closeProject restores focus.
 
 ## Traps
 

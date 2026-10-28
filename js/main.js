@@ -390,6 +390,14 @@
     if (!f.length) return;
     var first = f[0];
     var last = f[f.length - 1];
+    /* The layer itself is focused on open (tabindex="-1"), so both Tab
+       directions have to enter at an edge instead of falling through to the
+       page behind it. */
+    if (document.activeElement === container) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+      return;
+    }
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
@@ -400,7 +408,14 @@
     if (!projectView) return;
     var p = P.projects[index];
     if (!p) return;
-    var art = PROJECT_ART[p.id] || { art: 'rice', pos: '50% 50%' };
+    /* The category's PAN crop is the first fallback (the spec's order), and the
+       neutral centre only if the record's room has no page entry. */
+    var rooms = S.deriveRooms(P.projects);
+    var roomIndex = 0;
+    for (var r = 0; r < rooms.length; r++) {
+      if (rooms[r].projects.indexOf(p) !== -1) { roomIndex = r; break; }
+    }
+    var art = PROJECT_ART[p.id] || PAN[3 + roomIndex] || { art: 'rice', pos: '50% 50%' };
     projectView.className = 'stop art--' + art.art + ' stop--project project-view';
     projectView.style.setProperty('--pos', art.pos);
     projectView.dataset.side = index % 2 === 0 ? 'left' : 'right';
@@ -415,6 +430,7 @@
       '</div>';
     viewOpener = document.activeElement;
     projectView.hidden = false;
+    projectView.scrollTop = 0;   /* after unhide: a hidden element ignores it */
     setLock(true);
     projectView.focus();
   }

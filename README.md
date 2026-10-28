@@ -45,7 +45,7 @@ The footer credits both: **Paintings by Fernando Amorsolo y Cueto (1892–1972).
 
 ### Why two, and why crops
 
-One painting repeated twelve times reads as wallpaper, however it is cropped.
+One painting repeated across the page reads as wallpaper, however it is cropped.
 Two paintings alternate: a bright field and a darker harvest, two different
 horizons and palettes, and the page gets a rhythm without inventing a third
 asset. The alternation is in the `PAN` table in `js/main.js`, in page order:

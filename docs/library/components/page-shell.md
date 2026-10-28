@@ -19,8 +19,9 @@ stylesheet and script load order, the skip link, and the no-JS fallback.
 
 `<head>` loads `css/fonts.css`, `css/styles.css`, then the vendored
 `js/vendor/lenis.css`. In `<body>`: `a.skip` → `header.masthead` →
-`div.rail-shade` → `nav.rail#rail` → empty `main#page.page` → `footer.foot` →
-`<noscript>` → `div#dialog` → `script[src="js/vendor/lenis.min.js"]` →
+`div.rail-shade` → `nav.rail#rail` → empty `main#page.page` →
+`div#projectView` → `footer.foot` → `<noscript>` → `div#dialog` →
+`script[src="js/vendor/lenis.min.js"]` →
 `script[src="js/data.js"]` → `script[src="js/main.js"]`. `init()` calls
 `render()` first, so the mount is filled after the document has parsed, then
 `wireSmoothScroll()` constructs the wheel layer.

@@ -19,7 +19,7 @@ The Honours stop: the standalone honour tiles, with project-linked awards exclud
 ## Structure
 
 `#honours` is a `.stop.stop--list` panel (`cls: 'stop--list'`, `side: 'left'`, art
-pan `PAN[10]`). Its copy is the eyebrow, `h2` and `.body`; its `.media` cell is
+pan `PAN[6]`). Its copy is the eyebrow, `h2` and `.body`; its `.media` cell is
 `<ol class="honours">` holding one `<li><button class="honour-row" data-kind="honors"
 data-index>` per tile, with `.honour-row__year`, `.honour-row__text` and
 `.honour-row__mark`. A tile whose record has no `images` is rendered `disabled`

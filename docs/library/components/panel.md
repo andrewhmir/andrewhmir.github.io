@@ -69,7 +69,7 @@ id, so a record keeps its own crop there without shifting the page's `PAN`.
 ## Traps
 
 - `PAN` is indexed by page position, so adding or moving a stop shifts every later crop; `page.test.mjs` pins the section counts. `PROJECT_ART` is keyed by project id, so a new project needs an entry there or its view falls back to `50% 50%`.
-- Reordering `PORTFOLIO.projects` reslices every project panel's crop silently: no selector changes and no error surfaces.
+- Reordering `PORTFOLIO.projects` only reorders cards inside a category: page crops follow the category list and the project view's crop follows the record id, so no `PAN` entry moves. Adding a page stop still shifts every later `PAN` entry.
 - `panel()` concatenates the art class (`'stop art--' + o.art`); a typo in an `art` key leaves no `--art`, so the panel paints flat dark instead of a painting.
 - `data-side` is consumed on `.stop`; putting it on `.stop-in` changes nothing because the rules are `.stop[data-side="right"] .copy`.
 - A new scrim or card painted at `z-index: 0` covers the painting; the contact card is a `.stop-in::before` in the same negative layer and relies on `.stop`'s stacking context.
