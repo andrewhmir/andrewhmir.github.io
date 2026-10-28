@@ -475,6 +475,12 @@ h2 {
   text-transform: uppercase; color: var(--text-quiet); margin: 0 0 22px;
 }
 
+/* The rail's active label chip floats over the left gutter, so a left-side
+   category copy starts clear of it instead of sitting under the chip. */
+@media (min-width: 1024px) {
+  .stop[data-side="left"].stop--category .copy { margin-left: 76px; }
+}
+
 /* ── Leadership cards ─────────────────────────────────────────────── */
 
 .leaders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; grid-auto-rows: 1fr; }
