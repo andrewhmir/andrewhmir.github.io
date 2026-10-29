@@ -25,8 +25,8 @@ an otherwise native vertical scroll. `index.html` opens directly;
 HTTP. Node is only for tests and dev tools.
 
 The page is a vertical profile, in this order: fixed masthead → hero (`#top`) →
-About (`#about`) → News (`#news`) → Work (`#work`, two category panels — Robotics
-and Applications — each with three project cards) → Leadership (`#leadership`) →
+About (`#about`) → News (`#news`) → Work (`#work`, three category panels — Robotics,
+Applications and DSH Plugins — each with three project cards) → Leadership (`#leadership`) →
 Honours (`#honours`) → Contact (`#contact`) → footer. A card opens `#projectView`,
 the fixed full-screen project panel painted from `PORTFOLIO`. A fixed journey rail
 (≥1024px) tracks the section crossing the middle of the viewport and carries the
@@ -55,7 +55,7 @@ and never hand-edited.
 | `js/data.js` | ~690 lines | `PORTFOLIO` — the portfolio records and personal copy — plus `Site.*` helpers. The page itself reads `Site.posterFor`, `Site.honoursTiles` and `Site.deriveRooms`; the other helpers are inherited from the retired horizontal build and are kept because the surviving data suites test them. |
 | `js/vendor/` | vendored | Lenis 1.3.26 (`lenis.min.js` + `lenis.css`), copied verbatim; sizes and SHA-256 pins in its README. The page's only third-party runtime code, loaded locally. |
 | `css/fonts.css` | generated | The `@font-face` rules for Newsreader and Courier Prime. Do not hand-edit; refresh with `tools/vendor-fonts.mjs`. |
-| `files/` | assets | The two paintings, portrait, project overview/team photographs, six films, generated `posters/`, generated `og-card.jpg`, favicon, vendored fonts, currently unused icons. |
+| `files/` | assets | The two paintings, portrait, project overview/team photographs, six films, generated `posters/`, generated `og-card.jpg`, favicon, vendored fonts, currently unused icons, and `files/plugins/` — the nine GUI screenshots the DSH plugin records hang. |
 | `tests/page.test.mjs` | ~160 lines | The static guard: shell order, palette, both paintings and art layers, dialog markup, no third-party loads, the vendored Lenis wiring, section ids, data counts, and that `npm test` runs it. |
 | `tests/*.test.mjs` | data suites | `derive-rooms`, `hang`, `band`, `gallery-index`, `award-photos` — pure tests of inherited `Site.*` helpers and the content. None renders the page. |
 | `tools/` | dev only | Static server, image/font/icon generators, asset import, orphan scan. `tools/README.md` indexes what survives and what is retired. |
@@ -160,7 +160,7 @@ specific: a constraint that only a review catches is marked as such.
 | **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
-| **The content counts** | Six projects split 3 + 3 across two categories, four leadership cards, five standalone honour tiles, four news rows; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
+| **The content counts** | Nine projects in three categories of three, four leadership cards, five standalone honour tiles, four news rows; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
 | **The guard follows the promoted names** | `page.test.mjs` reads `index.html`, `css/styles.css`, `js/main.js`, `js/data.js`, `package.json`. Renaming any of them without updating the guard fails it. | `page.test.mjs` |
 | **CSS braces balance** | An unmatched brace silently eats the rest of the sheet. | `page.test.mjs` |
 
@@ -271,13 +271,21 @@ server build.
 - **The hero sentence is `P.bio[3]`, not `bio[2]`.** The portrait is hard-coded
   as `files/profile.jpg` in `js/main.js`; `PORTFOLIO.profileImage` is ignored.
   Changing bio order changes the hero sentence.
-- **`PAN` is indexed by page position; `PROJECT_ART` by project id.** A seventh
+- **`PAN` is indexed by page position; `PROJECT_ART` by project id.** A tenth
   project does not shift `PAN` (categories are the stops) but needs a
   `PROJECT_ART` entry or its view falls back to the category's crop, then
-  `50% 50%`; the guard asserts six projects and two rooms of three. Adding a
+  `50% 50%`; the guard asserts nine projects in three rooms of three. Adding a
   category shifts every later `PAN` entry — including the hard-coded Leadership
-  `PAN[5]`, Honours `PAN[6]` and Contact `PAN[7]` — so update those and the
-  guard together.
+  `PAN[6]`, Honours `PAN[7]` and Contact `PAN[8]` — so update those and the
+  guard together. A category whose name has a space gets a slugged id
+  (`function roomSlug(`) for the panel and its rail anchor.
+- **A plugin record hangs screenshots, not a film and a team.** The three DSH
+  Plugins records carry `projects[].shots` instead of `video` / `team`, and
+  `projectMedia` hangs those three images with the record's own `pieces` labels;
+  `openRecord` puts the same three in the dialog gallery. Their `overview.image`
+  is also the card still, so it is normally `shots[0]`. `tests/hang.test.mjs`
+  scopes its two video checks to records that declare a video and pins that a
+  plugin record leads with its own first screenshot.
 - **The art/scrim stacking is deliberate.** `.stop` sets `isolation: isolate`;
   the art is `::before` at `z-index: -2`, the scrim `::after` at `-1`, and the
   contact card is a `::before` on `.stop-in` at `-1`. A new positive-z layer

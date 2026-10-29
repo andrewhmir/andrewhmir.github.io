@@ -19,6 +19,7 @@
     { art: 'harvest', pos: '20% 26%' }, /* news */
     { art: 'rice', pos: '30% 62%' },    /* robotics */
     { art: 'harvest', pos: '64% 38%' }, /* applications */
+    { art: 'rice', pos: '74% 28%' },    /* dsh plugins */
     { art: 'rice', pos: '8% 44%' },     /* leadership */
     { art: 'harvest', pos: '88% 36%' }, /* honours */
     { art: 'rice', pos: '50% 88%' }     /* contact */
@@ -31,7 +32,10 @@
     project3: { art: 'rice', pos: '76% 50%' },
     project4: { art: 'harvest', pos: '22% 66%' },
     project5: { art: 'rice', pos: '44% 22%' },
-    project6: { art: 'harvest', pos: '56% 50%' }
+    project6: { art: 'harvest', pos: '56% 50%' },
+    plugin1: { art: 'harvest', pos: '14% 74%' },
+    plugin2: { art: 'rice', pos: '86% 60%' },
+    plugin3: { art: 'harvest', pos: '36% 16%' }
   };
 
   function esc(v) {
@@ -82,7 +86,21 @@
     '</button>';
   }
 
+  /* A category's name is its id in this page: "DSH Plugins" has to become
+     "dsh-plugins", because a space is not an id and the rail links to it. */
+  function roomSlug(key) {
+    return String(key == null ? '' : key).toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
   function projectMedia(p, i) {
+    if (Array.isArray(p.shots) && p.shots.length) {
+      return '<div class="stack">' + p.shots.map(function (src, k) {
+        var label = (p.pieces && p.pieces[k] && p.pieces[k].title) || ('Screenshot ' + (k + 1));
+        return frame({ src: src, label: label, lead: k === 0, index: i, alt: p.title + ' — ' + label });
+      }).join('') + '</div>';
+    }
     var poster = S.posterFor(p.video);
     return '<div class="stack">' +
       frame({ src: p.overview && p.overview.image, label: 'Overview', lead: true, index: i, alt: p.title + ' — overview' }) +
@@ -109,11 +127,16 @@
 
   function categoryCopy(room) {
     var awards = room.projects.reduce(function (n, p) { return n + awardCount(p); }, 0);
+    /* A room whose records carry no awards counts what it holds instead of
+       reporting "0 awards" — the DSH Plugins panel is the first such room. */
+    var count = awards
+      ? room.projects.length + (room.projects.length === 1 ? ' project · ' : ' projects · ') +
+        awards + (awards === 1 ? ' award' : ' awards')
+      : room.projects.length + (room.projects.length === 1 ? ' plugin' : ' plugins');
     return '<p class="eyebrow">03 · Work · ' + esc(room.key) + '</p>' +
       '<h2>' + esc(room.key) + '.</h2>' +
       '<p class="lede">' + esc(room.lede) + '</p>' +
-      '<p class="category-count">' + room.projects.length + ' projects · ' +
-        awards + (awards === 1 ? ' award' : ' awards') + '</p>';
+      '<p class="category-count">' + count + '</p>';
   }
 
   function categoryCards(room) {
@@ -202,7 +225,7 @@
     work.id = 'work';
     S.deriveRooms(P.projects).forEach(function (room, r) {
       work.appendChild(panel({
-        id: room.key.toLowerCase(),
+        id: roomSlug(room.key),
         cls: 'stop--project stop--category',
         side: r % 2 === 0 ? 'left' : 'right',
         art: PAN[3 + r].art,
@@ -217,8 +240,8 @@
     out.push(panel({
       id: 'leadership',
       side: 'left',
-      art: PAN[5].art,
-      pos: PAN[5].pos,
+      art: PAN[6].art,
+      pos: PAN[6].pos,
       copy:
         '<p class="eyebrow">04 · Leadership</p>' +
         '<h2>Running things.</h2>' +
@@ -244,8 +267,8 @@
       id: 'honours',
       cls: 'stop--list',
       side: 'left',
-      art: PAN[6].art,
-      pos: PAN[6].pos,
+      art: PAN[7].art,
+      pos: PAN[7].pos,
       copy:
         '<p class="eyebrow">05 · Honours</p>' +
         '<h2>Recognised here and abroad.</h2>' +
@@ -267,8 +290,8 @@
       id: 'contact',
       cls: 'stop--contact',
       side: 'center',
-      art: PAN[7].art,
-      pos: PAN[7].pos,
+      art: PAN[8].art,
+      pos: PAN[8].pos,
       center: true,
       copy:
         '<p class="eyebrow">06 · Contact</p>' +
@@ -338,7 +361,9 @@
           return '<li><a href="' + esc(l.url) + '">' + esc(l.label) + ' ↗</a></li>';
         }).join('') + '</ul>';
       }
-      images = [p.overview && p.overview.image, S.posterFor(p.video), p.team && p.team.image];
+      images = (Array.isArray(p.shots) && p.shots.length)
+        ? p.shots
+        : [p.overview && p.overview.image, S.posterFor(p.video), p.team && p.team.image];
     } else if (kind === 'leadership') {
       var r = P.leadership[index];
       if (!r) return;
@@ -472,7 +497,7 @@
     var labels = [{ id: 'about', label: 'About' }];
     labels.push({ id: 'news', label: 'News' });
     S.deriveRooms(P.projects).forEach(function (room) {
-      labels.push({ id: room.key.toLowerCase(), label: room.key });
+      labels.push({ id: roomSlug(room.key), label: room.key });
     });
     labels.push({ id: 'leadership', label: 'Leadership' });
     labels.push({ id: 'honours', label: 'Honours' });

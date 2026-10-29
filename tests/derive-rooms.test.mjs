@@ -7,22 +7,24 @@ import '../js/data.js';
 
 const { deriveRooms } = globalThis.Site;
 
-check('splits the real portfolio into the two known rooms', () => {
+check('splits the real portfolio into the three known rooms', () => {
   const rooms = deriveRooms(globalThis.PORTFOLIO.projects);
-  assert.deepEqual(rooms.map(r => r.key), ['Robotics', 'Applications']);
-  assert.deepEqual(rooms.map(r => r.projects.length), [3, 3]);
+  assert.deepEqual(rooms.map(r => r.key), ['Robotics', 'Applications', 'DSH Plugins']);
+  assert.deepEqual(rooms.map(r => r.projects.length), [3, 3, 3]);
 });
 
 check('titles come from ROOM_TITLES', () => {
   const rooms = deriveRooms(globalThis.PORTFOLIO.projects);
   assert.equal(rooms[0].title, 'Works in Robotics');
   assert.equal(rooms[1].title, 'Works in Applications');
+  assert.equal(rooms[2].title, 'Works in DSH Plugins');
 });
 
 check('every known room carries a sentence for its panel', () => {
   const rooms = deriveRooms(globalThis.PORTFOLIO.projects);
   assert.match(rooms[0].lede, /^Three machines built to be used/);
   assert.match(rooms[1].lede, /^Three systems for problems/);
+  assert.match(rooms[2].lede, /^Three plugins for the DeepSeek Harness/);
 });
 
 check('every project appears exactly once across all rooms', () => {

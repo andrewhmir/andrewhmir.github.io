@@ -13,7 +13,7 @@ Thirteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing o
 | `bio` | live | the About paragraphs (`P.bio.map`); entry 4 (`bio[3]`, falling back to `bio[2]`) is the hero sentence |
 | `email` | live | the Contact mailto link and its text |
 | `social` | live | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (`social[0]`, the entry labelled `Resume`) |
-| `projects` | live | the six Work stops, the rail labels, the project dialog |
+| `projects` | live | the three Work panels (nine records), the rail labels, the project view and its dialog |
 | `leadership` | live | the Leadership cards and their dialog |
 | `honors` | live | the Honours tiles and their dialog |
 | `profileImage` | dormant | ignored — the About portrait is hard-coded as `files/profile.jpg` in `js/main.js` |
@@ -38,21 +38,22 @@ The grammar supports one collection segment per path. An array of objects nested
 
 Presence is the union across the shipped records. The marker is `required` (every record has it and the page reads it), `optional` (present on some records) or `dormant` (present but read by nothing on this page).
 
-### `projects` — 15-key union
+### `projects` — 16-key union
 
 | Path | Marker | Notes |
 |---|---|---|
-| `projects[].id` | required | the stop id (`project1`…) and the rail's `data-stop` target; authored, not derived |
-| `projects[].title` | required | the panel `h2`, the rail label, the dialog title |
-| `projects[].tagline` | required | the panel `.lede` |
-| `projects[].category` | required | the `.eyebrow` and the dialog meta line |
-| `projects[].venue` | required | the `.eyebrow` and the dialog meta line |
-| `projects[].summary` | required | the panel `.body` and the dialog's opening paragraph |
-| `projects[].video` | required | the film still via `Site.posterFor` and the dialog player |
-| `projects[].overview` | required | nested `image` (the lead frame) and `text` (the dialog body) |
-| `projects[].team` | required | nested `image` (the team frame) and `text` (the dialog's "The team") |
+| `projects[].id` | required | the record's key (`project1`–`project6`, `plugin1`–`plugin3`) and the view-crop lookup; authored, not derived |
+| `projects[].title` | required | the card title, the project view `h2`, the dialog title |
+| `projects[].tagline` | required | the card tag and the project view `.lede` |
+| `projects[].category` | required | the Work panel a record groups into, and the `.eyebrow` and dialog meta line |
+| `projects[].venue` | required | the `.eyebrow` and the dialog meta line; also the card meta when the record has no awards |
+| `projects[].summary` | required | the project view `.body` and the dialog's opening paragraph |
+| `projects[].video` | optional | the film still via `Site.posterFor` and the dialog player (6 of 9 records; a plugin record ships no film) |
+| `projects[].overview` | required | nested `image` (the card still and lead frame) and `text` (the dialog body) |
+| `projects[].team` | optional | nested `image` (the team frame) and `text` (the dialog's "The team"); 6 of 9 records |
+| `projects[].shots` | optional | the three frames the project view hangs for a record with no film or team photograph (3 of 9 records, all DSH plugins); the dialog gallery uses the same three |
 | `projects[].links` | required | the dialog's Links list; entries carry `label`, `url` and a dormant `icon` |
-| `projects[].awards` | optional | the panel Awards and the dialog's Awards list; entries carry `description` and `year` (4 of 6 records) |
+| `projects[].awards` | optional | the panel Awards and the dialog's Awards list; entries carry `description` and `year` (4 of 9 records) |
 | `projects[].pieces` | dormant | retired walk vocabulary; no reader |
 | `projects[].authors` | dormant | no reader |
 | `projects[].source` | dormant | no reader |
@@ -107,7 +108,7 @@ Twenty names. The page calls three of them — `Site.posterFor`, `Site.honoursTi
 | `Site.posterFor` | yes | a `files/*.mp4` path to `files/posters/<stem>.jpg`; also the dialog video poster |
 | `Site.honoursTiles` | yes | splits `honors` into `tiles` and `projectAwards` on `from` |
 | `Site.PLACEHOLDER` | no | the `files/PlaceHolder.png` constant |
-| `Site.deriveRooms` | yes | groups projects by `category` into the two Work panels; carries each room's `lede` |
+| `Site.deriveRooms` | yes | groups projects by `category` into the three Work panels; carries each room's `lede` |
 | `Site.ROOM_TITLES` | no | retired room titles; data-suite only |
 | `Site.ROOM_ORDER` | no | retired room order; referenced by no test or page |
 | `Site.groupPieces` | no | retired three-frame grouping; data-suite only |

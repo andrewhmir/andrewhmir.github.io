@@ -108,8 +108,10 @@ check('every shipped project\'s video has its still on disk', () => {
   /* The guarantee is a file, not a string: a project added to the data without
      running tools/make-images.mjs would hang a poster path that 404s, and the
      frame would be a black rectangle the renderer suite cannot see (it asserts
-     the attribute, not the bytes). */
+     the attribute, not the bytes). Plugin records ship no film, so they are not
+     part of this check — see the screenshot check below. */
   const missing = globalThis.PORTFOLIO.projects
+    .filter((p) => p.video)
     .map((p) => ({ title: p.title, poster: groupPieces(p, 'project')[0].poster }))
     .filter((x) => !x.poster || !existsSync(x.poster));
   assert.deepEqual(missing, [], 'no poster frame on disk: ' + JSON.stringify(missing));
@@ -131,11 +133,22 @@ check('every shipped record hangs exactly three frames', () => {
 check('every shipped project leads with its own video', () => {
   /* The first frame of a project stand is the film. A project that shipped
      without one would hang a photograph there and the stand would not read as
-     the same composition as its neighbours. */
+     the same composition as its neighbours. A plugin record is the deliberate
+     exception: it has no film and leads with its overview screenshot instead. */
   const bad = globalThis.PORTFOLIO.projects
+    .filter((p) => p.video)
     .filter((p) => groupPieces(p, 'project')[0].media !== 'video')
     .map((p) => p.title);
   assert.deepEqual(bad, [], 'no video in the first frame: ' + bad.join(', '));
+});
+
+check('a plugin record leads with its own screenshot', () => {
+  const plugins = globalThis.PORTFOLIO.projects.filter((p) => Array.isArray(p.shots) && p.shots.length);
+  assert.ok(plugins.length, 'the page ships no plugin record to check');
+  const bad = plugins
+    .filter((p) => groupPieces(p, 'project')[0].src !== p.shots[0])
+    .map((p) => p.title);
+  assert.deepEqual(bad, [], 'a plugin does not lead with its own screenshot: ' + bad.join(', '));
 });
 
 /* ── The arrangement ─────────────────────────────────────────────────────

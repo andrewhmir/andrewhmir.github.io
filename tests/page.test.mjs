@@ -41,7 +41,7 @@ assert.ok(viewTag.includes('tabindex="-1"'), 'the project view must be focusable
 assert.ok(viewTag.includes('data-lenis-prevent'), 'the project view must opt out of Lenis wheel capture');
 assert.match(cssNoComments, /\.project-view\s*\{[^}]*z-index:\s*60/);
 assert.match(cssNoComments, /\.dialog\s*\{[^}]*z-index:\s*80/);
-assert.equal((js.match(/project\d: \{ art:/g) || []).length, 6, 'each record keeps a view crop');
+assert.equal((js.match(/(?:project|plugin)\d: \{ art:/g) || []).length, 9, 'each record keeps a view crop');
 console.log('ok  shell: fonts, scripts, page, dialog, rail, no-JS fallback');
 
 // The retired walk must not creep back in. Lenis is the one exception: the
@@ -166,6 +166,8 @@ assert.match(js, /data-kind="panel"/);
 assert.match(js, /stop--category/);
 assert.match(js, /project-card/);
 assert.match(js, /project-card__art[\s\S]{0,400}FALLBACK/);
+assert.match(js, /function roomSlug\(/);
+assert.match(js, /Array\.isArray\(p\.shots\)/, 'a plugin record hangs its screenshots');
 assert.match(cssNoComments, /\.project-view/);
 assert.match(js, /S\.honoursTiles\(P\.honors\)/);
 assert.match(js, /dialog__video/);
@@ -181,15 +183,15 @@ vm.createContext(ctx);
 vm.runInContext(data, ctx);
 const P = ctx.PORTFOLIO;
 const S = ctx.Site;
-assert.equal(P.projects.length, 6, 'the page is built for six project records');
+assert.equal(P.projects.length, 9, 'the page is built for nine project records');
 const rooms = S.deriveRooms(P.projects);
-assert.equal(Array.from(rooms, (r) => r.key).join(','), 'Robotics,Applications', 'the Work panels are the two categories');
-assert.equal(Array.from(rooms, (r) => r.projects.length).join(','), '3,3', 'each category panel holds three projects');
+assert.equal(Array.from(rooms, (r) => r.key).join(','), 'Robotics,Applications,DSH Plugins', 'the Work panels are the three categories');
+assert.equal(Array.from(rooms, (r) => r.projects.length).join(','), '3,3,3', 'each category panel holds three projects');
 assert.equal(P.leadership.length, 4, 'leadership renders four cards');
 assert.equal(S.honoursTiles(P.honors).tiles.length, 5, 'honours renders the standalone tiles');
 assert.equal(P.news.length, 4, 'news renders four rows');
 assert.equal(P.social[0].label, 'Resume', 'the masthead resume link reads PORTFOLIO.social[0]');
-console.log('ok  data: 6 projects, 4 leadership cards, 5 honour tiles, 4 news rows');
+console.log('ok  data: 9 projects, 4 leadership cards, 5 honour tiles, 4 news rows');
 
 /* ── the npm test script actually runs this file ──────────────────── */
 

@@ -231,6 +231,68 @@ const PORTFOLIO = {
       awards: [
         { description: "Developer Camp Manila – Finalist", year: "March 2026" }
       ]
+    },
+    {
+      id: "plugin1",
+        /* DRAFT COPY — review */
+        summary: "A /btw gesture for the DeepSeek Harness Web GUI: ask a side question mid-turn, get the answer in a floating card, and leave nothing behind in the transcript when you dismiss it.",
+        pieces: [{ title: "The card" }, { title: "In the composer" }, { title: "On a phone" }],
+      title: "dsh-btw",
+      tagline: "Ephemeral /btw side questions for the DSH Web GUI",
+      category: "DSH Plugins",
+      venue: "October 2026 · open source",
+      links: [
+        { label: "GitHub", url: "https://github.com/andrewhmir/dsh-btw" }
+      ],
+      overview: {
+        image: "files/plugins/btw-card.jpg",
+        text: "Working with an agent, the question you want to ask is often not the task you are already on. I wanted a way to ask it without derailing the turn, opening a second session, or leaving a row in the history that the model would read back on the next turn.\n\n/btw is that gesture. Typed into the composer mid-session, it sends the question with the full committed conversation as context and no tool schemas at all — the inverse of a subagent, which gets the whole tool surface and an empty context. The answer streams into a non-modal card floating over the chat: no backdrop, no focus trap, and the composer keeps working while it streams.\n\nDismissing the card leaves no trace. Nothing is appended to the transcript, nothing is rendered as a chat row, and nothing enters what the model sees next. An answer that would be cut short is continued automatically instead of shown half-finished, and the request reuses the parent turn's prompt prefix so the provider's cache still applies.\n\nIt was the first plugin I built against the harness's own client and host halves, and the one that taught me how the bundle, the host route and the streaming protocol fit together. It is open source, with a deterministic bundle pipeline and a CI suite over the trigger, the stream and the ephemerality guarantee."
+      },
+      shots: [
+        "files/plugins/btw-card.jpg",
+        "files/plugins/btw-composer.jpg",
+        "files/plugins/btw-narrow.jpg"
+      ]
+    },
+    {
+      id: "plugin2",
+        /* DRAFT COPY — review */
+        summary: "A composer takeover that renders a plan-review question as the plan itself: full markdown on screen, Accept or Revise pinned at the top, and highlight-to-comment on any passage.",
+        pieces: [{ title: "The plan" }, { title: "A comment" }, { title: "The decision" }],
+      title: "dsh-plan-review",
+      tagline: "The whole plan on screen before you approve it",
+      category: "DSH Plugins",
+      venue: "October 2026 · local install",
+      links: [],
+      overview: {
+        image: "files/plugins/plan-review-plan.jpg",
+        text: "The superpowers workflow asks you to approve a plan through a question card that shows a file path and two buttons. The plan itself lives somewhere else, so approving it honestly means leaving the app, reading a markdown file, and coming back to say yes.\n\nThis plugin removes that step. When a question arrives marked for plan review, it takes over the composer instead: the complete plan rendered on screen, the decision buttons pinned at the top, and a comment rail beside it. You select any passage and attach a comment to that quote; comments stay editable and can be located again, and Accept refuses while feedback is unsent, so nothing is quietly dropped.\n\nDrafts live in the tab's session storage, so closing and reopening the review does not lose the comments, and answering clears them. When the plan cannot be read or the question is not claimed, the shipped card comes back rather than a dead end.\n\nIt was built against the same protocol as /btw, and it is the plugin that made plan review feel like reading rather than rubber-stamping."
+      },
+      shots: [
+        "files/plugins/plan-review-plan.jpg",
+        "files/plugins/plan-review-comment.jpg",
+        "files/plugins/plan-review-decision.jpg"
+      ]
+    },
+    {
+      id: "plugin3",
+        /* DRAFT COPY — review */
+        summary: "A theme for the DeepSeek Harness Web GUI that turns the shell into warm parchment and enormous display serif — with the rail's artwork solved from its own pixels rather than drawn by hand.",
+        pieces: [{ title: "The shell" }, { title: "The rail" }, { title: "On a phone" }],
+      title: "dsh-miranda-theme",
+      tagline: "A broadsheet restyle for the DSH Web GUI",
+      category: "DSH Plugins",
+      venue: "October 2026 · local install",
+      links: [],
+      overview: {
+        image: "files/plugins/miranda-shell.jpg",
+        text: "I spend most of the day inside the harness, and the default shell is a dark instrument panel. Miranda is the opposite: warm parchment stock, near-black ink, one ember accent, and display serifs set tight enough to crowd.\n\nIt is one dual-face plugin. The host half owns the settings namespace and serves the vendored font binaries; the client half re-points the shell's colour tokens by role, restyles the surfaces that are not part of the registerable alias dictionary, and adds a durable toggle in Settings → General so the whole restyle can be turned off again.\n\nTwo details took the longest. The rail's cut-out figure is pinned at the strongest opacity its own brightest pixel allows the rail's text to keep — a veil solved from the image instead of guessed by eye. And the sidebar brand lockup vendors the product's badge outline for outline, because its letters are vector art with no font to set; both halves register into the shell's own brand slots below the official plugin's rank, so switching the restyle off puts the shipped mark back without touching a file under the harness install.\n\nIt is the only plugin here that changes how the app looks rather than what it can do."
+      },
+      shots: [
+        "files/plugins/miranda-shell.jpg",
+        "files/plugins/miranda-rail.jpg",
+        "files/plugins/miranda-phone.jpg"
+      ]
     }
   ],
   /* ── Leadership ─────────────────────────────────────────────────── */
@@ -285,14 +347,19 @@ const PORTFOLIO = {
      already resolved — it is what makes the data reachable from Node. */
   if (typeof PORTFOLIO !== 'undefined') globalThis.PORTFOLIO = PORTFOLIO;
 
-  var ROOM_TITLES = { Robotics: 'Works in Robotics', Applications: 'Works in Applications' };
-  var ROOM_ORDER  = ['Robotics', 'Applications'];
+  var ROOM_TITLES = {
+    Robotics: 'Works in Robotics',
+    Applications: 'Works in Applications',
+    'DSH Plugins': 'Works in DSH Plugins'
+  };
+  var ROOM_ORDER  = ['Robotics', 'Applications', 'DSH Plugins'];
 
   /* One sentence per category, shown on that category's Work panel. The key is
      the project's own `category` value, so grouping never needs a second list. */
   var ROOM_LEDES = {
     Robotics: 'Three machines built to be used rather than demonstrated: a palm scanner, a fingerprint fare system, and a desk robot that will not let you drift.',
-    Applications: 'Three systems for problems that kept getting in the way: organizational memory, a better way to practise for the SAT, and a map of how Metro Manila actually moves.'
+    Applications: 'Three systems for problems that kept getting in the way: organizational memory, a better way to practise for the SAT, and a map of how Metro Manila actually moves.',
+    'DSH Plugins': 'Three plugins for the DeepSeek Harness Web GUI: a side-question card that leaves no trace, a plan review that puts the whole plan on screen, and a broadsheet restyle of the shell.'
   };
 
   /* Group projects into rooms. Known categories come first in ROOM_ORDER;
@@ -381,8 +448,13 @@ const PORTFOLIO = {
     return out;
   }
 
-  /* The three slots of a project, in the order they hang. */
+  /* The three slots of a project, in the order they hang. A plugin record has no
+     film and no team photograph, so it declares `shots` instead: the same three
+     frames, each a screenshot of the surface it builds. */
   function projectPieces(record) {
+    if (Array.isArray(record.shots) && record.shots.length) {
+      return fitPieces(record.shots.filter(Boolean).map(asPiece));
+    }
     var out = [];
     if (typeof record.video === 'string' && record.video) out.push(asVideoPiece(record.video));
     if (record.overview && record.overview.image) out.push(asPiece(record.overview.image));

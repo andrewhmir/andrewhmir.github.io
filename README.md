@@ -95,7 +95,7 @@ The page order is fixed and semantic:
 | Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
 | About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
 | News | `news` | Four dated updates, newest first | `calc(100vh - 16px)` |
-| Work | `work` | Two category panels (Robotics, Applications), each with a room lede and three project cards | `calc(100vh - 16px)` each |
+| Work | `work` | Three category panels (Robotics, Applications, DSH Plugins), each with a room lede and three project cards | `calc(100vh - 16px)` each |
 | Leadership | `leadership` | Four cards: year, description, thumbnail | `calc(100vh - 16px)` |
 | Honours | `honours` | Five standalone honours, newest first | `calc(100vh - 16px)` |
 | Contact | `contact` | Closing line, email, social links, on a dark card | `calc(100vh - 16px)` |
@@ -123,19 +123,28 @@ painting rather than floating in the middle. About is copy-left/media-right.
 Leadership and Honours are copy-left with cards/list on the right. Contact is
 centred across 2–10, capped at 880px.
 
-The two category panels widen the media side: copy 1–4 and the three cards 5–12,
-mirrored for Applications. The project view goes back to the project split
-(copy 1–5, media 7–12), because it shows one record's full stack.
+The category panels widen the media side: copy 1–4 and the three cards 5–12,
+sides alternating left, right, left. The project view goes back to the project
+split (copy 1–5, media 7–12), because it shows one record's full stack.
 
-### The two category panels
+### The category panels
 
-`PORTFOLIO.projects[].category` already splits the roster 3 + 3, and
-`Site.deriveRooms` groups by it: Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy)
-then Applications (Hivemind, SATLearn, BiyaHey!). Each room is one panel: an
+`PORTFOLIO.projects[].category` splits the roster 3 + 3 + 3, and
+`Site.deriveRooms` groups by it: Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy),
+Applications (Hivemind, SATLearn, BiyaHey!), then DSH Plugins (dsh-btw,
+dsh-plan-review, dsh-miranda-theme). Each room is one panel: an
 eyebrow ("03 · Work · Robotics"), the room name as the `h2`, a one-sentence lede
-from `ROOM_LEDES`, a `3 projects · 7 awards` count, and three project cards.
-A card is the record's overview still, title, tagline and award count (or the
-venue when the record has no awards).
+from `ROOM_LEDES`, a count line, and three project cards. A card is the record's
+overview still, title, tagline and award count (or the venue when the record has
+no awards).
+
+The DSH Plugins room is the first with no awards: its count line reads
+`3 plugins` rather than `0 awards`. Its records also carry `shots` — three
+screenshots captured from the running harness GUI — instead of a film and a team
+photograph, and `projectMedia` hangs those with the record's own labels so the
+panel keeps the same three-frame stack. The screenshots are app screens, not
+photographs of people: a floating `/btw` card, the composer's slash menu, a plan
+review with a comment attached, and the Miranda shell on a phone.
 
 The panel a card opens is the record's own project panel, content unchanged: an
 eyebrow (`category · venue`), the title, tagline, summary, the record's awards
