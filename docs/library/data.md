@@ -4,15 +4,16 @@
 
 ## Top-level keys
 
-Thirteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing on this page reads it — inherited from the retired horizontal build.
+Fourteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing on this page reads it — inherited from the retired horizontal build.
 
 | Key | Status | Read by |
 |---|---|---|
 | `name` | live | the hero `h1` |
 | `title` | live | the hero `.hero-title` |
-| `bio` | live | the About paragraphs (`P.bio.map`); entry 4 (`bio[3]`, falling back to `bio[2]`) is the hero sentence |
+| `bio` | live | the About paragraphs (`P.bio.map`); the hero line is deliberately not one of them |
+| `heroLine` | live | the hero `.hero-line` (`P.heroLine`); kept out of `bio` so the same sentence cannot print in About |
 | `email` | live | the Contact mailto link and its text |
-| `social` | live | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (`social[0]`, the entry labelled `Resume`) |
+| `social` | live | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (`social[0]`, the entry labelled `Resume`); the two section rows skip the `Resume` entry |
 | `projects` | live | the three Work panels (nine records), the rail labels, the project view and its dialog |
 | `leadership` | live | the Leadership cards and their dialog |
 | `honors` | live | the Honours tiles and their dialog |

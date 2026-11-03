@@ -9,7 +9,7 @@ The final stop: the closing line, the email link, the social row and the dark ca
 | Markup | `index.html` | `id="page"` |
 | Render | `js/main.js` | `/* 6 — contact */` · `center: true` |
 | Render | `js/main.js` | `class="contact-mail"` · `class="contact-links"` |
-| Render | `js/main.js` | `P.social.map` |
+| Render | `js/main.js` | `sectionSocial().map` |
 | Styles | `css/styles.css` | `── Contact` · `.stop--contact .stop-in::before` |
 | Styles | `css/styles.css` | `@media (max-width: 1023px)` · `.contact-mail` |
 | Data | `js/data.js` | `email` · `social[].label` · `social[].url!` |
@@ -38,7 +38,7 @@ art layer is `.stop::before` and its scrim `.stop::after`.
 ## Invariants
 
 - The dark card is a `::before` on `.stop-in` at `z-index: -1` inside a `.stop` that sets `isolation: isolate`; the art is `.stop::before` at -2 and the scrim `.stop::after` at -1. See the art/scrim stacking gotcha in `AGENTS.md`.
-- The email text and its `href` both come from `P.email`. The social row maps `P.social` in array order to plain anchors — no buttons, no icons on this page.
+- The email text and its `href` both come from `P.email`. The social row maps `sectionSocial()` (`P.social` minus the masthead's `Resume` entry) in array order to plain anchors — no buttons, no icons on this page.
 - Contact is the only centred stop: `center: true` is the flag that adds `.copy--center`; the hero passes `side: 'center'` only for its scrim, and its copy stays in `grid-column: 1 / span 8`. In the 1023px block the generic `.copy--center` goes left, but contact's own rule keeps it centred.
 - At ≤1023px the card rule widens to `calc(100% - 20px)` and grows to `calc(100% - 12px)` tall. Above 1024 it is 62% tall and at most 780px wide.
 - The shell's `<noscript>` fallback hand-copies the email and social URLs; keep it in step when the data changes. [page-shell.md](page-shell.md) owns the fallback, and no test asserts its copy — check the page with JavaScript off.

@@ -77,8 +77,8 @@ router; the library is the per-component depth behind it.
 
 | Intent | Goes in | Anchor |
 |---|---|---|
-| Hero name, title, sentence, actions | `js/data.js` + `js/main.js` | `name:`, `title:`, `bio: [`; `/* 0 — hero */` |
-| About copy, portrait, social row | `js/data.js` + `js/main.js` | `/* 1 — about */`, `P.bio.map` |
+| Hero name, title, sentence, actions | `js/data.js` + `js/main.js` | `name:`, `title:`, `heroLine:`; `/* 0 — hero */` |
+| About copy, portrait, social row | `js/data.js` + `js/main.js` | `/* 1 — about */`, `P.bio.map`, `sectionSocial()` |
 | News rows and the News stop's copy | `js/data.js` + `js/main.js` | `news: [`, `/* 2 — news */` |
 | Section order, or removing a section | `js/main.js` | `function render()`, then the `out.push` blocks `/* 0 — hero */` … `/* 6 — contact */` |
 | Add or edit a project | `js/data.js` | `projects: [` — array order is card order inside the category; the `category` field decides the panel and the id stays the honours link |
@@ -119,7 +119,7 @@ word and editing the wrong thing.
 | **painting** | One of the two source images. `rice` is `painting-hero.jpg` (*Planting Rice*, 1949); `harvest` is `painting.jpg` (a 1934 harvest scene). | `.art--rice`, `.art--harvest` |
 | **scrim** | The direction-aware gradient over the art that keeps the copy side dark and the far side bright. | `--scrim`, `.stop[data-side]`, `.stop::after` |
 | **rail** | The fixed left-hand journey nav with one stop per named section (not the hero). | `.rail`, `.rail__stop`, `buildRail` |
-| **left shade** | The fixed 108px gradient behind the rail so it stays legible over bright crops. | `.rail-shade` |
+| **left shade** | The fixed 144px gradient behind the rail so its label chips stay legible over bright crops. | `.rail-shade` |
 | **smooth scroll** | The vendored Lenis wheel layer: it smooths the wheel and hash-anchor travel only; touch, the keyboard and reduced motion stay native. | `js/vendor/lenis.min.js`, `wireSmoothScroll`, `html.lenis`, `lenis.stop()` |
 | **frame** | One media box in a project's stack: the overview, the film still or the team photograph. | `.frame`, `.frame--lead` |
 | **film still / poster** | The generated `files/posters/<stem>.jpg` shown in the film frame. The page does not play it in the panel; the player is in the dialog. | `S.posterFor`, `.frame__play` |
@@ -160,6 +160,7 @@ specific: a constraint that only a review catches is marked as such.
 | **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
+| **No content twice in one viewport** | The page prints each name, action and sentence once per screen. The fixed masthead hides its wordmark and Resume while the hero (which carries both) is on screen; the section social rows omit the masthead's Resume; the About heading is not the name, the footer does not repeat it, and the hero line is `P.heroLine` instead of a `bio` paragraph. Navigation labels and numbered kickers are chrome, not content, and stay. | `page.test.mjs` pins the masthead stand-down CSS rule, `P.heroLine` (and that `bio` does not contain it), `sectionSocial()`, and the absence of `foot__name`; the visual result is manual |
 | **The content counts** | Nine projects in three categories of three, four leadership cards, five standalone honour tiles, four news rows; `PORTFOLIO.social[0].label === 'Resume'`. | `page.test.mjs` |
 | **The guard follows the promoted names** | `page.test.mjs` reads `index.html`, `css/styles.css`, `js/main.js`, `js/data.js`, `package.json`. Renaming any of them without updating the guard fails it. | `page.test.mjs` |
 | **CSS braces balance** | An unmatched brace silently eats the rest of the sheet. | `page.test.mjs` |
@@ -268,9 +269,15 @@ server build.
   `icon` names are inherited or unused; `news[].images` has no reader because no
   news photograph exists on disk. Check `js/main.js` before wiring a field you
   expect to appear.
-- **The hero sentence is `P.bio[3]`, not `bio[2]`.** The portrait is hard-coded
-  as `files/profile.jpg` in `js/main.js`; `PORTFOLIO.profileImage` is ignored.
-  Changing bio order changes the hero sentence.
+- **The hero line is `P.heroLine`, not a bio paragraph.** The hero prints
+  `PORTFOLIO.heroLine`; About prints `P.bio`. That sentence used to sit at
+  `bio[3]`, which printed it in two stops at once — keep it out of `bio`. The
+  portrait is hard-coded as `files/profile.jpg` in `js/main.js`;
+  `PORTFOLIO.profileImage` is ignored, and bio order no longer moves the hero.
+- **The masthead stands down over the hero.** `.masthead:not(.is-stuck) .brand`
+  and `.resume` are `visibility: hidden` while the hero is on screen;
+  `wireChrome`'s existing `is-stuck` toggle is the reveal. Do not remove the rule
+  to “restore” the bar at the top — the hero already prints both.
 - **`PAN` is indexed by page position; `PROJECT_ART` by project id.** A tenth
   project does not shift `PAN` (categories are the stops) but needs a
   `PROJECT_ART` entry or its view falls back to the category's crop, then

@@ -136,6 +136,24 @@ console.log('ok  rail carries an eased 5px page-progress bar; no glow; dash stop
 assert.equal((cssNoComments.match(/{/g) || []).length, (cssNoComments.match(/}/g) || []).length);
 console.log('ok  css: braces balanced');
 
+/* ── one voice: no content printed twice in one viewport ─────────── */
+
+// The masthead is fixed, so anything it repeats is on screen twice. While the
+// hero — which prints the name and offers Resume — is on screen, the bar's two
+// copies stand down; the existing `.is-stuck` walk-begins state brings them back.
+assert.match(cssNoComments,
+  /\.masthead:not\(\.is-stuck\) \.brand[^{]*\{[^}]*opacity:\s*0/);
+// The hero line is its own data field, never a bio paragraph, so the same
+// sentence cannot print in the hero and again in About.
+assert.match(js, /P\.heroLine/);
+// About and Contact list the other channels; Resume belongs to the masthead
+// (and the hero), so printing it in a section row would put two on screen.
+assert.match(js, /function sectionSocial\(/);
+assert.match(js, /s\.label !== 'Resume'/);
+// The footer must not repeat the name the masthead already carries.
+assert.equal(htmlNoComments.includes('foot__name'), false, 'the footer repeats the masthead name');
+console.log('ok  one voice: masthead stands down over the hero; hero line, Resume and footer deduped');
+
 /* ── no third-party resource loads (anchor hrefs are allowed) ─────── */
 
 const resourcePatterns = [
@@ -191,7 +209,9 @@ assert.equal(P.leadership.length, 4, 'leadership renders four cards');
 assert.equal(S.honoursTiles(P.honors).tiles.length, 5, 'honours renders the standalone tiles');
 assert.equal(P.news.length, 4, 'news renders four rows');
 assert.equal(P.social[0].label, 'Resume', 'the masthead resume link reads PORTFOLIO.social[0]');
-console.log('ok  data: 9 projects, 4 leadership cards, 5 honour tiles, 4 news rows');
+assert.equal(P.heroLine, 'In pursuit of knowledge.', 'the hero sentence is a dedicated field');
+assert.equal(P.bio.includes(P.heroLine), false, 'the hero sentence must not also be a bio paragraph');
+console.log('ok  data: 9 projects, 4 leadership cards, 5 honour tiles, 4 news rows; hero line kept out of bio');
 
 /* ── the npm test script actually runs this file ──────────────────── */
 

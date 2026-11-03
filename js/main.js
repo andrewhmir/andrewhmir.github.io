@@ -12,6 +12,13 @@
   var PLACEHOLDER = 'files/PlaceHolder.png';
   var FALLBACK = ' onerror="this.onerror=null;this.src=\'' + PLACEHOLDER + '\'"';
 
+  /* Resume is the masthead's standing action (and the hero's, at the top of the
+     page). The section rows list the other channels only, so the same button is
+     never printed twice in one viewport. */
+  function sectionSocial() {
+    return P.social.filter(function (s) { return s.label !== 'Resume'; });
+  }
+
   /* The pan: one crop of one painting per page stop, in page order. */
   var PAN = [
     { art: 'rice', pos: '50% 58%' },    /* hero */
@@ -173,7 +180,7 @@
       copy:
         '<h1>' + esc(P.name) + '</h1>' +
         '<p class="hero-title">' + esc(P.title) + '</p>' +
-        '<p class="hero-line">' + esc(P.bio[3] || P.bio[2] || '') + '</p>' +
+        '<p class="hero-line">' + esc(P.heroLine || '') + '</p>' +
         '<div class="actions">' +
           '<a class="btn btn--solid" href="#work">See the work →</a>' +
           '<a class="btn" href="' + esc((P.social[0] && P.social[0].url) || '#') + '">Resume ↗</a>' +
@@ -188,9 +195,9 @@
       pos: PAN[1].pos,
       copy:
         '<p class="eyebrow">01 · About</p>' +
-        '<h2>Andrew Alangcao</h2>' +
+        '<h2>The longer version.</h2>' +
         '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
-        '<div class="actions">' + P.social.map(function (s) {
+        '<div class="actions">' + sectionSocial().map(function (s) {
           return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';
         }).join('') + '</div>',
       media:
@@ -298,7 +305,7 @@
         '<h2>Let’s build something.</h2>' +
         '<p class="lede">Open to work, research, and collaborations that make everyday life a little easier.</p>' +
         '<a class="contact-mail" href="mailto:' + esc(P.email) + '">' + esc(P.email) + '</a>' +
-        '<div class="contact-links">' + P.social.map(function (s) {
+        '<div class="contact-links">' + sectionSocial().map(function (s) {
           return '<a href="' + esc(s.url) + '">' + esc(s.label) + '</a>';
         }).join('') + '</div>'
     }));
@@ -535,6 +542,7 @@
     var progress = document.getElementById('progress');
     var rail = document.getElementById('rail');
     var hero = document.getElementById('top');
+    var heroCopy = hero ? hero.querySelector('.copy') : null;
     var sections = document.querySelectorAll('#page .stop[id]');
     var railStops = rail ? rail.querySelectorAll('.rail__stop') : [];
     var ticking = false;
@@ -616,7 +624,17 @@
       ticking = false;
       var y = window.scrollY || document.documentElement.scrollTop || 0;
       var heroH = hero ? hero.offsetHeight : 0;
-      if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, heroH - 72));
+      /* The bar turns solid, and its wordmark and Resume return, only once the
+         hero's copy — the name and the Resume button — has scrolled past. The
+         copy box is measured rather than the panel, because on small screens the
+         panel is content-height and `heroH - 72` would fire early, putting the
+         bar's Resume on screen beside the hero's. */
+      var copyEnd = heroH;
+      if (heroCopy) {
+        var copyRect = heroCopy.getBoundingClientRect();
+        if (copyRect.height) copyEnd = copyRect.bottom + y;
+      }
+      if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, copyEnd));
 
       var rects = [];
       for (var i = 0; i < sections.length; i++) rects.push(sections[i].getBoundingClientRect());

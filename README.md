@@ -92,7 +92,7 @@ The page order is fixed and semantic:
 
 | Stop | Id | Holds | Minimum height |
 |---|---|---|---|
-| Hero | `top` | Name, title line, one bio sentence, two actions | `calc(100vh - 16px)` |
+| Hero | `top` | Name, title line, one hero line, two actions | `calc(100vh - 16px)` |
 | About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
 | News | `news` | Four dated updates, newest first | `calc(100vh - 16px)` |
 | Work | `work` | Three category panels (Robotics, Applications, DSH Plugins), each with a room lede and three project cards | `calc(100vh - 16px)` each |
@@ -246,6 +246,10 @@ stop. Each rule starts on the rail's line, its left end tucked beneath the gold
 so the bar and its ticks read as one mark, and the chip sits above both. A
 stop's hit row is 77×34px — much larger than the 1–3px rule it shows — so the
 rail is easy to click, and the chip itself is clickable while it is showing.
+The bar is the viewport's first 5px and the ticks step inward from it, so the
+rail keeps a lane of its own instead of floating over the painting; the chips
+are the only part that opens over the panel, and at desktop every left-side copy
+starts 76px in so a chip can never cover the text.
 The hero is not a rail stop — it is the arrival, and the brand in the masthead
 already returns to it.
 
@@ -260,12 +264,12 @@ own (`#work`, `#page`). Native hash travel and `html { scroll-behavior: smooth }
 are the fallback. Under reduced motion Lenis is never constructed and the CSS
 smooth behaviour is turned off.
 
-The shade is the rail's legibility layer: a fixed 108px gradient from
-`rgba(8,12,14,.82)` at the edge through `.58` at 34%, `.2` at 70%, transparent at
-100%, with `pointer-events: none`. It exists because the rail is fixed over
-whatever crop happens to be at the left edge; on a bright rice field the ticks
-and labels disappeared. The shade is not a page overlay — it is bounded to the
-rail's gutter, below the masthead (`z-index: 29`) and below the rail itself
+The shade is the rail's legibility layer: a fixed 144px gradient from
+`rgba(8,12,14,.84)` at the edge through `.6` at 36%, `.22` at 72%, transparent at
+100%, with `pointer-events: none`. It exists because the label chips open over
+whatever crop happens to be at the panel's left edge; on a bright rice field the
+ticks and labels disappeared. The shade is not a page overlay — it is bounded to
+the rail's lane, below the masthead (`z-index: 29`) and below the rail itself
 (`30`), and it is hidden with the rail below 1024px.
 
 The rail is a navigation, not a scrollbar, but it now carries section progress as
@@ -388,8 +392,13 @@ the entrance. `prefers-reduced-motion: reduce` makes every reveal visible
 immediately, collapses the transitions to effectively zero and turns smooth
 scrolling off — the CSS ease and the Lenis layer both.
 
-The masthead starts transparent over the hero and gains a blur and a hairline
-once the hero is behind it. Below 1024px its foot carries the page's scroll
+The masthead starts transparent — and empty of its wordmark and Resume — over the
+hero, because the hero itself prints the name and offers Resume; both fade in
+once the hero is behind it, when the bar also gains a blur and a hairline. The
+five section links are centred on the page rather than spaced between the
+wordmark and Resume, so the bar's only visible element at the top sits on the
+centre line and nothing shifts when the other two fade in. Below
+1024px its foot carries the page's scroll
 progress; from 1024px up that progress is drawn down the journey rail's line
 instead, so the rail is both navigation and page meter (see above). There is no
 scroll snap: the page uses the browser's own scrolling. Lenis 1.3.26, vendored

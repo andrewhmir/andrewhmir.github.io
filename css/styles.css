@@ -72,7 +72,7 @@ a { color: inherit; }
 .masthead {
   position: fixed; inset: 0 0 auto 0; z-index: 40;
   height: var(--masthead-h);
-  display: flex; align-items: center; gap: 28px;
+  display: flex; align-items: center;
   padding: 0 clamp(16px, 2.4vw, 34px);
   background: linear-gradient(180deg, rgba(8, 12, 14, .86), rgba(8, 12, 14, .3) 68%, transparent);
   transition: background .25s ease, border-color .25s ease;
@@ -91,15 +91,29 @@ a { color: inherit; }
   text-shadow: 0 1px 18px rgba(8, 12, 14, .5);
 }
 
-.menu { display: flex; gap: clamp(14px, 2vw, 30px); margin-left: auto; }
+/* The section menu owns the centre of the bar rather than a spot between the
+   wordmark and the Resume, so it does not drift when those two stand down over
+   the hero: with only the menu on screen it sits on the page's centre line. It
+   is out of the flex flow, which also keeps it perfectly still while the brand
+   and Resume fade in and out. */
+.menu {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; gap: clamp(14px, 2vw, 30px);
+}
 .menu a {
   font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--text-quiet); text-decoration: none; padding: 8px 2px;
+  color: var(--text-quiet); text-decoration: none;
+  /* Courier Prime's caps sit ~3px above the line-box centre (the font carries
+     more descent than ascent), so the row is nudged down by asymmetric padding
+     to read as centred in the bar. The 35px hit box is unchanged. */
+  padding: 11px 2px 5px;
   transition: color .2s ease;
 }
 .menu a:hover { color: var(--text-strong); }
 
 .resume {
+  margin-left: auto;
   font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em;
   color: var(--text); text-decoration: none;
   border: 1px solid var(--border); border-radius: 8px;
@@ -110,6 +124,21 @@ a { color: inherit; }
   transition: border-color .2s ease, color .2s ease, background .2s ease;
 }
 .resume:hover { border-color: var(--accent); color: var(--text-strong); background: rgba(8, 12, 14, .55); }
+
+/* One voice per screen: the masthead is fixed, so its wordmark and Resume would
+   otherwise sit on screen at the same time as the hero's own name and button.
+   Both stand down while the hero is in view and fade back in when the walk
+   begins — the `.is-stuck` moment wireChrome already toggles. */
+.masthead .brand,
+.masthead .resume {
+  transition: opacity .25s ease, visibility .25s ease,
+    border-color .2s ease, color .2s ease, background .2s ease;
+}
+.masthead:not(.is-stuck) .brand,
+.masthead:not(.is-stuck) .resume {
+  opacity: 0;
+  visibility: hidden;
+}
 
 /* The small-screen progress cue. From 1024px up the rail carries page progress
    (see ── Journey rail); below that the rail is hidden, so the hairline at the
@@ -123,20 +152,27 @@ a { color: inherit; }
 /* ── The left shade, so the rail reads over a bright crop ────────── */
 
 .rail-shade {
-  position: fixed; left: 0; top: 0; bottom: 0; width: 108px; z-index: 29;
+  /* The rail runs flush with the screen edge in its own lane; the shade only
+     has to carry its label chips, which still reach over the panel's left crop
+     (the widest, "DSH Plugins", ends at 135px). */
+  position: fixed; left: 0; top: 0; bottom: 0; width: 144px; z-index: 29;
   pointer-events: none;
   background: linear-gradient(90deg,
-    rgba(8, 12, 14, .82) 0%,
-    rgba(8, 12, 14, .58) 34%,
-    rgba(8, 12, 14, .2) 70%,
+    rgba(8, 12, 14, .84) 0%,
+    rgba(8, 12, 14, .6) 36%,
+    rgba(8, 12, 14, .22) 72%,
     rgba(8, 12, 14, 0) 100%);
 }
 
 /* ── Journey rail ─────────────────────────────────────────────────── */
 
 .rail {
-  position: fixed; left: 20px; top: 50%; transform: translateY(-50%); z-index: 30;
-  display: none; flex-direction: column; gap: 0; padding-left: 14px;
+  /* The bar sits on the screen's edge, in its own lane outside the panels, so
+     it never floats over the painting. The label chips it opens reach over the
+     panel, so every left-side copy starts clear of the lane (see the desktop
+     media block). */
+  position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 30;
+  display: none; flex-direction: column; gap: 0;
   /* Only the stops take the pointer. The hit rows are wider than this box, and
      the blank strip must not swallow clicks meant for the panel beneath. */
   pointer-events: none;
@@ -145,7 +181,7 @@ a { color: inherit; }
      fill needs the ::before, so the track stays an element background. */
   background-image: linear-gradient(transparent, rgba(236, 226, 207, .2) 12%, rgba(236, 226, 207, .2) 88%, transparent);
   background-repeat: no-repeat;
-  background-position: 1px 17px;
+  background-position: 0 17px;
   background-size: 5px calc(100% - 34px);
 }
 /* Page progress as a 5px gold bar: amber at the top, bright gold at the moving
@@ -153,7 +189,7 @@ a { color: inherit; }
    px, written by wireChrome. It paints above the dashes so their left end tucks
    under the bar, and below the label chips (z-index 2). */
 .rail::before {
-  content: ""; position: absolute; left: 1px; top: 17px; width: 5px;
+  content: ""; position: absolute; left: 0; top: 17px; width: 5px;
   height: var(--rail-progress, 0px);
   z-index: 1;
   border-radius: 0;
@@ -163,7 +199,7 @@ a { color: inherit; }
    line, so the dash and the gap before its label are all clickable. */
 .rail__stop {
   position: relative; display: flex; align-items: center;
-  width: 77px; height: 34px; margin-left: -13px;
+  width: 77px; height: 34px;
   pointer-events: auto; cursor: pointer;
   text-decoration: none;
 }
@@ -198,6 +234,9 @@ a { color: inherit; }
   width: 30px; height: 3px; margin-top: -1.5px;
   background: var(--accent);
 }
+/* The bar now sits on x=0, so the page's 3px outline offset would lose the
+   ring's left side to the viewport edge. Pull it inside the hit row instead. */
+.rail__stop:focus-visible { outline-offset: -2px; }
 
 /* ── The page and its painted panels ──────────────────────────────── */
 
@@ -475,10 +514,12 @@ h2 {
   text-transform: uppercase; color: var(--text-quiet); margin: 0 0 22px;
 }
 
-/* The rail's active label chip floats over the left gutter, so a left-side
-   category copy starts clear of it instead of sitting under the chip. */
+/* The rail's label chips open over the panel's left edge, so at desktop every
+   left-side copy starts clear of the lane instead of sitting under a chip. The
+   same 76px applies to categories and plain left stops, keeping the left copy
+   column on one line down the page. */
 @media (min-width: 1024px) {
-  .stop[data-side="left"].stop--category .copy { margin-left: 76px; }
+  .stop[data-side="left"] .copy { margin-left: 76px; }
 }
 
 /* ── Leadership cards ─────────────────────────────────────────────── */
@@ -596,7 +637,6 @@ h2 {
   padding: 34px clamp(16px, 2.4vw, 34px) 42px;
   border-top: 1px solid var(--border); margin: 26px var(--gutter) var(--gutter);
 }
-.foot__name { font-family: var(--serif); font-size: 17px; color: var(--text-strong); }
 .foot__credit, .foot__year {
   font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; color: var(--text-quiet);
 }
@@ -684,7 +724,6 @@ h2 {
 
 @media (min-width: 1024px) {
   .rail { display: flex; }
-  .menu { margin-right: 8px; }
 }
 
 @media (max-width: 1023px) {

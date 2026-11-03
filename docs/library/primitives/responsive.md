@@ -19,7 +19,7 @@ The five `@media` blocks that change the page's structure — the 1024px rail br
 
 | Block | What it changes | Component page |
 |---|---|---|
-| `@media (min-width: 1024px)` | `.rail { display: flex; }`; `.menu { margin-right: 8px; }` | [rail.md](../components/rail.md), [masthead.md](../components/masthead.md) |
+| `@media (min-width: 1024px)` | `.rail { display: flex; }` and `.stop[data-side="left"] .copy { margin-left: 76px }` — the rail's lane, so its label chips clear the copy; the masthead `.menu` is hidden below this breakpoint | [rail.md](../components/rail.md), [masthead.md](../components/masthead.md) |
 | `@media (max-width: 1023px)` in `── Contact` | the dark card `.stop--contact .stop-in::before` becomes `width: calc(100% - 20px)` and `height: calc(100% - 12px)` | [contact.md](../components/contact.md) |
 | `@media (max-width: 1023px)` fallback | hides `.rail` and `.rail-shade` and re-shows `.progress` (the rail's small-screen fallback); `.stop-in` becomes one column with `min-height: 0`, `gap: 28px` and smaller padding; `.copy`/`.media` span the column; hero padding-top `118px`; `.copy--center` goes left (except Contact); `.menu` hidden; left/right scrims become vertical | [rail.md](../components/rail.md), [panel.md](../components/panel.md), [hero.md](../components/hero.md) |
 | `@media (max-width: 639px)` | re-declares `--gutter: 10px` and `--panel-radius: 12px`; `h1` becomes `clamp(38px, 11vw, 56px)`; `.leaders` one column; narrower `.honour-row` and `.news-row`; `.dialog__gallery` one column; footer and awards adjustments | [tokens.md](tokens.md), [type.md](type.md), [leadership.md](../components/leadership.md), [honours.md](../components/honours.md), [dialog.md](../components/dialog.md), [footer.md](../components/footer.md) |

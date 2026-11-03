@@ -26,13 +26,18 @@ const PORTFOLIO = {
   /* ── Personal / Meta ───────────────────────────────────────────── */
   name: "Andrew Alangcao",
   title: "Software Engineer",
+  /* About paragraphs. The hero's line is `heroLine` below and is deliberately
+     kept out of this array: a bio entry would print the same sentence in the
+     hero and in About, where both can be on screen at once. */
   bio: [
     "Hi, I'm Andrew.",
     "I like art, and I have fun building things.",
     "I'm inspired by how technology can improve everyday life.",
-    "In pursuit of knowledge.",
+    "I want to turn that inspiration into work that makes the world a little better.",
     "This site is a record of my pursuit of that."
   ],
+  /* The hero's one-sentence line. */
+  heroLine: "In pursuit of knowledge.",
   email: "andrew.alangcao@gmail.com",
   profileImage: "files/profile.jpg",
   favicon: "",
