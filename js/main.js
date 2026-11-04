@@ -1,844 +1,797 @@
 /* ==========================================================================
-   Portfolio Engine — Renders all content from data.js · Handles all UX
-   No Bootstrap · No jQuery · Vanilla JS
+   main.js — renders the Long Field profile page from PORTFOLIO
+   POLISH PASS: reveals, film badges, full record dialog, journey rail.
    ========================================================================== */
-
 (function () {
   'use strict';
 
-  /* ── DOM References ─────────────────────────────────────────────── */
-  const $progress   = document.getElementById('scrollProgress');
-  const $scrollTop  = document.getElementById('scrollTopBtn');
-  const $navHeader  = document.getElementById('navHeader');
-  const $navToggle  = document.getElementById('navToggle');
-  const $navMenu    = document.getElementById('navMenu');
-  const $navList    = document.getElementById('navList');
-  const $heroPhoto  = document.getElementById('heroPhoto');
-  const $heroBio    = document.getElementById('heroBio');
-  const $heroEmail  = document.getElementById('heroEmail');
-  const $heroLinks  = document.getElementById('heroLinks');
-  const $newsTimeline = document.getElementById('newsTimeline');
-  const $projectList  = document.getElementById('projectList');
-  const $leadershipList = document.getElementById('leadershipList');
-  const $honorsList     = document.getElementById('honorsList');
-  const $modalOverlay   = document.getElementById('modalOverlay');
-  const $modalCard      = document.getElementById('modalCard');
-  const $modalClose     = document.getElementById('modalClose');
-  const $modalHeader    = document.getElementById('modalHeader');
-  const $modalImage     = document.getElementById('modalImage');
-  const $modalBody      = document.getElementById('modalBody');
-  const $footerYear     = document.getElementById('currentYear');
-  const $footerEmail    = document.getElementById('footerEmail');
+  var P = window.PORTFOLIO;
+  var S = window.Site;
+  if (!P || !S) return;
 
-  /* ── Guard ──────────────────────────────────────────────────────── */
-  if (typeof PORTFOLIO === 'undefined') {
-    console.warn('PORTFOLIO data not loaded. Make sure js/data.js is included.');
-    return;
+  var PLACEHOLDER = 'files/PlaceHolder.png';
+  var FALLBACK = ' onerror="this.onerror=null;this.src=\'' + PLACEHOLDER + '\'"';
+  /* Every off-site action opens a new tab so the portfolio is never replaced. */
+  var LINK_OUT = ' target="_blank" rel="noopener noreferrer"';
+
+  /* Resume is the masthead's standing action (and the hero's, at the top of the
+     page). The section rows list the other channels only, so the same button is
+     never printed twice in one viewport. */
+  function sectionSocial() {
+    return P.social.filter(function (s) { return s.label !== 'Resume'; });
   }
 
-  /* ════════════════════════════════════════════════════════════════════
-     RENDER
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* ── Navigation ──────────────────────────────────────────────── */
-  function renderNav() {
-    if (!$navList) return;
-    $navList.innerHTML = PORTFOLIO.nav.map(item =>
-      `<li><a href="#${item.id}" data-nav="${item.id}">${item.label}</a></li>`
-    ).join('');
+  /* The contact address prints obfuscated — "andrew [dot] alangcao [at] gmail
+     [dot] com" — so a scraper cannot harvest a bare address from the rendered
+     page, and a click copies the real one instead of opening a mail app. */
+  function emailText() {
+    return P.email.replace(/@/g, ' [at] ').replace(/\./g, ' [dot] ');
   }
 
-  /* ── Hero ──────────────────────────────────────────────────── */
+  /* The pan: one crop of one painting per page stop, in page order. */
+  var PAN = [
+    { art: 'rice', pos: '50% 58%' },    /* hero */
+    { art: 'harvest', pos: '48% 52%' }, /* about */
+    { art: 'harvest', pos: '20% 26%' }, /* news */
+    { art: 'rice', pos: '30% 62%' },    /* applications */
+    { art: 'harvest', pos: '64% 38%' }, /* dsh plugins */
+    { art: 'rice', pos: '74% 28%' },    /* robotics */
+    { art: 'rice', pos: '8% 44%' },     /* leadership */
+    { art: 'harvest', pos: '88% 36%' }, /* honours */
+    { art: 'rice', pos: '50% 88%' }     /* contact */
+  ];
 
-  /* Sync photo height to match bio text box (desktop only).
-     flexbox stretch is unreliable on replaced <img> elements, so we
-     explicitly set height from the bio container's computed height. */
-  var MOBILE_BP = 768;
-  function syncPhotoHeight() {
-    if (!$heroPhoto || !$heroBio) return;
-    if (window.innerWidth <= MOBILE_BP) {
-      /* Mobile: CSS handles fixed 100×100 — reset inline styles */
-      $heroPhoto.style.height = '';
-      $heroPhoto.style.width  = '';
-      return;
-    }
-    var bioH = $heroBio.offsetHeight;
-    if (bioH > 0) {
-      $heroPhoto.style.height = bioH + 'px';
-      $heroPhoto.style.width  = 'auto';
-    }
-  }
-
-  var _resizeTimer;
-  function onResize() {
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(syncPhotoHeight, 80);
-  }
-
-  function renderHero() {
-    if ($heroPhoto) {
-      $heroPhoto.src = PORTFOLIO.profileImage;
-      /* Sync once image loads so we have correct intrinsic dimensions */
-      $heroPhoto.addEventListener('load', syncPhotoHeight, { once: true });
-    }
-    if ($heroBio) {
-      $heroBio.innerHTML = PORTFOLIO.bio.map(p => `<p>${p}</p>`).join('');
-    }
-    if ($heroEmail) {
-      const obfuscated = PORTFOLIO.email.replace('.', ' [dot] ').replace('@', ' [at] ').replace('.', ' [dot] ');
-      $heroEmail.innerHTML = `<i class="far fa-envelope" style="margin-right:7px;"></i>${obfuscated}`;
-      $heroEmail.dataset.copy = PORTFOLIO.email;
-    }
-    if ($heroLinks) {
-      $heroLinks.innerHTML = PORTFOLIO.social.map(item => {
-        if (item.copy) {
-          return `<button class="pill" data-action="copy" data-copy="${item.copy}" aria-label="Copy ${item.label.toLowerCase()}">
-            <i class="${item.icon}"></i> ${item.label}
-          </button>`;
-        }
-        return `<a class="pill" href="${item.url}" target="_blank" rel="noopener">
-          <i class="${item.icon}"></i> ${item.label}
-        </a>`;
-      }).join('');
-    }
-    /* Initial sync + listen for resize */
-    syncPhotoHeight();
-    window.addEventListener('resize', onResize);
-  }
-
-  /* ── News Timeline ──────────────────────────────────────────── */
-  function renderNews() {
-    if (!$newsTimeline) return;
-    $newsTimeline.innerHTML = PORTFOLIO.news.map((item, i) => {
-      const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-      const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
-      const inner = `<span class="timeline-date">${item.date}</span>
-        <p class="timeline-text">${item.text}${hint}</p>`;
-      const delay = `style="--reveal-delay: ${i * 60}ms"`;
-
-      if (!hasGallery) {
-        return `<div class="timeline-item reveal" ${delay}>${inner}</div>`;
-      }
-      return `<button type="button" class="timeline-item timeline-item--gallery reveal" ${delay}
-        data-gallery="news" data-index="${i}"
-        aria-label="View photos: ${item.text}">${inner}</button>`;
-    }).join('');
-  }
-
-  /* ── Projects ──────────────────────────────────────────────── */
-  function renderProjectCard(p, i) {
-    const isSolo = !p.authors.includes(',');
-    const soloClass = isSolo ? ' project-card--solo' : '';
-    const isImg = isImage(p.video);
-    const links = [
-      { label: 'Overview', icon: 'fas fa-eye', action: 'overview' },
-      ...(!isSolo ? [{ label: 'Team', icon: 'fas fa-users', action: 'team' }] : []),
-      ...(p.awards && p.awards.length ? [{ label: 'Awards', icon: 'fas fa-trophy', action: 'awards' }] : []),
-      ...(p.report && p.report.image && p.report.text ? [{ label: 'Report', icon: 'fas fa-file-pdf', action: 'report' }] : []),
-      ...p.links.map(l => ({ label: l.label, icon: l.icon, url: l.url }))
-    ];
-
-    const sourceBadge = p.source
-      ? `<span class="project-source project-source--${p.source}">${p.source === 'open' ? 'Open Source' : 'Closed Source'}${p.sourceNote ? ' · ' + p.sourceNote : ''}</span>`
-      : '';
-
-    const pills = links.map(l => {
-      if (l.url) {
-        return `<a class="pill" href="${l.url}" target="_blank" rel="noopener"><i class="${l.icon}"></i> ${l.label}</a>`;
-      }
-      return `<button class="pill" data-action="modal" data-project="${p.id}" data-tab="${l.action}"><i class="${l.icon}"></i> ${l.label}</button>`;
-    }).join('');
-
-    return `
-      <article class="project-card${soloClass} reveal" style="--reveal-delay: ${i * 80}ms">
-        <div class="project-media">
-          ${isImg
-            ? `<img class="project-thumb img-fallback" src="${p.video}" alt="${p.title}" loading="lazy">`
-            : `<video class="project-thumb" playsinline loop muted preload="none"
-                     poster="${p.video.replace(/^files\//, 'files/posters/').replace(/\.mp4$/i, '.jpg')}">
-                <source src="${p.video}" type="video/mp4">
-               </video>`
-          }
-          <div class="project-cue" aria-hidden="true">
-            <span class="project-cue-icon"><i class="fas fa-eye"></i></span>
-            <span class="project-cue-label">View project</span>
-          </div>
-        </div>
-        <div class="project-info">
-          <h3 class="project-title">
-            <button type="button" class="project-hit" data-action="modal" data-project="${p.id}" data-tab="overview">${p.title}</button>${sourceBadge}
-          </h3>
-          ${p.tagline ? `<p class="project-tagline">${p.tagline}</p>` : ''}
-          <p class="project-authors">${p.authors}</p>
-          <span class="project-venue">${p.venue}</span>
-          <div class="project-links">${pills}</div>
-        </div>
-      </article>`;
-  }
-
-  function renderProjects() {
-    if (!$projectList) return;
-
-    // Group projects by category, preserving category order
-    var cats = [];
-    var groups = {};
-    PORTFOLIO.projects.forEach(function (p) {
-      var cat = p.category || '';
-      if (!groups[cat]) {
-        groups[cat] = [];
-        cats.push(cat);
-      }
-      groups[cat].push(p);
-    });
-
-    // Reorder: Applications first, then Robotics, then any uncategorized
-    var order = ['Applications', 'Robotics'];
-    var ordered = [];
-    order.forEach(function (cat) {
-      if (groups[cat]) {
-        ordered.push({ category: cat, projects: groups[cat] });
-        delete groups[cat];
-      }
-    });
-    // Append any remaining categories not in the explicit order
-    cats.forEach(function (cat) {
-      if (groups[cat]) {
-        ordered.push({ category: cat, projects: groups[cat] });
-      }
-    });
-
-    var cardIndex = 0;
-    var html = '';
-    ordered.forEach(function (group) {
-      html += '<h3 class="project-subheading">' + group.category + '</h3>';
-      group.projects.forEach(function (p) {
-        html += renderProjectCard(p, cardIndex++);
-      });
-    });
-    $projectList.innerHTML = html;
-  }
-
-  /* ── Leadership ─────────────────────────────────────────────── */
-  function renderRecordItem(item, i, kind, step) {
-    const hasGallery = Array.isArray(item.images) && item.images.length > 0;
-    const hint = hasGallery ? '<span class="gallery-hint" aria-hidden="true"><i class="fas fa-images"></i></span>' : '';
-    const inner = `<span class="record-desc">${item.description}${hint}</span>
-      <span class="record-year">${item.year}</span>`;
-    const delay = `style="--reveal-delay: ${i * step}ms"`;
-
-    if (!hasGallery) {
-      return `<div class="record-item reveal" ${delay}>${inner}</div>`;
-    }
-    return `<button type="button" class="record-item record-item--gallery reveal" ${delay}
-      data-gallery="${kind}" data-index="${i}"
-      aria-label="View photos: ${item.description}">${inner}</button>`;
-  }
-
-  function renderLeadership() {
-    if (!$leadershipList) return;
-    $leadershipList.innerHTML = PORTFOLIO.leadership.map((item, i) =>
-      renderRecordItem(item, i, 'leadership', 50)
-    ).join('');
-  }
-
-  /* ── Honors ─────────────────────────────────────────────────── */
-  function renderHonors() {
-    if (!$honorsList) return;
-    $honorsList.innerHTML = PORTFOLIO.honors.map((item, i) =>
-      renderRecordItem(item, i, 'honors', 40)
-    ).join('');
-  }
-
-  /* ── Footer ─────────────────────────────────────────────────── */
-  function renderFooter() {
-    if ($footerYear) {
-      $footerYear.textContent = new Date().getFullYear();
-    }
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     MODAL (single shared instance)
-     ════════════════════════════════════════════════════════════════════ */
-
-  function lockBodyScroll() {
-    var w = window.innerWidth - document.documentElement.clientWidth;
-    document.documentElement.style.setProperty('--scrollbar-w', w + 'px');
-    document.body.style.paddingRight = w + 'px';
-    document.body.style.overflow = 'hidden';
-  }
-
-  function unlockBodyScroll() {
-    document.documentElement.style.removeProperty('--scrollbar-w');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-  }
-
-  /* ── Gallery (slow auto-scrolling photo carousel — Leadership / Honors / News) ── */
-
-  const galleryState = {
-    images: [],
-    current: 0
+  /* The project view keeps each record's own crop from the old page order. */
+  var PROJECT_ART = {
+    project1: { art: 'rice', pos: '18% 56%' },
+    project2: { art: 'harvest', pos: '78% 44%' },
+    project3: { art: 'rice', pos: '76% 50%' },
+    project4: { art: 'harvest', pos: '22% 66%' },
+    project5: { art: 'rice', pos: '44% 22%' },
+    project6: { art: 'harvest', pos: '56% 50%' },
+    plugin1: { art: 'harvest', pos: '14% 74%' },
+    plugin2: { art: 'rice', pos: '86% 60%' },
+    plugin3: { art: 'harvest', pos: '36% 16%' }
   };
 
-  const GALLERY_LABELS = { news: 'News', leadership: 'Leadership', honors: 'Honors' };
-  const GALLERY_SPEED = 40; // px per second — slow, consistent glide
-
-  let galleryDriftId = null;
-  let galleryLastTick = null;
-
-  function openGallery(kind, index) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    const list = kind === 'news' ? PORTFOLIO.news
-      : (kind === 'leadership' ? PORTFOLIO.leadership : PORTFOLIO.honors);
-    const entry = list && list[index];
-    const images = entry && Array.isArray(entry.images) ? entry.images.filter(Boolean) : [];
-    if (!entry || !images.length) return;
-
-    galleryState.images = images;
-    galleryState.current = 0;
-
-    const title = entry.description || entry.text || '';
-    const meta = entry.year || entry.date || '';
-    const multi = images.length > 1;
-
-    $modalHeader.innerHTML = `
-      <h3 id="modalTitle">${title}</h3>
-      <p class="modal-subtitle">${GALLERY_LABELS[kind] || ''}${meta ? ' · ' + meta : ''}</p>`;
-
-    $modalImage.style.display = '';
-    $modalImage.innerHTML = `
-      <div class="gallery" id="gallery">
-        <div class="gallery-track" id="galleryTrack">
-          ${images.concat(images).map((src, i) => `
-            <figure class="gallery-slide">
-              <img src="${src}" alt="${title} — photo ${(i % images.length) + 1}"
-                   onerror="this.closest('.gallery-slide').classList.add('is-placeholder');this.onerror=null;this.src='files/PlaceHolder.png';">
-            </figure>`).join('')}
-        </div>
-        ${multi ? `
-          <button class="gallery-arrow gallery-arrow--prev" id="galleryPrev" aria-label="Previous photo"><i class="fas fa-chevron-left"></i></button>
-          <button class="gallery-arrow gallery-arrow--next" id="galleryNext" aria-label="Next photo"><i class="fas fa-chevron-right"></i></button>
-          <div class="gallery-dots" id="galleryDots">
-            ${images.map((_, i) => `<button class="gallery-dot${i === 0 ? ' active' : ''}" data-slide="${i}" aria-label="Go to photo ${i + 1}"></button>`).join('')}
-          </div>
-          <div class="gallery-counter" id="galleryCounter">1 / ${images.length}</div>
-        ` : ''}
-      </div>`;
-
-    $modalBody.innerHTML = '';
-
-    bindGalleryControls();
-    updateGalleryUI();
-
-    openDialog();
-
-    startGalleryDrift();
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
-  function bindGalleryControls() {
-    const $track = document.getElementById('galleryTrack');
-    const $prev = document.getElementById('galleryPrev');
-    const $next = document.getElementById('galleryNext');
-    const $gallery = document.getElementById('gallery');
+  function paragraphs(text) {
+    return String(text == null ? '' : text)
+      .split(/\n{2,}/)
+      .map(function (t) { return '<p>' + esc(t) + '</p>'; })
+      .join('');
+  }
 
-    if ($prev) $prev.addEventListener('click', () => goToSlide(galleryState.current - 1));
-    if ($next) $next.addEventListener('click', () => goToSlide(galleryState.current + 1));
+  /* One painted panel. copy and media are trusted HTML built above. */
+  function panel(o) {
+    var s = document.createElement('section');
+    s.className = 'stop art--' + o.art + (o.cls ? ' ' + o.cls : '');
+    s.id = o.id;
+    s.dataset.side = o.side;
+    s.style.setProperty('--pos', o.pos);
+    s.innerHTML =
+      '<div class="stop-in">' +
+        '<div class="copy' + (o.center ? ' copy--center' : '') + '" data-reveal>' + o.copy + '</div>' +
+        (o.media ? '<div class="media" data-reveal>' + o.media + '</div>' : '') +
+      '</div>';
+    return s;
+  }
 
-    document.querySelectorAll('#galleryDots .gallery-dot').forEach(dot => {
-      dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide, 10)));
+  function isAwaited(src) { return !src || src === PLACEHOLDER; }
+
+  function frame(o) {
+    if (isAwaited(o.src)) {
+      return '<div class="frame frame--awaited">' +
+        '<div class="frame__inner">Awaiting photograph</div>' +
+        '<span class="frame__label">' + esc(o.label) + '</span>' +
+      '</div>';
+    }
+    return '<button class="frame' + (o.lead ? ' frame--lead' : '') + (o.team ? ' frame--team' : '') + '" type="button" ' +
+      'data-kind="project" data-index="' + o.index + '">' +
+      '<img src="' + esc(o.src) + '" alt="' + esc(o.alt || o.label) + '" loading="lazy"' + FALLBACK + '>' +
+      (o.label === 'Film' ? '<span class="frame__play" aria-hidden="true">▶</span>' : '') +
+      '<span class="frame__label">' + esc(o.label) + '</span>' +
+    '</button>';
+  }
+
+  /* A category's name is its id in this page: "DSH Plugins" has to become
+     "dsh-plugins", because a space is not an id and the rail links to it. */
+  function roomSlug(key) {
+    return String(key == null ? '' : key).toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  function projectMedia(p, i) {
+    if (Array.isArray(p.shots) && p.shots.length) {
+      return '<div class="stack">' + p.shots.map(function (src, k) {
+        var label = (p.pieces && p.pieces[k] && p.pieces[k].title) || ('Screenshot ' + (k + 1));
+        return frame({ src: src, label: label, lead: k === 0, index: i, alt: p.title + ' — ' + label });
+      }).join('') + '</div>';
+    }
+    var poster = S.posterFor(p.video);
+    return '<div class="stack">' +
+      frame({ src: p.overview && p.overview.image, label: 'Overview', lead: true, index: i, alt: p.title + ' — overview' }) +
+      frame({ src: poster, label: 'Film', index: i, alt: p.title + ' — film still' }) +
+      frame({ src: p.team && p.team.image, label: 'Team', team: true, index: i, alt: p.title + ' — team' }) +
+    '</div>';
+  }
+
+  function projectCopy(p, i) {
+    var awards = (p.awards && p.awards.length)
+      ? '<ul class="awards">' + p.awards.map(function (a) {
+          return '<li>' + esc(a.description) + ' — ' + esc(a.year) + '</li>';
+        }).join('') + '</ul>'
+      : '';
+    return '<p class="eyebrow">' + esc(p.category) + ' · ' + esc(p.venue) + '</p>' +
+      '<h2>' + esc(p.title) + '</h2>' +
+      '<p class="lede">' + esc(p.tagline) + '</p>' +
+      '<p class="body">' + esc(p.summary) + '</p>' +
+      awards +
+      '<button class="btn" type="button" data-kind="project" data-index="' + i + '">Open the record →</button>';
+  }
+
+  function awardCount(p) { return (p.awards && p.awards.length) || 0; }
+
+  function categoryCopy(room) {
+    var awards = room.projects.reduce(function (n, p) { return n + awardCount(p); }, 0);
+    /* A room whose records carry no awards counts what it holds instead of
+       reporting "0 awards" — the DSH Plugins panel is the first such room. */
+    var count = awards
+      ? room.projects.length + (room.projects.length === 1 ? ' project · ' : ' projects · ') +
+        awards + (awards === 1 ? ' award' : ' awards')
+      : room.projects.length + (room.projects.length === 1 ? ' plugin' : ' plugins');
+    return '<p class="eyebrow">03 · Work · ' + esc(room.key) + '</p>' +
+      '<h2>' + esc(room.key) + '</h2>' +
+      '<p class="lede">' + esc(room.lede) + '</p>' +
+      '<p class="category-count">' + count + '</p>';
+  }
+
+  function categoryCards(room) {
+    return '<div class="category-cards">' + room.projects.map(function (p) {
+      var i = P.projects.indexOf(p);
+      var n = awardCount(p);
+      var meta = n ? n + (n === 1 ? ' award' : ' awards') : p.venue;
+      return '<button class="project-card" type="button" data-kind="panel" data-index="' + i + '">' +
+        '<span class="project-card__art"><img src="' + esc(p.overview && p.overview.image) +
+          '" alt="' + esc(p.title + ' — overview') + '" loading="lazy"' + FALLBACK + '></span>' +
+        '<span class="project-card__body">' +
+          '<span class="project-card__title">' + esc(p.title) + '</span>' +
+          '<span class="project-card__tag">' + esc(p.tagline) + '</span>' +
+          '<span class="project-card__meta">' + esc(meta) + '</span>' +
+        '</span></button>';
+    }).join('') + '</div>';
+  }
+
+  /* ── the page ───────────────────────────────────────────────────── */
+
+  function render() {
+    var page = document.getElementById('page');
+    if (!page) return;
+
+    var out = [];
+
+    /* 0 — hero */
+    out.push(panel({
+      id: 'top',
+      cls: 'stop--hero',
+      side: 'center',
+      art: PAN[0].art,
+      pos: PAN[0].pos,
+      copy:
+        '<h1>' + esc(P.name) + '</h1>' +
+        '<p class="hero-title">' + esc(P.title) + '</p>' +
+        '<p class="hero-line">' + esc(P.heroLine || '') + '</p>' +
+        '<div class="actions">' +
+          '<a class="btn btn--solid" href="#work">See the work →</a>' +
+          '<a class="btn" href="' + esc((P.social[0] && P.social[0].url) || '#') + '"' + LINK_OUT + '>Resume ↗</a>' +
+        '</div>'
+    }));
+
+    /* 1 — about */
+    out.push(panel({
+      id: 'about',
+      side: 'left',
+      art: PAN[1].art,
+      pos: PAN[1].pos,
+      copy:
+        '<p class="eyebrow">01 · About</p>' +
+        '<h2>Hi, I’m Andrew</h2>' +
+        '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
+        '<div class="actions">' + sectionSocial().map(function (s) {
+          return '<a class="btn" href="' + esc(s.url) + '"' + LINK_OUT + '>' + esc(s.label) + ' ↗</a>';
+        }).join('') + '</div>',
+      media:
+        '<figure class="portrait">' +
+          '<img src="files/profile.jpg" alt="Portrait of Andrew Alangcao" width="585" height="766" loading="lazy">' +
+          '<figcaption>Laufey: A Night at the Symphony · PICC Plenary Hall, May 28, 2024</figcaption>' +
+        '</figure>'
+    }));
+
+    /* 2 — news */
+    out.push(panel({
+      id: 'news',
+      cls: 'stop--list stop--news',
+      side: 'right',
+      art: PAN[2].art,
+      pos: PAN[2].pos,
+      copy:
+        '<p class="eyebrow">02 · News</p>' +
+        '<h2>Milestones</h2>' +
+        '<p class="body">Roles, talks and firsts, newest first.</p>' +
+        '<ol class="news">' + P.news.map(function (n) {
+          return '<li class="news-row">' +
+            '<span class="news-row__date">' + esc(n.date) + '</span>' +
+            '<span class="news-row__text">' + esc(n.text) + '</span>' +
+          '</li>';
+        }).join('') + '</ol>'
+    }));
+
+    /* 3 — work (one panel per category, wrapped so #work lands on the first) */
+    var work = document.createElement('div');
+    work.className = 'work';
+    work.id = 'work';
+    S.deriveRooms(P.projects).forEach(function (room, r) {
+      work.appendChild(panel({
+        id: roomSlug(room.key),
+        cls: 'stop--project stop--category',
+        side: r % 2 === 0 ? 'left' : 'right',
+        art: PAN[3 + r].art,
+        pos: PAN[3 + r].pos,
+        copy: categoryCopy(room),
+        media: categoryCards(room)
+      }));
     });
+    out.push(work);
 
-    if ($track) {
-      $track.addEventListener('scroll', () => updateGalleryUI(), { passive: true });
-    }
+    /* 4 — leadership */
+    out.push(panel({
+      id: 'leadership',
+      side: 'left',
+      art: PAN[6].art,
+      pos: PAN[6].pos,
+      copy:
+        '<p class="eyebrow">04 · Leadership</p>' +
+        '<h2>Running things</h2>' +
+        '<p class="body">Two organizations, two annual events, and one committee between 2023 and 2026: a research club founded from nothing, a student-council seat held for two years, the school’s events week run twice, and the media team that covered all of it.</p>',
+      media: '<div class="leaders">' + P.leadership.map(function (r, i) {
+        var thumb = (r.images && r.images[0]) || PLACEHOLDER;
+        var thumbHtml = isAwaited(thumb)
+          ? '<span class="leader__thumb leader__thumb--empty" aria-hidden="true">no photo</span>'
+          : '<img class="leader__thumb" src="' + esc(thumb) + '" alt="' + esc(r.description) + '" loading="lazy"' + FALLBACK + '>';
+        return '<button class="leader" type="button" data-kind="leadership" data-index="' + i + '">' +
+          thumbHtml +
+          '<span class="leader__body">' +
+            '<span class="leader__year">' + esc(r.year) + '</span>' +
+            '<span class="leader__text">' + esc(r.description) + '</span>' +
+          '</span>' +
+        '</button>';
+      }).join('') + '</div>'
+    }));
 
-    if ($gallery) {
-      $gallery.addEventListener('mouseenter', stopGalleryDrift);
-      $gallery.addEventListener('mouseleave', startGalleryDrift);
-      $gallery.addEventListener('focusin', stopGalleryDrift);
-      $gallery.addEventListener('focusout', startGalleryDrift);
-    }
+    /* 5 — honours */
+    var tiles = S.honoursTiles(P.honors).tiles;
+    out.push(panel({
+      id: 'honours',
+      cls: 'stop--list',
+      side: 'left',
+      art: PAN[7].art,
+      pos: PAN[7].pos,
+      copy:
+        '<p class="eyebrow">05 · Honours</p>' +
+        '<h2>Additional Awards</h2>' +
+        '<p class="body">The standalone honours, newest first. Awards a project won hang on that project’s own panel — they are not repeated here.</p>',
+      media: '<ol class="honours">' + tiles.map(function (t) {
+        var r = t.record;
+        var hasPhotos = !!(r.images && r.images.length);
+        return '<li><button class="honour-row" type="button" data-kind="honors" data-index="' + t.index + '"' +
+          (hasPhotos ? '' : ' disabled') + '>' +
+          '<span class="honour-row__year">' + esc(r.year) + '</span>' +
+          '<span class="honour-row__text">' + esc(r.description) + '</span>' +
+          '<span class="honour-row__mark" aria-hidden="true">' + (hasPhotos ? '◦' : '') + '</span>' +
+        '</button></li>';
+      }).join('') + '</ol>'
+    }));
+
+    /* 6 — contact */
+    out.push(panel({
+      id: 'contact',
+      cls: 'stop--contact',
+      side: 'center',
+      art: PAN[8].art,
+      pos: PAN[8].pos,
+      center: true,
+      copy:
+        '<p class="eyebrow">06 · Contact</p>' +
+        '<h2>Let’s build something</h2>' +
+        '<p class="lede">Open to work, research, and collaborations that make everyday life a little easier.</p>' +
+        '<button class="contact-mail" type="button" data-copy="' + esc(P.email) + '">' + esc(emailText()) + '</button>' +
+        '<p class="contact-mail__note" role="status">Click to copy</p>' +
+        '<div class="contact-links">' + sectionSocial().map(function (s) {
+          return '<a href="' + esc(s.url) + '"' + LINK_OUT + '>' + esc(s.label) + '</a>';
+        }).join('') + '</div>'
+    }));
+
+    page.innerHTML = '';
+    out.forEach(function (node) { page.appendChild(node); });
   }
 
-  function goToSlide(n) {
-    const total = galleryState.images.length;
-    if (!total) return;
-    galleryState.current = ((n % total) + total) % total;
+  /* ── the dialog ─────────────────────────────────────────────────── */
 
-    const $track = document.getElementById('galleryTrack');
-    if ($track) {
-      $track.scrollLeft = galleryState.current * $track.clientWidth;
-    }
-    updateGalleryUI();
+  var dialog = document.getElementById('dialog');
+  var dialogTitle = document.getElementById('dialogTitle');
+  var dialogMeta = document.getElementById('dialogMeta');
+  var dialogBody = document.getElementById('dialogBody');
+  var dialogClose = document.getElementById('dialogClose');
+  var dialogCard = dialog && dialog.querySelector('.dialog__card');
+  var lastFocus = null;
+  var scrollEngine = null;   /* the vendored Lenis controller, when motion is allowed */
+  var projectView = document.getElementById('projectView');
+  var viewOpener = null;     /* the card that opened the project view */
+  var lockCount = 0;         /* how many layers currently hold the page still */
+
+  function gallery(images, title) {
+    var list = (images || []).filter(function (src) { return src && src !== PLACEHOLDER; });
+    if (!list.length) return '';
+    return '<div class="dialog__gallery">' + list.map(function (src, i) {
+      return '<img src="' + esc(src) + '" alt="' + esc(title) + ' — photograph ' + (i + 1) + '" loading="lazy"' + FALLBACK + '>';
+    }).join('') + '</div>';
   }
 
-  function updateGalleryUI() {
-    const $track = document.getElementById('galleryTrack');
-    const total = galleryState.images.length;
+  function openRecord(kind, index) {
+    if (!dialog) return;
+    var title = '';
+    var meta = '';
+    var body = '';
+    var images = [];
+    var videoHtml = '';
 
-    if ($track && total && $track.clientWidth > 0) {
-      galleryState.current = Math.round($track.scrollLeft / $track.clientWidth) % total;
-    }
-
-    document.querySelectorAll('#galleryDots .gallery-dot').forEach((dot, i) => {
-      dot.classList.toggle('active', i === galleryState.current);
-    });
-    const $counter = document.getElementById('galleryCounter');
-    if ($counter) {
-      $counter.textContent = `${galleryState.current + 1} / ${total}`;
-    }
-  }
-
-  function startGalleryDrift() {
-    stopGalleryDrift();
-    if (galleryState.images.length < 2) return;
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    galleryLastTick = null;
-    galleryDriftId = requestAnimationFrame(driftTick);
-  }
-
-  function stopGalleryDrift() {
-    if (galleryDriftId) {
-      cancelAnimationFrame(galleryDriftId);
-      galleryDriftId = null;
-    }
-  }
-
-  function driftTick(now) {
-    const $track = document.getElementById('galleryTrack');
-    if (!$track) { galleryDriftId = null; return; }
-
-    if (galleryLastTick == null) galleryLastTick = now;
-    const dt = (now - galleryLastTick) / 1000;
-    galleryLastTick = now;
-
-    const total = galleryState.images.length;
-    const setWidth = $track.clientWidth * total;
-
-    if (setWidth > 0) {
-      $track.scrollLeft += GALLERY_SPEED * dt;
-      if ($track.scrollLeft >= setWidth) {
-        $track.scrollLeft -= setWidth;
+    if (kind === 'project') {
+      var p = P.projects[index];
+      if (!p) return;
+      title = p.title;
+      meta = [p.category, p.venue].filter(Boolean).join(' · ');
+      if (p.video) {
+        videoHtml = '<video class="dialog__video" src="' + esc(p.video) + '" poster="' +
+          esc(S.posterFor(p.video)) + '" controls muted loop playsinline preload="metadata"></video>';
       }
-      updateGalleryUI();
-    }
-
-    galleryDriftId = requestAnimationFrame(driftTick);
-  }
-
-  /* ── Dialog focus management ─────────────────────────────────── */
-
-  var lastFocused = null;
-
-  /* Make every sibling of the overlay inert: removes them from the tab
-     order and from the accessibility tree while the dialog is open. */
-  function setBackgroundInert(on) {
-    var layer = document.querySelector('.content-layer');
-    if (!layer) return;
-    Array.prototype.forEach.call(layer.children, function (el) {
-      if (el === $modalOverlay) return;
-      if (on) el.setAttribute('inert', '');
-      else el.removeAttribute('inert');
-    });
-  }
-
-  function openDialog() {
-    lastFocused = document.activeElement;
-    $modalOverlay.classList.add('active');
-    lockBodyScroll();
-    $navHeader.classList.add('hidden');
-    setBackgroundInert(true);
-    if ($modalCard) $modalCard.focus();
-  }
-
-  /* Wrap Tab/Shift+Tab inside the dialog. `inert` already handles assistive
-     tech and hit-testing; this keeps keyboard cycling deterministic. */
-  function trapFocus(e) {
-    if (e.key !== 'Tab') return;
-    if (!$modalOverlay.classList.contains('active') || !$modalCard) return;
-    var items = $modalCard.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    items = Array.prototype.filter.call(items, function (el) { return el.offsetParent !== null; });
-    if (!items.length) return;
-    var first = items[0];
-    var last = items[items.length - 1];
-    if (e.shiftKey && (document.activeElement === first || document.activeElement === $modalCard)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-
-  document.addEventListener('keydown', trapFocus);
-
-  function openModal(projectId, tab) {
-    if (!$modalOverlay || !$modalHeader || !$modalImage || !$modalBody) return;
-
-    const proj = PORTFOLIO.projects.find(p => p.id === projectId);
-    if (!proj) return;
-
-    const isTeam   = (tab === 'team');
-    const isReport = (tab === 'report');
-    const isAwards = (tab === 'awards');
-    const data = isReport ? proj.report : (isTeam ? proj.team : (isAwards ? proj.awards : proj.overview));
-    const title = isReport ? `${proj.title} — Technical Report`
-      : (isTeam ? `${proj.title} — Team`
-      : (isAwards ? `${proj.title} — Awards`
-      : `${proj.title} — Overview`));
-
-    $modalHeader.innerHTML = `
-      <h3 id="modalTitle">${title}</h3>
-      <p class="modal-subtitle">${proj.venue}</p>`;
-
-    if (isAwards) {
-      $modalImage.innerHTML = '';
-      $modalImage.style.display = 'none';
-      $modalBody.innerHTML = '<div class="record-list">'
-        + data.map((a, i) =>
-            `<div class="record-item">
-              <span class="record-desc">${a.description}</span>
-              <span class="record-year">${a.year}</span>
-            </div>`
-          ).join('')
-        + '</div>';
+      body += '<p>' + esc(p.summary) + '</p>';
+      body += paragraphs(p.overview && p.overview.text);
+      if (p.team && p.team.text && p.team.text.length) {
+        body += '<h4>The team</h4>' + p.team.text.map(function (t) { return '<p>' + esc(t) + '</p>'; }).join('');
+      }
+      if (p.awards && p.awards.length) {
+        body += '<h4>Awards</h4><ul>' + p.awards.map(function (a) {
+          return '<li>' + esc(a.description) + ' — ' + esc(a.year) + '</li>';
+        }).join('') + '</ul>';
+      }
+      if (p.links && p.links.length) {
+        body += '<h4>Links</h4><ul>' + p.links.map(function (l) {
+          return '<li><a href="' + esc(l.url) + '"' + LINK_OUT + '>' + esc(l.label) + ' ↗</a></li>';
+        }).join('') + '</ul>';
+      }
+      images = (Array.isArray(p.shots) && p.shots.length)
+        ? p.shots
+        : [p.overview && p.overview.image, S.posterFor(p.video), p.team && p.team.image];
+    } else if (kind === 'leadership') {
+      var r = P.leadership[index];
+      if (!r) return;
+      title = r.description;
+      meta = r.year;
+      body = paragraphs(r.summary);
+      images = r.images || [];
     } else {
-      $modalImage.style.display = '';
-      $modalImage.innerHTML = `<img src="${data.image}" alt="${title}">`;
-      if (isTeam && Array.isArray(data.text)) {
-        $modalBody.innerHTML = data.text.map(t => `<p>${t}</p>`).join('');
-      } else {
-        $modalBody.innerHTML = `<p>${data.text}</p>`;
-      }
+      var h = P.honors[index];
+      if (!h) return;
+      title = h.description;
+      meta = h.year;
+      body = paragraphs(h.summary);
+      images = h.images || [];
     }
 
-    openDialog();
+    dialogTitle.textContent = title;
+    dialogMeta.textContent = meta;
+    dialogBody.innerHTML = videoHtml + body + (images.length ? '<h4>Photographs</h4>' + gallery(images, title) : '');
+
+    lastFocus = document.activeElement;
+    dialog.hidden = false;
+    setLock(true);   /* the dialog scrolls itself, not the page */
+    if (dialogCard) dialogCard.focus();
   }
 
-  function closeModal() {
-    stopGalleryDrift();
-    if (!$modalOverlay) return;
-    $modalOverlay.classList.remove('active');
-    setBackgroundInert(false);
-    unlockBodyScroll();
-    $navHeader.classList.remove('hidden');
-    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
-    lastFocused = null;
+  function closeDialog() {
+    if (!dialog || dialog.hidden) return;
+    dialog.hidden = true;
+    setLock(false);
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+    lastFocus = null;
   }
 
-  if ($modalClose) {
-    $modalClose.addEventListener('click', closeModal);
+  /* ── scroll lock, focus trap and the project view ────────────────── */
+
+  /* A count, not a flag: the project view and the record dialog can both be
+     open, and the page must stay still until the last one closes. */
+  function setLock(lock) {
+    lockCount = Math.max(0, lockCount + (lock ? 1 : -1));
+    document.body.style.overflow = lockCount ? 'hidden' : '';
+    if (!scrollEngine) return;
+    if (lockCount) scrollEngine.stop(); else scrollEngine.start();
   }
 
-  if ($modalOverlay) {
-    $modalOverlay.addEventListener('click', function (e) {
-      if (e.target === $modalOverlay) closeModal();
-    });
-  }
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && $modalOverlay && $modalOverlay.classList.contains('active')) {
-      closeModal();
-    }
-  });
-
-  /* ── Event Delegation: Project modal buttons ──────────────────── */
-  if ($projectList) {
-    $projectList.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-action="modal"]');
-      if (!btn) return;
-      openModal(btn.dataset.project, btn.dataset.tab);
-    });
-  }
-
-  /* ── Event Delegation: Gallery lines (Leadership / Honors / News) ── */
-  function bindGalleryList($el) {
-    if (!$el) return;
-    $el.addEventListener('click', function (e) {
-      const item = e.target.closest('[data-gallery]');
-      if (!item) return;
-      openGallery(item.dataset.gallery, parseInt(item.dataset.index, 10));
-    });
-  }
-  bindGalleryList($leadershipList);
-  bindGalleryList($honorsList);
-  bindGalleryList($newsTimeline);
-
-  /* ── Event Delegation: Copy-to-clipboard buttons ──────────────── */
-  if ($heroLinks) {
-    $heroLinks.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-action="copy"]');
-      if (!btn) return;
-      copyToClipboard(btn.dataset.copy, btn);
-    });
-  }
-
-  /* Email click-to-copy */
-  if ($heroEmail) {
-    $heroEmail.addEventListener('click', function () {
-      copyToClipboard($heroEmail.dataset.copy, $heroEmail);
-    });
-  }
-
-  if ($footerEmail) {
-    $footerEmail.addEventListener('click', function () {
-      copyToClipboard($footerEmail.dataset.copy, $footerEmail);
-    });
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     INTERACTIONS
-     ════════════════════════════════════════════════════════════════════ */
-
-  /* ── Scroll Progress ────────────────────────────────────────── */
-  function updateScrollProgress() {
-    if (!$progress) return;
-    const total = document.documentElement.scrollHeight - window.innerHeight;
-    $progress.style.width = total > 0 ? `${(window.scrollY / total) * 100}%` : '0%';
-  }
-
-  /* ── Scroll-to-Top ──────────────────────────────────────────── */
-  function updateScrollTopVisibility() {
-    if (!$scrollTop) return;
-    $scrollTop.classList.toggle('visible', window.scrollY > 400);
-  }
-
-  if ($scrollTop) {
-    $scrollTop.addEventListener('click', function () {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  }
-
-  /* ── Nav Scroll Spy ─────────────────────────────────────────── */
-  function updateActiveNav() {
-    const links = document.querySelectorAll('[data-nav]');
-    if (!links.length) return;
-
-    const scrollPos = window.scrollY + 80;
-    let current = null;
-
-    links.forEach(link => {
-      const id = link.getAttribute('data-nav');
-      const section = document.getElementById(id);
-      if (section && scrollPos >= section.offsetTop && scrollPos < section.offsetTop + section.offsetHeight) {
-        current = id;
-      }
-    });
-
-    links.forEach(link => {
-      link.classList.toggle('active', link.getAttribute('data-nav') === current);
-    });
-  }
-
-  /* ── Nav Hide/Show on Scroll ─────────────────────────────────── */
-  let lastScroll = 0;
-  function updateNavVisibility() {
-    if (!$navHeader) return;
-    const currentScroll = window.scrollY;
-
-    const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
-    if (currentScroll > lastScroll && currentScroll > navH + 20) {
-      $navHeader.classList.add('hidden');
-    } else {
-      $navHeader.classList.remove('hidden');
-    }
-    lastScroll = currentScroll;
-  }
-
-  /* ── Nav Backdrop ─────────────────────────────────────────── */
-  const $navBackdrop = document.createElement('div');
-  $navBackdrop.classList.add('nav-backdrop');
-  document.body.appendChild($navBackdrop);
-
-  function openMobileNav() {
-    $navMenu.classList.add('open');
-    $navToggle.classList.add('open');
-    $navToggle.setAttribute('aria-expanded', 'true');
-    $navBackdrop.classList.add('open');
-    lockBodyScroll();
-  }
-
-  function closeMobileNav() {
-    $navMenu.classList.remove('open');
-    $navToggle.classList.remove('open');
-    $navToggle.setAttribute('aria-expanded', 'false');
-    $navBackdrop.classList.remove('open');
-    unlockBodyScroll();
-  }
-
-  /* ── Mobile Nav Toggle ──────────────────────────────────────── */
-  if ($navToggle && $navMenu) {
-    $navToggle.addEventListener('click', function () {
-      if ($navMenu.classList.contains('open')) {
-        closeMobileNav();
-      } else {
-        openMobileNav();
-      }
-    });
-
-    // Close on nav link click (mobile)
-    $navMenu.addEventListener('click', function (e) {
-      if (e.target.tagName === 'A') {
-        closeMobileNav();
-      }
-    });
-
-    // Close on backdrop click
-    $navBackdrop.addEventListener('click', function () {
-      closeMobileNav();
-    });
-  }
-
-  /* ── Scroll-Triggered Reveal ────────────────────────────────── */
-  function initRevealObserver() {
-    if (!('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+  function trapTab(e, container) {
+    if (!container) return;
+    var f = container.querySelectorAll('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if (!f.length) return;
+    var first = f[0];
+    var last = f[f.length - 1];
+    /* The layer itself is focused on open (tabindex="-1"), so both Tab
+       directions have to enter at an edge instead of falling through to the
+       page behind it. */
+    if (document.activeElement === container) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
       return;
     }
-
-    const observer = new IntersectionObserver(function (entries) {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
   }
 
-  /* ── In-View Video Playback ──────────────────────────────────
-     Videos carry preload="none" and a poster, so nothing is fetched until a
-     card is actually on screen. Playback is skipped entirely when the visitor
-     has asked for reduced motion. */
-  function initVideoPlayback() {
-    var videos = document.querySelectorAll('.project-card video');
-    if (!videos.length) return;
+  /* The project's own panel, painted with the crop that record had as a page
+     stop and filled with the same projectCopy/projectMedia the dialog uses. */
+  function openProject(index) {
+    if (!projectView) return;
+    var p = P.projects[index];
+    if (!p) return;
+    /* The category's PAN crop is the first fallback (the spec's order), and the
+       neutral centre only if the record's room has no page entry. */
+    var rooms = S.deriveRooms(P.projects);
+    var roomIndex = 0;
+    for (var r = 0; r < rooms.length; r++) {
+      if (rooms[r].projects.indexOf(p) !== -1) { roomIndex = r; break; }
+    }
+    var art = PROJECT_ART[p.id] || PAN[3 + roomIndex] || { art: 'rice', pos: '50% 50%' };
+    projectView.className = 'stop art--' + art.art + ' stop--project project-view';
+    projectView.style.setProperty('--pos', art.pos);
+    projectView.dataset.side = index % 2 === 0 ? 'left' : 'right';
+    projectView.setAttribute('aria-label', p.title);
+    projectView.innerHTML =
+      '<div class="stop-in">' +
+        '<div class="copy">' +
+          '<button class="btn project-view__back" type="button" data-close-view>← ' + esc(p.category) + '</button>' +
+          projectCopy(p, index) +
+        '</div>' +
+        '<div class="media">' + projectMedia(p, index) + '</div>' +
+      '</div>';
+    viewOpener = document.activeElement;
+    projectView.hidden = false;
+    projectView.scrollTop = 0;   /* after unhide: a hidden element ignores it */
+    setLock(true);
+    projectView.focus();
+  }
 
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || !('IntersectionObserver' in window)) return;
+  function closeProject() {
+    if (!projectView || projectView.hidden) return;
+    projectView.hidden = true;
+    setLock(false);
+    if (viewOpener && viewOpener.focus) viewOpener.focus();
+    viewOpener = null;
+  }
 
-    var observer = new IntersectionObserver(function (entries) {
+  if (dialog) {
+    dialogClose.addEventListener('click', closeDialog);
+    dialog.addEventListener('click', function (e) { if (e.target === dialog) closeDialog(); });
+  }
+
+  /* One key handler for both layers: the dialog owns Tab/Escape while it is
+     open, otherwise the project view does. Two separate handlers would let one
+     Escape close both. */
+  document.addEventListener('keydown', function (e) {
+    if (dialog && !dialog.hidden) {
+      if (e.key === 'Escape') { closeDialog(); return; }
+      if (e.key === 'Tab') trapTab(e, dialogCard);
+      return;
+    }
+    if (!projectView || projectView.hidden) return;
+    if (e.key === 'Escape') { closeProject(); return; }
+    if (e.key === 'Tab') trapTab(e, projectView);
+  });
+
+  /* ── rail, masthead, progress, reveals ──────────────────────────── */
+
+  /* Builds the journey line only. The active stop and the progress fill are
+     driven from wireChrome, which owns the scroll geometry. */
+  function buildRail() {
+    var rail = document.getElementById('rail');
+    if (!rail) return;
+    var labels = [{ id: 'about', label: 'About' }];
+    labels.push({ id: 'news', label: 'News' });
+    S.deriveRooms(P.projects).forEach(function (room) {
+      labels.push({ id: roomSlug(room.key), label: room.key });
+    });
+    labels.push({ id: 'leadership', label: 'Leadership' });
+    labels.push({ id: 'honours', label: 'Honours' });
+    labels.push({ id: 'contact', label: 'Contact' });
+    rail.innerHTML = labels.map(function (s) {
+      return '<a class="rail__stop" href="#' + esc(s.id) + '" data-stop="' + esc(s.id) + '"><span>' +
+        esc(s.label) + '</span></a>';
+    }).join('');
+  }
+
+  function wireReveals() {
+    var nodes = document.querySelectorAll('[data-reveal]');
+    if (!nodes.length) return;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || !('IntersectionObserver' in window)) {
+      nodes.forEach(function (n) { n.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        var v = entry.target;
-        if (entry.isIntersecting) {
-          var p = v.play();
-          /* autoplay can still be refused — the poster stays in place */
-          if (p && typeof p.catch === 'function') p.catch(function () {});
-        } else if (!v.paused) {
-          v.pause();
-        }
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-in');
+        io.unobserve(entry.target);
       });
-    }, { threshold: 0.25 });
-
-    Array.prototype.forEach.call(videos, function (v) { observer.observe(v); });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    nodes.forEach(function (n) { io.observe(n); });
   }
 
-  /* ── Smooth Scroll for Anchor Links ─────────────────────────── */
-  function initSmoothScroll() {
+  function wireChrome() {
+    var resume = document.getElementById('resumeLink');
+    var resumeLink = P.social.filter(function (s) { return s.label === 'Resume'; })[0] || P.social[0];
+    if (resume && resumeLink) resume.href = resumeLink.url;
+
+    var masthead = document.getElementById('masthead');
+    var progress = document.getElementById('progress');
+    var rail = document.getElementById('rail');
+    var hero = document.getElementById('top');
+    var heroCopy = hero ? hero.querySelector('.copy') : null;
+    var sections = document.querySelectorAll('#page .stop[id]');
+    var railStops = rail ? rail.querySelectorAll('.rail__stop') : [];
+    var ticking = false;
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var EASE = 0.18;   /* per-frame approach: the fill glides between ticks */
+    var target = 0;      /* rail fill length for the active tick, in px */
+    var shown = 0;
+    var targetFrac = 0;  /* small-screen hairline: sections reached / total */
+    var shownFrac = 0;
+    var active = '';
+    var frame = 0;
+    var painted = false;
+
+    /* The active section is the one covering the viewport middle: the cue flips
+       exactly as the boundary between two panels crosses the centre. When the
+       middle falls in the gutter between two panels, the section just passed
+       stays current, so the tick does not blink back. */
+    function activeSection(rects) {
+      var mid = window.innerHeight / 2;
+      var passed = '';
+      for (var i = 0; i < rects.length; i++) {
+        if (rects[i].top <= mid && rects[i].bottom > mid) return sections[i].id;
+        if (rects[i].top <= mid) passed = sections[i].id;
+      }
+      return passed;
+    }
+
+    /* Where a section's tick sits on the fill (the fill ends at its centre) and
+       how much of the seven-stop journey it represents for the phone hairline. The
+       track starts at the first tick's centre, so the first stop is 0 and the
+       last stop's fill length is the whole line. */
+    function railTarget(id) {
+      if (!railStops.length) return { px: 0, frac: 0 };
+      var origin = railStops[0].offsetTop + railStops[0].offsetHeight / 2;
+      for (var i = 0; i < railStops.length; i++) {
+        if (railStops[i].getAttribute('data-stop') !== id) continue;
+        var centre = railStops[i].offsetTop + railStops[i].offsetHeight / 2;
+        return { px: Math.max(0, centre - origin), frac: (i + 1) / railStops.length };
+      }
+      return { px: 0, frac: 0 };
+    }
+
+    /* Continuous but anchored: the fill reaches a section's tick when that
+       panel's top reaches the viewport top, and travels proportionally between
+       the two ticks while the page crosses from one panel to the next — so it
+       sits midway when the viewport is split between two panels. */
+    function fillTarget(rects) {
+      var k = -1;
+      for (var i = 0; i < rects.length; i++) if (rects[i].top <= 0) k = i;
+      if (k < 0) return { px: 0, frac: 0 };
+      var from = railTarget(sections[k].id);
+      var next = sections[k + 1];
+      if (!next) return from;
+      var span = rects[k + 1].top - rects[k].top;
+      var t = span > 0 ? Math.min(1, Math.max(0, -rects[k].top / span)) : 1;
+      var to = railTarget(next.id);
+      return {
+        px: from.px + (to.px - from.px) * t,
+        frac: from.frac + (to.frac - from.frac) * t
+      };
+    }
+
+    function draw() {
+      if (rail) rail.style.setProperty('--rail-progress', shown.toFixed(1) + 'px');
+      if (progress) progress.style.width = (shownFrac * 100).toFixed(2) + '%';
+    }
+
+    function paint() {
+      frame = 0;
+      shown += (target - shown) * EASE;
+      shownFrac += (targetFrac - shownFrac) * EASE;
+      var settled = Math.abs(target - shown) < 0.5 && Math.abs(targetFrac - shownFrac) < 0.001;
+      if (settled) { shown = target; shownFrac = targetFrac; }
+      draw();
+      if (!settled) frame = window.requestAnimationFrame(paint);
+    }
+
+    function update() {
+      ticking = false;
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
+      var heroH = hero ? hero.offsetHeight : 0;
+      /* The bar turns solid, and its wordmark and Resume return, only once the
+         hero's copy — the name and the Resume button — has scrolled past. The
+         copy box is measured rather than the panel, because on small screens the
+         panel is content-height and `heroH - 72` would fire early, putting the
+         bar's Resume on screen beside the hero's. */
+      var copyEnd = heroH;
+      if (heroCopy) {
+        var copyRect = heroCopy.getBoundingClientRect();
+        if (copyRect.height) copyEnd = copyRect.bottom + y;
+      }
+      if (masthead) masthead.classList.toggle('is-stuck', y > Math.max(120, copyEnd));
+
+      var rects = [];
+      for (var i = 0; i < sections.length; i++) rects.push(sections[i].getBoundingClientRect());
+
+      var id = activeSection(rects);
+      if (id !== active) {
+        active = id;
+        for (var j = 0; j < railStops.length; j++) {
+          railStops[j].classList.toggle('is-active', railStops[j].getAttribute('data-stop') === id);
+        }
+      }
+
+      var t = fillTarget(rects);
+      target = t.px;
+      targetFrac = t.frac;
+      /* First paint (including a reload that starts mid-page) and reduced motion
+         jump straight to the value; otherwise the fill eases after the scroll. */
+      if (!painted || reduced) {
+        painted = true;
+        shown = target;
+        shownFrac = targetFrac;
+        draw();
+      } else if (!frame) {
+        frame = window.requestAnimationFrame(paint);
+      }
+    }
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', function () {
+      active = null;               /* the rail may have been hidden when measured */
+      update();
+    }, { passive: true });
+    update();
+  }
+
+  /* Smooth scrolling: the vendored Lenis library smooths the wheel only. Touch
+     and the keyboard stay native, and under reduced motion — or if the script
+     did not load — nothing is constructed, so the page keeps the browser's own
+     scrolling and the stylesheet's smooth anchor travel. Anchor clicks are sent
+     through Lenis so the CSS scroll-margin-top clearance is preserved. */
+  function wireSmoothScroll() {
+    if (!window.Lenis) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var lenis = new window.Lenis({ autoRaf: true });
+    scrollEngine = {
+      lenis: lenis,
+      stop: function () { lenis.stop(); },
+      start: function () { lenis.start(); }
+    };
+
+    /* Lenis subtracts the target's own scroll-margin top itself — the CSS
+       masthead clearance on .stop. Targets without one (the #work wrapper and
+       #page) need the panels' clearance passed as an offset instead. */
+    var pageStop = document.querySelector('.stop');
+
     document.addEventListener('click', function (e) {
-      const link = e.target.closest('a[href^="#"]');
-      if (!link) return;
-
-      const href = link.getAttribute('href');
-      if (href === '#') return;
-
-      const target = document.querySelector(href);
-      if (target) {
-        e.preventDefault();
-        const offset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--navbar-h'), 10) || 56;
-        window.scrollTo({
-          top: target.offsetTop - offset,
-          behavior: 'smooth'
-        });
+      /* Modified clicks belong to the browser (new tab, download), and the skip
+         link must keep its native jump: that jump is what moves the sequential
+         focus starting point into #page. */
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
+      if (!link || link.classList.contains('skip') || link.getAttribute('href') === '#') return;
+      var hash = link.getAttribute('href');
+      var target = document.getElementById(hash.slice(1));
+      if (!target) return;
+      e.preventDefault();
+      var margin = parseFloat(window.getComputedStyle(target).scrollMarginTop) || 0;
+      if (margin) {
+        lenis.scrollTo(target);
+      } else {
+        var clearance = pageStop ? (parseFloat(window.getComputedStyle(pageStop).scrollMarginTop) || 0) : 0;
+        lenis.scrollTo(target, { offset: -clearance });
+      }
+      if (window.history && history.pushState && location.hash !== hash) {
+        history.pushState(null, '', hash);
       }
     });
   }
 
-  /* ── Combined Scroll Handler (throttled) ────────────────────── */
-  let throttled = false;
-  function onScroll() {
-    if (!throttled) {
-      requestAnimationFrame(function () {
-        updateScrollProgress();
-        updateScrollTopVisibility();
-        updateActiveNav();
-        updateNavVisibility();
-        throttled = false;
+  /* Clipboard: the async API in a secure context (https or localhost), the old
+     select-and-execCommand route for file:// and older browsers. The click is
+     the user gesture both routes need. */
+  function copyText(value) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value).then(
+        function () { return true; },
+        function () { return legacyCopy(value); }
+      );
+    }
+    return Promise.resolve(legacyCopy(value));
+  }
+
+  function legacyCopy(value) {
+    var box = document.createElement('textarea');
+    box.value = value;
+    box.setAttribute('readonly', '');
+    box.style.position = 'fixed';
+    box.style.left = '-9999px';
+    document.body.appendChild(box);
+    box.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(box);
+    return ok;
+  }
+
+  function wireEmailCopy() {
+    var reset = null;
+    document.addEventListener('click', function (e) {
+      var button = e.target.closest ? e.target.closest('[data-copy]') : null;
+      if (!button) return;
+      copyText(button.getAttribute('data-copy') || '').then(function (ok) {
+        var note = document.querySelector('.contact-mail__note');
+        if (!note) return;
+        note.textContent = ok ? 'Copied to clipboard' : 'Copy failed';
+        note.classList.toggle('is-copied', ok);
+        window.clearTimeout(reset);
+        reset = window.setTimeout(function () {
+          note.textContent = 'Click to copy';
+          note.classList.remove('is-copied');
+        }, 2600);
       });
-      throttled = true;
-    }
+    });
   }
 
-  /* ════════════════════════════════════════════════════════════════════
-     CLIPBOARD
-     ════════════════════════════════════════════════════════════════════ */
-
-  function copyToClipboard(text, el) {
-    const showToast = (msg, isError) => {
-      const toast = document.createElement('div');
-      toast.className = 'toast' + (isError ? ' toast--error' : '');
-      toast.textContent = msg;
-      document.body.appendChild(toast);
-      setTimeout(() => { toast.style.opacity = '0'; }, 1800);
-      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 2200);
-    };
-
-    if (el) {
-      el.style.transform = 'scale(0.96)';
-      setTimeout(() => { if (el) el.style.transform = ''; }, 150);
-    }
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => showToast('Email copied — reach out anytime!')).catch(() => showToast('Could not copy', true));
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand('copy');
-        showToast('Email copied — reach out anytime!');
-      } catch (e) {
-        showToast('Could not copy', true);
-      }
-      document.body.removeChild(ta);
-    }
+  function wireDelegation() {
+    document.addEventListener('click', function (e) {
+      var closer = e.target.closest ? e.target.closest('[data-close-view]') : null;
+      if (closer) { closeProject(); return; }
+      var t = e.target.closest ? e.target.closest('[data-kind][data-index]') : null;
+      if (!t || t.disabled) return;
+      var kind = t.getAttribute('data-kind');
+      if (kind === 'panel') { openProject(Number(t.getAttribute('data-index'))); return; }
+      openRecord(kind, Number(t.getAttribute('data-index')));
+    });
   }
-
-  /* ════════════════════════════════════════════════════════════════════
-     HELPERS
-     ════════════════════════════════════════════════════════════════════ */
-
-  function isImage(src) {
-    return /\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i.test(src);
-  }
-
-  /* ════════════════════════════════════════════════════════════════════
-     INIT
-     ════════════════════════════════════════════════════════════════════ */
 
   function init() {
-    renderNav();
-    renderHero();
-    renderNews();
-    renderProjects();
-    renderLeadership();
-    renderHonors();
-    renderFooter();
-
-    initRevealObserver();
-    initVideoPlayback();
-    initSmoothScroll();
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // initial state
+    render();
+    buildRail();
+    wireReveals();
+    wireChrome();
+    wireEmailCopy();
+    wireDelegation();
+    wireSmoothScroll();
   }
 
   if (document.readyState === 'loading') {
@@ -847,4 +800,13 @@
     init();
   }
 
+  /* Published for the eventual guard suite and for manual probing. */
+  window.Profile = {
+    render: render,
+    openRecord: openRecord,
+    closeDialog: closeDialog,
+    openProject: openProject,
+    closeProject: closeProject,
+    get lenis() { return scrollEngine ? scrollEngine.lenis : null; }
+  };
 })();

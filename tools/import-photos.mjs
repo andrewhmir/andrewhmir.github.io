@@ -39,6 +39,9 @@ const MAPPING = [
   ['MedCov_1.jpg', 'leadership-media-coverages-1.jpg'],
   ['MedCov_2.jpg', 'leadership-media-coverages-2.jpg'],
   ['MedCov_3.jpg', 'leadership-media-coverages-3.jpg'],
+  /* Leadership — Personnel's Week 2023 & 2024, Event Head */
+  ['PWeek_1.png', 'leadership-personnels-week-1.jpg'],
+  ['PWeek_2.png', 'leadership-personnels-week-2.jpg'],
   /* Honors — 21st National Youth Congress (March 2025) */
   ['NYC_1.JPG', 'honors-nyc-2025-1.jpg'],
   ['NYC_2.JPG', 'honors-nyc-2025-2.jpg'],

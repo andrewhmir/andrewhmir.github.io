@@ -6,182 +6,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Andrew Alangcao</title>
 
-  <meta name="description" content="Andrew Alangcao — Data Engineer and Computational Cognition Researcher. Robotics, biometrics, and applied AI projects, with awards from national and international competitions.">
-  <meta name="theme-color" content="#1a1614">
+  <meta name="description" content="Andrew Alangcao — Software Engineer. Robotics, biometrics, and applied AI projects, with awards from national and international competitions.">
+  <meta name="theme-color" content="#080c0e">
   <link rel="canonical" href="https://andrewhmir.github.io/">
 
   <!-- Open Graph / social preview -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Andrew Alangcao">
   <meta property="og:url" content="https://andrewhmir.github.io/">
-  <meta property="og:title" content="Andrew Alangcao — Data Engineer &amp; Computational Cognition Researcher">
+  <meta property="og:title" content="Andrew Alangcao — Software Engineer">
   <meta property="og:description" content="Robotics, biometrics, and applied AI projects, with awards from national and international competitions.">
   <meta property="og:image" content="https://andrewhmir.github.io/files/og-card.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <!-- `og:image:alt` is not decoration: without it a screen reader announces the
+       share card as an unlabelled image. It describes what the card shows. -->
+  <meta property="og:image:alt" content="Andrew Alangcao — Software Engineer, over Fernando Amorsolo's Planting Rice.">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- `twitter:image` is not optional: the card is declared
+       `summary_large_image`, and without it X falls back to a card with no picture. -->
+  <meta name="twitter:image" content="https://andrewhmir.github.io/files/og-card.jpg">
+  <meta name="twitter:image:alt" content="Andrew Alangcao — Software Engineer, over Fernando Amorsolo's Planting Rice.">
 
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
+  <!-- Fonts: Newsreader + Courier Prime, VENDORED. Declared by the generated
+       css/fonts.css; the page fetches no font from a third party. `unicode-range`
+       is preserved, so a visit downloads only the subsets it uses.
+       See files/fonts/README.md. -->
+  <link rel="stylesheet" href="css/fonts.css">
 
-  <!-- Google Fonts: Newsreader + Courier Prime -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=Courier+Prime&display=swap" rel="stylesheet">
-
-  <!-- Styles -->
+  <!-- Styles: the Long Field profile page. -->
   <link rel="stylesheet" href="css/styles.css">
 
-  <!-- Favicon -->
-  <link rel="icon" href="files/Nailong.png">
+  <!-- Smooth scrolling: Lenis is vendored locally (no CDN), so only its own
+       state stylesheet is needed. js/main.js constructs it unless the visitor
+       asks for reduced motion. See js/vendor/README.md. -->
+  <link rel="stylesheet" href="js/vendor/lenis.css">
+
+  <!-- Favicon. One 512px PNG serves both roles: the browser tab scales it down,
+       and iOS accepts a 512 for `apple-touch-icon`, so there is no second asset
+       to keep in sync. -->
+  <link rel="icon" type="image/png" sizes="512x512" href="files/Nailong.png">
+  <link rel="apple-touch-icon" href="files/Nailong.png">
 </head>
 
 <body>
+  <a class="skip" href="#page">Skip to content</a>
 
-  <!-- ════════════════════════════════════════════════════════════
-       Atmosphere — painting + grain
-       ════════════════════════════════════════════════════════════ -->
-  <div class="bg-atmosphere">
-    <div class="bg-painting"></div>
-    <div class="bg-grain"></div>
+  <!-- Masthead: transparent over the hero, gains a blur + border once the walk
+       begins. From 1024px up the page's scroll progress is drawn down the rail
+       instead; the hairline at this bar's foot is the small-screen fallback. -->
+  <header class="masthead" id="masthead">
+    <a class="brand" href="#top">Andrew Alangcao</a>
+    <nav class="menu" aria-label="Sections">
+      <a href="#about">About</a>
+      <a href="#news">News</a>
+      <a href="#work">Work</a>
+      <a href="#honours">Honours</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="resume" id="resumeLink" href="#" target="_blank" rel="noopener noreferrer">Resume ↗</a>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+  </header>
+
+  <!-- The left-edge shade: keeps the journey rail legible over bright crops.
+       It is the only fixed element besides the rail, and it is decoration. -->
+  <div class="rail-shade" aria-hidden="true"></div>
+
+  <!-- The journey line: one stop per section plus the page-progress fill, both
+       fed by js/main.js -->
+  <nav class="rail" id="rail" aria-label="The walk through the profile"></nav>
+
+  <!-- Sections are rendered from PORTFOLIO by js/main.js. The shell stays empty
+       on purpose: all content lives in js/data.js, and no copy is duplicated
+       here except the no-JS fallback below. -->
+  <main id="page" class="page"></main>
+
+  <!-- Project view: the one full-screen project panel, painted from PORTFOLIO
+       by js/main.js. It stacks below the record dialog (z-index 80 vs 60), so
+       the view's "Open the record →" still opens the dialog above it. -->
+  <div class="stop art--rice stop--project project-view" id="projectView" hidden
+       role="dialog" aria-modal="true" aria-label="Project record" tabindex="-1"
+       data-lenis-prevent></div>
+
+  <footer class="foot">
+    <span class="foot__credit">Paintings by Fernando Amorsolo y Cueto (1892–1972)</span>
+    <span class="foot__year">© 2026</span>
+  </footer>
+
+  <!-- No-JS fallback: the page is rendered by JS, so state the essentials
+       plainly rather than leaving a blank document. -->
+  <noscript>
+    <section class="noscript">
+      <h1>Andrew Alangcao</h1>
+      <p>Software Engineer. Robotics, biometrics, and applied AI projects, with awards from national and international competitions.</p>
+      <p>In pursuit of knowledge. This site is a record of my pursuit of that.</p>
+      <p>andrew [dot] alangcao [at] gmail [dot] com · <a href="https://github.com/andrewhmir" target="_blank" rel="noopener noreferrer">GitHub</a> · <a href="https://www.linkedin.com/in/andrew-alangcao/" target="_blank" rel="noopener noreferrer">LinkedIn</a></p>
+    </section>
+  </noscript>
+
+  <!-- The one shared record dialog. Project records embed a muted video player;
+       leadership and honours records open their photographs. The card opts out of
+       Lenis's wheel capture (`data-lenis-prevent`), so its own scroll area still
+       works while the page's smooth scroll is stopped. -->
+  <div class="dialog" id="dialog" hidden>
+    <div class="dialog__card" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="dialogTitle" tabindex="-1">
+      <button class="dialog__close" id="dialogClose" type="button" aria-label="Close record">×</button>
+      <p class="dialog__meta" id="dialogMeta"></p>
+      <h3 class="dialog__title" id="dialogTitle"></h3>
+      <div class="dialog__body" id="dialogBody"></div>
+    </div>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════
-       Content Layer
-       ════════════════════════════════════════════════════════════ -->
-  <div class="content-layer">
-
-    <!-- Scroll Progress -->
-    <div class="scroll-progress" id="scrollProgress"></div>
-
-    <!-- Navigation -->
-    <header class="nav-header" id="navHeader">
-      <a href="#Home" class="nav-brand">Andrew Alangcao</a>
-      <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-        <span class="nav-toggle-bar"></span>
-        <span class="nav-toggle-bar"></span>
-      </button>
-      <nav class="nav-menu" id="navMenu">
-        <ul class="nav-list" id="navList">
-          <!-- Rendered by JS -->
-        </ul>
-      </nav>
-    </header>
-
-    <!-- ═══ Opening Moment — Painting + Signature ═══ -->
-    <section class="section hero" id="Home">
-      <div class="hero-painting-stage">
-        <div class="bg-painting"></div>
-        <h1 class="hero-signature">Andrew Alangcao</h1>
-        <div class="hero-cue">scroll</div>
-      </div>
-
-      <!-- ═══ Hello ═══ -->
-      <div class="hero-intro">
-        <div class="container">
-          <img class="hero-photo-print" id="heroPhoto" loading="lazy" alt="Andrew Alangcao">
-          <div class="hero-bio-container" id="heroBio">
-            <!-- Rendered by JS -->
-          </div>
-          <div class="hero-email" id="heroEmail">
-            <!-- Rendered by JS -->
-          </div>
-          <div class="hero-links" id="heroLinks">
-            <!-- Rendered by JS -->
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- No-JS Fallback -->
-    <noscript>
-      <section class="section">
-        <div class="container" style="text-align:center;padding:40px 0;">
-          <h2 style="font-family:Georgia,serif;color:var(--text-bright);margin-bottom:16px;">Andrew Alangcao</h2>
-          <p style="color:var(--text-body);max-width:560px;margin:0 auto 16px;">Data Engineer | Computational Cognition Researcher</p>
-          <p style="color:var(--text-body);max-width:560px;margin:0 auto 16px;">My work and studies revolve around understanding perception as a foundation for building more general, adaptive AI systems, with the long-term goal of contributing to AGI development — all to improve everyday life for people in the Philippines and around the world.</p>
-          <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
-            <a href="https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" style="color:var(--accent);">Resume</a>
-            <a href="https://github.com/andrewhmir" style="color:var(--accent);">GitHub</a>
-            <a href="https://www.linkedin.com/in/andrew-alangcao/" style="color:var(--accent);">LinkedIn</a>
-            <a href="mailto:andrew.alangcao@gmail.com" style="color:var(--accent);">Email</a>
-          </div>
-        </div>
-      </section>
-    </noscript>
-
-    <!-- ═══ News ═══ -->
-    <section class="section" id="News">
-      <div class="container">
-        <p class="section-label">What's happening</p>
-        <h2 class="section-heading">Things that happened</h2>
-        <div class="timeline" id="newsTimeline">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Projects ═══ -->
-    <section class="section" id="Projects">
-      <div class="container">
-        <p class="section-label">What I've made</p>
-        <h2 class="section-heading">Projects</h2>
-        <p class="section-note">(* equal contribution)</p>
-        <div class="project-list" id="projectList">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ═══ Leadership & Honors ═══ -->
-    <section class="section" id="Records">
-      <div class="container">
-        <p class="section-label">Where I've been</p>
-        <h2 class="section-heading">Leadership & Honors</h2>
-        <h3 class="records-subheading">Leadership</h3>
-        <div class="record-list" id="leadershipList">
-          <!-- Rendered by JS -->
-        </div>
-        <h3 class="records-subheading">Honors</h3>
-        <div class="record-list record-list--honors" id="honorsList">
-          <!-- Rendered by JS -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Popup Modal (single shared instance) -->
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal-card" id="modalCard" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
-        <button class="modal-close" id="modalClose" aria-label="Close modal">&times;</button>
-        <div class="modal-header" id="modalHeader"></div>
-        <div class="modal-scroll">
-          <div class="modal-image-wrap" id="modalImage"></div>
-          <div class="modal-body" id="modalBody"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══ Closing ═══ -->
-    <footer class="site-footer">
-      <div class="container">
-        <p>Let's build something together.</p>
-        <p style="margin-top:8px;cursor:pointer;" id="footerEmail" data-copy="andrew.alangcao@gmail.com">
-          <i class="far fa-envelope" style="margin-right:7px;"></i>andrew.alangcao@gmail.com
-        </p>
-        <p style="margin-top:12px;">Background paintings by Fernando Amorsolo y Cueto (1892&ndash;1972)</p>
-        <p style="margin-top:32px;">&copy; <span id="currentYear"></span> Andrew Alangcao</p>
-      </div>
-    </footer>
-
-    <!-- Back to Top -->
-    <button class="scroll-top" id="scrollTopBtn" aria-label="Scroll to top">Top</button>
-
-  </div><!-- /content-layer -->
-
-  <!-- Data -->
+  <!-- Smooth scrolling: vendored Lenis 1.3.26 (MIT, 18.7 KB). It must load
+       before the renderer; with it absent or reduced motion asked for, the page
+       keeps the browser's own scroll. -->
+  <script src="js/vendor/lenis.min.js"></script>
+  <!-- Data: PORTFOLIO is the single source of truth for all authored content. -->
   <script src="js/data.js"></script>
-
-  <!-- Core Script -->
+  <!-- Renderer: builds the sections, the rail and the dialog. -->
   <script src="js/main.js"></script>
 </body>
 
