@@ -32,14 +32,14 @@ hand-written stylesheet, two hand-written scripts and the vendored Lenis pair:
 the portfolio records and personal copy live in `js/data.js`, while section headings, labels and button
 text are literals in `js/main.js`. Node is only for tests and dev tools.
 
-## Two paintings, fourteen crops
+## Two paintings, eighteen crops
 
 Two saved paintings carry the whole page:
 
 | Name in code | File | What it is |
 |---|---|---|
-| `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, the Robotics category panel, Leadership and Contact. Also the source of the Open Graph share card. |
-| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, the News stop, the Applications category panel and Honours. |
+| `rice` | `files/painting-hero.jpg` | Fernando Amorsolo's *Planting Rice* (1949): the hero, the Applications and Robotics category panels, Leadership and Contact. Also the source of the Open Graph share card. |
+| `harvest` | `files/painting.jpg` | A 1934 harvest scene: About, the News stop, the DSH Plugins category panel and Honours. |
 
 The footer credits both: **Paintings by Fernando Amorsolo y Cueto (1892–1972).**
 
@@ -55,17 +55,18 @@ asset. The alternation is in the `PAN` table in `js/main.js`, in page order:
 | Hero | `top` | `rice` | `50% 58%` |
 | About | `about` | `harvest` | `48% 52%` |
 | News | `news` | `harvest` | `20% 26%` |
-| Robotics | `robotics` | `rice` | `30% 62%` |
-| Applications | `applications` | `harvest` | `64% 38%` |
+| Applications | `applications` | `rice` | `30% 62%` |
+| DSH Plugins | `dsh-plugins` | `harvest` | `64% 38%` |
+| Robotics | `robotics` | `rice` | `74% 28%` |
 | Leadership | `leadership` | `rice` | `8% 44%` |
 | Honours | `honours` | `harvest` | `88% 36%` |
 | Contact | `contact` | `rice` | `50% 88%` |
 
-The six records keep their own crops in `PROJECT_ART` (project id → painting and
+The nine records keep their own crops in `PROJECT_ART` (project id → painting and
 position) for the project view, so a card opens the panel that record had as a
 page stop.
 
-Fourteen crops, two files, no per-stop downloads. A panel paints the whole image
+Eighteen crops, two files, no per-stop downloads. A panel paints the whole image
 `cover` at the stop's `background-position`; the browser does the crop. The pan
 is therefore a pair of percentages, not an image edit and not a camera move.
 Percentage positions survive every viewport: there is no second art direction
@@ -95,7 +96,7 @@ The page order is fixed and semantic:
 | Hero | `top` | Name, title line, one hero line, two actions | `calc(100vh - 16px)` |
 | About | `about` | All bio paragraphs, social row, a 4:5 framed portrait | `calc(100vh - 16px)` |
 | News | `news` | Four dated updates, newest first | `calc(100vh - 16px)` |
-| Work | `work` | Three category panels (Robotics, Applications, DSH Plugins), each with a room lede and three project cards | `calc(100vh - 16px)` each |
+| Work | `work` | Three category panels (Applications, DSH Plugins, Robotics), each with a room lede and three project cards | `calc(100vh - 16px)` each |
 | Leadership | `leadership` | Four cards: year, description, thumbnail | `calc(100vh - 16px)` |
 | Honours | `honours` | Five standalone honours, newest first | `calc(100vh - 16px)` |
 | Contact | `contact` | Closing line, email, social links, on a dark card | `calc(100vh - 16px)` |
@@ -130,11 +131,11 @@ split (copy 1–5, media 7–12), because it shows one record's full stack.
 ### The category panels
 
 `PORTFOLIO.projects[].category` splits the roster 3 + 3 + 3, and
-`Site.deriveRooms` groups by it: Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy),
-Applications (Hivemind, SATLearn, BiyaHey!), then DSH Plugins (dsh-btw,
-dsh-plan-review, dsh-miranda-theme). Each room is one panel: an
-eyebrow ("03 · Work · Robotics"), the room name as the `h2`, a one-sentence lede
-from `ROOM_LEDES`, a count line, and three project cards. A card is the record's
+`Site.deriveRooms` groups by it in `ROOM_ORDER`: Applications (Hivemind, SATLearn,
+BiyaHey!), DSH Plugins (dsh-btw, dsh-plan-review, dsh-miranda-theme), then
+Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy). Each room is one panel: an
+eyebrow ("03 · Work · Applications"), the room name as the `h2`, a one-sentence
+lede from `ROOM_LEDES`, a count line, and three project cards. A card is the record's
 overview still, title, tagline and award count (or the venue when the record has
 no awards).
 
@@ -160,8 +161,9 @@ detour. Escape and the back button both close it and return focus to the card.
 The record dialog stacks above the view, and the body scroll lock is a count:
 closing the dialog leaves the page locked until the view closes too.
 
-The six records keep their ids (`project1`…`project6`) because honours link back
-with `from: 'projectN'`; only those records' position in the page changed. The
+The nine records keep their ids (`project1`…`project6`, `plugin1`…`plugin3`)
+because honours link back with `from: 'projectN'`; only those records' position in
+the page changed. The
 category panel's copy side alternates left/right like the other stops, so the
 scrim mirrors and the bright side of the painting stays away from the copy.
 
@@ -238,8 +240,9 @@ why a crop or a scrim change needs re-measurement rather than a colour swap.
 
 ## The journey rail and the left shade
 
-The masthead has five links, but the page has seven named stops (About, News,
-Robotics, Applications, Leadership, Honours, Contact). The rail is the full index: a fixed
+The masthead has five links, but the page has eight named stops (About, News,
+Applications, DSH Plugins, Robotics, Leadership, Honours, Contact). The rail is
+the full index: a fixed
 5px progress bar at the left edge, a short rule per stop — the awards list's em
 dash, reused as a station tick — and a label chip on hover and on the active
 stop. Each rule starts on the rail's line, its left end tucked beneath the gold
@@ -409,18 +412,18 @@ scrolls, and a reduced-motion visitor never gets the library constructed at all.
 
 ## Missing photographs
 
-Six rendered references point at files that are not in `files/`:
+Four photographs are still missing, and the data now says so rather than pointing
+at files that do not exist:
 
-- Personnel's Week — two photographs;
 - Annual Commencement — two;
 - Best in Work Immersion — one;
 - 2023 National Youth Congress — one.
 
-They are a content gap, not a layout bug. The affected leadership thumbnail shows
-the `PlaceHolder.png` fallback; the honours rows that declare those images still
-open a gallery whose broken images fall back to the same placeholder. The import
-tool's `MAPPING` has no entries for them, so the fix is to add the mappings,
-import the sources, and keep the existing data paths.
+Their honour rows are disabled; no request 404s. Every leadership card now ships
+photographs — Personnel's Week's two were imported last — so the "no photo" thumb
+is a state, not a live card. Adding one means importing the source through
+`tools/import-photos.mjs`, encoding it with `tools/optimize-images.py`, and
+wiring the resulting `.webp` path.
 
 HiveMind and SATLearn are a different case: their `team.image` is explicitly
 `PlaceHolder.png`, so they render awaited frames. `tools/make-images.mjs` can
@@ -457,24 +460,23 @@ npm test
 node tools/serve.mjs 3333
 ```
 
-`npm test` runs the static guard first, then the five surviving data suites and
-the component-library checker:
+`npm test` runs the static guard first, then the two data suites and the
+component-library checker:
 
-- `tests/page.test.mjs` — shell order, palette, both paintings, art layers,
-  dialog markup, no third-party resource loads, the vendored Lenis wiring and
-  reduced-motion opt-out, section ids, the 6/4/5 content counts, and the
-  guard's place in the npm script.
-- `tests/derive-rooms.test.mjs`, `hang.test.mjs`, `band.test.mjs`,
-  `gallery-index.test.mjs`, `award-photos.test.mjs` — inherited pure helpers and
-  data shapes. `hang` also checks that every shipped film has a poster still on
-  disk.
+- `tests/page.test.mjs` — shell order, palette, both paintings and their
+  `image-set()` formats, art layers, dialog markup, no third-party resource
+  loads, the vendored Lenis wiring and reduced-motion opt-out, section ids, the
+  6/4/5 content counts, and the guard's place in the npm script.
+- `tests/derive-rooms.test.mjs`, `hang.test.mjs` — the grouping the Work panels
+  are built from, the poster derivation, and that every shipped film still and
+  plugin screenshot is on disk.
 - `tests/library.test.mjs` — the `docs/library` validator: page shape, anchors,
   class/id coverage and cross-links.
 
 The guard is static and the data suites are pure. **No committed test renders
-the page or models CSS.** The browser probe that was the old walk's geometry
-authority is retired with the walk and slated for the cleanup commit; this page
-has no equivalent. A green `npm test` is the floor, not a layout verification.
+the page or models CSS.** The walk's browser geometry probes were deleted with
+the walk, and this page has no equivalent. A green `npm test` is the floor, not
+a layout verification.
 
 Layout was verified by headless Chrome screenshots at 1440×900, the spec's
 1280×704 floor and 390×844. Chrome needs a non-confined shell on this machine
@@ -485,7 +487,7 @@ alone.
 
 `tools/shot-url.mjs` captures a viewport at any URL. For scrolled or full-page
 captures use Chrome DevTools or a scratch CDP script under `.tmp-diag/`.
-`tools/README.md` indexes what survives and what is retired.
+`tools/README.md` indexes the dev tools that survive.
 
 ## Design record
 

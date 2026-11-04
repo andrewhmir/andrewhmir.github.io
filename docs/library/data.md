@@ -1,27 +1,23 @@
 # Data contract
 
-`PORTFOLIO` in `js/data.js` is the single source of truth for every record the page renders; the same file publishes the `Site` gallery helpers. This page is the contract an edit must keep: the keys, their live or dormant status, the record shapes, the placeholder rules and the helper inventory.
+`PORTFOLIO` in `js/data.js` is the single source of truth for every record the page renders; the same file publishes the three `Site` helpers the page calls. This page is the contract an edit must keep: the keys, the record shapes, the placeholder rules, the image formats and the helper inventory.
 
 ## Top-level keys
 
-Fourteen keys. **Live** means `js/main.js` reads it; **dormant** means nothing on this page reads it — inherited from the retired horizontal build.
+Ten keys, all live. A field that nothing reads is not kept: the retired walk's `profileImage`, `favicon`, `scrollerIcon` and `nav` were deleted, and the About portrait is hard-coded in the renderer instead.
 
-| Key | Status | Read by |
-|---|---|---|
-| `name` | live | the hero `h1` |
-| `title` | live | the hero `.hero-title` |
-| `bio` | live | the About paragraphs (`P.bio.map`); the hero line is deliberately not one of them |
-| `heroLine` | live | the hero `.hero-line` (`P.heroLine`); kept out of `bio` so the same sentence cannot print in About |
-| `email` | live | the Contact mailto link and its text |
-| `social` | live | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (`social[0]`, the entry labelled `Resume`); the two section rows skip the `Resume` entry |
-| `projects` | live | the three Work panels (nine records), the rail labels, the project view and its dialog |
-| `leadership` | live | the Leadership cards and their dialog |
-| `honors` | live | the Honours tiles and their dialog |
-| `profileImage` | dormant | ignored — the About portrait is hard-coded as `files/profile.jpg` in `js/main.js` |
-| `favicon` | dormant | no reader |
-| `scrollerIcon` | dormant | no reader |
-| `nav` | dormant | the shell's menu is hand-written in `index.html` |
-| `news` | live | the News stop rows (`P.news.map`); four entries with `date`, `text` and `images` — `images` is still unread because no news photograph is on disk |
+| Key | Read by |
+|---|---|
+| `name` | the hero `h1` |
+| `title` | the hero `.hero-title` |
+| `bio` | the About paragraphs (`P.bio.map`); the hero line is deliberately not one of them |
+| `heroLine` | the hero `.hero-line` (`P.heroLine`); kept out of `bio` so the same sentence cannot print in About |
+| `email` | the Contact copy value; `emailText()` derives the printed, obfuscated label from it |
+| `social` | About buttons, Contact links, the hero resume (`social[0].url`) and the masthead resume (the entry labelled `Resume`); the two section rows skip `Resume` |
+| `news` | the News stop rows (`P.news.map`) |
+| `projects` | the three Work panels (nine records), the rail labels, the project view and its dialog |
+| `leadership` | the Leadership cards and their dialog |
+| `honors` | the Honours tiles and their dialog |
 
 ## Path grammar
 
@@ -37,9 +33,9 @@ The grammar supports one collection segment per path. An array of objects nested
 
 ## Record fields
 
-Presence is the union across the shipped records. The marker is `required` (every record has it and the page reads it), `optional` (present on some records) or `dormant` (present but read by nothing on this page).
+Presence is the union across the shipped records. The marker is `required` (every record has it and the page reads it), `optional` (present on some records) or `dormant` (present but read by nothing — none ship today).
 
-### `projects` — 16-key union
+### `projects` — 13-key union
 
 | Path | Marker | Notes |
 |---|---|---|
@@ -53,34 +49,29 @@ Presence is the union across the shipped records. The marker is `required` (ever
 | `projects[].overview` | required | nested `image` (the card still and lead frame) and `text` (the dialog body) |
 | `projects[].team` | optional | nested `image` (the team frame) and `text` (the dialog's "The team"); 6 of 9 records |
 | `projects[].shots` | optional | the three frames the project view hangs for a record with no film or team photograph (3 of 9 records, all DSH plugins); the dialog gallery uses the same three |
-| `projects[].links` | required | the dialog's Links list; entries carry `label`, `url` and a dormant `icon` |
+| `projects[].links` | required | the dialog's Links list; entries carry `label` and `url` |
 | `projects[].awards` | optional | the panel Awards and the dialog's Awards list; entries carry `description` and `year` (4 of 9 records) |
-| `projects[].pieces` | dormant | retired walk vocabulary; no reader |
-| `projects[].authors` | dormant | no reader |
-| `projects[].source` | dormant | no reader |
-| `projects[].report` | dormant | retired; no reader |
+| `projects[].pieces` | optional | per-frame labels for a plugin record's three screenshots; the frame falls back to "Screenshot N" when absent |
 
 Nested object paths, also validated: `projects[].overview.image` · `projects[].overview.text` · `projects[].team.image` · `projects[].team.text`.
 
-### `leadership` — 5-key union
+### `leadership` — 4-key union
 
 | Path | Marker | Notes |
 |---|---|---|
 | `leadership[].description` | required | the card text, the thumb alt and the dialog title |
 | `leadership[].year` | required | `.leader__year` and the dialog meta line |
-| `leadership[].images` | required | the first image is the card thumb; the full array is the dialog gallery |
 | `leadership[].summary` | required | the dialog body |
-| `leadership[].pieces` | dormant | retired; no reader |
+| `leadership[].images` | optional | the first image is the card thumb; the full array is the dialog gallery. Every shipped record has photographs; a record with none renders the no-photo thumb |
 
-### `honors` — 6-key union
+### `honors` — 5-key union
 
 | Path | Marker | Notes |
 |---|---|---|
 | `honors[].description` | required | the tile text and the dialog title |
 | `honors[].year` | required | `.honour-row__year` and the dialog meta line |
 | `honors[].summary` | required | the dialog body |
-| `honors[].pieces` | dormant | retired; no reader |
-| `honors[].images` | optional | the dialog gallery and the enabled tile. Seven records have images, but three of those carry `from` and are project awards, so only four of the five tiles have one; images alone do not make a tile |
+| `honors[].images` | optional | the dialog gallery and the enabled tile. A tile with no images is disabled |
 | `honors[].from` | optional | `'projectN'` marks a project award, excluded from the tiles (8 of 13 records) |
 
 ### `social` — 3 entries
@@ -89,40 +80,31 @@ Nested object paths, also validated: `projects[].overview.image` · `projects[].
 |---|---|---|
 | `social[].label` | required | button and link text; `Resume` is matched by label for the masthead |
 | `social[].url` | required | the href wherever `social` is rendered |
-| `social[].icon` | dormant | an icon name; no reader |
+
+### `news` — 2-key union
+
+| Path | Marker | Notes |
+|---|---|---|
+| `news[].date` | required | the `.news-row__date` |
+| `news[].text` | required | the `.news-row__text`; rows are inert, there is no news dialog |
 
 ## Path rules and placeholders
 
 - Image paths are written relative to `index.html` (`files/...`), never absolute; they resolve against the page, not the stylesheet.
-- `files/PlaceHolder.png`, and an empty or missing `src`, is **awaited**: `isAwaited` renders the dashed `.frame--awaited` with "Awaiting photograph", not a button, and the dialog gallery filters the placeholder out. `Site.PLACEHOLDER` holds the same path.
-- A path that names a file which is not on disk is **not** awaited: the renderer emits a real `<img>` whose inline `onerror` swaps in `files/PlaceHolder.png`. Several shipped image references are in this state — see the missing-photograph gotcha in `AGENTS.md`.
-- Film posters are `files/posters/<stem>.jpg`, derived by `Site.posterFor` from a `files/*.mp4` path: directories are stripped and `.mp4` becomes `.jpg`. Any other input (no video, a non-`.mp4`, a path outside `files/`) yields an empty string, so no request is made.
-- `files/posters/` and `files/og-card.jpg` are generated by `tools/make-images.mjs`; never hand-edit them. Photo paths are imported by `tools/import-photos.mjs` from its mapping.
-- The dialog gallery filters `PlaceHolder.png` and empty entries, so a record with only a placeholder opens a dialog with no gallery — that is not the same state as an awaited frame.
+- Photographs are WebP (`files/<name>.webp`), generated from the JPEG sources by `tools/optimize-images.py`. Both files stay on disk; only the WebP is requested.
+- The two paintings keep a three-format chain in `css/styles.css`: `.art--rice` and `.art--harvest` use `image-set()` with AVIF, then WebP, then the JPEG. The JPEG is the fallback for a browser without `image-set()`.
+- `files/PlaceHolder.png`, and an empty or missing `src`, is **awaited**: `isAwaited` renders the dashed `.frame--awaited` with "Awaiting photograph", not a button, and the dialog gallery filters the placeholder out.
+- Every shipped image path resolves to a file. A record with no photograph at all carries no `images` field rather than a path that 404s: the leadership card renders its no-photo thumb and the honour row is disabled.
+- Film posters are `files/posters/<stem>.jpg`, derived by `Site.posterFor` from a `files/*.mp4` path: directories are stripped and `.mp4` becomes `.jpg`. Any other input (no video, a non-`.mp4`, a path outside `files/`) yields an empty string, so no request is made. Posters stay JPEG, and `files/og-card.jpg` stays JPEG because not every social crawler accepts WebP.
 
 ## `Site` helpers
 
-Twenty names. The page calls three of them — `Site.posterFor`, `Site.honoursTiles` and `Site.deriveRooms`; the other seventeen are inherited from the retired horizontal build. Thirteen of the seventeen are referenced by a data suite; `Site.ROOM_ORDER`, `Site.visibleWork`, `Site.progressFraction` and `Site.roomAtOffset` are referenced by none. **Used by page** is `yes` only for the three `js/main.js` calls.
+Five names. The page calls three — `Site.deriveRooms`, `Site.posterFor` and `Site.honoursTiles`; `Site.ROOM_TITLES` and `Site.ROOM_ORDER` are the tables `deriveRooms` reads. **Used by page** is `yes` only for the three `js/main.js` calls.
 
 | Helper | Used by page | Notes |
 |---|---|---|
+| `Site.deriveRooms` | yes | groups projects by `category` into the three Work panels; carries each room's `lede` |
 | `Site.posterFor` | yes | a `files/*.mp4` path to `files/posters/<stem>.jpg`; also the dialog video poster |
 | `Site.honoursTiles` | yes | splits `honors` into `tiles` and `projectAwards` on `from` |
-| `Site.PLACEHOLDER` | no | the `files/PlaceHolder.png` constant |
-| `Site.deriveRooms` | yes | groups projects by `category` into the three Work panels; carries each room's `lede` |
-| `Site.ROOM_TITLES` | no | retired room titles; data-suite only |
-| `Site.ROOM_ORDER` | no | retired room order; referenced by no test or page |
-| `Site.groupPieces` | no | retired three-frame grouping; data-suite only |
-| `Site.MIN_PIECES` | no | retired hang constant |
-| `Site.MAX_PIECES` | no | retired hang constant |
-| `Site.HANG_LAYOUTS` | no | retired hang arrangements |
-| `Site.hangLayout` | no | retired hang selection |
-| `Site.honoursSplit` | no | arithmetic honours split; data-suite only |
-| `Site.HONOURS_ROOMS` | no | retired room count |
-| `Site.evenChunks` | no | even chunking used by `honoursSplit` |
-| `Site.visibleWork` | no | nearest work centre to the viewport centre |
-| `Site.progressFraction` | no | horizontal-walk progress, 0–1 |
-| `Site.roomAtOffset` | no | the box under the viewport centre |
-| `Site.bandFor` | no | hang band arithmetic |
-| `Site.galleryFor` | no | total record lookup for the old gallery |
-| `Site.awardPhotos` | no | one award's photographs; not surfaced on this page |
+| `Site.ROOM_TITLES` | no | the panel heading per category; read by `deriveRooms` |
+| `Site.ROOM_ORDER` | no | the order the known categories are listed in; read by `deriveRooms` |

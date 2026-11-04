@@ -19,8 +19,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.rail__stop` | [rail.md](components/rail.md) | one rail entry; carries `data-stop` |
 | `.stop` | [panel.md](components/panel.md) | one painted panel, the unit of page order |
 | `.stop-in` | [panel.md](components/panel.md) | the 12-column grid inside a panel |
-| `.art--rice` | [panel.md](components/panel.md) | painting 1 art layer (`painting-hero.jpg`) |
-| `.art--harvest` | [panel.md](components/panel.md) | painting 2 art layer (`painting.jpg`) |
+| `.art--rice` | [panel.md](components/panel.md) | painting 1 art layer (`painting-hero`; AVIF/WebP/JPEG `image-set`) |
+| `.art--harvest` | [panel.md](components/panel.md) | painting 2 art layer (`painting`; AVIF/WebP/JPEG `image-set`) |
 | `.work` | [project.md](components/project.md) | the Work wrapper holding the two category panels |
 | `.awards` | [project.md](components/project.md) | a project's award list, present only when `awards` is non-empty |
 | `.category-cards` | [project.md](components/project.md) | the three project cards inside a category panel |
@@ -42,6 +42,8 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.honour-row` | [honours.md](components/honours.md) | one honour tile |
 | `.news` | [news.md](components/news.md) | the News stop's dated list |
 | `.news-row` | [news.md](components/news.md) | one dated update row |
+| `.contact-mail` | [contact.md](components/contact.md) | the contact email copy button; prints the obfuscated address |
+| `.contact-mail__note` | [contact.md](components/contact.md) | the copy confirmation line under the email |
 | `.foot` | [footer.md](components/footer.md) | the page footer |
 | `.dialog` | [dialog.md](components/dialog.md) | the one shared record modal |
 | `.btn` | [primitives/controls.md](primitives/controls.md) | the button/link primitive every action uses |
@@ -55,6 +57,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.is-in` | [reveals-chrome.md](components/reveals-chrome.md) | a `[data-reveal]` node after it intersects (or immediately under reduced motion) |
 | `html.lenis` | [reveals-chrome.md](components/reveals-chrome.md) | the `.lenis` class Lenis puts on `<html>` for the lifetime of the instance, including while stopped |
 | `.btn--solid` | [primitives/controls.md](primitives/controls.md) | the gold solid button variant; hero "See the work" |
+| `.is-copied` | [contact.md](components/contact.md) | `wireEmailCopy` puts it on `.contact-mail__note` while the copied confirmation shows |
 | `.copy--center` | [panel.md](components/panel.md) | the centred copy column; Contact only — the hero keeps `.stop--hero .copy` on the left |
 | `.stop--hero` | [hero.md](components/hero.md) | the hero panel modifier |
 | `.stop--project` | [project.md](components/project.md) | the project-panel modifier; the category panels and the project view both carry it |
@@ -100,3 +103,4 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `data-index` | [dialog.md](components/dialog.md) | the record's index into that kind's array |
 | `data-stop` | [rail.md](components/rail.md) | the section id on a `.rail__stop` |
 | `data-close-view` | [project.md](components/project.md) | marks the project view's back button; the delegated click closes the view |
+| `data-copy` | [contact.md](components/contact.md) | the real email address the `.contact-mail` button writes to the clipboard |

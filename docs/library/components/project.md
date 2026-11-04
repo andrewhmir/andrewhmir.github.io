@@ -21,7 +21,7 @@ The Work wrapper and its three category panels: a room sentence, a project count
 
 ## Structure
 
-`render()` creates the `.work` wrapper (`#work`) and appends one `section.stop` with `stop--project stop--category` per `Site.deriveRooms(PORTFOLIO.projects)` room, in room order. The stop id is the room key slugged (`robotics`, `applications`, `dsh-plugins`), so it is the rail anchor (`#work` stays the masthead's Work landing). The `.copy` cell is `.eyebrow` ("03 · Work · <key>"), an `<h2>` ("Robotics."), the room's `.lede` and a `.category-count` line. The `.media` cell is `.category-cards`: three `.project-card` buttons, each with the record's overview still, title, tagline and a meta line (award count, or the venue when the record has no awards). The count line reads `N projects · M awards`, or `N plugins` for a room whose records carry no awards.
+`render()` creates the `.work` wrapper (`#work`) and appends one `section.stop` with `stop--project stop--category` per `Site.deriveRooms(PORTFOLIO.projects)` room, in room order. The stop id is the room key slugged (`robotics`, `applications`, `dsh-plugins`), so it is the rail anchor (`#work` stays the masthead's Work landing). The `.copy` cell is `.eyebrow` ("03 · Work · <key>"), an `<h2>` (the room key), the room's `.lede` and a `.category-count` line. The `.media` cell is `.category-cards`: three `.project-card` buttons, each with the record's overview still, title, tagline and a meta line (award count, or the venue when the record has no awards). The count line reads `N projects · M awards`, or `N plugins` for a room whose records carry no awards.
 
 The grouping is derived, not authored: `Site.deriveRooms` splits on `projects[].category`, orders the known rooms first, and keeps an unknown category rather than dropping it. `ROOM_LEDES` supplies each room's sentence; a record's own id and index are untouched, so the honours `from: 'projectN'` links still resolve.
 
@@ -42,7 +42,7 @@ A card click calls `openProject(index)`, painting `#projectView` with the record
 
 ## Invariants
 
-- One category panel per derived room; today Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy), Applications (Hivemind, SATLearn, BiyaHey!) and DSH Plugins (dsh-btw, dsh-plan-review, dsh-miranda-theme), three each.
+- One category panel per derived room; today Applications (Hivemind, SATLearn, BiyaHey!), DSH Plugins (dsh-btw, dsh-plan-review, dsh-miranda-theme) and Robotics (PALAD, C.E.N.T.H.R.O., Focus Buddy), three each.
 - `#work` lives on the `.work` wrapper, not on a category panel, so the Work nav link lands on the first category.
 - A card's `data-index` is the record's index in `PORTFOLIO.projects`, which the shared dialog and the project view resolve against.
 - The copy is assembled only by `categoryCopy(`; no category markup is authored in `index.html`.
@@ -58,5 +58,5 @@ A card click calls `openProject(index)`, painting `#projectView` with the record
 - `.stop--category .copy` / `.media` set the 4/8 column split; the 1023px block must keep overriding them to `grid-column: 1 / -1`, or the split leaks into the one-column mobile grid.
 - The cards are buttons inside `.media`; the delegated opener selects `[data-kind][data-index]`, so a card missing either attribute is inert.
 - A record with no `awards` shows its `venue` in the meta line rather than an empty count.
-- A plugin record has no `video` and no `team`; without `shots` its project view would hang three awaited frames. `tests/hang.test.mjs` pins that it leads with its own first screenshot.
+- A plugin record has no `video` and no `team`; without `shots` its project view would hang three awaited frames. `projectMedia` hangs `shots` in order, and `tests/hang.test.mjs` checks every recorded screenshot file is on disk.
 - The project view is injected HTML with no `data-reveal`: the reveal observer runs once at init, so a reveal attribute there would leave it invisible.

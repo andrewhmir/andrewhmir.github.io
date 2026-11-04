@@ -27,18 +27,19 @@ the stop id, `data-side` and the inline `--pos`, and fills `.stop-in` with
 `.copy` (or `.copy--center`) and the optional `.media`. The art is
 `.stop::before`; the scrim is `.stop::after`.
 
-`PAN` is indexed by page position; the eight crops in page order are:
+`PAN` is indexed by page position; the nine crops in page order are:
 
 | `PAN` | Painting | `--pos` | Stop |
 |---|---|---|---|
 | 0 | `rice` | `50% 58%` | hero |
 | 1 | `harvest` | `48% 52%` | about |
 | 2 | `harvest` | `20% 26%` | news |
-| 3 | `rice` | `30% 62%` | Robotics |
-| 4 | `harvest` | `64% 38%` | Applications |
-| 5 | `rice` | `8% 44%` | leadership |
-| 6 | `harvest` | `88% 36%` | honours |
-| 7 | `rice` | `50% 88%` | contact |
+| 3 | `rice` | `30% 62%` | applications |
+| 4 | `harvest` | `64% 38%` | dsh plugins |
+| 5 | `rice` | `74% 28%` | robotics |
+| 6 | `rice` | `8% 44%` | leadership |
+| 7 | `harvest` | `88% 36%` | honours |
+| 8 | `rice` | `50% 88%` | contact |
 
 `PROJECT_ART` is the separate table for the project view: it is keyed by project
 id, so a record keeps its own crop there without shifting the page's `PAN`.
@@ -61,7 +62,7 @@ id, so a record keeps its own crop there without shifting the page's `PAN`.
 - Every stop is a `.stop` panel; no other component paints its own background or adds a second art layer.
 - `.stop` sets `isolation: isolate`, so the art (`::before`, `z-index: -2`) and the scrim (`::after`, `z-index: -1`) stay inside the panel. A positive-z layer hides the art; dropping `isolation` lets the negative layers escape — see the art/scrim stacking gotcha in `AGENTS.md`.
 - `background-position: var(--pos` is the only crop mechanism: one painting moved by an inline custom property, not an image swap and not an animation.
-- The eight page crops are page order, not record order: hero, about, news, Robotics, Applications, leadership, honours, contact. `PROJECT_ART` is keyed by project id and paints the project view.
+- The nine page crops are page order, not record order: hero, about, news, the three category panels in room order, leadership, honours, contact. `PROJECT_ART` is keyed by project id and paints the project view.
 - `data-side` drives both the scrim direction and the copy/media columns, and is set on the `.stop`, never on `.stop-in`.
 - The panel radius is `--panel-radius: 16px` (12px below 640) and overflow is clipped, so art and scrim need no own radius.
 - A new panel class is covered by the library check (V5); document it here in the same edit.
@@ -73,4 +74,4 @@ id, so a record keeps its own crop there without shifting the page's `PAN`.
 - `panel()` concatenates the art class (`'stop art--' + o.art`); a typo in an `art` key leaves no `--art`, so the panel paints flat dark instead of a painting.
 - `data-side` is consumed on `.stop`; putting it on `.stop-in` changes nothing because the rules are `.stop[data-side="right"] .copy`.
 - A new scrim or card painted at `z-index: 0` covers the painting; the contact card is a `.stop-in::before` in the same negative layer and relies on `.stop`'s stacking context.
-- `.art--rice` and `.art--harvest` point at `../files/painting-hero.jpg` and `../files/painting.jpg`; both are pinned by the guard, and the hero painting is also the Open Graph source — do not delete or rename either file.
+- `.art--rice` and `.art--harvest` name `../files/painting-hero` and `../files/painting` through an `image-set()` chain — AVIF, then WebP, then the JPEG — and each also keeps a plain JPEG `--art` value for a browser without `image-set()`. The guard pins the chain, and the hero painting's JPEG is also the Open Graph source — do not delete or rename any of the painting files.

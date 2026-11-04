@@ -19,14 +19,21 @@
     return P.social.filter(function (s) { return s.label !== 'Resume'; });
   }
 
+  /* The contact address prints obfuscated — "andrew [dot] alangcao [at] gmail
+     [dot] com" — so a scraper cannot harvest a bare address from the rendered
+     page, and a click copies the real one instead of opening a mail app. */
+  function emailText() {
+    return P.email.replace(/@/g, ' [at] ').replace(/\./g, ' [dot] ');
+  }
+
   /* The pan: one crop of one painting per page stop, in page order. */
   var PAN = [
     { art: 'rice', pos: '50% 58%' },    /* hero */
     { art: 'harvest', pos: '48% 52%' }, /* about */
     { art: 'harvest', pos: '20% 26%' }, /* news */
-    { art: 'rice', pos: '30% 62%' },    /* robotics */
-    { art: 'harvest', pos: '64% 38%' }, /* applications */
-    { art: 'rice', pos: '74% 28%' },    /* dsh plugins */
+    { art: 'rice', pos: '30% 62%' },    /* applications */
+    { art: 'harvest', pos: '64% 38%' }, /* dsh plugins */
+    { art: 'rice', pos: '74% 28%' },    /* robotics */
     { art: 'rice', pos: '8% 44%' },     /* leadership */
     { art: 'harvest', pos: '88% 36%' }, /* honours */
     { art: 'rice', pos: '50% 88%' }     /* contact */
@@ -141,7 +148,7 @@
         awards + (awards === 1 ? ' award' : ' awards')
       : room.projects.length + (room.projects.length === 1 ? ' plugin' : ' plugins');
     return '<p class="eyebrow">03 · Work · ' + esc(room.key) + '</p>' +
-      '<h2>' + esc(room.key) + '.</h2>' +
+      '<h2>' + esc(room.key) + '</h2>' +
       '<p class="lede">' + esc(room.lede) + '</p>' +
       '<p class="category-count">' + count + '</p>';
   }
@@ -195,7 +202,7 @@
       pos: PAN[1].pos,
       copy:
         '<p class="eyebrow">01 · About</p>' +
-        '<h2>The longer version.</h2>' +
+        '<h2>Why I build</h2>' +
         '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
         '<div class="actions">' + sectionSocial().map(function (s) {
           return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';
@@ -216,7 +223,7 @@
       pos: PAN[2].pos,
       copy:
         '<p class="eyebrow">02 · News</p>' +
-        '<h2>Milestones.</h2>' +
+        '<h2>Milestones</h2>' +
         '<p class="body">Roles, talks and firsts, newest first.</p>' +
         '<ol class="news">' + P.news.map(function (n) {
           return '<li class="news-row">' +
@@ -251,8 +258,8 @@
       pos: PAN[6].pos,
       copy:
         '<p class="eyebrow">04 · Leadership</p>' +
-        '<h2>Running things.</h2>' +
-        '<p class="body">Four committees and clubs between 2023 and 2026: a research club founded from nothing, a student-council seat held for two years, the school’s events week run twice, and the media team that covered all of it.</p>',
+        '<h2>Running things</h2>' +
+        '<p class="body">Two organizations, two annual events, and one committee between 2023 and 2026: a research club founded from nothing, a student-council seat held for two years, the school’s events week run twice, and the media team that covered all of it.</p>',
       media: '<div class="leaders">' + P.leadership.map(function (r, i) {
         var thumb = (r.images && r.images[0]) || PLACEHOLDER;
         var thumbHtml = isAwaited(thumb)
@@ -278,7 +285,7 @@
       pos: PAN[7].pos,
       copy:
         '<p class="eyebrow">05 · Honours</p>' +
-        '<h2>Recognised here and abroad.</h2>' +
+        '<h2>Additional Awards</h2>' +
         '<p class="body">The standalone honours, newest first. Awards a project won hang on that project’s own panel — they are not repeated here.</p>',
       media: '<ol class="honours">' + tiles.map(function (t) {
         var r = t.record;
@@ -302,9 +309,10 @@
       center: true,
       copy:
         '<p class="eyebrow">06 · Contact</p>' +
-        '<h2>Let’s build something.</h2>' +
+        '<h2>Let’s build something</h2>' +
         '<p class="lede">Open to work, research, and collaborations that make everyday life a little easier.</p>' +
-        '<a class="contact-mail" href="mailto:' + esc(P.email) + '">' + esc(P.email) + '</a>' +
+        '<button class="contact-mail" type="button" data-copy="' + esc(P.email) + '">' + esc(emailText()) + '</button>' +
+        '<p class="contact-mail__note" role="status">Click to copy</p>' +
         '<div class="contact-links">' + sectionSocial().map(function (s) {
           return '<a href="' + esc(s.url) + '">' + esc(s.label) + '</a>';
         }).join('') + '</div>'
@@ -716,6 +724,52 @@
     });
   }
 
+  /* Clipboard: the async API in a secure context (https or localhost), the old
+     select-and-execCommand route for file:// and older browsers. The click is
+     the user gesture both routes need. */
+  function copyText(value) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value).then(
+        function () { return true; },
+        function () { return legacyCopy(value); }
+      );
+    }
+    return Promise.resolve(legacyCopy(value));
+  }
+
+  function legacyCopy(value) {
+    var box = document.createElement('textarea');
+    box.value = value;
+    box.setAttribute('readonly', '');
+    box.style.position = 'fixed';
+    box.style.left = '-9999px';
+    document.body.appendChild(box);
+    box.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(box);
+    return ok;
+  }
+
+  function wireEmailCopy() {
+    var reset = null;
+    document.addEventListener('click', function (e) {
+      var button = e.target.closest ? e.target.closest('[data-copy]') : null;
+      if (!button) return;
+      copyText(button.getAttribute('data-copy') || '').then(function (ok) {
+        var note = document.querySelector('.contact-mail__note');
+        if (!note) return;
+        note.textContent = ok ? 'Copied to clipboard' : 'Copy failed';
+        note.classList.toggle('is-copied', ok);
+        window.clearTimeout(reset);
+        reset = window.setTimeout(function () {
+          note.textContent = 'Click to copy';
+          note.classList.remove('is-copied');
+        }, 2600);
+      });
+    });
+  }
+
   function wireDelegation() {
     document.addEventListener('click', function (e) {
       var closer = e.target.closest ? e.target.closest('[data-close-view]') : null;
@@ -733,6 +787,7 @@
     buildRail();
     wireReveals();
     wireChrome();
+    wireEmailCopy();
     wireDelegation();
     wireSmoothScroll();
   }

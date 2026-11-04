@@ -46,7 +46,7 @@ live frame is a button carrying `data-kind="project"` and `data-index`, an
 
 ## Invariants
 
-- Exactly three frames per project, in this order: overview, film still, team. The live source is `projectMedia(`; `tests/hang.test.mjs` pins the same three-frame shape through the dormant `Site.groupPieces` helper.
+- Exactly three frames per project, in this order: overview, film still, team. The live source is `projectMedia(`; no committed test renders it.
 - Only the overview is the lead: `.frame--lead` spans both columns and is 16/9; the other two are 4/3.
 - A live frame is a button with `data-kind="project"` and `data-index`; clicking opens the one record dialog. Awaited frames are divs and open nothing.
 - Awaited means the data says `files/PlaceHolder.png` or has no `src`; a path to a missing file is not awaited — the `<img>` keeps its place and `onerror` swaps in the placeholder. See the missing-photograph gotcha in `AGENTS.md`.
@@ -55,7 +55,7 @@ live frame is a button carrying `data-kind="project"` and `data-index`, an
 
 ## Traps
 
-- Six record image references point at files that are not on disk, so they render an `<img>` with the `onerror` placeholder and are not awaited (see the missing-photograph gotcha in `AGENTS.md`). Pointing them at `files/PlaceHolder.png` makes the gap explicit; importing the files fixes them.
+- Every shipped image path resolves to a file: a record with no photograph carries no `images` field at all, and a record whose photograph is still missing points at `files/PlaceHolder.png` and renders awaited (see the missing-photograph gotcha in `AGENTS.md`).
 - Two team images are explicit `PlaceHolder.png` values, so those team frames are awaited by design; they are a content gap, not a layout bug.
 - A video added without running `tools/make-images.mjs` hangs a poster path that 404s; `hang.test.mjs` fails on a missing poster, so the suite catches it before a black frame ships.
 - `isAwaited(` matches only an empty `src` or the exact placeholder path; a differently-cased or differently-prefixed path is a live `<img>`.

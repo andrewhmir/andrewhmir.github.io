@@ -94,6 +94,13 @@ assert.match(css, /--panel-radius:\s*16px/);
 assert.match(css, /--frame-radius:\s*10px/);
 assert.match(css, /\.art--rice\s*\{\s*--art:\s*url\("\.\.\/files\/painting-hero\.jpg"\)/);
 assert.match(css, /\.art--harvest\s*\{\s*--art:\s*url\("\.\.\/files\/painting\.jpg"\)/);
+/* Each painting then offers AVIF, WebP and a JPEG through image-set(); the plain
+   JPEG declaration above is the fallback for a browser without image-set(). */
+assert.match(css, /@supports \(background-image: image-set\(/);
+assert.match(css, /image-set\(\s*url\("\.\.\/files\/painting-hero\.avif"\) type\("image\/avif"\)/);
+assert.match(css, /url\("\.\.\/files\/painting-hero\.webp"\) type\("image\/webp"\)/);
+assert.match(css, /image-set\(\s*url\("\.\.\/files\/painting\.avif"\) type\("image\/avif"\)/);
+assert.match(css, /url\("\.\.\/files\/painting\.webp"\) type\("image\/webp"\)/);
 assert.match(css, /\.stop::before/);
 assert.match(css, /background-position:\s*var\(--pos/);
 assert.match(css, /\.rail-shade/);
@@ -154,6 +161,21 @@ assert.match(js, /s\.label !== 'Resume'/);
 assert.equal(htmlNoComments.includes('foot__name'), false, 'the footer repeats the masthead name');
 console.log('ok  one voice: masthead stands down over the hero; hero line, Resume and footer deduped');
 
+/* ── the contact email copies, it does not mail ───────────────────── */
+
+// The label is obfuscated and the click copies the real address out of
+// data-copy. The literal address must not sit in the shell, where a scraper
+// reads it without running the renderer.
+assert.equal(htmlNoComments.includes('mailto:'), false, 'the shell still ships a mailto');
+assert.equal(js.includes('mailto:'), false, 'the renderer still builds a mailto link');
+assert.match(js, /\[dot\]/);
+assert.match(js, /\[at\]/);
+assert.match(js, /data-copy="' \+ esc\(P\.email\)/);
+assert.match(js, /navigator\.clipboard\.writeText/);
+assert.match(js, /document\.execCommand\('copy'\)/);
+assert.match(js, /class="contact-mail__note"/);
+console.log('ok  contact email: obfuscated label, copies via data-copy, no mailto anywhere');
+
 /* ── no third-party resource loads (anchor hrefs are allowed) ─────── */
 
 const resourcePatterns = [
@@ -203,7 +225,7 @@ const P = ctx.PORTFOLIO;
 const S = ctx.Site;
 assert.equal(P.projects.length, 9, 'the page is built for nine project records');
 const rooms = S.deriveRooms(P.projects);
-assert.equal(Array.from(rooms, (r) => r.key).join(','), 'Robotics,Applications,DSH Plugins', 'the Work panels are the three categories');
+assert.equal(Array.from(rooms, (r) => r.key).join(','), 'Applications,DSH Plugins,Robotics', 'the Work panels are the three categories');
 assert.equal(Array.from(rooms, (r) => r.projects.length).join(','), '3,3,3', 'each category panel holds three projects');
 assert.equal(P.leadership.length, 4, 'leadership renders four cards');
 assert.equal(S.honoursTiles(P.honors).tiles.length, 5, 'honours renders the standalone tiles');

@@ -14,7 +14,6 @@ first, with no photographs and nothing to open.
 | Styles | `css/styles.css` | `── News list` · `.news-row__date` |
 | Styles | `css/styles.css` | `.stop--news .copy` |
 | Data | `js/data.js` | `news[].date!` · `news[].text!` |
-| Data | `js/data.js` | `news[].images` |
 | Test | `tests/page.test.mjs` | `'news'` |
 
 ## Structure
@@ -47,7 +46,7 @@ the panel is shared with the other stops.
 ## Invariants
 
 - Four rows, newest first: the renderer never sorts, so the order in `js/data.js` is the order on the page, and `tests/page.test.mjs` pins the count.
-- A row is not a control. There is no news dialog: `news[].images` has no reader and none of the referenced `files/news-*.jpg` paths exist on disk.
+- A row is not a control. There is no news dialog and no photograph: a news entry carries only `date` and `text`.
 - The rows live on the dark side of the scrim by placing them in `.copy`; the panel deliberately has no `.media` cell, because text over the bright half of the painting does not hold contrast.
 - The date is data (`news[].date`); CSS uppercases it, and the renderer never rewrites its casing.
 - Text goes through `esc()`; markup in the data renders as text.
@@ -57,7 +56,7 @@ the panel is shared with the other stops.
 
 - `PAN` is positional: a new stop before News shifts every later crop. Move the renderer literals and the crop table in [panel.md](panel.md) together.
 - Putting these rows back in `.media` looks fine in the data and fails on the screen: the `side: 'right'` scrim darkens the right half, so the list would sit on the bright painting.
-- `news[].images` is dormant. Importing `files/news-*.jpg` and wiring a gallery is a feature change, not a copy edit; those data paths currently point at files that do not exist.
+- News has no `images` field. Adding photographs is a feature change — a new field, a reader, and the files — not a copy edit.
 - The eyebrow's `02` is a literal, and the later sections keep their existing numbers; renumbering means editing those literals by hand.
 - `stop--list` has no CSS rule (the marker is shared with Honours); the row styling lives on `.news` and `.news-row` — see [honours.md](honours.md).
 - The count four is asserted by the guard; a fifth update fails `npm test` until the guard moves with it.

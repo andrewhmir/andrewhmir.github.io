@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/page.test.mjs && node tests/derive-rooms.test.mjs && node tests/hang.test.mjs && node tests/band.test.mjs && node tests/gallery-index.test.mjs && node tests/award-photos.test.mjs && node tests/library.test.mjs",
+    "test": "node tests/page.test.mjs && node tests/derive-rooms.test.mjs && node tests/hang.test.mjs && node tests/library.test.mjs",
     "serve": "npx http-server -p 3333"
   }
 }

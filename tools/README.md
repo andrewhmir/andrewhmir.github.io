@@ -1,10 +1,11 @@
 # Dev tools
 
 Dev-only. Nothing here is needed to build or run the site: the site is plain
-static files, and `npm test` does not invoke any of these tools. Most need the
-site served (`node tools/serve.mjs 3333`) and headless Chrome with the sandbox
-off; `BASE` and `CDP` override the URL and the debugging port. No npm
-dependencies — the CDP tools use Node's built-in `WebSocket` (Node 22+).
+static files, and `npm test` invokes only `library-check.mjs` (through
+`tests/library.test.mjs`). The browser tools need the site served
+(`node tools/serve.mjs 3333`) and headless Chrome with the sandbox off; `BASE`
+and `CDP` override the URL and the debugging port. No npm dependencies — the
+CDP tools use Node's built-in `WebSocket` (Node 22+).
 
 Headless Chrome opens Mojo named pipes, which the confined sandbox forbids. Run
 Chrome from a non-confined shell. On this machine only Windows PowerShell 5.1 is
@@ -15,14 +16,13 @@ for native commands rather than relying on `$ErrorActionPreference`.
 
 | Tool | Does | Needs |
 |---|---|---|
-| `serve.mjs` | Minimal static server on `127.0.0.1` (default port 3333, `node tools/serve.mjs [port]`). Correct MIME for `.mp4`, `.woff2` and the images; `cache-control: no-store`; no directory listing. | Node |
+| `serve.mjs` | Minimal static server on `127.0.0.1` (default port 3333, `node tools/serve.mjs [port]`). Correct MIME for `.mp4`, `.woff2`, `.webp`, `.avif` and the images; `cache-control: no-store`; no directory listing. | Node |
+| `optimize-images.py` | Encodes the committed image weights: every photograph to WebP, each painting to WebP **and** AVIF (the JPEG stays as the `image-set()` fallback). Idempotent, skips up-to-date outputs unless `--force`. Run after importing or adding a photograph. | Python + Pillow |
 | `make-images.mjs` | Draws `files/og-card.jpg` (1200×630) from `files/painting-hero.jpg`; writes one poster per `.mp4` directly in `files/` to `files/posters/<stem>.jpg`; can derive video stills for projects whose team image is a placeholder. | serve + Chrome |
-| `import-photos.mjs` | Imports the owner's staging photos into `files/`, resized to a 1600px long edge at JPEG quality 82. The `MAPPING` table is the contract between source filenames and the paths in `js/data.js`. | Chrome |
+| `import-photos.mjs` | Imports the owner's staging photos into `files/`, resized to a 1600px long edge. The `MAPPING` table is the contract between source filenames and the paths in `js/data.js`. Writes JPEG; run `optimize-images.py` afterwards. | Chrome |
 | `vendor-fonts.mjs` | Writes the vendored Newsreader/Courier Prime `.woff2` files, their OFL texts and the generated `css/fonts.css`. Preserves `unicode-range`. `--check` reports drift without writing. | serve + Chrome |
-| `vendor-icons.mjs` | Writes the twelve Font Awesome glyphs as inline SVG in `js/icons.js`, plus `files/icons/LICENSE.txt`. `--check` reports drift without writing. | serve + Chrome |
 | `orphans.mjs` | Lists CSS classes nothing emits, and emitted class names with no rule. Reads `css/styles.css`, `js/main.js`, `index.html` and `js/data.js`. | Node |
 | `library-check.mjs` | Validates `docs/library/` against the live source: index consistency, page format, anchor resolution, `PORTFOLIO` paths, CSS/id/`data-*`/emitted-class coverage, data coverage, integration, no-line-numbers and cited files. Run as the last `npm test` suite; `--page <path>` checks one page. | Node |
-| `caption-worklist.mjs` | Prints a pasteable `pieces: [...]` block for every record that has no per-photograph captions. | Node |
 | `shot-url.mjs` | Captures any URL at a viewport: `node tools/shot-url.mjs <url> <out.png> [width] [height]`. Default 1440×900. | Chrome |
 
 ## The ones that matter now
@@ -38,6 +38,28 @@ The server is the base the CDP tools navigate to. It serves the working
 directory, not a build directory, which is why opening `index.html` directly and
 serving it produce the same page (apart from what the browser does with local
 font and video URLs).
+
+### `optimize-images.py`
+
+```powershell
+python tools/optimize-images.py
+python tools/optimize-images.py --force
+```
+
+Writes, next to each source and without deleting it:
+
+- `files/**/*.jpg` → `<stem>.webp` at quality 82. `js/data.js` points at these;
+  `tests/hang.test.mjs` checks every recorded plugin screenshot exists.
+- The two paintings → `painting-hero.webp` / `painting.webp` and
+  `painting-hero.avif` / `painting.avif`. `css/styles.css` wires the three
+  formats through `image-set()`; the JPEG is the fallback.
+- `files/og-card.jpg`, `files/posters/*.jpg` and the small `files/profile.jpg`
+  stay JPEG: social crawlers, the `Site.posterFor` rule and a 585px portrait
+  where WebP came out larger.
+
+Requires Python 3 with Pillow built with WebP and AVIF support (Pillow 12.x
+ships both). This is a machine tool, not a project dependency, and the site has
+no build step: the encoded files are committed.
 
 ### `make-images.mjs`
 
@@ -65,15 +87,16 @@ has no H.264 decoder, so it cannot open these MP4s.
 
 Default source is `~/Downloads/AAA`; override it with `SRC=`. It serves the
 staging folder to a same-origin Chrome tab, draws each image onto a canvas at
-`MAX_EDGE=1600` and `QUALITY=0.82`, and writes the JPEG into `files/`. Re-running
-is idempotent: it rewrites `files/<target>` from the original source.
+`MAX_EDGE=1600` and writes the JPEG into `files/`. Re-running is idempotent: it
+rewrites `files/<target>` from the original source. After importing, run
+`python tools/optimize-images.py` to produce the WebP the page requests.
 
 The `MAPPING` table at the top is authoritative. Add an entry there before
-wiring a new path into `js/data.js`. The six missing photographs — Personnel's
-Week (×2), Commencement (×2), Work Immersion and the 2023 National Youth
-Congress — have **no** mappings today, which is why their data paths 404 and
-fall back to `PlaceHolder.png`. The importer sniffs JPEG/PNG magic bytes, so a
-`.CR3` that is really a JPEG imports fine.
+wiring a new path into `js/data.js`. The four missing photographs — Commencement
+(×2), Work Immersion and the 2023 National Youth Congress — have **no** mappings
+today and **no** data paths: their records carry no `images` field, so nothing
+404s. The importer sniffs JPEG/PNG magic bytes, so a `.CR3` that is really a
+JPEG imports fine.
 
 ### `vendor-fonts.mjs`
 
@@ -92,17 +115,6 @@ The vendored Newsreader declares weights 400/500/600. `css/styles.css` asks for
 300 on display text, which resolves to the closest declared face (400). A true
 300 would require vendoring that face, not changing a number.
 
-### `vendor-icons.mjs`
-
-Writes `js/icons.js` and the CC BY 4.0 licence at `files/icons/LICENSE.txt`,
-using the pinned Font Awesome 5.15.4 tag. `--check` reports drift without
-writing.
-
-**The profile page does not load `js/icons.js` and never calls `Site.icon()`.**
-The social records still carry `icon` names, but the masthead, buttons and rail
-draw no glyphs. The file is kept for a future surface, not because the page needs
-it; do not add the script back without a reason.
-
 ### `orphans.mjs`
 
 A quick static sanity check after a rename or a section deletion:
@@ -116,14 +128,6 @@ emitted class names with no stylesheet rule. It is a string scan, not a CSS
 parser and not a renderer, so it can report a false orphan for a class assembled
 in a way it does not anticipate. Use it to find the obvious tail of a deleted
 feature, then confirm by grep.
-
-### `caption-worklist.mjs`
-
-Prints `pieces: [...]` blocks for records that lack captions, using
-`Site.groupPieces`. It is still runnable, but the profile page does not render
-`pieces[]` or a catalogue: the frames are labelled Overview / Film / Team and the
-records are described by their own copy. Treat its output as dormant data
-maintenance, not as a page fix.
 
 ### `shot-url.mjs`
 
@@ -154,33 +158,15 @@ A reused debugging port can still be attached to the previous URL; check the pag
 before trusting a capture. `.tmp-diag/` is gitignored, so screenshots and scratch
 probes do not enter the repo.
 
-## Retired with the horizontal walk
+## What was deleted
 
-The following are walk-era tools. They target `#hall`, `#strip`, `.room`,
-`.stand`, `.piece`, the dock, the Lenis build or the mural — none of which exist
-on this page. They are **retired and will be deleted in the cleanup commit**.
-The page probes among them yield `null`, `NaN` or an immediate selector failure;
-none of them measures this page.
+The horizontal walk's tools — `ux-check`, the `stand-*`, `label-*`, `wall-*` and
+`mural-*` probes, `rooms`, `widths`, `avg-frame`, `pieces`, `dock-check`,
+`shot-room`, `overlap-diag`, `key-diag`, `probe`, `shot` — were deleted with the
+walk they measured. So were `vendor-icons.mjs` and `caption-worklist.mjs`: the
+page loads no icon set, and captions are no longer authored. `js/icons.js`,
+`files/icons/` and `files/wall-mushoku.webp` went with them.
 
-| Group | Tools |
-|---|---|
-| Browser/UX and geometry | `ux-check.mjs`, `stand-boxes.mjs`, `stand-fit.mjs`, `stand-gap.mjs`, `stand-overflow.mjs`, `label-depth.mjs`, `label-fit.mjs`, `rooms.mjs`, `widths.mjs`, `avg-frame.mjs`, `pieces.mjs`, `dock-check.mjs`, `shot-room.mjs` |
-| Mural / wall | `wall-crop.mjs`, `wall-drift.mjs`, `wall-import.mjs`, `wall-move.mjs`, `wall-pixels.mjs`, `wall-readshot.mjs`, `wall-roomseam.mjs`, `wall-tune.mjs`, `wall-verify.mjs`, `mural-columns.mjs`, `mural-map.mjs` |
-| Old diagnostics | `overlap-diag.mjs`, `key-diag.mjs`, `probe.mjs`, `shot.mjs` |
-
-`probe.mjs` and `shot.mjs` are easier to miss, but they are equally walk-bound:
-both query `#hall` / `#strip` / `.room`, so they cannot measure the profile page.
-Include them in the cleanup.
-
-The DOM and browser suites those tools were paired with (`shell-check.mjs`,
-`renderer.test.mjs`, `lights.test.mjs`, `delegation.test.mjs`,
-`tests/dom-harness.mjs`) are already gone. There is **no replacement geometry
-suite** for this page: the static guard and the data suites do not model layout,
-so screenshots and manual inspection are the verification. `shot-url.mjs` is the
-one generic capture tool that survives.
-
-The assets those tools measured are also retired and unreferenced by the page:
-`js/vendor/` (Lenis), `js/icons.js` (no loader) and
-`files/wall-mushoku.webp` (the dragon-frieze wall). `files/painting.jpg`, by
-contrast, is live — it is the harvest painting behind About, Hivemind, Focus
-Buddy, BiyaHey! and Honours. Do not sweep it up with the walk's leftovers.
+There is **no replacement geometry suite** for this page: the static guard and
+the data suites do not model layout, so screenshots and manual inspection are the
+verification. `shot-url.mjs` is the one generic capture tool that survives.

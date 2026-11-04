@@ -18,7 +18,7 @@ side, with the framed portrait beside them.
 ## Structure
 
 `panel()` with `side: 'left'`. The `.copy` cell holds `.eyebrow` "01 · About", an
-`<h2>` literal ("The longer version." — never the hero's name), `.body` with one
+`<h2>` literal ("Why I build" — never the hero's name), `.body` with one
 `<p>` per `bio` entry, then `.actions` with one `.btn` per `sectionSocial()`
 entry. The `.media` cell is `figure.portrait` > `img` + `figcaption`.
 
@@ -35,7 +35,7 @@ entry. The `.media` cell is `figure.portrait` > `img` + `figcaption`.
 
 ## Invariants
 
-- The portrait path is hard-coded as `files/profile.jpg` in `js/main.js`; `PORTFOLIO.profileImage` has no reader on this page — see the fields-with-no-reader gotcha in `AGENTS.md`.
+- The portrait path is hard-coded as `files/profile.jpg` in `js/main.js`; there is no data field for it.
 - Every `bio` entry renders as its own paragraph inside `.body`; the array order is the reading order.
 - The social row maps `sectionSocial()` — `P.social` minus the `Resume` entry — to `.btn` links with a "↗" suffix. Resume stays with the masthead (and the hero), so the same action is never printed twice; Contact uses the same filtered list.
 - The portrait is capped at `calc(100vh - 250px)` tall so the About panel stays
@@ -47,7 +47,7 @@ entry. The `.media` cell is `figure.portrait` > `img` + `figcaption`.
 
 ## Traps
 
-- Editing `PORTFOLIO.profileImage` changes nothing visible; only `files/profile.jpg` in the renderer is read.
+- The portrait is not data: change the `<img src>` in the renderer, not a `PORTFOLIO` field.
 - About prints `P.bio` only; the hero sentence is `P.heroLine`. Putting the sentence back into `bio` prints it in two stops at once.
 - The social array feeds four renderings — hero resume (`social[0].url`), masthead resume (label lookup, falling back to `social[0]`), About buttons and Contact links — but the two section rows filter `Resume` out, so three of them can never share a screen. `Resume` is `social[0]`, so a label rename keeps resolving to the same masthead entry; a plain reorder does not repoint the masthead (it follows the label) — it moves the hero resume and the About/Contact row order. The masthead repoints only when the `Resume` label disappears while its entry is not first, or when the Resume URL itself changes.
 - The portrait `<img>` has no `onerror` fallback: a missing `files/profile.jpg` is a broken image, unlike project frames which swap in the placeholder.

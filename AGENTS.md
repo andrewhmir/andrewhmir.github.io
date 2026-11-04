@@ -25,8 +25,8 @@ an otherwise native vertical scroll. `index.html` opens directly;
 HTTP. Node is only for tests and dev tools.
 
 The page is a vertical profile, in this order: fixed masthead → hero (`#top`) →
-About (`#about`) → News (`#news`) → Work (`#work`, three category panels — Robotics,
-Applications and DSH Plugins — each with three project cards) → Leadership (`#leadership`) →
+About (`#about`) → News (`#news`) → Work (`#work`, three category panels — Applications,
+DSH Plugins and Robotics — each with three project cards) → Leadership (`#leadership`) →
 Honours (`#honours`) → Contact (`#contact`) → footer. A card opens `#projectView`,
 the fixed full-screen project panel painted from `PORTFOLIO`. A fixed journey rail
 (≥1024px) tracks the section crossing the middle of the viewport and carries the
@@ -52,19 +52,20 @@ and never hand-edited.
 | `index.html` | ~140 lines | The shell: meta/OG/canonical, `css/fonts.css` then `css/styles.css` and the vendored `js/vendor/lenis.css`, masthead, rail shade, rail nav, empty `#page`, the project view layer, footer, `<noscript>` fallback, the one dialog, then `js/vendor/lenis.min.js` before `js/data.js` before `js/main.js`. |
 | `css/styles.css` | ~740 lines | All styling: tokens, the `html.lenis` scroll override, masthead, rail shade, rail + its progress fill, panels/art/scrims, type, frames, category cards, project extras, project view, leadership, honours, news list, contact, footer, dialog, reveals, responsive. Section banners are the map. |
 | `js/main.js` | ~700 lines | `PAN` (the page art order) and `PROJECT_ART` (each record's view crop), `esc`/`paragraphs`/`panel`/`frame`, `projectCopy`/`projectMedia`, `categoryCopy`/`categoryCards`, `render()`, the project view (`openProject`, `closeProject`, `setLock`, `trapTab`), the dialog (`openRecord`, `closeDialog`, `gallery`), `buildRail`, `wireReveals`, `wireChrome`, `wireDelegation`, `wireSmoothScroll`. Publishes `window.Profile`. |
-| `js/data.js` | ~690 lines | `PORTFOLIO` — the portfolio records and personal copy — plus `Site.*` helpers. The page itself reads `Site.posterFor`, `Site.honoursTiles` and `Site.deriveRooms`; the other helpers are inherited from the retired horizontal build and are kept because the surviving data suites test them. |
+| `js/data.js` | ~580 lines | `PORTFOLIO` — the portfolio records and personal copy — plus three `Site` helpers: `deriveRooms`, `honoursTiles` and `posterFor` (with the `ROOM_TITLES`/`ROOM_ORDER` tables `deriveRooms` reads). Everything the page does not call was deleted. |
 | `js/vendor/` | vendored | Lenis 1.3.26 (`lenis.min.js` + `lenis.css`), copied verbatim; sizes and SHA-256 pins in its README. The page's only third-party runtime code, loaded locally. |
 | `css/fonts.css` | generated | The `@font-face` rules for Newsreader and Courier Prime. Do not hand-edit; refresh with `tools/vendor-fonts.mjs`. |
-| `files/` | assets | The two paintings, portrait, project overview/team photographs, six films, generated `posters/`, generated `og-card.jpg`, favicon, vendored fonts, currently unused icons, and `files/plugins/` — the nine GUI screenshots the DSH plugin records hang. |
-| `tests/page.test.mjs` | ~160 lines | The static guard: shell order, palette, both paintings and art layers, dialog markup, no third-party loads, the vendored Lenis wiring, section ids, data counts, and that `npm test` runs it. |
-| `tests/*.test.mjs` | data suites | `derive-rooms`, `hang`, `band`, `gallery-index`, `award-photos` — pure tests of inherited `Site.*` helpers and the content. None renders the page. |
-| `tools/` | dev only | Static server, image/font/icon generators, asset import, orphan scan. `tools/README.md` indexes what survives and what is retired. |
+| `files/` | assets | The two paintings (JPEG sources plus generated WebP and AVIF), portrait, project overview/team photographs as WebP, six films, generated `posters/`, generated `og-card.jpg`, favicon, vendored fonts, and `files/plugins/` — the nine GUI screenshots the DSH plugin records hang, as WebP. |
+| `tests/page.test.mjs` | ~230 lines | The static guard: shell order, palette, the paintings and their `image-set()` formats, dialog markup, no third-party loads, the vendored Lenis wiring, section ids, data counts, and that `npm test` runs it. |
+| `tests/*.test.mjs` | data suites | `derive-rooms` (the `Site.deriveRooms` grouping) and `hang` (the poster rule, and that every shipped video still and plugin screenshot is on disk). Neither renders the page. |
+| `tools/` | dev only | Static server, image/font generators, WebP/AVIF encoder, asset import, orphan scan, library checker. `tools/README.md` indexes what each one does. |
 | `docs/superpowers/` | historical | Specs and plans. Never hand-edit; read for the design record. |
 
-The five data suites are **not** a renderer test. The old walk's DOM stub,
-`shell-check`, `renderer`, `lights` and `delegation` suites are gone. `npm test`
-green means the guard strings and data shapes still hold; it does not mean the
-page laid out. See **Run and verify**.
+The two data suites are **not** a renderer test. The old walk's DOM stub,
+`shell-check`, `renderer`, `lights`, `delegation`, `band`, `gallery-index` and
+`award-photos` suites are gone with the helpers they tested. `npm test` green
+means the guard strings and data shapes still hold; it does not mean the page
+laid out. See **Run and verify**.
 
 ## Where to change what
 
@@ -100,7 +101,8 @@ router; the library is the per-component depth behind it.
 | Radii | `css/styles.css` | `--panel-radius:`, `--frame-radius:`, `.btn` |
 | Responsive layout | `css/styles.css` | `@media (min-width: 1024px)`, `@media (max-width: 639px)` |
 | Page title, description, Open Graph card | `index.html` | `og:image`, `twitter:image`, `<title>` |
-| Missing photographs | `files/` + `js/data.js` + `tools/import-photos.mjs` | the record's `images: [` / `team.image`; `MAPPING` |
+| Missing photographs | `files/` + `js/data.js` + `tools/import-photos.mjs` | the record's `images: [` / `team.image`; `MAPPING`; then `python tools/optimize-images.py` |
+| Image weight or format | `tools/optimize-images.py` + `js/data.js` + `css/styles.css` | `.webp` paths; `.art--rice`/`.art--harvest` `image-set()`; `og-card.jpg` stays JPEG |
 
 Do not hand-copy project or honour text into `index.html` or `js/main.js`. The
 shell owns chrome and the no-JS fallback; `PORTFOLIO` owns the records. Section
@@ -133,14 +135,12 @@ word and editing the wrong thing.
 | **project award** | An honour carrying `from: 'projectN'`, excluded from the Honours tiles and shown under the project's Awards. | `from: 'projectN'`, `honoursTiles.projectAwards` |
 
 **Retired vocabulary — do not present any of it as live:** hall, room, stand,
-cluster, hang cell, legend, dock, snap, mural, the dragon-frieze wall
-(`files/wall-mushoku.webp`), and the exhibition-label idea. They belong to the
-horizontal build this page replaced. Do not restore their code. Lenis is the one
-word that came back: the vendored library is the vertical page's smooth-wheel
-layer (see **smooth scroll** above), not the walk's engine — the walk's
-`lenis/snap` code stays retired. Some of those words still appear in the
-surviving data-suite names and output because those suites test inherited
-`Site.*` helpers; that is history, not page vocabulary.
+cluster, hang cell, legend, dock, snap, mural, the dragon-frieze wall, and the
+exhibition-label idea. They belong to the horizontal build this page replaced,
+and their code, tools and assets have been deleted. Do not restore any of it.
+Lenis is the one word that came back: the vendored library is the vertical page's
+smooth-wheel layer (see **smooth scroll** above), not the walk's engine — the
+walk's `lenis/snap` code stays retired.
 
 ## Hard constraints
 
@@ -151,10 +151,10 @@ specific: a constraint that only a review catches is marked as such.
 |---|---|---|
 | **No third-party runtime loads** | No remote script, stylesheet, image or `url(http…)`. Fonts, icons, paintings and films are local. Anchor `href`s and meta URLs may be absolute; resource loads may not. | `tests/page.test.mjs`, scanning `index.html` and `css/styles.css` with comments stripped, and `js/main.js` / `js/data.js` raw |
 | **Palette tokens are exact** | `--night #080c0e`, `--text #ece2cf`, `--text-strong #f9f4e8`, `--text-quiet #9a9384`, `--accent #d4b06a`; border `rgba(236,226,207,.14)`. | `page.test.mjs` asserts the five colour strings; the border alpha is not separately asserted |
-| **Both paintings and the art layers exist** | `.art--rice` points at `../files/painting-hero.jpg`, `.art--harvest` at `../files/painting.jpg`; `.stop::before` and `background-position: var(--pos` are the layers. | `page.test.mjs` |
+| **Both paintings and the art layers exist** | `.art--rice` names `painting-hero` and `.art--harvest` names `painting`, each as AVIF → WebP → JPEG through `image-set()`, with the plain JPEG `--art` value as the no-`image-set` fallback; `.stop::before` and `background-position: var(--pos` are the layers. | `page.test.mjs` |
 | **Radii** | Panels 16px, frames 10px, buttons 8px; panel 12px below 640. | `page.test.mjs` pins the two tokens; the button radius is a CSS rule |
 | **Load order** | `css/fonts.css` before `css/styles.css`; `js/vendor/lenis.min.js` before `js/data.js`; `js/data.js` before `js/main.js`; `#page` empty; dialog markup present; `<noscript>` present. | `page.test.mjs` |
-| **The retired build stays out of the shell** | `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped). Lenis is the deliberate exception: the vendored library is the page's smooth-wheel layer now. | `page.test.mjs` |
+| **The retired build stays out of the shell** | `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped), even though their files are deleted. Lenis is the deliberate exception: the vendored library is the page's smooth-wheel layer now. | `page.test.mjs` |
 | **The dialog stays accessible** | `role="dialog"`, `aria-modal="true"`, `aria-labelledby="dialogTitle"`, a labelled close button; `openRecord` saves focus, focuses the card, traps Tab, closes on Escape/overlay/button and restores focus; body scroll is locked while open. | Markup is pinned by `page.test.mjs`; the trap and restore are behaviour in `js/main.js` and are **not** unit-tested |
 | **Reduced motion is honoured** | `prefers-reduced-motion` disables reveals and smooth scrolling, and Lenis is never constructed; the JS marks every reveal visible instead of observing. | `page.test.mjs` pins the string; the CSS media query and the JS branches implement it; behaviour is manual |
 | **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
@@ -177,11 +177,10 @@ node tools/serve.mjs 3333     # http://127.0.0.1:3333/
 ```
 
 `npm test` runs, in order: `page.test.mjs`, `derive-rooms.test.mjs`,
-`hang.test.mjs`, `band.test.mjs`, `gallery-index.test.mjs`,
-`award-photos.test.mjs`, then `tests/library.test.mjs`. The data suites are pure
+`hang.test.mjs`, then `tests/library.test.mjs`. The data suites are pure
 and print `ok` per check; they use `tests/harness.mjs`, not `node --test`. `hang`
-is the one that also asserts
-every shipped project video has its poster still on disk.
+is the one that also asserts every shipped project video has its poster still on
+disk and every plugin screenshot is present.
 
 The old DOM/browser suites are retired. **There is no automated layout check for
 this page.** Use headless Chrome screenshots at 1440×900, the spec's 1280×704
@@ -220,17 +219,29 @@ node tools/shot-url.mjs http://127.0.0.1:3333/ .tmp-diag/home-1440.png 1440 900
 A CSS or JS change needs a page refresh. There is no live reload and no dev
 server build.
 
+## Deployment
+
+The site deploys as static files to GitHub Pages at `andrewhmir.github.io` (the
+`canonical` and `og:url` in `index.html`). There is no deploy pipeline, no build
+step and no server-side code: what ships is the working tree. `.nojekyll` at the
+repo root keeps Jekyll from processing the tree, which is the one deployment
+file. Image weights are committed, not generated at deploy time — after adding
+or re-importing a photograph run `python tools/optimize-images.py` and commit
+both the `.webp` and the record's path. `npm test` before pushing is the only
+gate.
+
 ## Gotchas
 
 - **The preview trio is gone on purpose.** `preview.html`, `css/profile.css` and
   `js/profile.js` were the build copies and were deleted on promotion. A
   reintroduced preview would fork the page and can render stale CSS/JS while the
   real page ignores it; `page.test.mjs` only reads the promoted names.
-- **Leftover walk files are not live.** `js/icons.js`,
-  `files/wall-mushoku.webp` and the retired tools are unreferenced by the page.
-  `js/vendor/` is the exception: Lenis is loaded by `index.html` and constructed
-  by `wireSmoothScroll` (its `lenis-snap` sibling is still absent).
-  `page.test.mjs` rejects `icons.js` and `wall-mushoku` in `index.html`.
+- **The walk's leftovers are deleted, not dormant.** `js/icons.js`,
+  `files/icons/`, `files/wall-mushoku.webp`, `vendor-icons.mjs`,
+  `caption-worklist.mjs` and the retired probes are gone. `js/vendor/` is the
+  exception: Lenis is loaded by `index.html` and constructed by
+  `wireSmoothScroll` (its `lenis-snap` sibling is still absent).
+  `page.test.mjs` still rejects the old names in `index.html` as tombstones.
 - **Lenis is a wheel layer, not the page's scrolling.** It is constructed only
   when the visitor allows motion; `window.Profile.lenis` is the live instance
   (or `null`). `html.lenis { scroll-behavior: auto }` is load-bearing: with the
@@ -246,34 +257,41 @@ server build.
   Buddy/BiyaHey/Honours art (`art--harvest`). Older cleanup notes called it an
   orphan because the retired page did not use it; that is no longer true. Do not
   delete it as an unreferenced image.
-- **`files/painting-hero.jpg` is the OG source, not just the hero art.**
-  `tools/make-images.mjs` draws `files/og-card.jpg` from it, and `index.html`
-  points `og:image` at the card. Deleting the painting makes the share card
-  unreproducible. `og-card.jpg` and `files/posters/*.jpg` are generated; do not
-  hand-edit them.
+- **`files/painting-hero.jpg` is the OG source and the last fallback.** The page
+  requests `painting-hero.avif` or `.webp` through `image-set()`; the JPEG is the
+  no-`image-set` fallback and the source `tools/make-images.mjs` draws
+  `files/og-card.jpg` from, and `index.html` points `og:image` at the card.
+  Deleting the JPEG makes the share card unreproducible. `og-card.jpg`,
+  `files/posters/*.jpg`, the `.webp` files and `.avif` files are generated; do
+  not hand-edit them — regenerate with `tools/make-images.mjs` and
+  `tools/optimize-images.py`.
 - **A missing photograph is not the same as an awaited frame.** Awaited means
   the data says `PlaceHolder.png` (or has no `src`); it renders the dashed,
   non-clickable frame. A path that points at a file which is not on disk renders
-  an `<img>` whose `onerror` swaps in `PlaceHolder.png`. Six references are in
-  the second state: Personnel's Week (×2), Commencement (×2), Work Immersion and
-  the 2023 National Youth Congress. `tools/import-photos.mjs`'s `MAPPING` has no
-  entries for them; add the mappings and import the sources, or point the data
-  at `PlaceHolder.png` to make the gap explicit.
+  an `<img>` whose `onerror` swaps in `PlaceHolder.png` — that path is a bug now,
+  because every shipped reference resolves. The four photographs that never
+  arrived (Commencement ×2, Work Immersion and the 2023 National Youth Congress)
+  carry **no** `images` field, so their honour rows are disabled. Every
+  leadership record now ships photographs; one with none would render the
+  "no photo" thumb. To add a photograph, import it with
+  `tools/import-photos.mjs`, run `optimize-images.py`, then wire the `.webp` path.
 - **HiveMind and SATLearn teams are explicit placeholders.** Their `team.image`
   is `PlaceHolder.png`, so they render awaited frames. `tools/make-images.mjs`
   has a `STILLS` table that can derive team stills from the project videos, but
   the outputs are not in `files/` and `js/data.js` still points at the
   placeholder. That is a content decision, not a layout fix.
-- **Some data fields have no reader on this page.** `nav`, `authors`, `source`,
-  `report`, `pieces`, `profileImage`, `favicon`, `scrollerIcon` and the social
-  `icon` names are inherited or unused; `news[].images` has no reader because no
-  news photograph exists on disk. Check `js/main.js` before wiring a field you
-  expect to appear.
+- **Data carries only what the page reads.** The retired walk's fields (`nav`,
+  `authors`, `source`, `report`, `pieces` on leadership/honours, `profileImage`,
+  `favicon`, `scrollerIcon`, social/link `icon`, `news[].images`) were deleted
+  with their helpers and suites. `projects[].pieces` survives because
+  `projectMedia` reads it for a plugin record's screenshot labels. Check
+  `js/main.js` before adding a field you expect to appear, and document it in
+  `docs/library/data.md` or `npm test` fails.
 - **The hero line is `P.heroLine`, not a bio paragraph.** The hero prints
   `PORTFOLIO.heroLine`; About prints `P.bio`. That sentence used to sit at
   `bio[3]`, which printed it in two stops at once — keep it out of `bio`. The
-  portrait is hard-coded as `files/profile.jpg` in `js/main.js`;
-  `PORTFOLIO.profileImage` is ignored, and bio order no longer moves the hero.
+  portrait is hard-coded as `files/profile.jpg` in `js/main.js`; there is no data
+  field for it, and bio order does not move the hero.
 - **The masthead stands down over the hero.** `.masthead:not(.is-stuck) .brand`
   and `.resume` are `visibility: hidden` while the hero is on screen;
   `wireChrome`'s existing `is-stuck` toggle is the reveal. Do not remove the rule
@@ -291,8 +309,8 @@ server build.
   `projectMedia` hangs those three images with the record's own `pieces` labels;
   `openRecord` puts the same three in the dialog gallery. Their `overview.image`
   is also the card still, so it is normally `shots[0]`. `tests/hang.test.mjs`
-  scopes its two video checks to records that declare a video and pins that a
-  plugin record leads with its own first screenshot.
+  scopes its video checks to records that declare a video and checks every
+  plugin screenshot is on disk.
 - **The art/scrim stacking is deliberate.** `.stop` sets `isolation: isolate`;
   the art is `::before` at `z-index: -2`, the scrim `::after` at `-1`, and the
   contact card is a `::before` on `.stop-in` at `-1`. A new positive-z layer
@@ -300,19 +318,14 @@ server build.
 - **Newsreader is vendored at 400/500/600, not 300.** The CSS asks for 300 on
   display text; the browser serves the closest declared face (400). A real 300
   needs a new vendored face, not a number change.
-- **The data suites print retired nouns.** `derive-rooms`, `hang` and `band`
-  still say room, stand and wall because they test the inherited helpers. The
-  page now calls `Site.deriveRooms`, but its UI says category and panel; do not
-  “fix” the page to match the tests' vocabulary.
+- **The data suites still say room.** `derive-rooms.test.mjs` names the grouping
+  by its inherited noun because `Site.deriveRooms` returns `key`/`title`/`lede`;
+  the page's UI says category and panel. Do not “fix” the page to match the
+  suite's vocabulary.
 - **Scroll lock is a count.** The project view and the record dialog both call
   `setLock`; closing one must not release the page or restart Lenis while the
   other is still open. The project view is injected with no `data-reveal` — the
   reveal observer runs once at init, so an attribute there would stay invisible.
-- **`Site.awardPhotos` and `Site.galleryFor` are inherited, not live.**
-  `js/main.js` reads `honoursTiles` and the records' own `images` arrays; it does
-  not call either helper. Project-linked award photographs are therefore not
-  surfaced by the project dialog. Reaching them is a feature change, not a
-  rename.
 - **PowerShell 5.1 only.** `pwsh` does not exist on this machine. Use
   `powershell`; check `$LASTEXITCODE` for native commands rather than relying on
   `$ErrorActionPreference`, because 5.1 turns native stderr into a red
@@ -331,7 +344,7 @@ server build.
 
 Do not add these without being asked: a build step, a bundler, an npm runtime
 dependency, a CDN at runtime, analytics, a CMS, a test framework or
-`node --test`; an icon font or a loaded `js/icons.js`; scroll snap or a
+`node --test`; an icon font or an icon script; scroll snap or a
 horizontal page; a mobile menu drawer; inline or autoplaying
 video in project panels; a third webfont; TypeScript or JSX.
 
@@ -345,11 +358,10 @@ feature.
 |---|---|
 | `AGENTS.md` | Routing, vocabulary, constraints, verification — start here |
 | `README.md` | The design reasoning and the measurements behind the art, scrims, rail and type |
-| `tools/README.md` | Which dev tools survive, which are retired, and what each one does |
+| `tools/README.md` | Which dev tools survive and what each one does |
 | `docs/library/README.md` | The component library: one page per component plus the selector index and the data contract, and the checker that keeps them honest |
 | `css/styles.css` | The section banners and the actual values |
 | `files/fonts/README.md` | The vendored families, licences and SHA-256 pins |
-| `files/icons/README.md` | The vendored glyphs — currently unused by this page |
 | `docs/superpowers/specs/2026-10-25-amorsolo-profile-design.md` | The design record for this page |
 | `docs/superpowers/plans/2026-10-25-amorsolo-profile.md` | The implementation plan and the polish pass |
 | `docs/superpowers/` (everything earlier) | Historical design records from earlier builds — never hand-edited |

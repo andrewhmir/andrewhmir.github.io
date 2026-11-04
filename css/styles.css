@@ -251,9 +251,28 @@ a { color: inherit; }
   scroll-margin-top: calc(var(--masthead-h) + 12px);
 }
 
-/* the painting — URLs live here, resolved against this stylesheet */
+/* the painting — URLs live here, resolved against this stylesheet.
+   The two paintings are the page's heaviest assets, so each declares an AVIF
+   and a WebP and keeps the source JPEG as the last fallback. `image-set` with
+   `type()` lets the browser take the first format it can decode; a browser
+   without that support keeps the plain JPEG `--art` value above. */
 .art--rice { --art: url("../files/painting-hero.jpg"); }
 .art--harvest { --art: url("../files/painting.jpg"); }
+
+@supports (background-image: image-set(url("x") type("image/webp"))) {
+  .art--rice {
+    --art: image-set(
+      url("../files/painting-hero.avif") type("image/avif"),
+      url("../files/painting-hero.webp") type("image/webp"),
+      url("../files/painting-hero.jpg") type("image/jpeg"));
+  }
+  .art--harvest {
+    --art: image-set(
+      url("../files/painting.avif") type("image/avif"),
+      url("../files/painting.webp") type("image/webp"),
+      url("../files/painting.jpg") type("image/jpeg"));
+  }
+}
 
 .stop::before {
   content: "";
@@ -321,6 +340,10 @@ a { color: inherit; }
   justify-self: center;
   max-width: 880px;
 }
+/* text-align centres inline content, not a block with its own measure: the
+   lede's 32ch line box would otherwise sit at the left edge of the centred
+   column (off-centre by half the leftover width). */
+.copy--center .lede { margin-left: auto; margin-right: auto; }
 
 /* ── Type ─────────────────────────────────────────────────────────── */
 
@@ -614,15 +637,31 @@ h2 {
     width: calc(100% - 20px); height: calc(100% - 12px);
   }
 }
+/* A button, not a link: the click copies the address. The printed label is the
+   obfuscated form, which is much longer than a raw address, so the type steps
+   down from the old display size and may wrap instead of overflowing the card. */
 .contact-mail {
-  display: inline-block; font-family: var(--serif); font-weight: 300;
-  font-size: clamp(24px, 3vw, 42px); letter-spacing: -.02em;
-  color: var(--text-strong); text-decoration: none;
-  border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 4px 0 30px;
+  display: inline-block; max-width: 100%;
+  -webkit-appearance: none; appearance: none;
+  background: none; border: 0; border-bottom: 1px solid var(--border);
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(17px, 2vw, 30px); line-height: 1.35; letter-spacing: -.02em;
+  color: var(--text-strong); text-align: center; text-decoration: none;
+  cursor: pointer;
+  padding: 0 0 6px; margin: 4px 0 8px;
   text-shadow: 0 1px 20px rgba(8, 12, 14, .5);
-  transition: border-color .2s ease;
+  transition: border-color .2s ease, color .2s ease;
 }
 .contact-mail:hover { border-bottom-color: var(--accent); }
+/* Reserved one-line status under the email: it reads "Click to copy" until the
+   click, then the confirmation — and the reserved height keeps the social row
+   from jumping when the text changes. */
+.contact-mail__note {
+  min-height: 16px; margin: 0 0 16px; line-height: 1.5;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-quiet);
+}
+.contact-mail__note.is-copied { color: var(--accent); }
 .contact-links {
   display: flex; flex-wrap: wrap; gap: 22px; justify-content: center;
   font-family: var(--mono); font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
@@ -760,6 +799,21 @@ h2 {
 @media (max-width: 639px) {
   :root { --gutter: 10px; --panel-radius: 12px; }
   h1 { font-size: clamp(38px, 11vw, 56px); }
+  /* A phone opens on the hero, not on a card of it: the panel goes edge to edge
+     and takes the whole screen (svh, so the first paint fits under the browser
+     chrome instead of sliding under it). The name keeps its bottom seat with the
+     home indicator's inset added, and the sections below stay floating cards so
+     the contrast reads as the page starting, not the panels breaking. */
+  .stop--hero {
+    margin: 0 0 var(--gutter);
+    border-radius: 0;
+  }
+  .stop--hero .stop-in {
+    min-height: 100vh;
+    min-height: 100svh;
+    padding-top: calc(var(--masthead-h) + 42px);
+    padding-bottom: calc(44px + env(safe-area-inset-bottom));
+  }
   .leaders { grid-template-columns: 1fr; }
   .honour-row { grid-template-columns: 74px 1fr auto; gap: 12px; padding: 12px 6px; }
   .news-row { grid-template-columns: 74px 1fr; gap: 12px; padding: 12px 6px; }
