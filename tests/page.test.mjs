@@ -176,6 +176,14 @@ assert.match(js, /document\.execCommand\('copy'\)/);
 assert.match(js, /class="contact-mail__note"/);
 console.log('ok  contact email: obfuscated label, copies via data-copy, no mailto anywhere');
 
+/* ── off-site actions open in a new tab ──────────────────────────── */
+
+// Resume, GitHub, LinkedIn and a record's Links must not replace the page.
+assert.match(js, /var LINK_OUT = ' target="_blank" rel="noopener noreferrer"'/);
+assert.match(html, /id="resumeLink" href="#" target="_blank" rel="noopener noreferrer"/);
+assert.match(htmlNoComments, /href="https:\/\/github\.com\/andrewhmir" target="_blank" rel="noopener noreferrer"/);
+console.log('ok  external actions open a new tab; in-page anchors stay put');
+
 /* ── no third-party resource loads (anchor hrefs are allowed) ─────── */
 
 const resourcePatterns = [

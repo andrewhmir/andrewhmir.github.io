@@ -11,6 +11,8 @@
 
   var PLACEHOLDER = 'files/PlaceHolder.png';
   var FALLBACK = ' onerror="this.onerror=null;this.src=\'' + PLACEHOLDER + '\'"';
+  /* Every off-site action opens a new tab so the portfolio is never replaced. */
+  var LINK_OUT = ' target="_blank" rel="noopener noreferrer"';
 
   /* Resume is the masthead's standing action (and the hero's, at the top of the
      page). The section rows list the other channels only, so the same button is
@@ -190,7 +192,7 @@
         '<p class="hero-line">' + esc(P.heroLine || '') + '</p>' +
         '<div class="actions">' +
           '<a class="btn btn--solid" href="#work">See the work →</a>' +
-          '<a class="btn" href="' + esc((P.social[0] && P.social[0].url) || '#') + '">Resume ↗</a>' +
+          '<a class="btn" href="' + esc((P.social[0] && P.social[0].url) || '#') + '"' + LINK_OUT + '>Resume ↗</a>' +
         '</div>'
     }));
 
@@ -205,7 +207,7 @@
         '<h2>Hi, I’m Andrew</h2>' +
         '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
         '<div class="actions">' + sectionSocial().map(function (s) {
-          return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';
+          return '<a class="btn" href="' + esc(s.url) + '"' + LINK_OUT + '>' + esc(s.label) + ' ↗</a>';
         }).join('') + '</div>',
       media:
         '<figure class="portrait">' +
@@ -314,7 +316,7 @@
         '<button class="contact-mail" type="button" data-copy="' + esc(P.email) + '">' + esc(emailText()) + '</button>' +
         '<p class="contact-mail__note" role="status">Click to copy</p>' +
         '<div class="contact-links">' + sectionSocial().map(function (s) {
-          return '<a href="' + esc(s.url) + '">' + esc(s.label) + '</a>';
+          return '<a href="' + esc(s.url) + '"' + LINK_OUT + '>' + esc(s.label) + '</a>';
         }).join('') + '</div>'
     }));
 
@@ -373,7 +375,7 @@
       }
       if (p.links && p.links.length) {
         body += '<h4>Links</h4><ul>' + p.links.map(function (l) {
-          return '<li><a href="' + esc(l.url) + '">' + esc(l.label) + ' ↗</a></li>';
+          return '<li><a href="' + esc(l.url) + '"' + LINK_OUT + '>' + esc(l.label) + ' ↗</a></li>';
         }).join('') + '</ul>';
       }
       images = (Array.isArray(p.shots) && p.shots.length)

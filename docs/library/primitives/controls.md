@@ -41,6 +41,7 @@ Buttons, links and focus behaviour: the outlined `.btn`, its gold solid variant,
 
 ## Invariants
 
+- Every external action — Resume, GitHub, LinkedIn, a record's Links list — opens in a new tab (`target="_blank" rel="noopener noreferrer"`) so the portfolio page is never replaced. In-page `#` anchors, the project view and the dialog stay in the same tab.
 - Keyboard focus is always visible: the `:focus-visible` ring is the page's only focus indicator, and every control inherits it.
 - `.btn` is a skin, not a tag — it styles `<a>` and `<button>` identically; semantics come from the element.
 - Primary actions keep a 44px minimum target (`.btn`'s `min-height`); the dialog close button reuses the same 44px box.
