@@ -92,7 +92,7 @@
         '<span class="frame__label">' + esc(o.label) + '</span>' +
       '</div>';
     }
-    return '<button class="frame' + (o.lead ? ' frame--lead' : '') + '" type="button" ' +
+    return '<button class="frame' + (o.lead ? ' frame--lead' : '') + (o.team ? ' frame--team' : '') + '" type="button" ' +
       'data-kind="project" data-index="' + o.index + '">' +
       '<img src="' + esc(o.src) + '" alt="' + esc(o.alt || o.label) + '" loading="lazy"' + FALLBACK + '>' +
       (o.label === 'Film' ? '<span class="frame__play" aria-hidden="true">▶</span>' : '') +
@@ -119,7 +119,7 @@
     return '<div class="stack">' +
       frame({ src: p.overview && p.overview.image, label: 'Overview', lead: true, index: i, alt: p.title + ' — overview' }) +
       frame({ src: poster, label: 'Film', index: i, alt: p.title + ' — film still' }) +
-      frame({ src: p.team && p.team.image, label: 'Team', index: i, alt: p.title + ' — team' }) +
+      frame({ src: p.team && p.team.image, label: 'Team', team: true, index: i, alt: p.title + ' — team' }) +
     '</div>';
   }
 

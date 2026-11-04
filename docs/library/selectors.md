@@ -66,6 +66,7 @@ A flat lookup from a selector, shell id or `data-*` attribute to the page that o
 | `.stop--news` | [news.md](components/news.md) | the News panel modifier; widens the copy column |
 | `.stop--list` | [honours.md](components/honours.md), [news.md](components/news.md) | emitted on the Honours and News panels; no CSS rule |
 | `.frame--lead` | [frames.md](components/frames.md) | the 16/9 lead frame that spans the stack |
+| `.frame--team` | [frames.md](components/frames.md) | the team plate; its panorama is contained, not cropped |
 | `.frame--awaited` | [frames.md](components/frames.md) | the dashed non-button frame for `PlaceHolder.png` |
 | `.leader__thumb--empty` | [leadership.md](components/leadership.md) | the "no photo" span replacing a missing leader thumb |
 

@@ -150,10 +150,12 @@ review with a comment attached, and the Miranda shell on a phone.
 The panel a card opens is the record's own project panel, content unchanged: an
 eyebrow (`category · venue`), the title, tagline, summary, the record's awards
 and an **Open the record →** button, with the three-frame media stack — overview
-at 16:9 spanning two columns, film still and team photograph as 4:3 supports
-beneath it. That is the old build's three-frame identity, laid flat: overview
-leads, film and team support. The film frame is a **generated still with a play
-badge**, not a playing video — the player lives in the dialog.
+at 16:9 spanning two columns, film still and team photograph as 16:9 supports
+beneath it. The team plate contains its panorama rather than cropping it, so the
+people at both ends of the photo stay in frame. That is the old build's
+three-frame identity, laid flat: overview leads, film and team support. The film
+frame is a **generated still with a play badge**, not a playing video — the
+player lives in the dialog.
 
 The panel opens as a fixed full-screen view (`#projectView`) with a back button,
 not as a page stop, so the category panel and the scroll position survive the

@@ -24,8 +24,9 @@ awaited.
 
 `.stack` is a two-column grid. `projectMedia(` builds the frames in fixed order:
 the overview (`frame--lead`, `16/9`, spans both columns), then the film still
-(`S.posterFor(p.video)`), then the team photograph — the last two are `4/3`. A
-live frame is a button carrying `data-kind="project"` and `data-index`, an
+(`S.posterFor(p.video)`), then the team photograph — all three plates are `16/9`.
+The team frame carries `frame--team` and contains its image instead of cropping
+it. A live frame is a button carrying `data-kind="project"` and `data-index`, an
 `<img loading="lazy">` with the `onerror` fallback, a `.frame__label`, and
 `.frame__play` on the film still. An awaited frame is a
 `div.frame.frame--awaited` > `.frame__inner` "Awaiting photograph" +
@@ -43,11 +44,12 @@ live frame is a button carrying `data-kind="project"` and `data-index`, an
 | Media stack gap | the `.stack` gap (`12px`) | screenshot; the gap is not asserted |
 | The three-frame order | `function projectMedia(` — overview, poster, team | screenshot each project |
 | The lead frame aspect | `.frame--lead` and `.frame img` | screenshot 1440×900 |
+| The team plate's fit | `.stack .frame--team img` (`object-fit: contain` keeps the whole team) | open each project view; nobody at either end is cut |
 
 ## Invariants
 
 - Exactly three frames per project, in this order: overview, film still, team. The live source is `projectMedia(`; no committed test renders it.
-- Only the overview is the lead: `.frame--lead` spans both columns and is 16/9; the other two are 4/3.
+- Only the overview is the lead: `.frame--lead` spans both columns. Every plate is 16/9; the team frame is `frame--team` with `object-fit: contain`, because the team photographs are wide panoramas and a crop cut off the people at both ends.
 - A live frame is a button with `data-kind="project"` and `data-index`; clicking opens the one record dialog. Awaited frames are divs and open nothing.
 - Awaited means the data says `files/PlaceHolder.png` or has no `src`; a path to a missing file is not awaited — the `<img>` keeps its place and `onerror` swaps in the placeholder. See the missing-photograph gotcha in `AGENTS.md`.
 - The film still is generated from the video: `Site.posterFor(` maps `files/<stem>.mp4` to `files/posters/<stem>.jpg`, flat on the basename. Regenerate, never hand-edit.

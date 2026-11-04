@@ -436,7 +436,10 @@ h2 {
 .frame:hover img { transform: scale(1.025); }
 .frame--lead { grid-column: 1 / -1; }
 .frame--lead img { aspect-ratio: 16 / 9; }
-.stack .frame:not(.frame--lead) img { aspect-ratio: 4 / 3; }
+.stack .frame:not(.frame--lead) img { aspect-ratio: 16 / 9; }
+/* Team photographs arrive as wide panoramas (about 2:1): contain keeps the
+   people at both ends instead of cropping them out of a 4:3 plate. */
+.stack .frame--team img { object-fit: contain; }
 
 .frame__label {
   position: absolute; left: 0; right: 0; bottom: 0;
@@ -462,7 +465,7 @@ h2 {
   cursor: default; box-shadow: none;
 }
 .frame--awaited .frame__inner {
-  aspect-ratio: 4 / 3; display: grid; place-items: center; gap: 6px;
+  aspect-ratio: 16 / 9; display: grid; place-items: center; gap: 6px;
   font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em;
   text-transform: uppercase; color: var(--text-quiet); text-align: center;
 }
