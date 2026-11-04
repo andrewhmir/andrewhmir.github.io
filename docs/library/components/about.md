@@ -18,7 +18,7 @@ side, with the framed portrait beside them.
 ## Structure
 
 `panel()` with `side: 'left'`. The `.copy` cell holds `.eyebrow` "01 · About", an
-`<h2>` literal ("Why I build" — never the hero's name), `.body` with one
+`<h2>` literal ("Hi, I’m Andrew" — a greeting, not the hero's full name), `.body` with one
 `<p>` per `bio` entry, then `.actions` with one `.btn` per `sectionSocial()`
 entry. The `.media` cell is `figure.portrait` > `img` + `figcaption`.
 

@@ -202,7 +202,7 @@
       pos: PAN[1].pos,
       copy:
         '<p class="eyebrow">01 · About</p>' +
-        '<h2>Why I build</h2>' +
+        '<h2>Hi, I’m Andrew</h2>' +
         '<div class="body">' + P.bio.map(function (line) { return '<p>' + esc(line) + '</p>'; }).join('') + '</div>' +
         '<div class="actions">' + sectionSocial().map(function (s) {
           return '<a class="btn" href="' + esc(s.url) + '">' + esc(s.label) + ' ↗</a>';

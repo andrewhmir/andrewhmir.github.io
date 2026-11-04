@@ -25,7 +25,6 @@ const PORTFOLIO = {
      kept out of this array: a bio entry would print the same sentence in the
      hero and in About, where both can be on screen at once. */
   bio: [
-    "Hi, I'm Andrew.",
     "I like art, and I have fun building things.",
     "I'm inspired by how technology can improve everyday life.",
     "I want to turn that inspiration into work that makes the world a little better.",
