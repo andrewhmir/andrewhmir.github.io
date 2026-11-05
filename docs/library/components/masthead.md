@@ -60,8 +60,8 @@ where the rail draws progress instead, and is the small-screen cue below.
   its background reveals them.
 - `#resumeLink` ships with `href="#"` and is filled at init from data; the URL
   is never hard-coded in the markup.
-- The menu is anchor jumps to ids the renderer emits; it is not a drawer, and
-  AGENTS.md's **Deliberately absent** list forbids adding one unasked.
+- The menu is anchor jumps to ids the renderer emits; the click scrolls without
+  rewriting the URL (`wireAnchors`). It is not a drawer, and AGENTS.md's **Deliberately absent** list forbids adding one unasked.
 
 ## Traps
 

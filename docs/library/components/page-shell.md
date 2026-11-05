@@ -54,6 +54,8 @@ stylesheet and script load order, the skip link, and the no-JS fallback.
   file is still a runtime load, so it stays in the repo and never becomes a CDN.
   `wireSmoothScroll` is optional: the page works without the script (AGENTS.md,
   **Smooth scroll is progressive**).
+- In-page anchor clicks scroll without rewriting the URL (`wireAnchors` in
+  `js/main.js`); a copied hash href still deep-links.
 - With JavaScript on, the renderer emits the page's only `h1`; `<noscript>` is
   raw text and contributes no element.
 

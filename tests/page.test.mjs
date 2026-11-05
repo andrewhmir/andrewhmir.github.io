@@ -65,6 +65,12 @@ assert.match(js, /var scrollEngine/);
 // One strict control-flow assertion: both early returns and the autoRaf
 // constructor, in that order, so deleting a guard cannot pass the check.
 assert.match(js, /function wireSmoothScroll\(\) \{\s*if \(!window\.Lenis\) return;\s*if \(window\.matchMedia && window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)\.matches\) return;\s*var lenis = new window\.Lenis\(\{ autoRaf: true \}\);/);
+// Anchor clicks scroll the page without rewriting the address bar: no hash and
+// no history entry, in the Lenis path and the native fallback alike. The hrefs
+// stay intact, so a copied link still deep-links to a section.
+assert.match(js, /function wireAnchors\(\)/);
+assert.match(js, /wireAnchors\(\);/);
+assert.equal(/history\.pushState|history\.replaceState/.test(js), false, 'an in-page anchor click must not rewrite the URL');
 // The dialog must stop and start the engine, not merely define an adapter.
 assert.match(js, /function setLock\(/);
 assert.match(js, /dialog\.hidden = false;[\s\S]*?setLock\(true\)/);
@@ -82,7 +88,7 @@ assert.match(js, /if \(margin\) \{[\s\S]*?lenis\.scrollTo\(target\);[\s\S]*?\} e
 // download) stay the browser's, not the smooth-scroll handler's.
 assert.match(js, /classList\.contains\('skip'\)/);
 assert.match(js, /e\.metaKey \|\| e\.ctrlKey \|\| e\.shiftKey \|\| e\.altKey/);
-console.log('ok  smooth scroll: vendored Lenis (autoRaf), reduced-motion opt-out, anchor skip/modifier pass-through, dialog stop/start');
+console.log('ok  smooth scroll: vendored Lenis (autoRaf), reduced-motion opt-out, anchor clicks scroll without rewriting the URL, skip/modifier pass-through, dialog stop/start');
 
 /* ── the palette and the art system ───────────────────────────────── */
 

@@ -94,7 +94,7 @@ router; the library is the per-component depth behind it.
 | The project video player | `js/main.js` | `dialog__video`; poster from `S.posterFor` |
 | The journey rail, its active state and the page-progress fill | `js/main.js` + `css/styles.css` | `function buildRail(`, `wireChrome`; `.rail`, `.rail::before`, `.rail-shade`, `--rail-progress` |
 | Masthead stickiness and the small-screen progress hairline | `js/main.js` + `css/styles.css` | `wireChrome`; `.masthead.is-stuck`, `.progress` |
-| Smooth wheel scrolling, anchor travel, dialog scroll lock | `index.html` + `js/main.js` + `css/styles.css` | `js/vendor/lenis.min.js` before `js/data.js`; `function wireSmoothScroll(`; `html.lenis`; `lenis.stop()` |
+| Smooth wheel scrolling, anchor travel, dialog scroll lock | `index.html` + `js/main.js` + `css/styles.css` | `js/vendor/lenis.min.js` before `js/data.js`; `function wireSmoothScroll(`; `function wireAnchors(`; `html.lenis`; `lenis.stop()` |
 | Reveals and reduced motion | `js/main.js` + `css/styles.css` | `function wireReveals(`; `[data-reveal]`, `prefers-reduced-motion` |
 | Palette | `css/styles.css` | `:root`, `--night: #080c0e` |
 | Type | `css/styles.css` + `css/fonts.css` | `--serif:`, `--mono:`, `h1 {`, `h2 {`, `h1 {` in the responsive block |
@@ -122,7 +122,7 @@ word and editing the wrong thing.
 | **scrim** | The direction-aware gradient over the art that keeps the copy side dark and the far side bright. | `--scrim`, `.stop[data-side]`, `.stop::after` |
 | **rail** | The fixed left-hand journey nav with one stop per named section (not the hero). | `.rail`, `.rail__stop`, `buildRail` |
 | **left shade** | The fixed 144px gradient behind the rail so its label chips stay legible over bright crops. | `.rail-shade` |
-| **smooth scroll** | The vendored Lenis wheel layer: it smooths the wheel and hash-anchor travel only; touch, the keyboard and reduced motion stay native. | `js/vendor/lenis.min.js`, `wireSmoothScroll`, `html.lenis`, `lenis.stop()` |
+| **smooth scroll** | The vendored Lenis wheel layer: it smooths the wheel and the travel to a clicked in-page anchor; the click never rewrites the URL (no `#section`, no history entry); touch, the keyboard and reduced motion stay native. | `js/vendor/lenis.min.js`, `wireSmoothScroll`, `wireAnchors`, `html.lenis`, `lenis.stop()` |
 | **frame** | One media box in a project's stack: the overview, the film still or the team photograph. | `.frame`, `.frame--lead` |
 | **film still / poster** | The generated `files/posters/<stem>.jpg` shown in the film frame. The page does not play it in the panel; the player is in the dialog. | `S.posterFor`, `.frame__play` |
 | **record** | One authored project, leadership entry or honour in `PORTFOLIO`. | `P.projects`, `P.leadership`, `P.honors` |
@@ -157,7 +157,7 @@ specific: a constraint that only a review catches is marked as such.
 | **The retired build stays out of the shell** | `icons.js`, `#hall`, `#strip`, `dock-track`, `wall-mushoku` must not appear in `index.html` (comments stripped), even though their files are deleted. Lenis is the deliberate exception: the vendored library is the page's smooth-wheel layer now. | `page.test.mjs` |
 | **The dialog stays accessible** | `role="dialog"`, `aria-modal="true"`, `aria-labelledby="dialogTitle"`, a labelled close button; `openRecord` saves focus, focuses the card, traps Tab, closes on Escape/overlay/button and restores focus; body scroll is locked while open. | Markup is pinned by `page.test.mjs`; the trap and restore are behaviour in `js/main.js` and are **not** unit-tested |
 | **Reduced motion is honoured** | `prefers-reduced-motion` disables reveals and smooth scrolling, and Lenis is never constructed; the JS marks every reveal visible instead of observing. | `page.test.mjs` pins the string; the CSS media query and the JS branches implement it; behaviour is manual |
-| **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order and the strings are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
+| **Smooth scroll is progressive** | Lenis is vendored local (no CDN), loaded before `js/data.js`; `wireSmoothScroll` skips construction without `window.Lenis` or under reduced motion; an in-page anchor click (`wireAnchors`) scrolls through it when active and natively otherwise, and never writes `location.hash` or a history entry; touch and the keyboard stay native; `html.lenis` turns the CSS ease off so it cannot fight the library; the dialog and the project view stop it while open through the shared `setLock` count and their own scroller opts out with `data-lenis-prevent`. | Shell order, the strings and the absence of `history.pushState`/`replaceState` are pinned by `page.test.mjs`; the wheel, anchor and layer behaviour are manual |
 | **No build step** | No bundler, no build script, no npm runtime dependency; Node runs tests and tools only. | `package.json`; `page.test.mjs` pins that the guard is in the test script |
 | **One `<h1>`** | The renderer emits the hero's `h1`; the no-JS fallback is the only one when JS is off. With JS on, `<noscript>` is raw text and contributes no element. | Not counted by `page.test.mjs`; keep it by inspection |
 | **No content twice in one viewport** | The page prints each name, action and sentence once per screen. The fixed masthead hides its wordmark and Resume while the hero (which carries both) is on screen; the section social rows omit the masthead's Resume; the About heading is not the name, the footer does not repeat it, and the hero line is `P.heroLine` instead of a `bio` paragraph. Navigation labels and numbered kickers are chrome, not content, and stay. | `page.test.mjs` pins the masthead stand-down CSS rule, `P.heroLine` (and that `bio` does not contain it), `sectionSocial()`, and the absence of `foot__name`; the visual result is manual |
@@ -199,7 +199,10 @@ floor, and 390×844, and look for:
 - the wheel gliding and settling (`window.Profile.lenis` truthy), a long
   recorded dialog wheel/touch-scrolling its own card while the page stays put,
   and a reduced-motion reload leaving `html.lenis` off and
-  `window.Profile.lenis` null.
+  `window.Profile.lenis` null;
+- the masthead menu and the rail scrolling to their sections while the address
+  bar keeps the URL the page loaded with — no `#section`, no new history entry —
+  with Lenis active and after a reduced-motion reload.
 
 `tools/shot-url.mjs` captures one viewport at a URL; for scrolled or full-page
 shots use Chrome DevTools' capture or a scratch CDP script under `.tmp-diag/`.

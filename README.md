@@ -260,14 +260,16 @@ already returns to it.
 
 The active stop is the panel covering the viewport's middle: as the boundary
 between two panels crosses the centre, the next tick takes over (a middle that
-falls in a gutter keeps the section just passed). Clicking a stop travels to
-the section through Lenis when it is active; `scroll-margin-top:
+falls in a gutter keeps the section just passed). Clicking a stop — or a
+masthead menu link — travels to the section through Lenis when it is active and
+natively otherwise, but it never touches the address bar: the click is
+intercepted, so the URL keeps the hash the visitor arrived with (usually none)
+while the hrefs themselves still deep-link. `scroll-margin-top:
 calc(var(--masthead-h) + 12px)` keeps the panel's top clear of the fixed
 masthead, and Lenis's `scrollTo` reads that same value off the target; the
 handler only supplies it as an offset for targets that have no margin of their
-own (`#work`, `#page`). Native hash travel and `html { scroll-behavior: smooth }`
-are the fallback. Under reduced motion Lenis is never constructed and the CSS
-smooth behaviour is turned off.
+own (`#work`, `#page`). Under reduced motion Lenis is never constructed and the
+CSS smooth behaviour is turned off, so the click jumps.
 
 The shade is the rail's legibility layer: a fixed 144px gradient from
 `rgba(8,12,14,.84)` at the edge through `.6` at 36%, `.22` at 72%, transparent at
@@ -407,10 +409,11 @@ centre line and nothing shifts when the other two fade in. Below
 progress; from 1024px up that progress is drawn down the journey rail's line
 instead, so the rail is both navigation and page meter (see above). There is no
 scroll snap: the page uses the browser's own scrolling. Lenis 1.3.26, vendored
-in `js/vendor/`, adds the wheel glide and smooth hash-anchor travel, and nothing
-else — touch and the keyboard stay native, the record dialog stops it and its
-card opts out of the capture (`data-lenis-prevent`) so a long record still
-scrolls, and a reduced-motion visitor never gets the library constructed at all.
+in `js/vendor/`, adds the wheel glide and the eased travel to a clicked nav
+link, but the click never rewrites the URL (see above); nothing else — touch
+and the keyboard stay native, the record dialog stops it and its card opts out
+of the capture (`data-lenis-prevent`) so a long record still scrolls, and a
+reduced-motion visitor never gets the library constructed at all.
 
 ## Missing photographs
 

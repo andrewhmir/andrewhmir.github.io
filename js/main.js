@@ -684,8 +684,7 @@
   /* Smooth scrolling: the vendored Lenis library smooths the wheel only. Touch
      and the keyboard stay native, and under reduced motion — or if the script
      did not load — nothing is constructed, so the page keeps the browser's own
-     scrolling and the stylesheet's smooth anchor travel. Anchor clicks are sent
-     through Lenis so the CSS scroll-margin-top clearance is preserved. */
+     scrolling. In-page anchor clicks are handled by wireAnchors() below. */
   function wireSmoothScroll() {
     if (!window.Lenis) return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -696,16 +695,23 @@
       stop: function () { lenis.stop(); },
       start: function () { lenis.start(); }
     };
+  }
 
-    /* Lenis subtracts the target's own scroll-margin top itself — the CSS
-       masthead clearance on .stop. Targets without one (the #work wrapper and
-       #page) need the panels' clearance passed as an offset instead. */
+  /* In-page anchors — the masthead menu, the rail, the brand and the hero's
+     section buttons — scroll the page themselves and never touch the address
+     bar. Following the href would append #news and push a history entry on
+     every click, so the visitor's URL would change as they move around; the
+     hrefs are left intact, so a copied link still deep-links to a section.
+     The skip link is the exception: its native jump is what moves the
+     sequential focus starting point into #page, and modified clicks (new tab,
+     download) stay the browser's. The travel goes through Lenis when it is
+     active so the CSS scroll-margin-top clearance is preserved; otherwise it
+     is a plain smooth scroll, or an instant one under reduced motion. */
+  function wireAnchors() {
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var pageStop = document.querySelector('.stop');
 
     document.addEventListener('click', function (e) {
-      /* Modified clicks belong to the browser (new tab, download), and the skip
-         link must keep its native jump: that jump is what moves the sequential
-         focus starting point into #page. */
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var link = e.target.closest ? e.target.closest('a[href^="#"]') : null;
       if (!link || link.classList.contains('skip') || link.getAttribute('href') === '#') return;
@@ -713,15 +719,22 @@
       var target = document.getElementById(hash.slice(1));
       if (!target) return;
       e.preventDefault();
+      var lenis = scrollEngine ? scrollEngine.lenis : null;
+      /* Lenis subtracts the target's own scroll-margin top itself — the CSS
+         masthead clearance on .stop. Targets without one (the #work wrapper and
+         #page) need the panels' clearance passed as an offset instead. The
+         native branch computes the same landing by hand. */
       var margin = parseFloat(window.getComputedStyle(target).scrollMarginTop) || 0;
-      if (margin) {
-        lenis.scrollTo(target);
+      var clearance = pageStop ? (parseFloat(window.getComputedStyle(pageStop).scrollMarginTop) || 0) : 0;
+      if (lenis) {
+        if (margin) {
+          lenis.scrollTo(target);
+        } else {
+          lenis.scrollTo(target, { offset: -clearance });
+        }
       } else {
-        var clearance = pageStop ? (parseFloat(window.getComputedStyle(pageStop).scrollMarginTop) || 0) : 0;
-        lenis.scrollTo(target, { offset: -clearance });
-      }
-      if (window.history && history.pushState && location.hash !== hash) {
-        history.pushState(null, '', hash);
+        var top = target.getBoundingClientRect().top + (window.scrollY || 0) - (margin || clearance);
+        window.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
       }
     });
   }
@@ -792,6 +805,7 @@
     wireEmailCopy();
     wireDelegation();
     wireSmoothScroll();
+    wireAnchors();
   }
 
   if (document.readyState === 'loading') {
