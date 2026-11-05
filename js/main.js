@@ -225,7 +225,7 @@
       pos: PAN[2].pos,
       copy:
         '<p class="eyebrow">02 · News</p>' +
-        '<h2>Milestones</h2>' +
+        '<h2>Recently</h2>' +
         '<p class="body">Roles, talks and firsts, newest first.</p>' +
         '<ol class="news">' + P.news.map(function (n) {
           return '<li class="news-row">' +
