@@ -34,7 +34,7 @@ const PORTFOLIO = {
   heroLine: "In pursuit of knowledge.",
   email: "andrew.alangcao@gmail.com",
   social: [
-    { label: "Resume",   url: "https://drive.google.com/file/d/1lb3D1vB__Xfi5UD1Z22mGeGJtVetw_1M/view?usp=sharing" },
+    { label: "Resume",   url: "https://drive.google.com/file/d/1Dd5AECb8WimWRpOjMofhmcadmwQig9br/view?usp=sharing" },
     { label: "GitHub",     url: "https://github.com/andrewhmir" },
     { label: "LinkedIn",   url: "https://www.linkedin.com/in/andrew-alangcao/" }
   ],
